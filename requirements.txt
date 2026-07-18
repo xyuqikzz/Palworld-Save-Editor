@@ -1,0 +1,9 @@
+setuptools==80.9.0
+wheel==0.46.1
+Flask==3.1.2
+pyinstaller==6.17.0
+waitress==3.0.2
+Flask-JWT-Extended==4.7.1
+pywebview==4.4.1
+requests==2.32.5
+aiohttp==3.13.2

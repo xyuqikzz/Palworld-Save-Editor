@@ -1,0 +1,1 @@
+"""Flask contract tests."""

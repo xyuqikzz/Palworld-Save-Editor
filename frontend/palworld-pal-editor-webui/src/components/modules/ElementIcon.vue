@@ -1,0 +1,28 @@
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  element: { type: String, required: true },
+  size: { type: [Number, String], default: 16 },
+  alt: { type: String, default: '' }
+})
+
+const elementName = computed(() => {
+  const name = props.element.split('::').pop().replace('EPalElementType_', '')
+  return name ? name[0].toUpperCase() + name.slice(1) : ''
+})
+
+const src = computed(() => elementName.value ? `/image/elements/Element_${elementName.value}` : '')
+</script>
+
+<template>
+  <img v-if="src" class="element-icon" :src="src" :width="size" :height="size" :alt="alt" draggable="false">
+</template>
+
+<style scoped>
+.element-icon {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+</style>

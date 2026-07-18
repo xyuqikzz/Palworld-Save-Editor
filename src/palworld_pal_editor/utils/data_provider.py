@@ -1,0 +1,361 @@
+from functools import wraps
+import json
+import re
+from typing import Any, Callable, Optional
+
+# from PIL import Image
+
+from palworld_pal_editor.config import ASSETS_PATH, Config
+from palworld_pal_editor.utils import LOGGER
+from palworld_pal_editor.utils.util import alphanumeric_key
+
+
+def load_json(filename: str) -> Any:
+    path = ASSETS_PATH / "assets/data" / filename
+    with path.open("r", encoding="utf8") as file:
+        return json.load(file)
+
+
+# def load_icons(sub_path: str) -> dict[str]:
+#     icons = {}
+#     valid_extensions = {".jpg", ".jpeg", ".png"}
+#     path = BASE_PATH / "assets/icons" / sub_path
+#     for img_path in path.iterdir():
+#         if img_path.suffix.lower() in valid_extensions:
+#             try:
+#                 img = Image.open(img_path)
+#                 icons[img_path.stem] = img
+#             except IOError as e:
+#                 LOGGER.error(f"Error opening {img_path}: {e}")
+#     return icons
+
+
+PAL_ATTACKS: dict[str, dict] = load_json("pal_attacks.json")
+PAL_DATA: dict[str, dict] = load_json("pal_data.json") | load_json("human_data.json")
+PAL_PASSIVES: dict[str, dict] = load_json("pal_passives.json")
+PAL_EXP_TABLE: list[int] = load_json("pal_exp_table.json")
+PAL_FRIENDSHIP: dict[str, dict] = load_json("pal_friendship.json")
+TECH_DATA: dict[str, dict] = load_json("tech_data.json")
+SKILL_I18N: dict[str, Any] = load_json("skill_i18n.json")
+ITEM_DATA: dict[str, dict] = load_json("item_data.json")
+
+# PAL_ICONS: dict[str] = load_icons("pals")
+
+# I18N_LIST = ["en", "zh-CN", "ja"]
+I18N_LIST: dict[str, str] = load_json("i18n_list.json")
+
+
+def none_guard(
+    data_source: dict | list, key_arg_position: int = 0, subkey: Optional[str] = None
+):
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Optional[Any]:
+            # Extract key from positional or keyword arguments
+            key = (
+                args[key_arg_position]
+                if len(args) > key_arg_position
+                else kwargs.get("key")
+            )
+
+            # if key not in data_source, or if subkey not in data source, or sub_data[subkey] is empty
+            if key not in data_source or (
+                subkey
+                and (subkey not in data_source[key] or not data_source[key][subkey])
+            ):
+                # LOGGER.warning(
+                #     f"Key: {key} or subkey: {subkey} were not found in the data source."
+                # )
+                return None
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+class DataProvider:
+    icon_cache = {}
+
+    @property
+    def default_i18n() -> str:
+        return I18N_LIST.keys()[0]
+
+    def get_i18n_map() -> dict[str, str]:
+        return I18N_LIST
+
+    # @staticmethod
+    # def get_pal_icon(key: str) -> Optional[Any]:
+    #     if key not in PAL_ICONS:
+    #         LOGGER.warning(f"Pal icon {key} doesn't exist.")
+    #         return
+    #     return PAL_ICONS[key]
+    @staticmethod
+    def boss_has_base_variant(key: str) -> bool:
+        """
+        Checks if the key has a base variant that can be swapped to by removing BOSS_.
+        """
+        pattern = r"^[A-Z]+_(.+)"
+        match = re.search(pattern, key)
+        if match:
+            return DataProvider.in_pal_data(match.group(1))
+        return False
+    
+    @staticmethod
+    def in_pal_data(key: str) -> bool:
+        """
+        Checks if the key exists in the PAL_DATA dictionary.
+        """
+        return key in PAL_DATA
+
+    @none_guard(data_source=PAL_DATA, subkey="I18n")
+    @staticmethod
+    def get_pal_i18n(key: str) -> Optional[str]:
+        i18n_list: dict = PAL_DATA[key]["I18n"]
+        return i18n_list.get(Config.i18n, i18n_list.get("en"))
+
+    @none_guard(data_source=PAL_DATA, subkey="Stats")
+    @staticmethod
+    def get_pal_stats(pal: str, scaling_type: str) -> Optional[int]:
+        scaling_list: dict = PAL_DATA[pal]["Stats"]
+        return scaling_list.get(scaling_type, None)
+
+    @none_guard(data_source=PAL_DATA, subkey="SortingKey")
+    @staticmethod
+    def get_pal_sorting_key(key: str, sorting_key="paldeck") -> Optional[str]:
+        sorting_key_list: dict = PAL_DATA[key]["SortingKey"]
+        return sorting_key_list.get(sorting_key)
+
+    @none_guard(data_source=PAL_DATA, subkey="Elements")
+    @staticmethod
+    def get_pal_elements(key: str) -> Optional[list[str]]:
+        return list(PAL_DATA[key]["Elements"])
+
+    @staticmethod
+    def get_sorted_pals() -> list[dict]:
+        sorted_list = sorted(
+            PAL_DATA.values(),
+            key=lambda item: (
+                DataProvider.is_pal_human(item["InternalName"]),
+                alphanumeric_key(
+                    DataProvider.get_pal_sorting_key(item["InternalName"])
+                    or DataProvider.get_pal_i18n(item["InternalName"])
+                ),
+                len(item["InternalName"]),
+            ),
+        )
+        return sorted_list
+
+    @staticmethod
+    def has_x_variant_pal(key: str, vtype: str) -> bool:
+        return f"{vtype}_{key}" in PAL_DATA
+
+    @none_guard(data_source=PAL_DATA)
+    @staticmethod
+    def is_pal_human(key: str) -> Optional[bool]:
+        return PAL_DATA[key].get("Human", False)
+    
+    @none_guard(data_source=PAL_DATA)
+    @staticmethod
+    def has_human_icon(key: str) -> bool:
+        return PAL_DATA[key].get("HasIcon", False)
+
+    @staticmethod
+    def is_pal_invalid(key: str) -> bool:
+        if key not in PAL_DATA:
+            return True
+        return PAL_DATA[key].get("Invalid", False)
+
+    @none_guard(data_source=PAL_DATA, subkey="Attacks")
+    def get_pal_attacks(pal: str) -> Optional[list[str]]:
+        return PAL_DATA[pal]["Attacks"]
+
+    @none_guard(data_source=PAL_DATA, subkey="Suitabilities")
+    def get_pal_suitabilities(pal: str) -> Optional[dict[str, int]]:
+        return PAL_DATA[pal]["Suitabilities"]
+
+    @staticmethod
+    def get_pal_level_xp(lv: int) -> Optional[int]:
+        try:
+            return PAL_EXP_TABLE[str(lv)]["PalTotalEXP"]
+        except Exception:
+            LOGGER.warning(f"Level {lv} is out of bounds.")
+            return None
+        
+    @staticmethod
+    def get_pal_friendship(lv: str) -> Optional[int]:
+        try:
+            return PAL_FRIENDSHIP[str(lv)]["required_point"]
+        except Exception:
+            LOGGER.warning(f"Friendship level {lv} is out of bounds.")
+            return None
+        
+    @staticmethod
+    def get_pal_friendship_level_from_pts(pts: int) -> Optional[int]:
+        max_lv = -3
+        for level, data in PAL_FRIENDSHIP.items():
+            if pts >= data["required_point"]:
+                max_lv = max(max_lv, int(level))
+        return max_lv
+
+    @staticmethod
+    def get_attack_i18n(key: str) -> Optional[tuple[str, str]]:
+        row = PAL_ATTACKS.get(key) or SKILL_I18N["Attacks"].get(key)
+        if not row or not row.get("I18n"):
+            return None
+        i18n_list: dict = row["I18n"]
+        i18n: dict = i18n_list.get(Config.i18n, i18n_list.get("en"))
+        return (i18n.get("Name", key), i18n.get("Description", ""))
+
+    @staticmethod
+    def get_localized_only_attacks() -> list[str]:
+        return [
+            key for key in SKILL_I18N["Attacks"] if key not in PAL_ATTACKS
+        ]
+
+    @staticmethod
+    def has_attack(key: str) -> bool:
+        return key in PAL_ATTACKS
+
+    @staticmethod
+    def has_skill_fruit(attack: str) -> bool:
+        if attack not in PAL_ATTACKS:
+            return False
+        if PAL_ATTACKS[attack].get("SkillFruit"):
+            return True
+        return False
+
+    @staticmethod
+    def is_invalid_attack(key: str) -> bool:
+        if key not in PAL_ATTACKS:
+            return True
+        return PAL_ATTACKS[key].get("Invalid", False)
+
+    @staticmethod
+    def is_unique_attacks(key: str) -> bool:
+        if key not in PAL_ATTACKS:
+            return False
+        return PAL_ATTACKS[key].get("UniqueSkill", False)
+
+    @staticmethod
+    def get_sorted_attacks() -> list[dict]:
+        sorted_list = sorted(
+            PAL_ATTACKS.values(),
+            key=lambda item: (
+                DataProvider.is_invalid_attack(item["InternalName"]),
+                item["Element"],
+                DataProvider.is_unique_attacks(item["InternalName"]),
+                # DataProvider.has_skill_fruit(item["InternalName"]),
+                item["Power"],
+                item["CT"],
+            ),
+        )
+        return sorted_list
+
+    @staticmethod
+    def get_passive_i18n(key: str) -> Optional[tuple[str, str]]:
+        row = PAL_PASSIVES.get(key) or SKILL_I18N["Passives"].get(key)
+        if not row or not row.get("I18n"):
+            return None
+        i18n_list: dict = row["I18n"]
+        i18n: dict = i18n_list.get(Config.i18n, i18n_list.get("en"))
+        return (i18n.get("Name", key), i18n.get("Description", ""))
+
+    @staticmethod
+    def get_localized_only_passives() -> list[str]:
+        return [
+            key for key in SKILL_I18N["Passives"] if key not in PAL_PASSIVES
+        ]
+
+    @staticmethod
+    def has_passive_skill(key: str) -> bool:
+        return key in PAL_PASSIVES
+
+    @staticmethod
+    def get_sorted_passives() -> list[dict]:
+        sorted_list = sorted(
+            PAL_PASSIVES.values(),
+            key=lambda item: (
+                -item["Rating"],
+                DataProvider.get_passive_i18n(item["InternalName"]),
+            ),
+        )
+        return sorted_list
+
+    @staticmethod
+    def get_passive_buff(key: str, buff_key: str) -> float:
+        return PAL_PASSIVES.get(key, {}).get("Buff", {}).get(buff_key, 0)
+
+    @staticmethod
+    def get_attacks_to_learn(pal: str, level: int) -> list[str]:
+        attacks = DataProvider.get_pal_attacks(pal)
+        if attacks is None:
+            return []
+        return [attack for attack in attacks if attacks[attack] <= (level or 1)]
+
+    @staticmethod
+    def get_attacks_to_forget(pal: str, level: int) -> list[str]:
+        attacks = DataProvider.get_pal_attacks(pal)
+        if attacks is None:
+            return []
+        return [
+            attack
+            for attack in attacks
+            if attacks[attack] > level and not DataProvider.has_skill_fruit(attack)
+        ]
+
+    @staticmethod
+    def is_valid_i18n(key: str):
+        return key in I18N_LIST
+
+    @staticmethod
+    def get_i18n_options() -> list[str]:
+        return I18N_LIST.keys()
+
+    @staticmethod
+    def get_player_level_xp(lv: int) -> Optional[int]:
+        try:
+            return PAL_EXP_TABLE[str(lv)]["TotalEXP"]
+        except IndexError:
+            LOGGER.warning(f"Level {lv} is out of bounds.")
+            return None
+
+    @staticmethod
+    def get_tech_data() -> dict[str, dict]:
+        return TECH_DATA
+
+    @none_guard(data_source=TECH_DATA, subkey="I18n")
+    @staticmethod
+    def get_tech_i18n(key: str) -> Optional[str]:
+        i18n_list: dict = TECH_DATA[key]["I18n"]
+        return i18n_list.get(Config.i18n, i18n_list.get("en"))
+
+    @staticmethod
+    def get_tech_lv(key: str) -> int:
+        return TECH_DATA.get(key, {}).get("Level", 0)
+
+    @staticmethod
+    def is_boss_tech(key: str) -> bool:
+        return TECH_DATA.get(key, {}).get("BossTechnology", False)
+
+    @staticmethod
+    def get_item_data(key: str) -> Optional[dict]:
+        if key in ITEM_DATA:
+            return ITEM_DATA[key]
+        base_key = re.sub(r"_[1-5]$", "", key)
+        return ITEM_DATA.get(base_key)
+
+    @staticmethod
+    def get_item_i18n(key: str) -> tuple[str, str]:
+        row = DataProvider.get_item_data(key)
+        if not row:
+            return (key, "")
+        i18n_list = row["I18n"]
+        i18n = i18n_list.get(Config.i18n, i18n_list.get("en", {}))
+        return (i18n.get("Name") or key, i18n.get("Description") or "")
+
+    @staticmethod
+    def get_item_icon(key: str) -> Optional[str]:
+        row = DataProvider.get_item_data(key)
+        return row.get("Icon") if row else None

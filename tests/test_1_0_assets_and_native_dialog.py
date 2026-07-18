@@ -1,0 +1,470 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import unittest
+
+import webview
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PACKAGE_ROOT = PROJECT_ROOT / "src" / "palworld_pal_editor"
+ASSET_ROOT = PACKAGE_ROOT / "assets"
+
+
+class TechnologyAssetTests(unittest.TestCase):
+    def test_official_1_0_technology_assets_are_complete(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "tech_data.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(588, len(data))
+        self.assertEqual(80, max(row["Level"] for row in data.values()))
+        self.assertEqual(66, data["AncientBlastFurnace"]["Level"])
+        self.assertEqual(80, data["BeamLauncher"]["Level"])
+
+        for internal_name, row in data.items():
+            for language in ("en", "fr", "ja", "zh-CN"):
+                localized = row["I18n"][language]
+                self.assertTrue(localized["Name"], (internal_name, language))
+                self.assertTrue(localized["Type"], (internal_name, language))
+
+            if internal_name.startswith("SkillUnlock_"):
+                icon = ASSET_ROOT / "icons" / "pals" / f"{internal_name[12:]}.png"
+            else:
+                icon = ASSET_ROOT / "icons" / "tech" / f"{internal_name}.png"
+            self.assertTrue(icon.is_file(), (internal_name, icon))
+
+
+class SkillAssetTests(unittest.TestCase):
+    def test_1_0_monster_farm_passive_is_fully_localized(self) -> None:
+        localized_data = json.loads(
+            (ASSET_ROOT / "data" / "skill_i18n.json").read_text(encoding="utf-8")
+        )
+        editable_data = json.loads(
+            (ASSET_ROOT / "data" / "pal_passives.json").read_text(encoding="utf-8")
+        )
+        internal_name = "WorkSuitabilityAddRank_MonsterFarm_1"
+
+        self.assertEqual(114, len(editable_data))
+        self.assertIn(internal_name, localized_data["Passives"])
+        self.assertIn(internal_name, editable_data)
+        self.assertEqual(3, editable_data[internal_name]["Rating"])
+        for language in ("en", "fr", "ja", "zh-CN"):
+            localized = localized_data["Passives"][internal_name]["I18n"][language]
+            self.assertTrue(localized["Name"], language)
+            self.assertNotEqual(internal_name, localized["Name"], language)
+            self.assertTrue(localized["Description"], language)
+
+        from palworld_pal_editor.config import Config
+        from palworld_pal_editor.utils.data_provider import DataProvider
+
+        previous_language = Config.i18n
+        try:
+            for language in ("en", "fr", "ja", "zh-CN"):
+                Config.i18n = language
+                name, description = DataProvider.get_passive_i18n(internal_name)
+                self.assertNotEqual(internal_name, name, language)
+                self.assertTrue(description, language)
+        finally:
+            Config.i18n = previous_language
+
+    def test_1_0_localized_only_passive_catalog_is_complete(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "skill_i18n.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(24088745, data["Build"])
+        self.assertEqual(491, len(data["Passives"]))
+        self.assertEqual(341, len(data["Attacks"]))
+        for internal_name in (
+            "PAL_ALLAttack_up3",
+            "PAL_CorporateSlave",
+            "PAL_SpiritualInst",
+        ):
+            self.assertIn(internal_name, data["Passives"])
+            self.assertTrue(data["Passives"][internal_name]["I18n"]["en"]["Name"])
+
+    def test_1_0_passive_values_come_from_the_game_table(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "pal_passives.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(0.20, data["Legend"]["Buff"]["b_MoveSpeed"])
+        self.assertEqual(0.20, data["Rare"]["Buff"]["b_CraftSpeed"])
+        self.assertEqual(4, data["Salvation"]["Rating"])
+        self.assertIn("WorldTree_ATK", data)
+        self.assertIn("MutationPal_Babysitter", data)
+
+    def test_1_0_active_skill_table_is_fully_synchronized(self) -> None:
+        attacks = json.loads(
+            (ASSET_ROOT / "data" / "pal_attacks.json").read_text(encoding="utf-8")
+        )
+        pals = json.loads(
+            (ASSET_ROOT / "data" / "pal_data.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(384, len(attacks))
+        self.assertEqual(92, sum(row["SkillFruit"] for row in attacks.values()))
+        self.assertEqual(25, sum(row.get("Invalid", False) for row in attacks.values()))
+        self.assertEqual(40, attacks["EPalWazaID::AquaJet"]["Power"])
+        self.assertEqual(50, attacks["EPalWazaID::WaterGun"]["Power"])
+        self.assertEqual(12, attacks["EPalWazaID::WaterBall"]["CT"])
+        self.assertEqual(200, attacks["EPalWazaID::WaterBall"]["Power"])
+        self.assertFalse(attacks["EPalWazaID::Psychokinesis"]["SkillFruit"])
+
+        used_attacks = {
+            attack
+            for pal in pals.values()
+            for attack in pal["Attacks"]
+        }
+        self.assertLessEqual(used_attacks, set(attacks))
+        for internal_name, row in attacks.items():
+            for language in ("en", "fr", "ja", "zh-CN"):
+                self.assertTrue(
+                    row["I18n"][language]["Name"],
+                    (internal_name, language),
+                )
+
+
+class PalParameterAssetTests(unittest.TestCase):
+    def test_1_0_pal_parameter_table_is_fully_synchronized(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "pal_data.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(753, len(data))
+        self.assertEqual(100, data["SheepBall"]["Stats"]["FOOD"])
+        self.assertEqual(
+            70,
+            data["SheepBall"]["Attacks"]["EPalWazaID::HolyBlast"],
+        )
+        self.assertEqual(540, data["Anubis"]["Stats"]["FOOD"])
+        self.assertEqual(
+            6,
+            data["Anubis"]["Suitabilities"][
+                "EPalWorkSuitability::Handcraft"
+            ],
+        )
+        self.assertEqual(
+            6,
+            data["Anubis"]["Suitabilities"]["EPalWorkSuitability::Mining"],
+        )
+        self.assertEqual(
+            4,
+            data["Anubis"]["Suitabilities"]["EPalWorkSuitability::Transport"],
+        )
+        self.assertIn("EPalWorkSuitability::OilExtraction", data["Anubis"]["Suitabilities"])
+        self.assertEqual(52, sum(not row["Attacks"] for row in data.values()))
+        self.assertNotIn("PyramidTurtle", data)
+
+
+class HumanAndProgressionAssetTests(unittest.TestCase):
+    def test_1_0_human_parameter_table_is_fully_synchronized(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "human_data.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(433, len(data))
+        self.assertIn("NPC_Dungeon_Shop", data)
+        self.assertIn("SorajimaTowerGuide", data)
+        self.assertEqual(33, sum(row["HasIcon"] for row in data.values()))
+        self.assertEqual(20, data["SorajimaTowerGuide"]["Stats"]["HP"])
+        self.assertEqual(
+            "永炎同心会 殉教者",
+            data["Arena_FireCult_FlameThrower"]["I18n"]["zh-CN"],
+        )
+        for internal_name, row in data.items():
+            self.assertTrue(row["Human"], internal_name)
+            self.assertIn(
+                "EPalWorkSuitability::OilExtraction",
+                row["Suitabilities"],
+                internal_name,
+            )
+            for language in ("en", "fr", "ja", "zh-CN"):
+                self.assertTrue(row["I18n"][language], (internal_name, language))
+
+    def test_1_0_experience_and_friendship_tables_are_synchronized(self) -> None:
+        experience = json.loads(
+            (ASSET_ROOT / "data" / "pal_exp_table.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        friendship = json.loads(
+            (ASSET_ROOT / "data" / "pal_friendship.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        self.assertEqual(100, len(experience))
+        self.assertEqual(10, experience["1"]["DropEXP"])
+        self.assertEqual(50, experience["2"]["NextEXP"])
+        self.assertEqual(10_582_213, experience["65"]["TotalEXP"])
+        self.assertEqual(45_859_908, experience["80"]["TotalEXP"])
+        self.assertEqual(382_451_548, experience["100"]["TotalEXP"])
+        self.assertEqual(14, len(friendship))
+        self.assertEqual(-10_000, friendship["-3"]["required_point"])
+        self.assertEqual(200_000, friendship["10"]["required_point"])
+
+
+class ItemAssetAndInventoryTests(unittest.TestCase):
+    def test_1_0_equipment_localization_uses_official_item_table_keys(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "item_data.json").read_text(encoding="utf-8")
+        )
+        expected_names = {
+            "Glider_Tera": "特级滑翔伞",
+            "GrapplingGun": "爪钩枪",
+            "Shield_Ultra": "超级护盾",
+            "TreasureMap02": "藏宝图",
+        }
+
+        for internal_name, expected_name in expected_names.items():
+            localized = data[internal_name]["I18n"]["zh-CN"]
+            self.assertEqual(expected_name, localized["Name"], internal_name)
+            self.assertTrue(localized["Description"], internal_name)
+
+        unlocalized_legal_items = [
+            internal_name
+            for internal_name, row in data.items()
+            if row["Rule"]["OfficialLegal"]
+            and row["I18n"]["zh-CN"]["Name"] == internal_name
+        ]
+        self.assertEqual([], unlocalized_legal_items)
+        legal_items_without_descriptions = {
+            internal_name
+            for internal_name, row in data.items()
+            if row["Rule"]["OfficialLegal"]
+            and not row["I18n"]["zh-CN"]["Description"]
+        }
+        self.assertEqual(
+            {f"Head{index:03d}" for index in range(1, 18)},
+            legal_items_without_descriptions,
+        )
+
+    def test_1_0_item_names_descriptions_and_confirmed_icons_are_synced(self) -> None:
+        data = json.loads(
+            (ASSET_ROOT / "data" / "item_data.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(2466, len(data))
+        for internal_name, row in data.items():
+            for language in ("en", "fr", "ja", "zh-CN"):
+                self.assertTrue(row["I18n"][language]["Name"], (internal_name, language))
+            if row["Icon"]:
+                self.assertTrue(
+                    (ASSET_ROOT / "icons" / "items" / f'{row["Icon"]}.png').is_file(),
+                    (internal_name, row["Icon"]),
+                )
+
+        mapped_icons = [row["Icon"] for row in data.values() if row["Icon"]]
+        self.assertEqual(2466, len(mapped_icons))
+        self.assertEqual(918, len(set(mapped_icons)))
+
+    def test_rarity_suffix_uses_verified_base_item_metadata(self) -> None:
+        from palworld_pal_editor.utils.data_provider import DataProvider
+
+        self.assertEqual("Advanced Bow", DataProvider.get_item_i18n("SFBow_5")[0])
+        self.assertEqual("T_itemicon_Weapon_SFBow", DataProvider.get_item_icon("SFBow_5"))
+
+    def test_item_count_update_preserves_slot_identity_and_trailing_data(self) -> None:
+        from types import SimpleNamespace
+
+        from palworld_pal_editor.core.item_container_data import ItemContainerData
+        from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
+
+        container_id = toUUID("11111111-2222-3333-4444-555555555555")
+        raw_data = {
+            "slot_index": 3,
+            "count": 5,
+            "item": {
+                "static_id": "Stone",
+                "dynamic_id": {
+                    "created_world_id": toUUID("00000000-0000-0000-0000-000000000000"),
+                    "local_id_in_created_world": toUUID(
+                        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                    ),
+                },
+            },
+            "trailing_bytes": [1, 2, 3, 4],
+        }
+        gvas = SimpleNamespace(
+            properties={
+                "worldSaveData": {
+                    "value": {
+                        "ItemContainerSaveData": {
+                            "value": [
+                                {
+                                    "key": {"ID": PalObjects.Guid(container_id)},
+                                    "value": {
+                                        "SlotNum": PalObjects.IntProperty(10),
+                                        "Slots": {
+                                            "value": {
+                                                "values": [
+                                                    {"RawData": {"value": raw_data}}
+                                                ]
+                                            }
+                                        },
+                                    },
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        )
+
+        container = ItemContainerData(gvas).get(container_id)
+        container.set_count(3, "Stone", 99)
+        self.assertEqual(99, raw_data["count"])
+        self.assertEqual("Stone", raw_data["item"]["static_id"])
+        self.assertEqual([1, 2, 3, 4], raw_data["trailing_bytes"])
+        with self.assertRaises(ValueError):
+            container.set_count(3, "Wood", 100)
+        with self.assertRaises(ValueError):
+            container.set_count(3, "Stone", 0)
+
+
+class NativeDialogTests(unittest.TestCase):
+    def test_windows_uses_modern_folder_picker(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        received = []
+        api = NativeDialogApi(
+            modern_folder_picker=lambda initial_directory: received.append(initial_directory)
+            or r"D:\PalSave",
+            platform_name="win32",
+        )
+        self.assertEqual(r"D:\PalSave", api.select_save_directory())
+        self.assertEqual([""], received)
+
+    def test_non_windows_keeps_pywebview_fallback(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (r"D:\PalSave",)
+
+        window = FakeWindow()
+        api = NativeDialogApi(
+            window_provider=lambda: [window],
+            platform_name="linux",
+        )
+        self.assertEqual(r"D:\PalSave", api.select_save_directory())
+        self.assertEqual(webview.FOLDER_DIALOG, window.calls[0][0])
+
+    def test_frontend_uses_native_picker_when_available(self) -> None:
+        source = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "stores"
+            / "paleditor.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("const MAX_LEVEL = 80;", source)
+        self.assertIn("window.pywebview?.api?.select_save_directory", source)
+        self.assertNotIn("SHOW_DONATE_FLAG", source)
+        self.assertNotIn("sorryandfuckyou", source)
+        self.assertFalse(
+            (PROJECT_ROOT / "frontend" / "palworld-pal-editor-webui" / "src" / "components" / "MarkdownModal.vue").exists()
+        )
+
+    def test_work_suitability_and_action_icons_are_updated(self) -> None:
+        store_source = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "stores"
+            / "paleditor.js"
+        ).read_text(encoding="utf-8")
+        pal_editor_source = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "components"
+            / "PalEditor.vue"
+        ).read_text(encoding="utf-8")
+        icon_component = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "components"
+            / "modules"
+            / "AppIcon.vue"
+        )
+
+        self.assertIn("const MAX_SUITABILITY_LEVEL = 10;", store_source)
+        self.assertIn("palStore.MAX_SUITABILITY_LEVEL", pal_editor_source)
+        self.assertNotIn("isMaxSuit(key) {\n  return palStore.SELECTED_PAL_DATA.Suitabilities[key] >= 5", pal_editor_source)
+        self.assertTrue(icon_component.is_file())
+        self.assertIn('<AppIcon name="chevron-up"', pal_editor_source)
+        self.assertNotIn(">🔼</button>", pal_editor_source)
+
+    def test_element_and_variant_badges_replace_text_markers(self) -> None:
+        frontend = PROJECT_ROOT / "frontend" / "palworld-pal-editor-webui" / "src"
+        pal_editor_source = (frontend / "components" / "PalEditor.vue").read_text(encoding="utf-8")
+        pal_list_source = (frontend / "components" / "PalList.vue").read_text(encoding="utf-8")
+        species_picker_source = (
+            frontend / "components" / "modules" / "PalSpeciesPicker.vue"
+        ).read_text(encoding="utf-8")
+
+        self.assertTrue((frontend / "components" / "modules" / "ElementIcon.vue").is_file())
+        self.assertTrue((frontend / "components" / "modules" / "VariantBadge.vue").is_file())
+        self.assertIn("pal-species-option", species_picker_source)
+        self.assertIn('v-for="element in pal.Elements || []"', species_picker_source)
+        self.assertIn("<ElementIcon", species_picker_source)
+        self.assertIn("<PalSpeciesPicker", pal_editor_source)
+        self.assertNotIn("displayPalElement(pal.InternalName)", pal_editor_source)
+        self.assertIn("displayNameWithoutVariantEmoji", pal_list_source)
+        self.assertIn('<VariantBadge v-if="pal.IsBOSS"', pal_list_source)
+        self.assertTrue((ASSET_ROOT / "icons" / "elements" / "Element_Water.png").is_file())
+
+    def test_active_skill_chips_use_element_images(self) -> None:
+        pal_editor_source = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "components"
+            / "PalEditor.vue"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn('class="const skill-label"', pal_editor_source)
+        self.assertGreaterEqual(
+            pal_editor_source.count(
+                ':element="palStore.ACTIVE_SKILLS[skill].Element"'
+            ),
+            4,
+        )
+        self.assertNotIn(
+            "palStore.displayElement(palStore.ACTIVE_SKILLS[skill]?.Element)",
+            pal_editor_source,
+        )
+
+    def test_active_skill_picker_renders_element_images(self) -> None:
+        frontend = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+        )
+        pal_editor_source = (frontend / "components" / "PalEditor.vue").read_text(encoding="utf-8")
+        skill_picker_source = (
+            frontend / "components" / "modules" / "PalSkillPicker.vue"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("<PalSkillPicker", pal_editor_source)
+        self.assertIn('kind="active"', pal_editor_source)
+        self.assertIn('class="pal-skill-dialog"', skill_picker_source)
+        self.assertIn('<ElementIcon v-if="skill.Element"', skill_picker_source)
+        self.assertNotIn('<select class="selector" name="add_MasteredWaza"', pal_editor_source)
+        self.assertNotIn("palStore.displayElement(skill.Element)", pal_editor_source)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: CLI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "palworld_pal_editor",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [
+                "--mode=cli",
+                "--lang=zh-CN",
+                "--debug"
+            ]
+        },
+        {
+            "name": "Python: GUI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "palworld_pal_editor",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [
+                "--mode=gui",
+                "--lang=zh-CN",
+                // "--debug"
+            ]
+        },
+        {
+            "name": "Python: WEB",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "palworld_pal_editor",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [
+                "--mode=web",
+                "--lang=zh-CN",
+                "--debug",
+                "--port=58080"
+            ],
+            "justMyCode": false
+        }
+    ]
+}

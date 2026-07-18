@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "palworld-save-editor"
+description = "A Palworld save editor based on KrisCris/Palworld-Pal-Editor."
+keywords = ["palworld", "editor", "pal"]
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+readme = "README.md"
+version = "1.0.0"
+dependencies = [
+    "setuptools==80.9.0",
+    "wheel==0.46.1",
+    "Flask==3.1.2",
+    "pyinstaller==6.17.0",
+    "waitress==3.0.2",
+    "Flask-JWT-Extended==4.7.1",
+    "pywebview==4.4.1",
+    "requests==2.32.5",
+    "aiohttp==3.13.2"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Natural Language :: Chinese (Simplified)", "Natural Language :: English", "Natural Language :: Japanese"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.urls]
+Homepage = "https://github.com/xyuqikzz/Palworld-Save-Editor"
+Repository = "https://github.com/xyuqikzz/Palworld-Save-Editor.git"
+Issues = "https://github.com/xyuqikzz/Palworld-Save-Editor/issues"
+Upstream = "https://github.com/KrisCris/Palworld-Pal-Editor"

@@ -1,0 +1,3194 @@
+{
+  "WorldTree_ATK": {
+    "InternalName": "WorldTree_ATK",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "Twin-Edged Holy Blade",
+        "Description": "Attack +50%\nDefense -30%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Lame du Jugement",
+        "Description": "Attaque +50 %\nDéfense -30 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "諸刃の聖剣",
+        "Description": "攻撃+50%\n防御-30%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "双刃圣剑",
+        "Description": "攻击+50%\n防御-30%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.5,
+      "b_Defense": -0.3,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorldTree_DEF": {
+    "InternalName": "WorldTree_DEF",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "Sanctified Meat Shield",
+        "Description": "Defense +50%\nAttack -30%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Rempart Sacré",
+        "Description": "Défense +50 %\nAttaque -30 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "聖域の肉壁",
+        "Description": "防御+50%\n攻撃-30%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "守护圣盾",
+        "Description": "防御+50%\n攻击-30%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": -0.3,
+      "b_Defense": 0.5,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorldTree_CraftSpeed": {
+    "InternalName": "WorldTree_CraftSpeed",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "Demon’s Hand",
+        "Description": "Work Speed +90%\nSAN dreceases +15.0% faster\nWorld Tree harvestables won't vanish when approached."
+      },
+      "fr": {
+        "Name": "Main du Démon",
+        "Description": "Vitesse de travail +90 %\nChute des points MEN accélérée +15 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "悪魔の手",
+        "Description": "作業速度 +90%\nSAN値が減りやすい +15.0%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "恶魔之手",
+        "Description": "工作速度+90%\nSAN值下降速度加快+15.0%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.9,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorldTree_FullStomach": {
+    "InternalName": "WorldTree_FullStomach",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "World Tree Seedbed",
+        "Description": "Decrease Hunger depletion rate by +50.0%\nHP -20%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Berceau Divin",
+        "Description": "Chute du degré de satiété ralentie +50 %\nPV -20 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "神樹の苗床",
+        "Description": "満腹度が減りにくい +50.0%\nHP -20%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "神树苗床",
+        "Description": "减少饱腹度下降速度+50.0%\n生命值-20%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorldTree_Sanity": {
+    "InternalName": "WorldTree_Sanity",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "Hermit Sage",
+        "Description": "SAN depletion rate -50.0%\nWork Speed -20%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Sage Immortel",
+        "Description": "Chute des points MEN ralentie +50 %\nVitesse de travail -20 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "仙人",
+        "Description": "SAN値が減りにくい +50.0%\n作業速度 -20%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "仙人",
+        "Description": "减少SAN值下降速度+50.0%\n工作速度-20%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": -0.2,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorldTree_MoveSpeed": {
+    "InternalName": "WorldTree_MoveSpeed",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "Dimensional Leap",
+        "Description": "Movement Speed +50%\nIncreases Hunger depletion rate by +15.0%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Traverse-Mondes",
+        "Description": "Vitesse de déplacement augmentée +50 %\nChute du degré de satiété accélérée +15 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "次元跳躍",
+        "Description": "移動速度上昇 +50%\n満腹度が減りやすい +15.0%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "次元跳跃",
+        "Description": "移动速度提升+50%\n饱腹度下降速度加快+15.0%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.5
+    }
+  },
+  "WorldTree_ATK_DEF": {
+    "InternalName": "WorldTree_ATK_DEF",
+    "Rating": 5,
+    "I18n": {
+      "en": {
+        "Name": "God of Destruction",
+        "Description": "Attack +40%\nDefense +20%\nMax Health -50%\nWorld Tree resources will not vanish when approached."
+      },
+      "fr": {
+        "Name": "Dieu de la Destruction",
+        "Description": "Attaque +40 %\nDéfense +20 %\nPV max -50 %\nPermet de récolter les arbres et rochers de l'Arbre-Monde sans les faire disparaître."
+      },
+      "ja": {
+        "Name": "破壊神",
+        "Description": "攻撃+40%\n防御+20%\n最大HP-50%\n世界樹の木・岩に近づいても消滅しない"
+      },
+      "zh-CN": {
+        "Name": "破坏神",
+        "Description": "攻击+40%\n防御+20%\n最大HP-50%\n世界树区域的树木/矿石不会因接近而消失"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.4,
+      "b_Defense": 0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CraftSpeed_up3": {
+    "InternalName": "CraftSpeed_up3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Remarkable Craftsmanship",
+        "Description": "Work Speed +75%"
+      },
+      "fr": {
+        "Name": "Maîtrise Exceptionnelle",
+        "Description": "Vitesse de travail +75%"
+      },
+      "ja": {
+        "Name": "超絶技巧",
+        "Description": "作業速度 +75%"
+      },
+      "zh-CN": {
+        "Name": "卓绝技艺",
+        "Description": "工作速度 +75%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.75,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_up3": {
+    "InternalName": "Deffence_up3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Diamond Body",
+        "Description": "Defense +30%\nImmune to Flinch\nImmune to Knockback"
+      },
+      "fr": {
+        "Name": "Corps Adamantin",
+        "Description": "Défense +30 %\nImmunité au recul\nImmunité aux projections"
+      },
+      "ja": {
+        "Name": "ダイヤモンドボディ",
+        "Description": "防御+30%\nひるみ無効\n吹き飛び無効"
+      },
+      "zh-CN": {
+        "Name": "金刚之躯",
+        "Description": "防御力+30%\n免疫硬直\n免疫击退"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.3,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Rare": {
+    "InternalName": "Rare",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Lucky",
+        "Description": "Work Speed +20% Attack +15%"
+      },
+      "fr": {
+        "Name": "Chanceux",
+        "Description": "Vitesse de travail +20% Attaque +15%"
+      },
+      "ja": {
+        "Name": "希少",
+        "Description": "作業速度 +20% 攻撃 +15%"
+      },
+      "zh-CN": {
+        "Name": "稀有",
+        "Description": "工作速度 +20% 攻击 +15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.15,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.2,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Legend": {
+    "InternalName": "Legend",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Legend",
+        "Description": "Attack +20%\nDefense +20%\nMovement Speed increases 20%"
+      },
+      "fr": {
+        "Name": "Légende",
+        "Description": "Attaque +20 %\nDéfense +20 %\nVitesse de déplacement +20 %"
+      },
+      "ja": {
+        "Name": "伝説",
+        "Description": "攻撃+20%\n防御+20%\n移動速度上昇20%"
+      },
+      "zh-CN": {
+        "Name": "传说",
+        "Description": "攻击+20%\n防御+20%\n移动速度提升20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.2,
+      "b_Defense": 0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.2
+    }
+  },
+  "Witch": {
+    "InternalName": "Witch",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Siren of the Void",
+        "Description": "30% increase in Dark attack damage.\n30% increase in Ice attack damage."
+      },
+      "fr": {
+        "Name": "Sorcière",
+        "Description": "Les dégâts de type Ténèbres augmentent de 30 %\nLes dégâts de type Glace augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "魔女",
+        "Description": "闇属性攻撃ダメージ増加30%\n氷属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "魔女",
+        "Description": "暗属性攻击伤害增加30%\n冰属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "EternalFlame": {
+    "InternalName": "EternalFlame",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Eternal Flame",
+        "Description": "30% increase to Fire attack damage.\n30% increase to Lightning attack damage."
+      },
+      "fr": {
+        "Name": "Feu Éternel",
+        "Description": "Les dégâts de type Feu augmentent de 30 %.\nLes dégâts de type Foudre augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "永炎",
+        "Description": "炎属性攻撃ダメージ増加30%\n雷属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "永炎",
+        "Description": "火属性攻击伤害增加30%\n雷属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Invader": {
+    "InternalName": "Invader",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Invader",
+        "Description": "30% increase in Dark attack damage.\n30% increase in Dragon attack damage."
+      },
+      "fr": {
+        "Name": "Envahisseur",
+        "Description": "Les dégâts de type Ténèbres augmentent de 30 %.\nLes dégâts de type Dragon augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "侵略者",
+        "Description": "闇属性攻撃ダメージ増加30%\n竜属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "侵略者",
+        "Description": "暗属性攻击伤害增加30%\n龙属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_ALLAttack_up3": {
+    "InternalName": "PAL_ALLAttack_up3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Demon God",
+        "Description": "Attack +30% Defense +5%"
+      },
+      "fr": {
+        "Name": "Colère Divine",
+        "Description": "Attaque +30% Défense +5%"
+      },
+      "ja": {
+        "Name": "鬼神",
+        "Description": "攻撃 +30% 防御 +5%"
+      },
+      "zh-CN": {
+        "Name": "鬼神",
+        "Description": "攻击 +30% 防御 +5%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.3,
+      "b_Defense": 0.05,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_FullStomach_Down_3": {
+    "InternalName": "PAL_FullStomach_Down_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Mastery of Fasting",
+        "Description": "Hunger decreases +20.0% slower."
+      },
+      "fr": {
+        "Name": "Maîtrise de la Faim",
+        "Description": "Le degré de satiété diminue plus lentement +20.0 %"
+      },
+      "ja": {
+        "Name": "絶食の極み",
+        "Description": "満腹度が減りにくい +20.0%"
+      },
+      "zh-CN": {
+        "Name": "极限绝食",
+        "Description": "减少饱腹度下降速度+20.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_Sanity_Down_3": {
+    "InternalName": "PAL_Sanity_Down_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Heart of the Immovable King",
+        "Description": "SAN drops +20.0% slower."
+      },
+      "fr": {
+        "Name": "Inébranlable",
+        "Description": "Les points MEN diminuent plus lentement +20.0 %"
+      },
+      "ja": {
+        "Name": "不動明王の心",
+        "Description": "SAN値が減りにくい +20.0%"
+      },
+      "zh-CN": {
+        "Name": "明镜止水",
+        "Description": "减少SAN值下降速度+20.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MoveSpeed_up_3": {
+    "InternalName": "MoveSpeed_up_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Swift",
+        "Description": "30% increase to movement speed."
+      },
+      "fr": {
+        "Name": "Sprinteur",
+        "Description": "La vitesse de déplacement augmente de 30 %."
+      },
+      "ja": {
+        "Name": "神速",
+        "Description": "移動速度上昇30%"
+      },
+      "zh-CN": {
+        "Name": "神速",
+        "Description": "移动速度提升30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.3
+    }
+  },
+  "Stamina_Up_3": {
+    "InternalName": "Stamina_Up_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Eternal Engine",
+        "Description": "Max stamina +75%\n*This effect is only valid for rideable pals."
+      },
+      "fr": {
+        "Name": "Vigueur Éternelle",
+        "Description": "Endurance maximale + 75 %\n(Pals montures uniquement)"
+      },
+      "ja": {
+        "Name": "永久機関",
+        "Description": "最大スタミナ+75%\n※ライド可能なパルのみ有効"
+      },
+      "zh-CN": {
+        "Name": "永动机",
+        "Description": "最大耐力+75%\n※此效果仅对可骑乘的帕鲁有效。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Vampire": {
+    "InternalName": "Vampire",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Vampiric",
+        "Description": "Absorbs a portion of the damage dealt to restore Health. \nDoes not sleep at night and continues to work."
+      },
+      "fr": {
+        "Name": "Vampire",
+        "Description": "Absorbe une partie des dégâts infligés\npour restaurer ses PV.\nNe dort pas et continue à travailler la nuit."
+      },
+      "ja": {
+        "Name": "吸血鬼",
+        "Description": "与えたダメージの5%を吸収し、HPを回復する。\n夜になっても眠らず、働き続ける。"
+      },
+      "zh-CN": {
+        "Name": "吸血鬼",
+        "Description": "会吸收造成伤害的一部分恢复自身的HP。\n即使到夜晚也不会睡觉，可以一直工作。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Nushi": {
+    "InternalName": "Nushi",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Lunker",
+        "Description": "20% increase to Water attack damage \n20% increase to Ice attack damage \n20% increase to defense."
+      },
+      "fr": {
+        "Name": "Trophée des Flots",
+        "Description": "Les dégâts de type Eau augmentent de 20 %.\nLes dégâts de type Glace augmentent de 20 %.\nDéfense +20 %"
+      },
+      "ja": {
+        "Name": "ヌシ",
+        "Description": "水属性攻撃ダメージ増加20%\n氷属性攻撃ダメージ増加20%\n防御+20%"
+      },
+      "zh-CN": {
+        "Name": "湖之主",
+        "Description": "水属性攻击伤害增加20%\n冰属性攻击伤害增加20%\n防御+20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SwimSpeed_up_3": {
+    "InternalName": "SwimSpeed_up_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "King of the Waves",
+        "Description": "50% increase movement speed on water."
+      },
+      "fr": {
+        "Name": "Roi des Vagues",
+        "Description": "La vitesse de déplacement augmente de 50 % sur l'eau."
+      },
+      "ja": {
+        "Name": "波乗り王",
+        "Description": "水上の移動速度上昇50%"
+      },
+      "zh-CN": {
+        "Name": "破浪王者",
+        "Description": "水上移动速度提升50%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Salvation": {
+    "InternalName": "Salvation",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Savior",
+        "Description": "30% increase in Neutral attack damage.\n30% increase in Grass attack damage."
+      },
+      "fr": {
+        "Name": "Sauveur",
+        "Description": "Les dégâts Non Élémentaires augmentent de 30 %.\nLes dégâts de type Plante augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "救世主",
+        "Description": "無属性攻撃ダメージ増加30%\n草属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "救世主",
+        "Description": "无属性攻击伤害增加30%\n草属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MutationPal_Babysitter": {
+    "InternalName": "MutationPal_Babysitter",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Babysitter",
+        "Description": "While at a base, increases egg production speed by +30% and incubation speed by +30% for Pals assigned to a Breeding Farm."
+      },
+      "fr": {
+        "Name": "Baby-sitter",
+        "Description": "Dans la base, vitesse de production d'œufs\ndes Pals affectés au ranch : +30 % ;\nvitesse d'éclosion : +30 %"
+      },
+      "ja": {
+        "Name": "ベビーシッター",
+        "Description": "拠点にいる間、配合牧場にアサインしたパルの\nタマゴ生成速度+30%、孵化速度+30%"
+      },
+      "zh-CN": {
+        "Name": "育婴师",
+        "Description": "在据点内时，分派到配种牧场的帕鲁的\n产蛋速度+30%，孵化速度+30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MutationPal_Mutant": {
+    "InternalName": "MutationPal_Mutant",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Idiosyncratic",
+        "Description": "Pal and Player Auto Health Regeneration Rate +50%\nDefense +{EffectValue4}%\nImmune to Poison Damage\nImmune to Burn Damage"
+      },
+      "fr": {
+        "Name": "Anomalie",
+        "Description": "Restauration automatique des PV des Pals et du joueur +50 %\nDéfense +{EffectValue4} %\nImmunité aux dégâts de Poison\nImmunité aux dégâts de Brûlure"
+      },
+      "ja": {
+        "Name": "特異体質",
+        "Description": "パルとプレイヤーのHP自然回復量+50%\n防御+{EffectValue4}%\n毒状態異常ダメージ無効\n炎上状態異常ダメージ無効"
+      },
+      "zh-CN": {
+        "Name": "特殊体质",
+        "Description": "帕鲁和玩家的生命值自然恢复量+50%\n防御力+{EffectValue4}%\n免疫中毒伤害\n免疫灼烧伤害"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SelfDeathAddItemDrop_up_3": {
+    "InternalName": "SelfDeathAddItemDrop_up_3",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Lavish Hospitality",
+        "Description": "Your Dropped Items + 100%"
+      },
+      "fr": {
+        "Name": "Grand Prince",
+        "Description": "Objets obtenus +100 %"
+      },
+      "ja": {
+        "Name": "大盤振る舞い",
+        "Description": "自身のドロップアイテム+100%"
+      },
+      "zh-CN": {
+        "Name": "慷慨就义",
+        "Description": "自身道具掉落量+100%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorkSuitabilityAddRank_MonsterFarm_2": {
+    "InternalName": "WorkSuitabilityAddRank_MonsterFarm_2",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Ranch Master",
+        "Description": "Farming's Work Suitability +2"
+      },
+      "fr": {
+        "Name": "Maître Éleveur",
+        "Description": "Exploitation : Capacité de travail +2"
+      },
+      "ja": {
+        "Name": "牧場の主",
+        "Description": "牧場の作業適性+2"
+      },
+      "zh-CN": {
+        "Name": "牧场之主",
+        "Description": "牧场的工作适应性+2"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MutationPal_Immortal": {
+    "InternalName": "MutationPal_Immortal",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Immortality",
+        "Description": "Life Steal +5%\nPal Auto Health Regeneration Rate +100%\nAttack +15%"
+      },
+      "fr": {
+        "Name": "Immortel",
+        "Description": "Vol de vie +5 %\nRestauration automatique des PV des Pals +100 %\nAttaque +15 %"
+      },
+      "ja": {
+        "Name": "不死身",
+        "Description": "与えたダメージの5%を吸収し、HPを回復する。\nパルのHP自然回復量+100%\n攻撃+15%"
+      },
+      "zh-CN": {
+        "Name": "不死之身",
+        "Description": "窃取生命+5%\n帕鲁生命值自然恢复量+100%\n攻击力+15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.15,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MutationPal_ExplosionResist": {
+    "InternalName": "MutationPal_ExplosionResist",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Heavily Armored",
+        "Description": "Immune to Explosion Damage"
+      },
+      "fr": {
+        "Name": "Blindage",
+        "Description": "Immunité aux dégâts explosifs"
+      },
+      "ja": {
+        "Name": "重装甲",
+        "Description": "爆破ダメージ無効"
+      },
+      "zh-CN": {
+        "Name": "重装甲",
+        "Description": "免疫爆破伤害"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "RideJumpCount_Increase1": {
+    "InternalName": "RideJumpCount_Increase1",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Lightfooted",
+        "Description": "Mounted Jump Count +1"
+      },
+      "fr": {
+        "Name": "Légèreté",
+        "Description": "Nombre de sauts en monture +1"
+      },
+      "ja": {
+        "Name": "軽身",
+        "Description": "ライド中のジャンプ回数+1"
+      },
+      "zh-CN": {
+        "Name": "身轻如燕",
+        "Description": "骑乘期间连续跳跃次数+1"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "RideJumpCount_Increase2": {
+    "InternalName": "RideJumpCount_Increase2",
+    "Rating": 4,
+    "I18n": {
+      "en": {
+        "Name": "Skymarcher",
+        "Description": "Mounted Jump Count +2"
+      },
+      "fr": {
+        "Name": "Marche Céleste",
+        "Description": "Nombre de sauts en monture +2"
+      },
+      "ja": {
+        "Name": "空渡り",
+        "Description": "ライド中のジャンプ回数+2"
+      },
+      "zh-CN": {
+        "Name": "凌空微步",
+        "Description": "骑乘期间连续跳跃次数+2"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CraftSpeed_up2": {
+    "InternalName": "CraftSpeed_up2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Artisan",
+        "Description": "Work Speed +50%"
+      },
+      "fr": {
+        "Name": "Appliqué",
+        "Description": "Vitesse de travail +50%"
+      },
+      "ja": {
+        "Name": "職人気質",
+        "Description": "作業速度 +50%"
+      },
+      "zh-CN": {
+        "Name": "工匠精神",
+        "Description": "工作速度 +50%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.5,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_up2": {
+    "InternalName": "Deffence_up2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Burly Body",
+        "Description": "Defense +20%\nImmune to Flinch"
+      },
+      "fr": {
+        "Name": "Corps Robuste",
+        "Description": "Défense +20 %\nImmunité au recul"
+      },
+      "ja": {
+        "Name": "屈強な肉体",
+        "Description": "防御+20%\nひるみ無効"
+      },
+      "zh-CN": {
+        "Name": "顽强肉体",
+        "Description": "防御力+20%\n免疫硬直"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_ALLAttack_up2": {
+    "InternalName": "PAL_ALLAttack_up2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Ferocious",
+        "Description": "Attack +20%"
+      },
+      "fr": {
+        "Name": "Féroce",
+        "Description": "Attaque +20%"
+      },
+      "ja": {
+        "Name": "獰猛",
+        "Description": "攻撃 +20%"
+      },
+      "zh-CN": {
+        "Name": "凶猛",
+        "Description": "攻击 +20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.2,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "TrainerATK_UP_1": {
+    "InternalName": "TrainerATK_UP_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Vanguard",
+        "Description": "10% increase in Player Attack."
+      },
+      "fr": {
+        "Name": "Chef d'Assaut",
+        "Description": "L'attaque du joueur augmente de 10 %."
+      },
+      "ja": {
+        "Name": "突撃指揮者",
+        "Description": "プレイヤーの攻撃増加10%"
+      },
+      "zh-CN": {
+        "Name": "突袭指挥官",
+        "Description": "玩家的攻击提升10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "TrainerDEF_UP_1": {
+    "InternalName": "TrainerDEF_UP_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Stronghold Strategist",
+        "Description": "10% increase in Player Defense."
+      },
+      "fr": {
+        "Name": "Stratège de Forteresse",
+        "Description": "La défense du joueur augmente de 10 %."
+      },
+      "ja": {
+        "Name": "堅城の軍師",
+        "Description": "プレイヤーの防御増加10%"
+      },
+      "zh-CN": {
+        "Name": "铁壁军师",
+        "Description": "玩家的防御提升10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "TrainerWorkSpeed_UP_1": {
+    "InternalName": "TrainerWorkSpeed_UP_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Motivational Leader",
+        "Description": "25% increase in Player Work Speed."
+      },
+      "fr": {
+        "Name": "Motivateur",
+        "Description": "La productivité du joueur augmente de 25 %."
+      },
+      "ja": {
+        "Name": "モチベーター",
+        "Description": "プレイヤーの作業速度増加25%"
+      },
+      "zh-CN": {
+        "Name": "啦啦队",
+        "Description": "玩家的工作速度提升25%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "TrainerMining_up1": {
+    "InternalName": "TrainerMining_up1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Mine Foreman",
+        "Description": "25% increase in Player Mining Efficiency."
+      },
+      "fr": {
+        "Name": "Chef d'Extraction",
+        "Description": "La capacité d'extraction du joueur augmente de 25 %."
+      },
+      "ja": {
+        "Name": "鉱山のチーフ",
+        "Description": "プレイヤーの採掘効率増加25%"
+      },
+      "zh-CN": {
+        "Name": "矿山首领",
+        "Description": "玩家的挖掘速度提升25%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "TrainerLogging_up1": {
+    "InternalName": "TrainerLogging_up1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Logging Foreman",
+        "Description": "25% increase in Player Logging Efficiency."
+      },
+      "fr": {
+        "Name": "Chef d'Abattage",
+        "Description": "La capacité d'abattage du joueur augmente de 25 %."
+      },
+      "ja": {
+        "Name": "伐採リーダー",
+        "Description": "プレイヤーの伐採効率増加25%"
+      },
+      "zh-CN": {
+        "Name": "采伐领袖",
+        "Description": "玩家的采伐速度提升25%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_FullStomach_Down_2": {
+    "InternalName": "PAL_FullStomach_Down_2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Diet Lover",
+        "Description": "Hunger decreases +15.0% slower."
+      },
+      "fr": {
+        "Name": "Nutritionniste",
+        "Description": "Le degré de satiété diminue plus lentement +15.0 %"
+      },
+      "ja": {
+        "Name": "ダイエットマスター",
+        "Description": "満腹度が減りにくい +15.0%"
+      },
+      "zh-CN": {
+        "Name": "节食大师",
+        "Description": "减少饱腹度下降速度+15.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_Sanity_Down_2": {
+    "InternalName": "PAL_Sanity_Down_2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Workaholic",
+        "Description": "SAN drops +15.0% slower."
+      },
+      "fr": {
+        "Name": "Acharné",
+        "Description": "Les points MEN diminuent plus lentement +15.0 %"
+      },
+      "ja": {
+        "Name": "ワーカーホリック",
+        "Description": "SAN値が減りにくい +15.0%"
+      },
+      "zh-CN": {
+        "Name": "工作狂",
+        "Description": "减少SAN值下降速度+15.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Normal_2_PAL": {
+    "InternalName": "ElementBoost_Normal_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Celestial Emperor",
+        "Description": "30% increase in Neutral attack damage."
+      },
+      "fr": {
+        "Name": "Empereur Céleste",
+        "Description": "Les dégâts Non Élémentaires augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "聖天",
+        "Description": "無属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "圣天",
+        "Description": "无属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Fire_2_PAL": {
+    "InternalName": "ElementBoost_Fire_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Flame Emperor",
+        "Description": "30% increase in Fire attack damage."
+      },
+      "fr": {
+        "Name": "Empereur Enflammé",
+        "Description": "Les dégâts de type Feu augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "炎帝",
+        "Description": "炎属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "炎帝",
+        "Description": "火属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Aqua_2_PAL": {
+    "InternalName": "ElementBoost_Aqua_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Lord of the Sea",
+        "Description": "30% increase in Water attack damage."
+      },
+      "fr": {
+        "Name": "Seigneur des Mers",
+        "Description": "Les dégâts de type Eau augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "海皇",
+        "Description": "水属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "海皇",
+        "Description": "水属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Thunder_2_PAL": {
+    "InternalName": "ElementBoost_Thunder_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Lord of Lightning",
+        "Description": "30% increase in Lightning attack damage."
+      },
+      "fr": {
+        "Name": "Seigneur des Tempêtes",
+        "Description": "Les dégâts de type Foudre augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "雷帝",
+        "Description": "雷属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "雷帝",
+        "Description": "雷属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Leaf_2_PAL": {
+    "InternalName": "ElementBoost_Leaf_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Spirit Emperor",
+        "Description": "30% increase in Grass attack damage."
+      },
+      "fr": {
+        "Name": "Divinité de la Forêt",
+        "Description": "Les dégâts de type Plante augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "精霊王",
+        "Description": "草属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "精灵王",
+        "Description": "草属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Ice_2_PAL": {
+    "InternalName": "ElementBoost_Ice_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Ice Emperor",
+        "Description": "30% increase in Ice attack damage."
+      },
+      "fr": {
+        "Name": "Empereur Glacial",
+        "Description": "Les dégâts de type Glace augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "氷帝",
+        "Description": "氷属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "冰帝",
+        "Description": "冰属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Earth_2_PAL": {
+    "InternalName": "ElementBoost_Earth_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Earth Emperor",
+        "Description": "30% increase in Earth attack damage."
+      },
+      "fr": {
+        "Name": "Empereur Terrestre",
+        "Description": "Les dégâts de type Terre augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "地帝",
+        "Description": "地属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "岩帝",
+        "Description": "地属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Dark_2_PAL": {
+    "InternalName": "ElementBoost_Dark_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Lord of the Underworld",
+        "Description": "30% increase in Dark attack damage."
+      },
+      "fr": {
+        "Name": "Seigneur des Enfers",
+        "Description": "Les dégâts de type Ténèbres augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "冥王",
+        "Description": "闇属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "冥王",
+        "Description": "暗属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Dragon_2_PAL": {
+    "InternalName": "ElementBoost_Dragon_2_PAL",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Divine Dragon",
+        "Description": "30% increase in Dragon attack damage."
+      },
+      "fr": {
+        "Name": "Dragon Divin",
+        "Description": "Les dégâts de type Dragon augmentent de 30 %."
+      },
+      "ja": {
+        "Name": "神龍",
+        "Description": "竜属性攻撃ダメージ増加30%"
+      },
+      "zh-CN": {
+        "Name": "神龙",
+        "Description": "龙属性攻击伤害增加30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MoveSpeed_up_2": {
+    "InternalName": "MoveSpeed_up_2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Runner",
+        "Description": "20% increase to movement speed."
+      },
+      "fr": {
+        "Name": "Coursier",
+        "Description": "La vitesse de déplacement augmente de 20 %."
+      },
+      "ja": {
+        "Name": "走るのが得意",
+        "Description": "移動速度上昇20%"
+      },
+      "zh-CN": {
+        "Name": "运动健将",
+        "Description": "移动速度提升20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.2
+    }
+  },
+  "Test_PalEgg_HatchingSpeed_Up": {
+    "InternalName": "Test_PalEgg_HatchingSpeed_Up",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Philanthropist",
+        "Description": "When assigned to a Breeding Farm, breeding speed is increased by 100%."
+      },
+      "fr": {
+        "Name": "Philanthrope",
+        "Description": "Lorsqu'il est affecté à un Élevage, la vitesse de production des œufs augmente de 100 %."
+      },
+      "ja": {
+        "Name": "博愛主義者",
+        "Description": "配合牧場にアサインされてる間、タマゴ生成速度が100%増加する"
+      },
+      "zh-CN": {
+        "Name": "博爱主义者",
+        "Description": "当分配到配种牧场时，产出蛋的速度将加快100%。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CoolTimeReduction_Up_1": {
+    "InternalName": "CoolTimeReduction_Up_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Serenity",
+        "Description": "Active skill cooldown reduction 30%\nAttack +10%"
+      },
+      "fr": {
+        "Name": "Sérénité",
+        "Description": "Réduction du temps de recharge des compétences actives 30 %\nAttaque +10 %"
+      },
+      "ja": {
+        "Name": "冷静沈着",
+        "Description": "アクティブスキルのクールタイム短縮30%\n攻撃+10%"
+      },
+      "zh-CN": {
+        "Name": "沉着冷静",
+        "Description": "主动技能的冷却时间缩短30%\n攻击+10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.1,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Stamina_Up_1": {
+    "InternalName": "Stamina_Up_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Infinite Stamina",
+        "Description": "Max stamina +50%\n*This effect is only valid for rideable pals."
+      },
+      "fr": {
+        "Name": "Infatigable",
+        "Description": "Endurance maximale + 50 %\n(Pals montures uniquement)"
+      },
+      "ja": {
+        "Name": "無限のスタミナ",
+        "Description": "最大スタミナ+50%\n※ライド可能なパルのみ有効"
+      },
+      "zh-CN": {
+        "Name": "无限精力",
+        "Description": "最大耐力+50%\n※此效果仅对可骑乘的帕鲁有效。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SalePrice_Up_1": {
+    "InternalName": "SalePrice_Up_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Noble",
+        "Description": "Increases the value of items when sold by +5%"
+      },
+      "fr": {
+        "Name": "Noble",
+        "Description": "Montant des ventes + : 5 %"
+      },
+      "ja": {
+        "Name": "高貴",
+        "Description": "取引価格が改善+5%"
+      },
+      "zh-CN": {
+        "Name": "高贵",
+        "Description": "改善交易价格+5%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SwimSpeed_up_2": {
+    "InternalName": "SwimSpeed_up_2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Ace Swimmer",
+        "Description": "40% increase movement speed on water."
+      },
+      "fr": {
+        "Name": "Coursier Marin",
+        "Description": "La vitesse de déplacement augmente de 40 % sur l'eau."
+      },
+      "ja": {
+        "Name": "泳ぐのが得意",
+        "Description": "水上の移動速度上昇40%"
+      },
+      "zh-CN": {
+        "Name": "游泳健将",
+        "Description": "水上移动速度提升40%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SelfDeathAddItemDrop_up_2": {
+    "InternalName": "SelfDeathAddItemDrop_up_2",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Service-Minded",
+        "Description": "Your Dropped Items + 50%"
+      },
+      "fr": {
+        "Name": "Généreux",
+        "Description": "Objets obtenus +50 %"
+      },
+      "ja": {
+        "Name": "サービス精神",
+        "Description": "自身のドロップアイテム+50%"
+      },
+      "zh-CN": {
+        "Name": "奉献精神",
+        "Description": "自身道具掉落量+50%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "WorkSuitabilityAddRank_MonsterFarm_1": {
+    "InternalName": "WorkSuitabilityAddRank_MonsterFarm_1",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Farmhand",
+        "Description": "Farming's Work Suitability +1"
+      },
+      "fr": {
+        "Name": "Apprenti Éleveur",
+        "Description": "Exploitation : Capacité de travail +1"
+      },
+      "ja": {
+        "Name": "牧場っ子",
+        "Description": "牧場の作業適性+1"
+      },
+      "zh-CN": {
+        "Name": "牧场之子",
+        "Description": "牧场的工作适应性+1"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PlayerSP_DecreaseRate_Passive": {
+    "InternalName": "PlayerSP_DecreaseRate_Passive",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Wellness Watcher",
+        "Description": "Player Stamina Consumption -5.0%"
+      },
+      "fr": {
+        "Name": "Guide de l'effort",
+        "Description": "Consommation d'endurance du joueur -5 %"
+      },
+      "ja": {
+        "Name": "バテ防止係",
+        "Description": "プレイヤーのスタミナ消費量軽減+5.0%"
+      },
+      "zh-CN": {
+        "Name": "防过劳帮手",
+        "Description": "玩家的耐力消耗量减缓+5.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "AutoHPRegeneRate_Passive": {
+    "InternalName": "AutoHPRegeneRate_Passive",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Healing Coach",
+        "Description": "Player Auto Health Regeneration Rate +5%"
+      },
+      "fr": {
+        "Name": "Ange Médecin",
+        "Description": "Régénération passive des PV du joueur +5 %"
+      },
+      "ja": {
+        "Name": "ヒーリングコーチ",
+        "Description": "プレイヤーのHP自然回復量+5%"
+      },
+      "zh-CN": {
+        "Name": "疗愈教练",
+        "Description": "玩家的生命值自然恢复量+5%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ReloadSpeedUp_Passive": {
+    "InternalName": "ReloadSpeedUp_Passive",
+    "Rating": 3,
+    "I18n": {
+      "en": {
+        "Name": "Reload Master",
+        "Description": "Player Reload Speed +4%"
+      },
+      "fr": {
+        "Name": "Instructeur de Tir",
+        "Description": "Vitesse de rechargement du joueur +4 %"
+      },
+      "ja": {
+        "Name": "リロードマスター",
+        "Description": "プレイヤーのリロード速度上昇+4%"
+      },
+      "zh-CN": {
+        "Name": "装填大师",
+        "Description": "玩家的装填速度提升+4%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Noukin": {
+    "InternalName": "Noukin",
+    "Rating": 2,
+    "I18n": {
+      "en": {
+        "Name": "Musclehead",
+        "Description": "Attack +30% Work Speed -50%"
+      },
+      "fr": {
+        "Name": "Impulsif",
+        "Description": "Attaque +30% Vitesse de travail -50%"
+      },
+      "ja": {
+        "Name": "脳筋",
+        "Description": "攻撃 +30% 作業速度 -50%"
+      },
+      "zh-CN": {
+        "Name": "脑筋",
+        "Description": "攻击 +30% 工作速度 -50%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.3,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": -0.5,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_up2_2": {
+    "InternalName": "Deffence_up2_2",
+    "Rating": 2,
+    "I18n": {
+      "en": {
+        "Name": "Heavyweight",
+        "Description": "Defense +20%\nImmune to Knockback"
+      },
+      "fr": {
+        "Name": "Poids Lourd",
+        "Description": "Défense +20 %\nImmunité aux projections"
+      },
+      "ja": {
+        "Name": "ヘビー級",
+        "Description": "防御+20%\n吹き飛び無効"
+      },
+      "zh-CN": {
+        "Name": "重量级",
+        "Description": "防御力+20%\n免疫击退"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CraftSpeed_up1": {
+    "InternalName": "CraftSpeed_up1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Serious",
+        "Description": "Work Speed +20%"
+      },
+      "fr": {
+        "Name": "Sérieux",
+        "Description": "Vitesse de travail +20%"
+      },
+      "ja": {
+        "Name": "まじめ",
+        "Description": "作業速度 +20%"
+      },
+      "zh-CN": {
+        "Name": "认真",
+        "Description": "工作速度 +20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.2,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_up1": {
+    "InternalName": "Deffence_up1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Hard Skin",
+        "Description": "Defense +10%"
+      },
+      "fr": {
+        "Name": "Peau dure",
+        "Description": "Défense +10%"
+      },
+      "ja": {
+        "Name": "硬い皮膚",
+        "Description": "防御 +10%"
+      },
+      "zh-CN": {
+        "Name": "坚硬皮肤",
+        "Description": "防御 +10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.1,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_ALLAttack_up1": {
+    "InternalName": "PAL_ALLAttack_up1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Brave",
+        "Description": "Attack +10%"
+      },
+      "fr": {
+        "Name": "Brave",
+        "Description": "Attaque +10%"
+      },
+      "ja": {
+        "Name": "勇敢",
+        "Description": "攻撃 +10%"
+      },
+      "zh-CN": {
+        "Name": "勇敢",
+        "Description": "攻击 +10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.1,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_rude": {
+    "InternalName": "PAL_rude",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Hooligan",
+        "Description": "Attack +15% Work Speed -10%"
+      },
+      "fr": {
+        "Name": "Trouble-Fête",
+        "Description": "Attaque +15% Vitesse de travail -10%"
+      },
+      "ja": {
+        "Name": "粗暴",
+        "Description": "攻撃 +15% 作業速度 -10%"
+      },
+      "zh-CN": {
+        "Name": "粗暴",
+        "Description": "攻击 +15% 工作速度 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.15,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": -0.1,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_conceited": {
+    "InternalName": "PAL_conceited",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Conceited",
+        "Description": "Work Speed +10% Defense -10%"
+      },
+      "fr": {
+        "Name": "Vaniteux",
+        "Description": "Vitesse de travail +10% Défense -10%"
+      },
+      "ja": {
+        "Name": "うぬぼれ屋",
+        "Description": "作業速度 +10% 防御 -10%"
+      },
+      "zh-CN": {
+        "Name": "自恋狂",
+        "Description": "工作速度 +10% 防御 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": -0.1,
+      "b_CraftSpeed": 0.1,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_sadist": {
+    "InternalName": "PAL_sadist",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Sadist",
+        "Description": "Attack +15% Defense -15%"
+      },
+      "fr": {
+        "Name": "Sadique",
+        "Description": "Attaque +15% Défense -15%"
+      },
+      "ja": {
+        "Name": "サディスト",
+        "Description": "攻撃 +15% 防御 -15%"
+      },
+      "zh-CN": {
+        "Name": "虐待狂",
+        "Description": "攻击 +15% 防御 -15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.15,
+      "b_Defense": -0.15,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_masochist": {
+    "InternalName": "PAL_masochist",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Masochist",
+        "Description": "Defense +15% Attack -15%"
+      },
+      "fr": {
+        "Name": "Masochiste",
+        "Description": "Défense +15% Attaque -15%"
+      },
+      "ja": {
+        "Name": "マゾヒスト",
+        "Description": "防御 +15% 攻撃 -15%"
+      },
+      "zh-CN": {
+        "Name": "受虐狂",
+        "Description": "防御 +15% 攻击 -15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": -0.15,
+      "b_Defense": 0.15,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_CorporateSlave": {
+    "InternalName": "PAL_CorporateSlave",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Work Slave",
+        "Description": "Work Speed +30% Attack -30%"
+      },
+      "fr": {
+        "Name": "Soumis",
+        "Description": "Vitesse de travail +30% Attaque -30%"
+      },
+      "ja": {
+        "Name": "社畜",
+        "Description": "作業速度 +30% 攻撃 -30%"
+      },
+      "zh-CN": {
+        "Name": "社畜",
+        "Description": "工作速度 +30% 攻击 -30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": -0.3,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.3,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_oraora": {
+    "InternalName": "PAL_oraora",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Aggressive",
+        "Description": "Attack +10% Defense -10%"
+      },
+      "fr": {
+        "Name": "Rentre-Dedans",
+        "Description": "Attaque +10% Défense -10%"
+      },
+      "ja": {
+        "Name": "オラオラ系",
+        "Description": "攻撃 +10% 防御 -10%"
+      },
+      "zh-CN": {
+        "Name": "强势",
+        "Description": "攻击 +10% 防御 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.1,
+      "b_Defense": -0.1,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Normal_1_PAL": {
+    "InternalName": "ElementResist_Normal_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Abnormal",
+        "Description": "10% decrease in incoming Neutral damage."
+      },
+      "fr": {
+        "Name": "Anormal",
+        "Description": "Les dégâts Non Élémentaires sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "アブノーマル",
+        "Description": "無属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "一反常态",
+        "Description": "无属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Fire_1_PAL": {
+    "InternalName": "ElementResist_Fire_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Suntan Lover",
+        "Description": "10% decrease in incoming Fire damage."
+      },
+      "fr": {
+        "Name": "Bronzage Naturel",
+        "Description": "Les dégâts de type Feu sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "日焼け好き",
+        "Description": "炎属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "拥抱烈日",
+        "Description": "火属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Aqua_1_PAL": {
+    "InternalName": "ElementResist_Aqua_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Waterproof",
+        "Description": "10% decrease in incoming Water damage."
+      },
+      "fr": {
+        "Name": "Imperméabilité",
+        "Description": "Les dégâts de type Eau sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "防水加工",
+        "Description": "水属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "防水性能",
+        "Description": "水属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Thunder_1_PAL": {
+    "InternalName": "ElementResist_Thunder_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Insulated Body",
+        "Description": "10% decrease in incoming Lightning damage."
+      },
+      "fr": {
+        "Name": "Isolant",
+        "Description": "Les dégâts de type Foudre sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "絶縁体",
+        "Description": "雷属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "绝缘体",
+        "Description": "雷属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Leaf_1_PAL": {
+    "InternalName": "ElementResist_Leaf_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Botanical Barrier",
+        "Description": "10% decrease in incoming Grass damage."
+      },
+      "fr": {
+        "Name": "Protection Végétale",
+        "Description": "Les dégâts de type Plante sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "防草効果",
+        "Description": "草属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "除草效果",
+        "Description": "草属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Ice_1_PAL": {
+    "InternalName": "ElementResist_Ice_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Heated Body",
+        "Description": "10% decrease in incoming Ice damage."
+      },
+      "fr": {
+        "Name": "Sang Chaud",
+        "Description": "Les dégâts de type Glace sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "高温体質",
+        "Description": "氷属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "高温体质",
+        "Description": "冰属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Earth_1_PAL": {
+    "InternalName": "ElementResist_Earth_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Earthquake Resistant",
+        "Description": "10% decrease in incoming Earth damage."
+      },
+      "fr": {
+        "Name": "Parasismique",
+        "Description": "Les dégâts de type Terre sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "耐震構造",
+        "Description": "地属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "抗震结构",
+        "Description": "地属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Dark_1_PAL": {
+    "InternalName": "ElementResist_Dark_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Cheery",
+        "Description": "10% decrease in incoming Dark damage."
+      },
+      "fr": {
+        "Name": "Lumineux",
+        "Description": "Les dégâts de type Ténèbres sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "陽キャラ",
+        "Description": "闇属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "阳光开朗",
+        "Description": "暗属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementResist_Dragon_1_PAL": {
+    "InternalName": "ElementResist_Dragon_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Dragonkiller",
+        "Description": "10% decrease in incoming Dragon damage."
+      },
+      "fr": {
+        "Name": "Tueur de Dragons",
+        "Description": "Les dégâts de type Dragon sont réduits de 10 %."
+      },
+      "ja": {
+        "Name": "ドラゴンキラー",
+        "Description": "竜属性ダメージ軽減10%"
+      },
+      "zh-CN": {
+        "Name": "屠龙者",
+        "Description": "龙属性伤害减少10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Normal_1_PAL": {
+    "InternalName": "ElementBoost_Normal_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Spirit of Zen",
+        "Description": "10% increase in Neutral attack damage."
+      },
+      "fr": {
+        "Name": "Esprit Zen",
+        "Description": "Les dégâts Non Élémentaires augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "無の境地",
+        "Description": "無属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "禅境",
+        "Description": "无属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Fire_1_PAL": {
+    "InternalName": "ElementBoost_Fire_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Pyromaniac",
+        "Description": "10% increase in Fire attack damage."
+      },
+      "fr": {
+        "Name": "Pyromane",
+        "Description": "Les dégâts de type Feu augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "火遊び好き",
+        "Description": "炎属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "喜欢玩火",
+        "Description": "火属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Aqua_1_PAL": {
+    "InternalName": "ElementBoost_Aqua_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Hydromaniac",
+        "Description": "10% increase in Water attack damage."
+      },
+      "fr": {
+        "Name": "Hydrophile",
+        "Description": "Les dégâts de type Eau augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "水遊び好き",
+        "Description": "水属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "喜欢戏水",
+        "Description": "水属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Thunder_1_PAL": {
+    "InternalName": "ElementBoost_Thunder_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Capacitor",
+        "Description": "10% increase in Lightning attack damage."
+      },
+      "fr": {
+        "Name": "Condensateur",
+        "Description": "Les dégâts de type Foudre augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "コンデンサ",
+        "Description": "雷属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "电容",
+        "Description": "雷属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Leaf_1_PAL": {
+    "InternalName": "ElementBoost_Leaf_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Fragrant Foliage",
+        "Description": "10% increase in Grass attack damage."
+      },
+      "fr": {
+        "Name": "Fragrance Boisée",
+        "Description": "Les dégâts de type Plante augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "草木の香り",
+        "Description": "草属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "草木馨香",
+        "Description": "草属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Ice_1_PAL": {
+    "InternalName": "ElementBoost_Ice_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Coldblooded",
+        "Description": "10% increase in Ice attack damage."
+      },
+      "fr": {
+        "Name": "Sang Froid",
+        "Description": "Les dégâts de type Glace augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "冷血",
+        "Description": "氷属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "冷血",
+        "Description": "冰属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Earth_1_PAL": {
+    "InternalName": "ElementBoost_Earth_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Power of Gaia",
+        "Description": "10% increase in Earth attack damage."
+      },
+      "fr": {
+        "Name": "Force Tellurique",
+        "Description": "Les dégâts de type Terre augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "大地の力",
+        "Description": "地属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "大地之力",
+        "Description": "地属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Dark_1_PAL": {
+    "InternalName": "ElementBoost_Dark_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Veil of Darkness",
+        "Description": "10% increase in Dark attack damage."
+      },
+      "fr": {
+        "Name": "Voile des Ténèbres",
+        "Description": "Les dégâts de type Ténèbres augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "夜の帳",
+        "Description": "闇属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "夜幕",
+        "Description": "暗属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "ElementBoost_Dragon_1_PAL": {
+    "InternalName": "ElementBoost_Dragon_1_PAL",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Blood of the Dragon",
+        "Description": "10% increase in Dragon attack damage."
+      },
+      "fr": {
+        "Name": "Sang de Dragon",
+        "Description": "Les dégâts de type Dragon augmentent de 10 %."
+      },
+      "ja": {
+        "Name": "竜の血族",
+        "Description": "竜属性攻撃ダメージ増加10%"
+      },
+      "zh-CN": {
+        "Name": "龙之血脉",
+        "Description": "龙属性攻击伤害增加10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_FullStomach_Down_1": {
+    "InternalName": "PAL_FullStomach_Down_1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Dainty Eater",
+        "Description": "Hunger decreases +10.0% slower."
+      },
+      "fr": {
+        "Name": "Frugal",
+        "Description": "Le degré de satiété diminue plus lentement +10.0 %"
+      },
+      "ja": {
+        "Name": "小食",
+        "Description": "満腹度が減りにくい +10.0%"
+      },
+      "zh-CN": {
+        "Name": "小胃",
+        "Description": "减少饱腹度下降速度+10.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_Sanity_Down_1": {
+    "InternalName": "PAL_Sanity_Down_1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Positive Thinker",
+        "Description": "SAN drops +10.0% slower."
+      },
+      "fr": {
+        "Name": "Optimiste",
+        "Description": "Les points MEN diminuent plus lentement +10.0 %"
+      },
+      "ja": {
+        "Name": "ポジティブ思考",
+        "Description": "SAN値が減りにくい +10.0%"
+      },
+      "zh-CN": {
+        "Name": "积极思维",
+        "Description": "减少SAN值下降速度+10.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "MoveSpeed_up_1": {
+    "InternalName": "MoveSpeed_up_1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Nimble",
+        "Description": "10% increase to movement speed."
+      },
+      "fr": {
+        "Name": "Vif",
+        "Description": "La vitesse de déplacement augmente de 10 %."
+      },
+      "ja": {
+        "Name": "すばしこい",
+        "Description": "移動速度上昇10%"
+      },
+      "zh-CN": {
+        "Name": "灵活",
+        "Description": "移动速度提升10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.1
+    }
+  },
+  "Nocturnal": {
+    "InternalName": "Nocturnal",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Insomnia",
+        "Description": "Does not sleep and continues to work even at night."
+      },
+      "fr": {
+        "Name": "Nocturne",
+        "Description": "Ne dort pas et continue à travailler la nuit."
+      },
+      "ja": {
+        "Name": "不眠",
+        "Description": "夜になっても眠らず、働き続ける。"
+      },
+      "zh-CN": {
+        "Name": "不眠",
+        "Description": "即使到夜晚也不会睡觉，会一直工作。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CoolTimeReduction_Up_2": {
+    "InternalName": "CoolTimeReduction_Up_2",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Impatient",
+        "Description": "Active skill cooldown reduction 15%"
+      },
+      "fr": {
+        "Name": "Impatient",
+        "Description": "Réduction du temps de recharge des compétences actives 15 %"
+      },
+      "ja": {
+        "Name": "せっかち",
+        "Description": "アクティブスキルのクールタイム短縮15%"
+      },
+      "zh-CN": {
+        "Name": "急性子",
+        "Description": "主动技能的冷却时间缩短15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Stamina_Up_2": {
+    "InternalName": "Stamina_Up_2",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Fit as a Fiddle",
+        "Description": "Max stamina +25%\n*This effect is only valid for rideable pals."
+      },
+      "fr": {
+        "Name": "Force de la Nature",
+        "Description": "Endurance maximale + 25 %\n(Pals montures uniquement)"
+      },
+      "ja": {
+        "Name": "健康優良児",
+        "Description": "最大スタミナ+25%\n※ライド可能なパルのみ有効"
+      },
+      "zh-CN": {
+        "Name": "健康宝宝",
+        "Description": "最大耐力+25%\n※此效果仅对可骑乘的帕鲁有效。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SalePrice_Up_2": {
+    "InternalName": "SalePrice_Up_2",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Fine Furs",
+        "Description": "Increases the value of items when sold by +3%"
+      },
+      "fr": {
+        "Name": "Belle Fourrure",
+        "Description": "Montant des ventes + : 3 %"
+      },
+      "ja": {
+        "Name": "良い毛並み",
+        "Description": "取引価格が改善+3%"
+      },
+      "zh-CN": {
+        "Name": "贵族",
+        "Description": "改善交易价格+3%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Alien": {
+    "InternalName": "Alien",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Otherworldly Cells",
+        "Description": "Attack +10%\nFire damage reduction 15%\nLightning damage reduction 15%"
+      },
+      "fr": {
+        "Name": "Organisme Inconnu",
+        "Description": "Attaque +10 %\nRéduction des dégâts de type Feu de 15 %\nRéduction des dégâts de type Foudre de 15 %"
+      },
+      "ja": {
+        "Name": "未知の生体細胞",
+        "Description": "攻撃+10%\n炎属性ダメージ軽減15%\n雷属性ダメージ軽減15%"
+      },
+      "zh-CN": {
+        "Name": "未知生物细胞",
+        "Description": "攻击力+10%\n火属性伤害减免15%\n雷属性伤害减免15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.1,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SwimSpeed_up_1": {
+    "InternalName": "SwimSpeed_up_1",
+    "Rating": 1,
+    "I18n": {
+      "en": {
+        "Name": "Sleek Stroke",
+        "Description": "30% increase movement speed on water."
+      },
+      "fr": {
+        "Name": "Nage Fluide",
+        "Description": "La vitesse de déplacement augmente de 30 % sur l'eau."
+      },
+      "ja": {
+        "Name": "しなやかスイム",
+        "Description": "水上の移動速度上昇30%"
+      },
+      "zh-CN": {
+        "Name": "悠然泳姿",
+        "Description": "水上移动速度提升30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CraftSpeed_down1": {
+    "InternalName": "CraftSpeed_down1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Clumsy",
+        "Description": "Work Speed -10%"
+      },
+      "fr": {
+        "Name": "Maladroit",
+        "Description": "Vitesse de travail -10%"
+      },
+      "ja": {
+        "Name": "不器用",
+        "Description": "作業速度 -10%"
+      },
+      "zh-CN": {
+        "Name": "笨手笨脚",
+        "Description": "工作速度 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": -0.1,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_down1": {
+    "InternalName": "Deffence_down1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Downtrodden",
+        "Description": "Defense -10%"
+      },
+      "fr": {
+        "Name": "Vulnérable aux Coups",
+        "Description": "Défense -10%"
+      },
+      "ja": {
+        "Name": "うたれ弱い",
+        "Description": "防御 -10%"
+      },
+      "zh-CN": {
+        "Name": "弱不禁风",
+        "Description": "防御 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": -0.1,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_ALLAttack_down1": {
+    "InternalName": "PAL_ALLAttack_down1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Coward",
+        "Description": "Attack -10%"
+      },
+      "fr": {
+        "Name": "Lâche",
+        "Description": "Attaque -10%"
+      },
+      "ja": {
+        "Name": "ビビり",
+        "Description": "攻撃 -10%"
+      },
+      "zh-CN": {
+        "Name": "胆小",
+        "Description": "攻击 -10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": -0.1,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_FullStomach_Up_1": {
+    "InternalName": "PAL_FullStomach_Up_1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Glutton",
+        "Description": "Hunger decreases +10.0% faster."
+      },
+      "fr": {
+        "Name": "Glouton",
+        "Description": "Le degré de satiété diminue rapidement +10.0 %"
+      },
+      "ja": {
+        "Name": "食いしんぼ",
+        "Description": "満腹度が減りやすい +10.0%"
+      },
+      "zh-CN": {
+        "Name": "贪吃",
+        "Description": "增加饱腹度下降速度+10.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_Sanity_Up_1": {
+    "InternalName": "PAL_Sanity_Up_1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Unstable",
+        "Description": "SAN drops +10.0% faster."
+      },
+      "fr": {
+        "Name": "Mentalement Instable",
+        "Description": "Les points MEN diminuent rapidement +10.0 %"
+      },
+      "ja": {
+        "Name": "精神が不安定",
+        "Description": "SAN値が減りやすい +10.0%"
+      },
+      "zh-CN": {
+        "Name": "情绪不稳",
+        "Description": "增加SAN值下降速度+10.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "NonKilling": {
+    "InternalName": "NonKilling",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Mercy Hit",
+        "Description": "Pacifist.\nWill not reduce the target's Health below 1."
+      },
+      "fr": {
+        "Name": "Pitié",
+        "Description": "Frappe sans tuer.\nImpossible de réduire la santé de la cible à moins de 1 PV."
+      },
+      "ja": {
+        "Name": "手加減",
+        "Description": "平和主義者。\n攻撃対象のHPを1未満にできない。"
+      },
+      "zh-CN": {
+        "Name": "手下留情",
+        "Description": "和平主义者。\n使攻击目标的生命值不会小于1。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CoolTimeReduction_Down_1": {
+    "InternalName": "CoolTimeReduction_Down_1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Easygoing",
+        "Description": "Active skill cooldown extension -15%"
+      },
+      "fr": {
+        "Name": "Tranquille",
+        "Description": "Extension du temps de recharge des compétences actives -15 %"
+      },
+      "ja": {
+        "Name": "のんびり屋さん",
+        "Description": "アクティブスキルのクールタイム延長-15%"
+      },
+      "zh-CN": {
+        "Name": "慢性子",
+        "Description": "主动技能的冷却时间延长-15%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Stamina_Down_1": {
+    "InternalName": "Stamina_Down_1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Sickly",
+        "Description": "Max Stamina -25%\n*This effect is only valid for rideable pals."
+      },
+      "fr": {
+        "Name": "Reclus",
+        "Description": "Endurance maximale -25 %\n(Pals montures uniquement)"
+      },
+      "ja": {
+        "Name": "引きこもり",
+        "Description": "最大スタミナ-25%\n※ライド可能なパルのみ有効"
+      },
+      "zh-CN": {
+        "Name": "家里蹲",
+        "Description": "最大耐力-25%\n※此效果仅对可骑乘的帕鲁有效。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "SalePrice_Down_1": {
+    "InternalName": "SalePrice_Down_1",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Shabby",
+        "Description": "Decrease the value of items when sold by -10%"
+      },
+      "fr": {
+        "Name": "Miteux",
+        "Description": "Montant de vente - : -10 %"
+      },
+      "ja": {
+        "Name": "みすぼらしい",
+        "Description": "取引価格が悪化-10%"
+      },
+      "zh-CN": {
+        "Name": "寒酸",
+        "Description": "交易价格恶化-10%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "NightOwl": {
+    "InternalName": "NightOwl",
+    "Rating": -1,
+    "I18n": {
+      "en": {
+        "Name": "Night Owl",
+        "Description": "Tends to nap through the day, due to being nocturnal."
+      },
+      "fr": {
+        "Name": "Oiseau de Nuit",
+        "Description": "Fait constamment des siestes, sans doute pour récupérer de son activité nocturne."
+      },
+      "ja": {
+        "Name": "夜更かし",
+        "Description": "夜中まで起きているせいか、昼寝をしがち。"
+      },
+      "zh-CN": {
+        "Name": "夜猫子",
+        "Description": "因为总是熬夜，白天常常睡午觉。"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_FullStomach_Up_2": {
+    "InternalName": "PAL_FullStomach_Up_2",
+    "Rating": -2,
+    "I18n": {
+      "en": {
+        "Name": "Bottomless Stomach",
+        "Description": "Hunger decreases +15.0% faster."
+      },
+      "fr": {
+        "Name": "Estomac sans Fond",
+        "Description": "Le degré de satiété diminue rapidement +15.0 %"
+      },
+      "ja": {
+        "Name": "無限の胃袋",
+        "Description": "満腹度が減りやすい +15.0%"
+      },
+      "zh-CN": {
+        "Name": "无底之胃",
+        "Description": "增加饱腹度下降速度+15.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_Sanity_Up_2": {
+    "InternalName": "PAL_Sanity_Up_2",
+    "Rating": -2,
+    "I18n": {
+      "en": {
+        "Name": "Destructive",
+        "Description": "SAN drops +15.0% faster."
+      },
+      "fr": {
+        "Name": "Soif de Destruction",
+        "Description": "Les points MEN diminuent rapidement +15.0 %"
+      },
+      "ja": {
+        "Name": "破滅願望",
+        "Description": "SAN値が減りやすい +15.0%"
+      },
+      "zh-CN": {
+        "Name": "毁灭欲望",
+        "Description": "增加SAN值下降速度+15.0%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "CraftSpeed_down2": {
+    "InternalName": "CraftSpeed_down2",
+    "Rating": -3,
+    "I18n": {
+      "en": {
+        "Name": "Slacker",
+        "Description": "Work Speed -30%"
+      },
+      "fr": {
+        "Name": "Négligent",
+        "Description": "Vitesse de travail -30%"
+      },
+      "ja": {
+        "Name": "サボり癖",
+        "Description": "作業速度 -30%"
+      },
+      "zh-CN": {
+        "Name": "偷懒成瘾",
+        "Description": "工作速度 -30%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": -0.3,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "Deffence_down2": {
+    "InternalName": "Deffence_down2",
+    "Rating": -3,
+    "I18n": {
+      "en": {
+        "Name": "Brittle",
+        "Description": "Defense -20%"
+      },
+      "fr": {
+        "Name": "Os fragiles",
+        "Description": "Défense -20%"
+      },
+      "ja": {
+        "Name": "すぐ骨折する",
+        "Description": "防御 -20%"
+      },
+      "zh-CN": {
+        "Name": "骨质疏松",
+        "Description": "防御 -20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": 0.0,
+      "b_Defense": -0.2,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  },
+  "PAL_ALLAttack_down2": {
+    "InternalName": "PAL_ALLAttack_down2",
+    "Rating": -3,
+    "I18n": {
+      "en": {
+        "Name": "Pacifist",
+        "Description": "Attack -20%"
+      },
+      "fr": {
+        "Name": "Pacifiste",
+        "Description": "Attaque -20%"
+      },
+      "ja": {
+        "Name": "ことなかれ主義者",
+        "Description": "攻撃 -20%"
+      },
+      "zh-CN": {
+        "Name": "消极主义者",
+        "Description": "攻击 -20%"
+      }
+    },
+    "Buff": {
+      "b_Attack": -0.2,
+      "b_Defense": 0.0,
+      "b_CraftSpeed": 0.0,
+      "b_MoveSpeed": 0.0
+    }
+  }
+}

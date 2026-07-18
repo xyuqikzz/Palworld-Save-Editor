@@ -1,0 +1,16 @@
+services:
+  palworld-save-editor:
+    image: ghcr.io/xyuqikzz/palworld-save-editor:latest
+    restart: unless-stopped
+    container_name: palworld-save-editor
+    ports:
+      - 8080:58888 # Host Port : Container Port
+    environment:
+      - PUID=1000 # Change this to your uid
+      - PGID=1000 # Change this to your gid
+      - APP_PORT=58888 # The port Palworld-Save-Editor listens on, normally you don't modify it unless network is set to host mode.
+      - APP_LANG=en # Options: en, zh-CN, ja
+      - MODE=web
+      - PASSWORD=password # To prevent unauthorized access, a strong password is recommended.
+    volumes:
+      - "/Host/Path/To/The/GameSave/AF518B19A47340B8A55BC58137981393:/mnt/gamesave" # Host path : Container path

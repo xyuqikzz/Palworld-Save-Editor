@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "fixtures": [],
+  "status": "no-redistributable-real-save-fixtures-supplied",
+  "required_fields": [
+    "fixture_id",
+    "relative_path",
+    "game_version",
+    "save_version",
+    "platform",
+    "sha256",
+    "contains_player_files",
+    "inventory_aliases",
+    "dynamic_item_kinds",
+    "provenance",
+    "expected_capabilities",
+    "expected_invariant_exceptions"
+  ]
+}

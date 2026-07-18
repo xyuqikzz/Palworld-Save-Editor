@@ -1,0 +1,595 @@
+@import './base.css';
+
+#app { min-height: 100vh; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(0.78 0.02 250); border: 3px solid transparent; border-radius: 8px; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.67 0.04 250); background-clip: padding-box; }
+
+button { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: default; }
+
+/* Application shell */
+#EditorDiv {
+  min-height: 100vh;
+  background: var(--ui-canvas);
+}
+
+#EditorMain {
+  width: min(1600px, calc(100vw - 32px));
+  gap: 16px;
+  margin-inline: auto;
+  padding: 16px 0 24px;
+}
+
+#EditorMain > .selection-column > .flex {
+  padding: 12px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+}
+
+#EditorMain .selection-column > .list-panel {
+  min-height: 0;
+  overflow-x: visible;
+  overflow-y: clip;
+}
+
+#EditorMain .title {
+  min-height: 34px;
+  padding: 0 2px 9px;
+  color: var(--ui-text);
+  border-bottom: 1px solid var(--ui-border);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+#EditorMain .title p { margin: 0; }
+#EditorMain .overflow-list { padding-top: 9px; gap: 6px; }
+#EditorMain .overflow-container { padding: 0; }
+
+#EditorMain button.player,
+#EditorMain button.pal {
+  min-height: 38px;
+  padding: 7px 9px;
+  color: var(--ui-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+#EditorMain button.player.real,
+#EditorMain button.pal.male,
+#EditorMain button.pal.female { border-color: transparent; }
+
+#EditorMain button.player:hover:not(:disabled),
+#EditorMain button.pal:hover:not(:disabled) { background: var(--ui-surface-raised); }
+
+#EditorMain button.player[selected="true"],
+#EditorMain button.pal:disabled[selected="true"] {
+  color: var(--ui-accent-strong);
+  background: var(--ui-accent-soft);
+  border-color: oklch(0.8 0.07 250);
+  filter: none;
+  opacity: 1;
+}
+
+#EditorMain button.player:disabled,
+#EditorMain button.pal:disabled {
+  color: var(--ui-text-muted);
+  background: transparent;
+  filter: none;
+  opacity: 0.72;
+}
+
+#EditorMain button.pal.out_of_container { color: var(--ui-success); }
+#EditorMain .palIcon { width: 28px; height: 28px; margin-right: 8px; border-radius: 7px; }
+
+/* Panels and data controls */
+#EditorMain .PalEditor.pal-editor-layout {
+  gap: 16px;
+  padding-right: 4px;
+}
+
+#EditorMain .EditorItem {
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+#EditorMain .EditorItem .EditorItem { background: var(--ui-surface-raised); }
+
+#EditorMain p.cat {
+  margin: 0 0 8px;
+  color: var(--ui-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+#EditorMain p.const,
+#EditorMain .level-indicator {
+  min-height: 32px;
+  margin: 0;
+  padding: 5px 8px;
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+#EditorMain .editField { gap: 6px; }
+#EditorMain .editField > div { gap: 6px; }
+
+#EditorMain input.edit,
+#EditorMain select.selector,
+#EditorMain input.palFilter {
+  min-height: 34px;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+#EditorMain input.edit:focus,
+#EditorMain select.selector:focus,
+#EditorMain input.palFilter:focus {
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px oklch(0.62 0.17 250 / 0.14);
+}
+
+#EditorMain button.edit,
+#EditorMain button.add_pal,
+#EditorMain button.playerSettings,
+#EditorMain #dump_btn,
+#EditorMain #dupe_btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ui-text-muted);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+#EditorMain button.edit:hover:not(:disabled),
+#EditorMain button.add_pal:hover:not(:disabled),
+#EditorMain button.playerSettings:hover:not(:disabled),
+#EditorMain #dump_btn:hover:not(:disabled),
+#EditorMain #dupe_btn:hover:not(:disabled) {
+  color: var(--ui-accent-strong);
+  background: var(--ui-accent-soft);
+  border-color: oklch(0.76 0.08 250);
+  box-shadow: none;
+}
+
+#EditorMain button.edit:disabled,
+#EditorMain button.add_pal:disabled,
+#EditorMain button.playerSettings:disabled { opacity: 0.48; filter: none; }
+
+#EditorMain button.edit.text,
+#EditorMain button.edit_text {
+  width: auto;
+  min-height: 34px;
+  padding: 0 10px;
+  color: white;
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
+
+#EditorMain button.edit.text:hover:not(:disabled),
+#EditorMain button.edit_text:hover:not(:disabled) { color: white; background: var(--ui-accent-strong); border-color: var(--ui-accent-strong); }
+
+#EditorMain button.del,
+#EditorMain #del_btn {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  border-color: oklch(0.87 0.06 25);
+}
+
+#EditorMain button.del:hover:not(:disabled),
+#EditorMain #del_btn:hover:not(:disabled) { color: white; background: var(--ui-danger); border-color: var(--ui-danger); }
+
+#EditorMain #dump_btn,
+#EditorMain #dupe_btn,
+#EditorMain #del_btn {
+  position: static;
+  width: auto;
+  min-height: 32px;
+  padding: 0 10px;
+  margin: 0;
+}
+
+#EditorMain hr { height: 1px; margin: 16px 0; background: var(--ui-border); }
+#EditorMain .tooltip-text { color: var(--ui-text); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 8px; box-shadow: 0 8px 16px oklch(0.25 0.03 250 / 0.12); }
+
+#EditorMain input[type="range"] { accent-color: var(--ui-accent); }
+#EditorMain img.suitIcon { width: 20px; height: 20px; margin: 0 5px 0 0; padding: 0; }
+#EditorMain img.palIcon { box-shadow: none; }
+
+/* Technology cards */
+#EditorMain button.tech {
+  min-width: 126px;
+  max-width: 126px;
+  min-height: 148px;
+  margin: 5px;
+  overflow: hidden;
+  color: var(--ui-text);
+  background-color: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+#EditorMain button.tech.bossTech { background-color: oklch(0.95 0.025 305); border-color: oklch(0.84 0.06 305); }
+#EditorMain button.tech.locked { opacity: 0.55; filter: grayscale(0.75); }
+#EditorMain button.tech:not(.locked) { border-color: oklch(0.73 0.08 250); }
+#EditorMain button.tech:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--ui-accent); }
+#EditorMain .techHeader, #EditorMain .techFooter { color: var(--ui-text); background: oklch(0.995 0.002 250 / 0.86); text-shadow: none; }
+
+@media (max-width: 1060px) {
+  #EditorMain { flex-wrap: wrap; }
+  #EditorMain > .selection-column > .flex { height: auto; max-height: 280px; }
+}
+
+@media (max-width: 720px) {
+  #EditorMain { width: calc(100vw - 20px); gap: 10px; }
+  #EditorMain > .selection-column > .flex { width: 100%; }
+  #EditorMain .EditorItem { min-width: min(100%, 320px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #EditorMain button.tech { transform: none; }
+}
+
+/* Modern workspace refinements */
+#app { min-height: 100dvh; }
+
+#EditorDiv { min-height: 100dvh; }
+
+#EditorMain {
+  isolation: isolate;
+  padding-top: 0;
+}
+
+#EditorMain > .selection-column > .flex {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+#EditorMain .title {
+  min-height: 35px;
+  padding: 1px 2px 9px;
+  font-weight: 680;
+}
+
+#EditorMain .overflow-list { padding-top: 8px; gap: 3px; }
+
+#EditorMain button.player,
+#EditorMain button.pal {
+  min-height: 40px;
+  padding: 6px 9px;
+  border-radius: var(--ui-radius-sm);
+}
+
+#EditorMain button.player:hover:not(:disabled),
+#EditorMain button.pal:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-border);
+}
+
+#EditorMain button.player[selected="true"],
+#EditorMain button.pal:disabled[selected="true"] {
+  border-color: oklch(0.76 0.08 252);
+  box-shadow: 0 0 0 1px oklch(0.76 0.08 252 / 0.18) inset;
+}
+
+#EditorMain button.pal.unref { opacity: 0.62; filter: grayscale(0.7); }
+
+#EditorMain .palIcon {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 auto;
+  margin-right: 8px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+#EditorMain input.palFilter {
+  width: 100%;
+  height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+#EditorMain .PalEditor {
+  width: 100%;
+  min-width: 0;
+  gap: 12px;
+  padding: 0 4px 20px 0;
+  scroll-padding: 12px;
+}
+
+#EditorMain .EditorItem {
+  padding: 18px;
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+#EditorMain .EditorItem .EditorItem {
+  background: var(--ui-surface-raised);
+  box-shadow: none;
+}
+
+#EditorMain .EditorItem.basicInfo {
+  flex: 1 1 min(540px, 100%);
+  max-width: 100%;
+}
+
+#EditorMain .EditorItem:not(.basicInfo) { flex: 1 1 360px; }
+
+#EditorMain p.cat {
+  margin: 0 0 11px;
+  font-size: 13px;
+  font-weight: 680;
+  letter-spacing: -0.005em;
+}
+
+#EditorMain p.const,
+#EditorMain .level-indicator {
+  padding: 5px 9px;
+  color: var(--ui-text-secondary);
+  border-color: transparent;
+  font-size: 12.5px;
+}
+
+#EditorMain .editField { width: 100%; gap: 6px; }
+
+#EditorMain input.edit,
+#EditorMain select.selector {
+  padding-inline: 10px;
+  border-radius: var(--ui-radius-sm);
+}
+
+#EditorMain button.edit,
+#EditorMain button.add_pal,
+#EditorMain button.playerSettings,
+#EditorMain #dump_btn,
+#EditorMain #dupe_btn {
+  flex: 0 0 auto;
+  border-radius: var(--ui-radius-sm);
+}
+
+#EditorMain #dump_btn,
+#EditorMain #dupe_btn,
+#EditorMain #del_btn {
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+#EditorMain button.tech {
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+#EditorMain button.tech:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px oklch(0.35 0.04 250 / 0.1);
+}
+
+@media (max-width: 1060px) {
+  #EditorMain { flex-wrap: initial; }
+  #EditorMain > .selection-column > .flex { height: 100%; max-height: none; }
+}
+
+/* Dark workspace and deterministic editor layout */
+::-webkit-scrollbar-thumb { background: var(--ui-border-strong); border-color: transparent; }
+::-webkit-scrollbar-thumb:hover { background: var(--ui-text-muted); }
+
+#EditorMain > .selection-column > .flex,
+#EditorMain .EditorItem {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+}
+
+#EditorMain button.player:hover:not(:disabled),
+#EditorMain button.pal:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-border-strong);
+}
+
+#EditorMain button.player[selected="true"],
+#EditorMain button.pal:disabled[selected="true"] {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+  box-shadow: 3px 0 0 var(--ui-accent) inset;
+}
+
+#EditorMain input.edit,
+#EditorMain select.selector,
+#EditorMain input.palFilter {
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  border-color: var(--ui-border);
+}
+
+#EditorMain input.edit::placeholder,
+#EditorMain input.palFilter::placeholder { color: var(--ui-text-muted); }
+
+#EditorMain input.edit:focus,
+#EditorMain select.selector:focus,
+#EditorMain input.palFilter:focus {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.16);
+}
+
+#EditorMain button.edit,
+#EditorMain button.add_pal,
+#EditorMain button.playerSettings,
+#EditorMain #dump_btn,
+#EditorMain #dupe_btn {
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border-color: var(--ui-border);
+}
+
+#EditorMain button.edit:hover:not(:disabled),
+#EditorMain button.add_pal:hover:not(:disabled),
+#EditorMain button.playerSettings:hover:not(:disabled),
+#EditorMain #dump_btn:hover:not(:disabled),
+#EditorMain #dupe_btn:hover:not(:disabled) {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+}
+
+#EditorMain button.edit.text,
+#EditorMain button.edit_text {
+  color: oklch(0.16 0.025 252);
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
+
+#EditorMain button.del,
+#EditorMain #del_btn {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  border-color: oklch(0.42 0.08 24);
+}
+
+#EditorMain .tooltip-text {
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  border-color: var(--ui-border-strong);
+  box-shadow: var(--ui-shadow-md);
+}
+
+#EditorMain button.tech.bossTech {
+  background: oklch(0.25 0.045 305);
+  border-color: oklch(0.48 0.08 305);
+}
+
+#EditorMain button.tech:not(.locked) { border-color: var(--ui-border-strong); }
+#EditorMain .techHeader,
+#EditorMain .techFooter { color: var(--ui-text); background: oklch(0.2 0.02 252 / 0.9); }
+
+#EditorMain .PalEditor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(340px, 0.78fr);
+  align-items: start;
+  align-content: start;
+  gap: 10px;
+  padding-right: 0;
+}
+
+#EditorMain .EditorItem.basicInfo {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+#EditorMain .EditorItem.statsPanel { grid-column: 2; width: 100%; }
+
+#EditorMain .EditorItem.suitabilityPanel,
+#EditorMain .EditorItem.skillsPanel {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+}
+
+#EditorMain .EditorItem.skillsPanel {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.9fr) minmax(230px, 0.72fr) minmax(340px, 1.38fr);
+  align-items: start;
+  gap: 0;
+}
+
+#EditorMain .skillsPanel > .skill-section {
+  min-width: 0;
+  height: 100%;
+  padding-inline: 18px;
+}
+
+#EditorMain .skillsPanel > .skill-section:first-child { padding-left: 0; }
+#EditorMain .skillsPanel > .skill-section:last-child { padding-right: 0; }
+#EditorMain .skillsPanel > .skill-section + .skill-section {
+  border-left: 1px solid var(--ui-border);
+}
+
+#EditorMain .editField { width: auto; min-width: 0; }
+#EditorMain .basic-fields > .editField { width: 100%; }
+#EditorMain .attribute-row > .editField { width: auto; }
+
+#EditorMain .editor-card-actions #dump_btn,
+#EditorMain .editor-card-actions #dupe_btn,
+#EditorMain .editor-card-actions #del_btn {
+  position: static;
+  inset: auto;
+  display: inline-flex;
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+#EditorMain p.const {
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#EditorMain .basicInfo p.const,
+#EditorMain .basicInfo input.edit,
+#EditorMain .basicInfo .pal-species-trigger {
+  font-size: 13px;
+}
+
+#EditorMain .suitabilityPanel .skillList {
+  column-gap: 8px;
+  row-gap: 6px;
+}
+
+#EditorMain .suitabilityPanel .skillList > div { gap: 4px; }
+
+@media (max-width: 1380px) {
+  #EditorMain .PalEditor.pal-editor-layout { grid-template-columns: minmax(520px, 1fr); }
+  #EditorMain .EditorItem.basicInfo,
+  #EditorMain .EditorItem.statsPanel,
+  #EditorMain .EditorItem.suitabilityPanel,
+  #EditorMain .EditorItem.skillsPanel { grid-column: 1; }
+}
+
+@media (max-width: 1240px) {
+  #EditorMain .EditorItem.skillsPanel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  #EditorMain .skillsPanel > .skill-section {
+    padding: 0;
+    border-left: 0;
+  }
+
+  #EditorMain .skillsPanel > .skill-section + .skill-section {
+    padding-top: 16px;
+    border-top: 1px solid var(--ui-border);
+  }
+}
