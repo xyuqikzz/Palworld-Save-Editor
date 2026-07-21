@@ -101,6 +101,22 @@ class UpdatePlayerTechnology(SessionCommand):
 
 
 @dataclass(frozen=True, kw_only=True)
+class UpdatePlayerMissions(SessionCommand):
+    player_id: str
+    operation: Literal[
+        "mark_completed",
+        "reset_to_unaccepted",
+        "restart_from_beginning",
+        "complete_tracked",
+        "complete_all_in_progress",
+        "complete_all",
+        "reset_all_completed",
+    ]
+    mission_ids: tuple[str, ...] = ()
+    preview_token: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
 class UpdatePalIdentity(SessionCommand):
     pal_id: str
     name: str | None = None
@@ -130,6 +146,11 @@ class UpdatePalEnhancement(SessionCommand):
     pal_id: str
     values: dict[str, int] = field(default_factory=dict)
     work_suitability: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnlockPalExpedition(SessionCommand):
+    pal_id: str
 
 
 @dataclass(frozen=True, kw_only=True)

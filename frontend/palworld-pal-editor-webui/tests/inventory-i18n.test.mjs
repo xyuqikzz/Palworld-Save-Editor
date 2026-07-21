@@ -19,6 +19,7 @@ function loadMessages(locale) {
 const en = loadMessages('en')
 const fr = loadMessages('fr')
 const ja = loadMessages('ja')
+const ko = loadMessages('ko')
 const zhCN = loadMessages('zh-CN')
 
 function visibleEnglishText(template) {
@@ -47,7 +48,7 @@ test('inventory editor localizes every user-facing string in all supported local
   )
   assert.ok(referencedKeys.size > 1, 'inventory editor must use dedicated translation keys')
 
-  const locales = { en, fr, ja, 'zh-CN': zhCN }
+  const locales = { en, fr, ja, ko, 'zh-CN': zhCN }
   const expectedKeys = Object.keys(en)
     .filter(key => key === 'Editor_Inventory' || key.startsWith('Inventory_'))
     .sort()

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime, timezone
-import hashlib
-import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
+import tempfile
 from typing import Any, Callable
 import uuid
 
@@ -23,17 +21,13 @@ from palworld_pal_editor.core.dynamic_item_data import DynamicItemData
 from palworld_pal_editor.core.pal_objects import UUID2HexStr
 from palworld_pal_editor.core.save_manager import MAIN_SKIP_PROPERTIES, PLAYER_SKIP_PROPERTIES
 from palworld_pal_editor.domain.errors import DomainError, stale_revision
-from palworld_pal_editor.domain.models import SaveResult
+from palworld_pal_editor.domain.models import (
+    SavePlatform,
+    SaveResult,
+    StorageCommitRequest,
+)
 
 from .save_session import SaveSession
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 class SaveWriter:
@@ -49,11 +43,19 @@ class SaveWriter:
     def save(
         self,
         session: SaveSession,
-        target: str | Path,
+        target: str | Path | None,
         expected_revision: int,
     ) -> SaveResult:
         if expected_revision != session.revision:
             raise stale_revision(expected_revision, session.revision)
+        target_path = Path(target).resolve() if target is not None else None
+        if session.platform is SavePlatform.XGP and target_path is not None:
+            raise DomainError(
+                code="WGS_COMMIT_FAILED",
+                message="Game Pass saves can only be written back to the original slot.",
+                field="target",
+                http_status=400,
+            )
         changes = session.changes()
         if not changes:
             return SaveResult(
@@ -64,6 +66,11 @@ class SaveWriter:
                 manifest=(),
                 staged_reload_verified=True,
                 target_reload_verified=True,
+                platform=session.platform.value,
+                source_reloaded=True,
+                cloud_sync_verified=(
+                    False if session.platform is SavePlatform.XGP else None
+                ),
             )
         self._validate_global_invariants(session)
         files = self._modified_files(session)
@@ -77,129 +84,119 @@ class SaveWriter:
                     http_status=409,
                 )
 
-        source = session.source.resolve()
-        target_path = Path(target).resolve()
-        if target_path != source and target_path.exists():
-            raise DomainError(
-                code="SAVE_TARGET_ALREADY_EXISTS",
-                message="Saving to a different existing directory is not supported safely.",
-                field="target",
-                details={"target": str(target_path)},
-                http_status=409,
-            )
-        if not target_path.parent.exists():
-            raise DomainError(
-                code="INVALID_SAVE_TARGET",
-                message="The target parent directory does not exist.",
-                field="target",
-                http_status=400,
-            )
-
         operation_id = str(uuid.uuid4())
-        backup_path = (
-            source.parent
-            / ".Palworld-Pal-Editor-Backup"
-            / source.name
-            / f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')}-{operation_id}"
-        )
-        staging_path = target_path.parent / f".{target_path.name}.pal-editor-staging-{operation_id}"
-        backup_manifest: list[dict[str, Any]] = []
-        replacement_progress: list[str] = []
-
-        try:
-            backup_manifest = self._create_verified_backup(
-                source, backup_path, files, session.session_id
+        if session.platform is SavePlatform.STEAM:
+            target_path = target_path or session.source.resolve()
+            staging_path = (
+                target_path.parent
+                / f".{target_path.name}.pal-editor-staging-{operation_id}"
             )
-            self._fail("after_backup", {"backup_path": str(backup_path)})
-            if target_path == source:
-                staging_path.mkdir(parents=False, exist_ok=False)
-            else:
-                shutil.copytree(source, staging_path)
+        else:
+            staging_path = Path(
+                tempfile.mkdtemp(prefix=f"palworld-editor-stage-{operation_id}-")
+            ).resolve()
+        try:
+            if session.platform is SavePlatform.STEAM:
+                if target_path == session.source.resolve():
+                    staging_path.mkdir(parents=False, exist_ok=False)
+                else:
+                    shutil.copytree(session.workspace, staging_path)
             self._serialize_to_staging(session, staging_path, files)
             self._verify_staged(staging_path, files)
-            self._fail("before_replace", {"staging_path": str(staging_path)})
-
-            if target_path != source:
-                os.replace(staging_path, target_path)
-                replacement_progress.append(".")
-                self._fail("after_replace", {"path": str(target_path)})
-            else:
-                for relative_path in files:
-                    staged_file = staging_path / Path(relative_path)
-                    target_file = target_path / Path(relative_path)
-                    target_file.parent.mkdir(parents=True, exist_ok=True)
-                    os.replace(staged_file, target_file)
-                    replacement_progress.append(relative_path)
-                    self._write_progress(staging_path, replacement_progress)
-                    self._fail(
-                        "after_replace",
-                        {"path": relative_path, "progress": list(replacement_progress)},
-                    )
-            self._verify_staged(target_path, files)
+            commit = session.storage.commit(
+                StorageCommitRequest(
+                    opened=session.opened_save,
+                    staged_workspace=staging_path,
+                    changed_files=tuple(PurePosixPath(path) for path in files),
+                    expected_revision=expected_revision,
+                    target_path=target_path,
+                    verify_file=self._reload_file,
+                    failure_hook=self._failure_hook,
+                )
+            )
         except DomainError as error:
-            if not replacement_progress:
-                raise
-            recovered = self._recover(
-                source=source,
-                target=target_path,
-                backup_path=backup_path,
-                files=files,
-                progress=replacement_progress,
-            )
-            code = "WRITE_FAILED" if recovered else "RECOVERY_FAILED"
-            raise DomainError(
-                code=code,
-                message=(
-                    "Save validation failed and the original files were restored."
-                    if recovered
-                    else "Save validation and automatic recovery both failed."
-                ),
-                details={
-                    "backup_path": str(backup_path),
-                    "staging_path": str(staging_path),
-                    "recovered": recovered,
-                    "stage_error": error.code,
-                },
-                retryable=recovered,
-                http_status=500,
-            ) from error
-        except Exception as error:
-            recovered = self._recover(
-                source=source,
-                target=target_path,
-                backup_path=backup_path,
-                files=files,
-                progress=replacement_progress,
-            )
-            code = "WRITE_FAILED" if recovered else "RECOVERY_FAILED"
-            raise DomainError(
-                code=code,
-                message=(
-                    "Save failed and the original files were restored."
-                    if recovered
-                    else "Save and automatic recovery both failed."
-                ),
-                details={
-                    "backup_path": str(backup_path),
-                    "staging_path": str(staging_path),
-                    "recovered": recovered,
-                    "stage_error": type(error).__name__,
-                },
-                retryable=recovered,
-                http_status=500,
-            ) from error
+            if session.platform is SavePlatform.XGP and error.code in {
+                "SERIALIZATION_FAILED",
+                "STAGED_RELOAD_FAILED",
+            }:
+                raise DomainError(
+                    code="WGS_STAGE_FAILED",
+                    message="The changed Game Pass save could not be staged and verified.",
+                    details={"staging_path": str(staging_path)},
+                    http_status=500,
+                ) from error
+            raise
 
         session.mark_saved(expected_revision)
         if staging_path.exists():
             shutil.rmtree(staging_path)
         return SaveResult(
             revision=session.revision,
-            backup_path=str(backup_path),
+            backup_path=str(commit.backup_path) if commit.backup_path else None,
+            staging_path=None,
+            written_files=tuple(path.as_posix() for path in commit.written_files),
+            manifest=commit.manifest,
+            staged_reload_verified=True,
+            target_reload_verified=commit.source_reloaded,
+            platform=commit.platform.value,
+            manifest_path=(
+                str(commit.manifest_path) if commit.manifest_path else None
+            ),
+            source_reloaded=commit.source_reloaded,
+            recovery_status=commit.recovery_status,
+            journal_path=str(commit.journal_path) if commit.journal_path else None,
+            cloud_sync_verified=(
+                False if commit.platform is SavePlatform.XGP else None
+            ),
+        )
+
+    def export_steam_copy(
+        self,
+        session: SaveSession,
+        target: str | Path,
+        expected_revision: int,
+    ) -> SaveResult:
+        if expected_revision != session.revision:
+            raise stale_revision(expected_revision, session.revision)
+        target_path = Path(target).resolve()
+        if target_path.exists() or not target_path.parent.is_dir():
+            raise DomainError(
+                code="INVALID_SAVE_TARGET",
+                message="The Steam export target must be a new directory with an existing parent.",
+                field="target",
+                http_status=409,
+            )
+        staging = target_path.parent / f".{target_path.name}.steam-export-{uuid.uuid4()}"
+        try:
+            shutil.copytree(session.workspace, staging)
+            files = self._modified_files(session) if session.changes() else []
+            if files:
+                self._validate_global_invariants(session)
+                self._serialize_to_staging(session, staging, files)
+                self._verify_staged(staging, files)
+            os.replace(staging, target_path)
+            self._verify_staged(target_path, files or ["Level.sav"])
+        except Exception as error:
+            if staging.exists():
+                shutil.rmtree(staging, ignore_errors=True)
+            if isinstance(error, DomainError):
+                raise
+            raise DomainError(
+                code="WGS_STAGE_FAILED" if session.platform is SavePlatform.XGP else "WRITE_FAILED",
+                message="The Steam-format copy could not be exported safely.",
+                http_status=500,
+            ) from error
+        return SaveResult(
+            revision=session.revision,
+            backup_path=None,
             staging_path=None,
             written_files=tuple(files),
-            manifest=tuple(backup_manifest),
+            manifest=(),
             staged_reload_verified=True,
             target_reload_verified=True,
+            platform=SavePlatform.STEAM.value,
+            source_reloaded=False,
+            recovery_status="not_needed",
         )
 
     def _modified_files(self, session: SaveSession) -> list[str]:
@@ -255,59 +252,6 @@ class SaveWriter:
                     },
                     http_status=409,
                 )
-
-    def _create_verified_backup(
-        self,
-        source: Path,
-        backup_path: Path,
-        files: list[str],
-        session_id: str,
-    ) -> list[dict[str, Any]]:
-        try:
-            files_root = backup_path / "files"
-            files_root.mkdir(parents=True, exist_ok=False)
-            manifest: list[dict[str, Any]] = []
-            for relative_path in files:
-                source_file = source / Path(relative_path)
-                if not source_file.is_file():
-                    raise FileNotFoundError(source_file)
-                backup_file = files_root / Path(relative_path)
-                backup_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_file, backup_file)
-                source_hash = _sha256(source_file)
-                backup_hash = _sha256(backup_file)
-                if source_hash != backup_hash:
-                    raise OSError(f"Backup hash mismatch: {relative_path}")
-                self._reload_file(backup_file, relative_path)
-                manifest.append(
-                    {
-                        "path": relative_path,
-                        "size": source_file.stat().st_size,
-                        "sha256": source_hash,
-                    }
-                )
-            manifest_path = backup_path / "manifest.json"
-            with manifest_path.open("w", encoding="utf-8", newline="\n") as stream:
-                json.dump(
-                    {
-                        "schema_version": 1,
-                        "session_id": session_id,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
-                        "files": manifest,
-                    },
-                    stream,
-                    ensure_ascii=False,
-                    indent=2,
-                )
-                stream.write("\n")
-            return manifest
-        except Exception as error:
-            raise DomainError(
-                code="BACKUP_FAILED",
-                message="A complete, verified backup could not be created.",
-                details={"backup_path": str(backup_path)},
-                http_status=500,
-            ) from error
 
     def _serialize_to_staging(
         self, session: SaveSession, staging_path: Path, files: list[str]
@@ -388,43 +332,6 @@ class SaveWriter:
                         http_status=409,
                     )
         return gvas
-
-    def _recover(
-        self,
-        *,
-        source: Path,
-        target: Path,
-        backup_path: Path,
-        files: list[str],
-        progress: list[str],
-    ) -> bool:
-        try:
-            self._fail("before_recovery", {"progress": list(progress)})
-            if target != source:
-                if target.exists():
-                    return False
-                return True
-            for relative_path in reversed(progress):
-                backup_file = backup_path / "files" / Path(relative_path)
-                target_file = target / Path(relative_path)
-                restore_temp = target_file.with_name(f".{target_file.name}.restore-{uuid.uuid4()}")
-                shutil.copy2(backup_file, restore_temp)
-                if _sha256(restore_temp) != _sha256(backup_file):
-                    raise OSError("Restore hash mismatch")
-                os.replace(restore_temp, target_file)
-            for relative_path in progress:
-                manifest_hash = _sha256(backup_path / "files" / Path(relative_path))
-                if _sha256(target / Path(relative_path)) != manifest_hash:
-                    raise OSError("Recovered target hash mismatch")
-            return True
-        except Exception:
-            return False
-
-    def _write_progress(self, staging_path: Path, progress: list[str]) -> None:
-        progress_path = staging_path / "replacement-progress.json"
-        with progress_path.open("w", encoding="utf-8", newline="\n") as stream:
-            json.dump({"replaced": progress}, stream, indent=2)
-            stream.write("\n")
 
     def _fail(self, stage: str, context: dict[str, Any]) -> None:
         if self._failure_hook is not None:

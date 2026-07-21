@@ -7,10 +7,12 @@ from flask import Flask
 from flask_jwt_extended import JWTManager, create_access_token
 
 from palworld_pal_editor.api.pal import pal_blueprint
+from palworld_pal_editor.api.save import save_blueprint
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.core.character_index import CharacterIndex
 from palworld_pal_editor.core.save_manager import SaveManager
+from palworld_pal_editor.utils.data_provider import PAL_DATA, DataProvider
 from tests.unit.test_structural_pal_editor import (
     PAL_ID,
     PLAYER_ID,
@@ -37,10 +39,36 @@ class StructuralPalApiTests(unittest.TestCase):
         )
         JWTManager(app)
         app.register_blueprint(pal_blueprint, url_prefix="/api/pal")
+        app.register_blueprint(save_blueprint, url_prefix="/api/save")
         with app.app_context():
             token = create_access_token(identity="test-user")
         self.client = app.test_client()
         self.headers = {"Authorization": f"Bearer {token}"}
+
+    def test_pal_catalog_exposes_every_synced_human_npc(self) -> None:
+        response = self.client.get("/api/save/pal_data", headers=self.headers)
+
+        self.assertEqual(200, response.status_code)
+        catalog = response.get_json()["data"]["arr"]
+        humans = {item["InternalName"]: item for item in catalog if item["IsHuman"]}
+        expected_humans = {
+            internal_name
+            for internal_name in PAL_DATA
+            if DataProvider.is_pal_human(internal_name)
+        }
+        self.assertEqual(expected_humans, set(humans))
+        self.assertEqual(
+            {
+                internal_name
+                for internal_name in expected_humans
+                if DataProvider.has_human_icon(internal_name)
+            },
+            {
+                internal_name
+                for internal_name, item in humans.items()
+                if item["HasIcon"]
+            },
+        )
 
     def tearDown(self) -> None:
         SESSION_RUNTIME.replace_for_tests(None)

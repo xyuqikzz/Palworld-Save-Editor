@@ -12,6 +12,7 @@ const props = defineProps({
   selectedOption: { type: Object, default: null },
   kind: { type: String, default: 'active', validator: value => ['active', 'passive'].includes(value) },
   disabled: { type: Boolean, default: false },
+  iconOnly: { type: Boolean, default: false },
   showInternalName: { type: Boolean, default: false },
   placeholder: { type: String, default: '' },
   title: { type: String, default: '' },
@@ -153,14 +154,16 @@ const focusOption = index => {
 
 <template>
   <button
-    class="pal-skill-trigger"
+    :class="['pal-skill-trigger', { 'pal-skill-trigger--icon': iconOnly }]"
     type="button"
     :disabled="disabled"
+    :aria-label="iconOnly ? placeholderText : undefined"
+    :title="iconOnly ? placeholderText : undefined"
     aria-haspopup="dialog"
     @click="open"
   >
-    <span class="pal-skill-trigger__name">{{ placeholderText }}</span>
-    <AppIcon name="chevron-down" :size="16" />
+    <span v-if="!iconOnly" class="pal-skill-trigger__name">{{ placeholderText }}</span>
+    <AppIcon :name="iconOnly ? 'plus' : 'chevron-down'" :size="16" />
   </button>
 
   <Teleport to="body">
@@ -351,6 +354,21 @@ const focusOption = index => {
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--ui-text-muted);
+}
+
+.pal-skill-trigger.pal-skill-trigger--icon {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  flex: 0 0 32px;
+  justify-content: center;
+  padding: 0;
+  border-color: var(--ui-border);
+}
+
+.pal-skill-trigger.pal-skill-trigger--icon > .app-icon {
+  margin-left: 0;
+  color: var(--ui-accent);
 }
 
 .pal-skill-dialog {

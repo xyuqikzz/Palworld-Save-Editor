@@ -21,10 +21,14 @@ const sortedPathChildren = computed(() => {
     })
 })
 
-const savePickerResult = () => {
+const savePickerResult = async () => {
     palStore.SHOW_FILE_PICKER = false
-    palStore.PAL_GAME_SAVE_PATH = palStore.PAL_FILE_PICKER_PATH
-
+    if (palStore.FILE_PICKER_PURPOSE === 'xgp') {
+        palStore.XGP_WGS_PATH = palStore.PAL_FILE_PICKER_PATH
+        await palStore.discoverXgpSources()
+    } else {
+        palStore.PAL_GAME_SAVE_PATH = palStore.PAL_FILE_PICKER_PATH
+    }
 }
 
 // const scrollElement = ref(null);
@@ -53,20 +57,25 @@ const abort = () => {
 <template>
     <div class="modal-overlay" v-if="palStore.SHOW_FILE_PICKER" @click.self="abort">
         <div class="popup">
-            <button class="close-btn" @click="abort" :title="palStore.getTranslatedText('Common_Close')" :aria-label="palStore.getTranslatedText('Common_Close')"><AppIcon name="x" :size="17" /></button>
             <div class="currentPath">
                 <IconButton icon="back" :title="palStore.getTranslatedText('PathPicker_ParentDirectory')" @click="palStore.path_back" />
                 <InputArea v-model="palStore.PAL_FILE_PICKER_PATH" />
                 <IconButton icon="forward" :title="palStore.getTranslatedText('PathPicker_OpenPath')" @click="palStore.update_picker_result(palStore.PAL_FILE_PICKER_PATH)" />
+                <button class="close-btn" @click="abort" :title="palStore.getTranslatedText('Common_Close')" :aria-label="palStore.getTranslatedText('Common_Close')"><AppIcon name="x" :size="17" /></button>
             </div>
 
             <ul ref="scrollElement">
                 <li v-for="([key, value], index) of sortedPathChildren" :key="index" :isdir="value.isDir"
                     @click="() => { if (value.isDir) palStore.update_picker_result(key) }" :fullpath="key">
-                    <AppIcon :name="value.isDir ? 'folder' : 'file'" :size="17" /> {{ value.filename }}
+                    <AppIcon :name="value.isDir ? 'folder' : 'file'" :size="17" />
+                    <span class="path-entry-name">{{ value.filename }}</span>
                 </li>
             </ul>
-            <BarButton @click="savePickerResult" :content="palStore.getTranslatedText('Common_Confirm')" :disabled="!palStore.IS_PAL_SAVE_PATH" />
+            <BarButton
+                @click="savePickerResult"
+                :content="palStore.getTranslatedText('Common_Confirm')"
+                :disabled="palStore.FILE_PICKER_PURPOSE === 'steam' && !palStore.IS_PAL_SAVE_PATH"
+            />
         </div>
     </div>
 </template>
@@ -106,7 +115,8 @@ const abort = () => {
 }
 
 .popup .currentPath {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     gap: 10px;
     align-items: center;
 }
@@ -123,11 +133,22 @@ const abort = () => {
 }
 
 .popup li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
     margin: 2px;
     padding: 9px 10px;
     border: 1px solid transparent;
     border-radius: 7px;
     color: var(--ui-text-muted);
+}
+
+.path-entry-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .popup li:hover[isdir=true] {
@@ -137,13 +158,11 @@ const abort = () => {
 }
 
 .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    flex: 0 0 auto;
     background: transparent;
     border-radius: 7px;
-    width: 30px;
-    height: 30px;
+    width: 2rem;
+    height: 2rem;
     border: 1px solid var(--ui-border);
     color: var(--ui-text-muted);
     display: grid;

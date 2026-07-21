@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from palworld_pal_editor.application.runtime import SessionRuntime
 from palworld_pal_editor.domain.errors import DomainError
+from palworld_pal_editor.domain.models import SavePlatform, SaveSource
+import palworld_pal_editor.storage.xgp as xgp_module
 
 
 class _Session:
@@ -50,6 +54,19 @@ class SessionRuntimeTests(unittest.TestCase):
             runtime.open("save-b")
         self.assertEqual("UNSAVED_CHANGES_PRESENT", unsaved.exception.code)
 
+    def test_dirty_current_session_resumes_when_reopening_same_source(self) -> None:
+        runtime = SessionRuntime()
+        current = _Session("current", "save-a", dirty=True)
+        runtime.replace_for_tests(current)
+
+        with patch(
+            "palworld_pal_editor.application.runtime.SaveSession.open"
+        ) as open_session:
+            resumed = runtime.open("save-a")
+
+        self.assertIs(current, resumed)
+        open_session.assert_not_called()
+
     def test_dirty_session_requires_explicit_discard_before_close(self) -> None:
         runtime = SessionRuntime()
         current = _Session("current", "save-a", dirty=True)
@@ -82,6 +99,46 @@ class SessionRuntimeTests(unittest.TestCase):
         self.assertEqual(0, result["discarded_change_count"])
         with self.assertRaises(DomainError):
             runtime.get()
+
+    def test_dirty_steam_discard_then_xgp_open_does_not_depend_on_tasklist(self) -> None:
+        source = SaveSource(
+            platform=SavePlatform.XGP,
+            canonical_path=Path("xgp-save").resolve(),
+            source_id="xgp-source",
+            display_name="Game Pass test save",
+            world_id="A" * 32,
+        )
+        runtime = SessionRuntime(
+            source_catalog=SimpleNamespace(resolve=lambda _source_id: source)
+        )
+        runtime.replace_for_tests(_Session("steam", "steam-save", dirty=True))
+        runtime.close("steam", 1, discard_changes=True)
+
+        def open_storage(_source, storage):
+            storage._ensure_game_stopped()
+            return _Session("xgp", "xgp-save")
+
+        with (
+            patch(
+                "palworld_pal_editor.application.runtime.SaveSession.open_storage",
+                side_effect=open_storage,
+            ),
+            patch.object(xgp_module.sys, "platform", "win32"),
+            patch.object(
+                subprocess,
+                "run",
+                side_effect=OSError("tasklist unavailable"),
+            ),
+            patch.object(
+                xgp_module,
+                "_windows_process_names",
+                return_value=("explorer.exe",),
+                create=True,
+            ),
+        ):
+            opened = runtime.open_source("xgp-source")
+
+        self.assertEqual("xgp", opened.session_id)
 
 
 if __name__ == "__main__":

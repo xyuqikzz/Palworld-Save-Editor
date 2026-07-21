@@ -18,6 +18,7 @@ from palworld_pal_editor.application.character_editor import CharacterEditor
 from palworld_pal_editor.application.dynamic_attribute_editor import DynamicAttributeEditor
 from palworld_pal_editor.application.inventory_editor import InventoryEditor
 from palworld_pal_editor.application.inventory_layout_editor import InventoryLayoutEditor
+from palworld_pal_editor.application.mission_editor import MissionEditor
 from palworld_pal_editor.application.preset_service import PresetService
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.application.save_writer import SaveWriter
@@ -39,6 +40,7 @@ from palworld_pal_editor.domain.commands import (
     UpdatePlayerIdentity,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
+    UpdatePlayerMissions,
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.item_catalog import ItemCatalog
@@ -1547,6 +1549,142 @@ class RealSaveRoundTripTests(unittest.TestCase):
                     self.assertEqual(before[relative_path], _sha256(backup))
                 self._assert_source_unchanged(fixture, source_hashes)
         self.assertGreater(exercised, 0, "No fixture enables player_field_roundtrip")
+
+    def test_real_save_mission_roundtrip_changes_only_player_quest_fields(self) -> None:
+        exercised = 0
+        for fixture in self.fixtures:
+            if not fixture["contains_player_files"]:
+                continue
+            with self.subTest(fixture=fixture["fixture_id"]), tempfile.TemporaryDirectory(
+                prefix="pal-editor-real-missions-"
+            ) as temp_name:
+                work, source_hashes = self._copy_fixture(
+                    fixture, Path(temp_name) / fixture["fixture_id"]
+                )
+                before_hashes = _save_hashes(work)
+                selected = None
+                with self._quiet():
+                    session = self._open(work)
+                    for player_id in session.manager.player_mapping:
+                        editor = MissionEditor(session, locale="en")
+                        try:
+                            view = editor.get_missions(str(player_id))
+                        except DomainError:
+                            continue
+                        if not view["writable"]:
+                            continue
+                        priority = {"in_progress": 0, "completed": 1, "unaccepted": 2}
+                        candidates = sorted(
+                            (
+                                mission
+                                for mission in view["missions"]
+                                if mission["status"] in priority
+                                and mission["capabilities"]["mark_completed"]
+                            ),
+                            key=lambda mission: priority[mission["status"]],
+                        )
+                        if not candidates:
+                            continue
+                        mission = candidates[0]
+                        operation = (
+                            "reset_to_unaccepted"
+                            if mission["status"] == "completed"
+                            else "mark_completed"
+                        )
+                        expected_status = (
+                            "unaccepted"
+                            if operation == "reset_to_unaccepted"
+                            else "completed"
+                        )
+                        player = session.load_player(str(player_id))
+                        aliases = {
+                            "CompletedQuestArray",
+                            "OrderedQuestArray",
+                            "CompletedQuestArray_FullRelease",
+                            "OrderedQuestArray_FullRelease",
+                        }
+                        other_fields = {
+                            key: deepcopy(value)
+                            for key, value in player._player_save_data.items()
+                            if key not in aliases
+                        }
+                        command = UpdatePlayerMissions(
+                            session_id=session.session_id,
+                            expected_revision=session.revision,
+                            player_id=str(player_id),
+                            operation=operation,
+                            mission_ids=(mission["internal_name"],),
+                        )
+                        preview = editor.preview(command)
+                        selected = (
+                            str(player_id),
+                            mission["internal_name"],
+                            expected_status,
+                            other_fields,
+                            editor,
+                            command,
+                            preview,
+                        )
+                        break
+                    if selected is None:
+                        continue
+                    (
+                        player_id,
+                        mission_id,
+                        expected_status,
+                        other_fields,
+                        editor,
+                        command,
+                        preview,
+                    ) = selected
+                    result = editor.execute(
+                        replace(command, preview_token=preview["preview_token"])
+                    )
+                    self.assertEqual(1, result["impact_count"])
+                    saved = SaveWriter().save(session, work, session.revision)
+                    reloaded = self._open(work)
+                    reloaded_player = reloaded.load_player(player_id)
+                    final_view = MissionEditor(reloaded, locale="en").get_missions(
+                        player_id
+                    )
+                exercised += 1
+                final_status = next(
+                    mission["status"]
+                    for mission in final_view["missions"]
+                    if mission["internal_name"] == mission_id
+                )
+                self.assertEqual(expected_status, final_status)
+                self.assertEqual(
+                    other_fields,
+                    {
+                        key: value
+                        for key, value in reloaded_player._player_save_data.items()
+                        if key
+                        not in {
+                            "CompletedQuestArray",
+                            "OrderedQuestArray",
+                            "CompletedQuestArray_FullRelease",
+                            "OrderedQuestArray_FullRelease",
+                        }
+                    },
+                )
+                after_hashes = _save_hashes(work)
+                changed = sorted(
+                    path
+                    for path in before_hashes
+                    if before_hashes[path] != after_hashes[path]
+                )
+                self.assertEqual(list(saved.written_files), changed)
+                self.assertEqual(1, len(changed))
+                self.assertTrue(changed[0].startswith("Players/"))
+                backup = Path(saved.backup_path) / "files" / changed[0]
+                self.assertEqual(before_hashes[changed[0]], _sha256(backup))
+                self._assert_source_unchanged(fixture, source_hashes)
+        self.assertGreater(
+            exercised,
+            0,
+            "No configured real fixture exposes writable mission fields",
+        )
 
     def test_real_save_detached_pal_recovery_roundtrip(self) -> None:
         exercised = 0

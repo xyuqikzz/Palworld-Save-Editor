@@ -33,6 +33,35 @@ function makeStore() {
   return { store, player, playerId }
 }
 
+test('trust level clamps loaded negatives and does not decrement below zero', async () => {
+  const { store, player, playerId } = makeStore()
+  const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  axios.post = async url => ({
+    data: url === '/api/player/player_pals'
+      ? {
+          status: 0,
+          data: [{
+            InstanceId: palId,
+            FriendshipLevel: -1,
+            DataAccessKey: 'KingWhale',
+            DisplayName: 'Panthalus',
+            PassiveSkillList: [],
+            EquipWaza: [],
+            MasteredWaza: [],
+            Suitabilities: {},
+          }],
+        }
+      : { status: 0, data: { revision: 1 } },
+  })
+
+  await store.selectPlayer(playerId, true)
+  const pal = player.pals.get(palId)
+
+  assert.equal(pal.FriendshipLevel, 0)
+  pal.friendshipLevelDown()
+  assert.equal(pal.FriendshipLevel, 0)
+})
+
 test('inventory writes use semantic container type and advance session revision', async () => {
   const { store, playerId } = makeStore()
   const calls = []
@@ -314,4 +343,88 @@ test('heal all Pals targets every Pal in the current list without selections', a
   })
   assert.equal(calls[1].url, '/api/batch/commands')
   assert.equal(calls[1].data.impact_token, 'heal-all-impact')
+})
+
+test('heal all confirms immediately before waiting for the batch preview', async () => {
+  const { store, player } = makeStore()
+  player.pals.set('pal-1', {})
+  player.pals.set('pal-2', {})
+  store.PAL_MAP = player.pals
+
+  const events = []
+  const previousConfirm = window.confirm
+  let resolvePreview
+  window.confirm = () => {
+    events.push('confirm')
+    return true
+  }
+  axios.post = (url) => {
+    events.push(url)
+    if (url === '/api/batch/preview') {
+      return new Promise(resolve => {
+        resolvePreview = () => resolve({ data: { status: 0, data: {
+          impact: { operation_count: 2, atomicity: 'all_or_nothing' },
+          impact_token: 'heal-immediate-impact',
+        } } })
+      })
+    }
+    return Promise.resolve({ data: { status: 0, data: { revision: 1, operation_count: 2 } } })
+  }
+  axios.get = async () => ({ data: { status: 0, data: { containers: [] } } })
+
+  try {
+    const pending = store.healAllPals()
+
+    assert.deepEqual(events, ['confirm', '/api/batch/preview'])
+    assert.equal(store.LOADING_FLAG, true)
+
+    resolvePreview()
+    const succeeded = await pending
+
+    assert.equal(succeeded, true)
+    assert.deepEqual(events, ['confirm', '/api/batch/preview', '/api/batch/commands'])
+    assert.equal(store.LOADING_FLAG, false)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('unlock expedition Pals targets only locked Pals in the current list', async () => {
+  const { store, player } = makeStore()
+  const lockedPal = { IsExpeditionPal: true }
+  const normalPal = { IsExpeditionPal: false }
+  player.pals.set('pal-locked', lockedPal)
+  player.pals.set('pal-normal', normalPal)
+  store.PAL_MAP = player.pals
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    if (url === '/api/batch/preview') {
+      return { data: { status: 0, data: {
+        impact: { operation_count: 1, atomicity: 'all_or_nothing' },
+        impact_token: 'unlock-expedition-impact',
+      } } }
+    }
+    return { data: { status: 0, data: { revision: 1, operation_count: 1 } } }
+  }
+  axios.get = async () => ({ data: { status: 0, data: { containers: [] } } })
+
+  const succeeded = await store.unlockExpeditionPals()
+
+  assert.equal(succeeded, true)
+  assert.deepEqual(calls[0], {
+    url: '/api/batch/preview',
+    data: {
+      session_id: 'session-1',
+      expected_revision: 0,
+      operations: [
+        { resource: 'pal', command: 'unlock_pal_expedition', pal_id: 'pal-locked' },
+      ],
+    },
+  })
+  assert.equal(calls[1].url, '/api/batch/commands')
+  assert.equal(calls[1].data.impact_token, 'unlock-expedition-impact')
+  assert.equal(lockedPal.IsExpeditionPal, false)
+  assert.equal(normalPal.IsExpeditionPal, false)
+  assert.equal(store.EXPEDITION_PAL_COUNT, 0)
 })

@@ -3,6 +3,11 @@ import { computed, nextTick, ref } from 'vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
 import { usePalEditorStore } from '@/stores/paleditor'
+import {
+  availablePalElements,
+  elementTranslationKey,
+  filterSpeciesOptions,
+} from '@/components/modules/pal-species-filter'
 
 const palStore = usePalEditorStore()
 
@@ -11,20 +16,24 @@ const props = defineProps({
   options: { type: Array, default: () => [] },
   selectedOption: { type: Object, default: null },
   disabled: { type: Boolean, default: false },
+  showSelectedIcon: { type: Boolean, default: true },
   showInternalName: { type: Boolean, default: false },
   placeholder: { type: String, default: '' },
   title: { type: String, default: '' },
   searchPlaceholder: { type: String, default: '' },
   resultsLabel: { type: String, default: '' },
   emptyText: { type: String, default: '' },
-  closeLabel: { type: String, default: '' }
+  closeLabel: { type: String, default: '' },
+  triggerless: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'select'])
 
 const dialog = ref(null)
 const searchInput = ref(null)
 const searchQuery = ref('')
+const activeCategory = ref('pal')
+const activeElementFilter = ref('all')
 
 const formatPalNumber = value => {
   if (!value) return ''
@@ -34,7 +43,7 @@ const formatPalNumber = value => {
 }
 
 const iconKey = pal => {
-  if (pal?.IsHuman) return 'Human'
+  if (pal?.IsHuman) return pal.HasIcon ? pal.InternalName : 'Human'
 
   let key = pal?.InternalName || ''
   if (/^(?:BOSS|Boss)_/.test(key)) return key.replace(/^(?:BOSS|Boss)_/, '')
@@ -56,37 +65,37 @@ const searchPlaceholderText = computed(() => props.searchPlaceholder || palStore
 const resultsLabelText = computed(() => props.resultsLabel || palStore.getTranslatedText('Editor_Species_Results_Label'))
 const emptyTextValue = computed(() => props.emptyText || palStore.getTranslatedText('Editor_Species_Empty'))
 const closeLabelText = computed(() => props.closeLabel || palStore.getTranslatedText('Common_Close'))
+const hasPalOptions = computed(() => props.options.some(option => !option.IsHuman))
+const hasNpcOptions = computed(() => props.options.some(option => option.IsHuman))
+const showCategoryTabs = computed(() => hasPalOptions.value && hasNpcOptions.value)
+const palElements = computed(() => availablePalElements(props.options))
+const elementLabel = element => palStore.getTranslatedText(elementTranslationKey(element), [element])
 
-const filteredOptions = computed(() => {
-  const tokens = searchQuery.value
-    .normalize('NFKC')
-    .trim()
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
+const filteredOptions = computed(() => filterSpeciesOptions(props.options, {
+  category: activeCategory.value,
+  element: activeElementFilter.value,
+  query: searchQuery.value,
+}))
 
-  if (!tokens.length) return props.options
-
-  return props.options.filter(pal => {
-    const fields = [
-      pal.I18n,
-      pal.InternalName,
-      pal.SortingKey,
-      formatPalNumber(pal.SortingKey)
-    ].filter(Boolean).map(value => String(value).normalize('NFKC').toLocaleLowerCase())
-
-    return tokens.every(token => fields.some(field => field.includes(token)))
-  })
-})
+const setCategory = category => {
+  activeCategory.value = category
+  activeElementFilter.value = 'all'
+}
 
 const open = async () => {
   if (props.disabled || dialog.value?.open) return
   searchQuery.value = ''
+  activeElementFilter.value = 'all'
+  activeCategory.value = selectedPal.value?.IsHuman && hasNpcOptions.value
+    ? 'npc'
+    : hasPalOptions.value ? 'pal' : 'npc'
   dialog.value?.showModal()
   await nextTick()
   searchInput.value?.focus()
   dialog.value?.querySelector('.pal-species-option.is-selected')?.scrollIntoView({ block: 'center' })
 }
+
+defineExpose({ open })
 
 const close = () => {
   dialog.value?.close()
@@ -94,6 +103,7 @@ const close = () => {
 
 const select = pal => {
   emit('update:modelValue', pal.InternalName)
+  emit('select', pal.InternalName)
   close()
 }
 
@@ -111,6 +121,7 @@ const focusOption = index => {
 
 <template>
   <button
+    v-if="!triggerless"
     class="pal-species-trigger"
     type="button"
     :disabled="disabled"
@@ -118,7 +129,7 @@ const focusOption = index => {
     @click="open"
   >
     <img
-      v-if="selectedPal"
+      v-if="showSelectedIcon && selectedPal"
       class="pal-species-trigger__portrait"
       :src="`/image/pals/${iconKey(selectedPal)}`"
       alt=""
@@ -161,6 +172,32 @@ const focusOption = index => {
           </button>
         </header>
 
+        <nav
+          v-if="showCategoryTabs"
+          class="pal-species-tabs"
+          role="tablist"
+          :aria-label="palStore.getTranslatedText('PalSpeciesPicker_CategoryLabel')"
+        >
+          <button
+            type="button"
+            role="tab"
+            :class="{ 'is-active': activeCategory === 'pal' }"
+            :aria-selected="activeCategory === 'pal'"
+            @click="setCategory('pal')"
+          >
+            {{ palStore.getTranslatedText('PalSpeciesPicker_Pals') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :class="{ 'is-active': activeCategory === 'npc' }"
+            :aria-selected="activeCategory === 'npc'"
+            @click="setCategory('npc')"
+          >
+            {{ palStore.getTranslatedText('PalSpeciesPicker_Npcs') }}
+          </button>
+        </nav>
+
         <label class="pal-species-search">
           <AppIcon name="search" :size="18" />
           <input
@@ -174,6 +211,33 @@ const focusOption = index => {
             @keydown.down.prevent="focusOption(0)"
           >
         </label>
+
+        <div
+          v-if="activeCategory === 'pal' && palElements.length"
+          class="pal-species-element-filters"
+          role="group"
+          :aria-label="palStore.getTranslatedText('PalSpeciesPicker_ElementFilterLabel')"
+        >
+          <button
+            type="button"
+            class="is-all"
+            :class="{ 'is-active': activeElementFilter === 'all' }"
+            @click="activeElementFilter = 'all'"
+          >
+            {{ palStore.getTranslatedText('PalList_AnyElement') }}
+          </button>
+          <button
+            v-for="element in palElements"
+            :key="element"
+            type="button"
+            :class="{ 'is-active': activeElementFilter === element }"
+            :title="elementLabel(element)"
+            :aria-label="elementLabel(element)"
+            @click="activeElementFilter = element"
+          >
+            <ElementIcon :element="element" :size="20" />
+          </button>
+        </div>
 
         <div v-if="filteredOptions.length" class="pal-species-list" role="listbox" :aria-label="titleText">
           <button
@@ -203,7 +267,7 @@ const focusOption = index => {
                 </span>
                 <strong>{{ pal.I18n || pal.InternalName }}</strong>
               </span>
-              <span v-if="showInternalName" class="pal-species-option__internal">{{ pal.InternalName }}</span>
+              <span v-if="showInternalName || pal.IsHuman" class="pal-species-option__internal">{{ pal.InternalName }}</span>
             </span>
             <span class="pal-species-option__elements" aria-hidden="true">
               <ElementIcon
@@ -316,17 +380,43 @@ const focusOption = index => {
 .pal-species-dialog__surface {
   display: grid;
   height: 100%;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
 }
 
 .pal-species-dialog__header {
   display: flex;
+  grid-row: 1;
   min-height: 72px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 16px 18px 12px;
   border-bottom: 1px solid var(--ui-border);
+}
+
+.pal-species-tabs {
+  display: flex;
+  grid-row: 2;
+  gap: 4px;
+  padding: 10px 18px 0;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.pal-species-tabs button {
+  min-width: 92px;
+  padding: 9px 14px 10px;
+  color: var(--ui-text-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.pal-species-tabs button:hover,
+.pal-species-tabs button.is-active {
+  color: var(--ui-text);
+  border-bottom-color: var(--ui-accent);
 }
 
 .pal-species-dialog__header h2 {
@@ -371,6 +461,7 @@ const focusOption = index => {
 
 .pal-species-search {
   display: flex;
+  grid-row: 3;
   align-items: center;
   gap: 9px;
   margin: 14px 18px;
@@ -403,12 +494,47 @@ const focusOption = index => {
 
 .pal-species-list {
   display: grid;
+  grid-row: 5;
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
   gap: 6px;
   overflow-y: auto;
   padding: 0 18px 18px;
+}
+
+.pal-species-element-filters {
+  display: flex;
+  grid-row: 4;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0 18px 14px;
+}
+
+.pal-species-element-filters button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  color: var(--ui-text-secondary);
+  background: rgb(17 17 17 / 72%);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+}
+
+.pal-species-element-filters button:hover,
+.pal-species-element-filters button.is-active {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-accent);
+}
+
+.pal-species-element-filters button.is-all {
+  width: auto;
+  min-width: 72px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .pal-species-option {
@@ -483,6 +609,7 @@ const focusOption = index => {
 
 .pal-species-empty {
   display: flex;
+  grid-row: 5;
   min-height: 220px;
   align-items: center;
   justify-content: center;

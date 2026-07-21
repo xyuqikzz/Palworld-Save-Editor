@@ -38,10 +38,11 @@ PAL_FRIENDSHIP: dict[str, dict] = load_json("pal_friendship.json")
 TECH_DATA: dict[str, dict] = load_json("tech_data.json")
 SKILL_I18N: dict[str, Any] = load_json("skill_i18n.json")
 ITEM_DATA: dict[str, dict] = load_json("item_data.json")
+MISSION_DATA: dict[str, Any] = load_json("mission_data.json")
 
 # PAL_ICONS: dict[str] = load_icons("pals")
 
-# I18N_LIST = ["en", "zh-CN", "ja"]
+# I18N_LIST = ["en", "fr", "ja", "ko", "zh-CN"]
 I18N_LIST: dict[str, str] = load_json("i18n_list.json")
 
 
@@ -324,6 +325,20 @@ class DataProvider:
     @staticmethod
     def get_tech_data() -> dict[str, dict]:
         return TECH_DATA
+
+    @staticmethod
+    def get_mission_data() -> dict[str, Any]:
+        return MISSION_DATA
+
+    @staticmethod
+    def get_mission_i18n(
+        key: str, locale: str | None = None
+    ) -> Optional[dict[str, Any]]:
+        mission = MISSION_DATA.get("missions", {}).get(key)
+        if mission is None:
+            return None
+        translations = mission.get("i18n", {})
+        return translations.get(locale or Config.i18n, translations.get("en"))
 
     @none_guard(data_source=TECH_DATA, subkey="I18n")
     @staticmethod

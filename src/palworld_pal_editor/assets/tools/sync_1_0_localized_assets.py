@@ -27,6 +27,7 @@ LANGUAGE_TOKENS = {
     "en": "_Pal_Content_L10N_en_",
     "fr": "_Pal_Content_L10N_fr_",
     "ja": "_Pal_Content_Pal_DataTable_Text_",
+    "ko": "_Pal_Content_L10N_ko_",
     "zh-CN": "_Pal_Content_L10N_zh-Hans_",
 }
 
@@ -34,6 +35,12 @@ LANGUAGE_TOKENS = {
 # share the historical PAL_* naming convention. The existing editable rows
 # are also retained only when the current export still contains them.
 PAL_PASSIVE_SOURCE_PREFIXES = ("PAL_", "WorldTree_")
+
+KOREAN_PASSIVE_BUFF_LABELS = (
+    ("b_Attack", "공격"),
+    ("b_Defense", "방어"),
+    ("b_CraftSpeed", "작업 속도"),
+)
 
 
 def load_table(json_root: Path, language: str, table_name: str) -> dict[str, str]:
@@ -297,6 +304,19 @@ def fill_missing_with_english(i18n: dict[str, dict[str, str]]) -> None:
         )
 
 
+def render_korean_passive_buffs(buff: dict[str, Any]) -> str:
+    effects = [
+        (key, label, float(buff.get(key, 0.0)))
+        for key, label in KOREAN_PASSIVE_BUFF_LABELS
+        if float(buff.get(key, 0.0)) != 0.0
+    ]
+    effects.sort(key=lambda effect: effect[2] < 0)
+    return "\n".join(
+        f"{label} {'+' if value >= 0 else ''}{value * 100:g}%"
+        for _, label, value in effects
+    )
+
+
 def passive_ids_from_skill_names(skill_names: dict[str, str]) -> set[str]:
     """Return every passive ID present in the current game localization export."""
     return {
@@ -370,7 +390,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Report item-localization drift without writing files.",
+        help="Report drift for the selected localization data without writing files.",
     )
     args = parser.parse_args()
 
@@ -446,6 +466,8 @@ def main() -> int:
         if key.startswith("ACTION_SKILL_")
     )
 
+    passive_data_path = args.data_root / "pal_passives.json"
+    existing_passive_data = json.loads(passive_data_path.read_text(encoding="utf-8"))
     skill_i18n = {
         "Build": 24088745,
         "Passives": {},
@@ -459,6 +481,11 @@ def main() -> int:
             (f"PASSIVE_PAL_{internal_name}", f"PASSIVE_{internal_name}"),
             references,
         )
+        if not i18n["ko"]["Description"]:
+            existing = existing_passive_data.get(internal_name, {})
+            i18n["ko"]["Description"] = render_korean_passive_buffs(
+                existing.get("Buff", {})
+            )
         fill_missing_with_english(i18n)
         skill_i18n["Passives"][internal_name] = {
             "InternalName": internal_name,
@@ -479,12 +506,13 @@ def main() -> int:
             "I18n": i18n,
         }
 
-    passive_data_path = args.data_root / "pal_passives.json"
-    existing_passive_data = json.loads(passive_data_path.read_text(encoding="utf-8"))
+    skill_i18n_path = args.data_root / "skill_i18n.json"
+    existing_skill_i18n = json.loads(skill_i18n_path.read_text(encoding="utf-8"))
     passive_data = rebuild_pal_passives(existing_passive_data, skill_i18n["Passives"])
 
     attack_data_path = args.data_root / "pal_attacks.json"
     attack_data = json.loads(attack_data_path.read_text(encoding="utf-8"))
+    existing_attack_data = json.loads(attack_data_path.read_text(encoding="utf-8"))
     for internal_name, row in attack_data.items():
         official = skill_i18n["Attacks"].get(internal_name)
         if official:
@@ -522,21 +550,25 @@ def main() -> int:
         existing_item_data[item_id].get("I18n") != row["I18n"]
         for item_id, row in item_data.items()
     )
+    skill_i18n_changes = existing_skill_i18n != skill_i18n
+    passive_changes = existing_passive_data != passive_data
+    attack_changes = existing_attack_data != attack_data
     if not args.check:
         if args.skill_i18n_only:
-            write_json(args.data_root / "skill_i18n.json", skill_i18n)
+            write_json(skill_i18n_path, skill_i18n)
         else:
             if not args.items_only:
-                write_json(args.data_root / "skill_i18n.json", skill_i18n)
+                write_json(skill_i18n_path, skill_i18n)
                 write_json(passive_data_path, passive_data)
                 write_json(attack_data_path, attack_data)
             write_json(item_data_path, item_data)
     icon_names = sorted(
         {item["Icon"] for item in item_data.values() if item["Icon"]}
     )
-    (args.export_root / "item_icon_names.txt").write_text(
-        "\n".join(icon_names) + "\n", encoding="utf-8"
-    )
+    if not args.check:
+        (args.export_root / "item_icon_names.txt").write_text(
+            "\n".join(icon_names) + "\n", encoding="utf-8"
+        )
 
     print(
         json.dumps(
@@ -547,7 +579,22 @@ def main() -> int:
                 "validated_attacks": len(attack_data),
                 "items": len(item_data),
                 "items_with_icons": len(icon_names),
-                "item_localization_changes": item_localization_changes,
+                "skill_i18n_drift": (
+                    None if args.items_only else skill_i18n_changes
+                ),
+                "passive_drift": (
+                    passive_changes
+                    if not args.skill_i18n_only and not args.items_only
+                    else None
+                ),
+                "attack_drift": (
+                    attack_changes
+                    if not args.skill_i18n_only and not args.items_only
+                    else None
+                ),
+                "item_localization_changes": (
+                    None if args.skill_i18n_only else item_localization_changes
+                ),
                 "items_with_localized_names": sum(
                     row["I18n"]["zh-CN"]["Name"] != item_id
                     for item_id, row in item_data.items()
@@ -556,11 +603,32 @@ def main() -> int:
                     bool(row["I18n"]["zh-CN"]["Description"])
                     for row in item_data.values()
                 ),
+                "korean_item_names": sum(
+                    bool(row["I18n"]["ko"]["Name"])
+                    for row in item_data.values()
+                ),
+                "korean_item_descriptions": sum(
+                    bool(row["I18n"]["ko"]["Description"])
+                    for row in item_data.values()
+                ),
             },
             ensure_ascii=False,
         )
     )
-    return 1 if args.check and item_localization_changes else 0
+    if args.skill_i18n_only:
+        has_drift = skill_i18n_changes
+    elif args.items_only:
+        has_drift = bool(item_localization_changes)
+    else:
+        has_drift = any(
+            (
+                skill_i18n_changes,
+                passive_changes,
+                attack_changes,
+                bool(item_localization_changes),
+            )
+        )
+    return 1 if args.check and has_drift else 0
 
 
 if __name__ == "__main__":

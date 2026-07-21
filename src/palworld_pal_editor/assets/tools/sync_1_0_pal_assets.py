@@ -749,6 +749,23 @@ def _render_passive_description(text: str, record: PassiveRecord) -> str:
     return text
 
 
+KOREAN_PASSIVE_EFFECT_LABELS = {
+    3: "공격",
+    4: "방어",
+    6: "작업 속도",
+}
+
+
+def _render_korean_passive_effects(record: PassiveRecord) -> str:
+    lines = []
+    for effect in record.effects:
+        label = KOREAN_PASSIVE_EFFECT_LABELS.get(effect.effect_type)
+        if label and effect.target in (1, 3):
+            sign = "+" if effect.value >= 0 else ""
+            lines.append(f"{label} {sign}{_format_effect_value(effect.value)}%")
+    return "\n".join(lines)
+
+
 def _passive_i18n(
     record: PassiveRecord,
     existing: dict[str, Any],
@@ -792,7 +809,11 @@ def _passive_i18n(
         if description:
             description = _render_passive_description(description, record)
         else:
-            description = old_i18n.get(language, {}).get("Description", "")
+            description = (
+                _render_korean_passive_effects(record)
+                if language == "ko"
+                else ""
+            ) or old_i18n.get(language, {}).get("Description", "")
             if record.internal_name == "Rare" and description.count("15") >= 2:
                 description = re.sub(r"15(?=\s*%)", "20", description, count=1)
         result[language] = {

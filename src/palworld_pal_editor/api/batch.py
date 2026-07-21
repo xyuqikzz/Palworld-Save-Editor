@@ -7,7 +7,7 @@ from palworld_pal_editor.application.batch_editor import BatchEditor
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.domain.commands import (
     AddPal, ClearItemSlot, ClonePal, DeletePal, MovePal, PutItem,
-    RecoverDetachedPal, UpdateItemCount, UpdatePalEnhancement,
+    RecoverDetachedPal, UnlockPalExpedition, UpdateItemCount, UpdatePalEnhancement,
     UpdatePalIdentity, UpdatePalProgression, UpdatePalSkills,
     UpdatePlayerIdentity, UpdatePlayerProgression, UpdatePlayerTechnology,
     UpdateDynamicItemAttributes,
@@ -142,6 +142,7 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                     "update_pal_progression": {"values"},
                     "update_pal_skills": {"active", "mastered", "passive"},
                     "update_pal_enhancement": {"values", "work_suitability"},
+                    "unlock_pal_expedition": set(),
                 }
                 _strict(raw, common | fields[command])
                 target = {**base, "pal_id": raw.get("pal_id")}
@@ -161,6 +162,8 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                         mastered=tuple(raw["mastered"]) if raw.get("mastered") is not None else None,
                         passive=tuple(raw["passive"]) if raw.get("passive") is not None else None,
                     )
+                elif command == "unlock_pal_expedition":
+                    value = UnlockPalExpedition(**target)
                 else:
                     value = UpdatePalEnhancement(
                         **target,

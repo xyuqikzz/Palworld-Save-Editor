@@ -13,18 +13,38 @@ from palworld_pal_editor.domain.change_set import ChangeEntry, ChangeSet
 from palworld_pal_editor.domain.errors import DomainError, stale_revision
 from palworld_pal_editor.domain.models import (
     Capability,
+    OpenedSave,
     PlayerSummary,
     SaveCompatibility,
+    SavePlatform,
+    SaveSource,
     SessionSummary,
 )
+from palworld_pal_editor.storage.base import SaveStorage
+from palworld_pal_editor.storage.steam import SteamDirectoryAdapter, make_steam_source
 
 
 class SaveSession:
     """Authority boundary for one loaded save and its in-memory changes."""
 
-    def __init__(self, manager: SaveManager, source: Path) -> None:
+    def __init__(
+        self,
+        manager: SaveManager,
+        source: Path,
+        *,
+        storage: SaveStorage | None = None,
+        opened: OpenedSave | None = None,
+    ) -> None:
         self._manager = manager
-        self._source = source.resolve()
+        if opened is None:
+            active_storage = storage or SteamDirectoryAdapter()
+            opened = active_storage.open(make_steam_source(source))
+        else:
+            active_storage = storage or SteamDirectoryAdapter()
+        self._storage = active_storage
+        self._opened = opened
+        self._source = opened.source.canonical_path.resolve()
+        self._workspace = opened.workspace.resolve()
         self._session_id = str(uuid.uuid4())
         self._opened_at = datetime.now(timezone.utc)
         self._revision = 0
@@ -40,8 +60,11 @@ class SaveSession:
     ) -> "SaveSession":
         resolved = Path(source).resolve()
         active_manager = manager or SaveManager()
+        storage = SteamDirectoryAdapter()
+        opened = storage.open(make_steam_source(resolved))
         started = perf_counter()
-        if active_manager.open(str(resolved), lazy_players=True) is None:
+        if active_manager.open(str(opened.workspace), lazy_players=True) is None:
+            storage.close(opened)
             raise DomainError(
                 code="INVALID_SAVE_PATH",
                 message="The selected directory is not a readable Palworld save.",
@@ -49,9 +72,45 @@ class SaveSession:
                 details={"source": str(resolved)},
                 http_status=400,
             )
-        session = cls(active_manager, resolved)
+        session = cls(
+            active_manager,
+            resolved,
+            storage=storage,
+            opened=opened,
+        )
         session._open_seconds = perf_counter() - started
         return session
+
+    @classmethod
+    def open_storage(
+        cls,
+        source: SaveSource,
+        storage: SaveStorage,
+        *,
+        manager: SaveManager | None = None,
+    ) -> "SaveSession":
+        opened = storage.open(source)
+        active_manager = manager or SaveManager()
+        started = perf_counter()
+        try:
+            if active_manager.open(str(opened.workspace), lazy_players=True) is None:
+                raise DomainError(
+                    code="INVALID_SAVE_PATH",
+                    message="The selected source is not a readable Palworld save.",
+                    field="sourceId",
+                    http_status=400,
+                )
+            session = cls(
+                active_manager,
+                source.canonical_path,
+                storage=storage,
+                opened=opened,
+            )
+            session._open_seconds = perf_counter() - started
+            return session
+        except Exception:
+            storage.close(opened)
+            raise
 
     @classmethod
     def from_loaded_manager(
@@ -82,16 +141,60 @@ class SaveSession:
     def source(self) -> Path:
         return self._source
 
+    @property
+    def workspace(self) -> Path:
+        return self._workspace
+
+    @property
+    def platform(self) -> SavePlatform:
+        return self._opened.source.platform
+
+    @property
+    def source_id(self) -> str:
+        return self._opened.source.source_id
+
+    @property
+    def source_display_name(self) -> str:
+        return self._opened.source.display_name
+
+    @property
+    def storage(self) -> SaveStorage:
+        return self._storage
+
+    @property
+    def opened_save(self) -> OpenedSave:
+        return self._opened
+
+    @property
+    def save_capabilities(self) -> dict[str, bool]:
+        return {
+            "commitOriginal": True,
+            "exportSteamCopy": True,
+            "targetPathEditable": self.platform is SavePlatform.STEAM,
+            "cloudSyncVerified": False,
+        }
+
     def summary(self) -> SessionSummary:
         players = getattr(self._manager, "player_mapping", None) or {}
         return SessionSummary(
             session_id=self._session_id,
             revision=self._revision,
-            source=str(self._source),
+            source=(
+                str(self._source)
+                if self.platform is SavePlatform.STEAM
+                else self.source_display_name
+            ),
             opened_at=self._opened_at,
             player_count=len(players),
             pending_change_count=len(self._changes),
+            platform=self.platform,
+            source_id=self.source_id,
+            source_display_name=self.source_display_name,
+            save_capabilities=self.save_capabilities,
         )
+
+    def close(self) -> None:
+        self._storage.close(self._opened)
 
     def compatibility(self) -> SaveCompatibility:
         return self._compatibility
@@ -332,7 +435,7 @@ class SaveSession:
 
     def file_unchanged_since_open(self, relative_path: str) -> bool:
         expected = self._file_baseline.get(relative_path)
-        path = self._source / Path(relative_path)
+        path = self._workspace / Path(relative_path)
         if expected is None:
             return not path.exists()
         try:
@@ -342,17 +445,17 @@ class SaveSession:
         return expected == (stat.st_size, stat.st_mtime_ns)
 
     def _snapshot_file_metadata(self) -> dict[str, tuple[int, int]]:
-        if not self._source.exists():
+        if not self._workspace.exists():
             return {}
         result: dict[str, tuple[int, int]] = {}
-        for path in self._source.rglob("*.sav"):
+        for path in self._workspace.rglob("*.sav"):
             if not path.is_file():
                 continue
             try:
                 stat = path.stat()
             except OSError:
                 continue
-            result[path.relative_to(self._source).as_posix()] = (
+            result[path.relative_to(self._workspace).as_posix()] = (
                 stat.st_size,
                 stat.st_mtime_ns,
             )

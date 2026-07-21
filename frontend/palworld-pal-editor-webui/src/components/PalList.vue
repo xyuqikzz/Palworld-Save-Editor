@@ -9,18 +9,19 @@ import { ref, computed, onMounted, nextTick, watch } from "vue";
 const palStore = usePalEditorStore()
 
 const palListContainer = ref(null);
-const showAdd = ref(false)
+const addSpeciesPicker = ref(null)
 const newSpecies = ref('SheepBall')
-const targetContainer = ref('AUTO')
 
 const constructibleSpecies = computed(() =>
-    palStore.PAL_STATIC_DATA_LIST.filter(item => !item.Invalid && !item.IsHuman)
+    palStore.PAL_STATIC_DATA_LIST.filter(item => !item.Invalid)
 )
 
-async function addSelectedPal() {
-    if (await palStore.addPal(newSpecies.value, targetContainer.value)) {
-        showAdd.value = false
-    }
+function openAddPal() {
+    addSpeciesPicker.value?.open()
+}
+
+async function addSelectedPal(speciesId) {
+    await palStore.addPal(speciesId, 'AUTO')
 }
 
 watch(async () => palStore.SELECTED_PLAYER_ID, async () => {
@@ -119,13 +120,27 @@ function displayNameWithoutVariantEmoji(displayName) {
                 <span>{{ get_filtered_pal_list().length }}</span>
             </div>
             <div class="panel-actions">
+                <button class="heal-all unlock-expedition"
+                    :title="palStore.getTranslatedText(
+                        palStore.EXPEDITION_PAL_COUNT === 0
+                            ? 'TopBar_Btn_UnlockExpeditionPals_Disabled'
+                            : 'TopBar_Btn_UnlockExpeditionPals_Tooltips'
+                    )"
+                    :disabled="palStore.LOADING_FLAG || palStore.EXPEDITION_PAL_COUNT === 0"
+                    @click="palStore.unlockExpeditionPals">
+                    <span>{{ palStore.getTranslatedText(
+                        palStore.EXPEDITION_PAL_COUNT === 0
+                            ? 'TopBar_Btn_UnlockExpeditionPals_Disabled'
+                            : 'TopBar_Btn_UnlockExpeditionPals'
+                    ) }}</span>
+                </button>
                 <button class="heal-all" :title="palStore.getTranslatedText('TopBar_Btn_HealAllPals_Tooltips')"
                     :disabled="palStore.LOADING_FLAG || palStore.PAL_MAP.size === 0" @click="palStore.healAllPals">
                     <span>{{ palStore.getTranslatedText('TopBar_Btn_HealAllPals') }}</span>
                 </button>
                 <button class="add_pal" v-if="!palStore.BASE_PAL_BTN_CLK_FLAG"
                     :title="palStore.getTranslatedText('PalList_AddPalForPlayer', [palStore.PLAYER_MAP.get(palStore.SELECTED_PLAYER_ID).NickName])"
-                    :disabled="palStore.LOADING_FLAG" @click="showAdd = true" name="add_pal"><AppIcon name="plus" :size="16" /></button>
+                    :disabled="palStore.LOADING_FLAG" @click="openAddPal" name="add_pal"><AppIcon name="plus" :size="16" /></button>
             </div>
         </div>
         <label class="filter-field">
@@ -146,44 +161,31 @@ function displayNameWithoutVariantEmoji(displayName) {
                     <img :class="['palIcon']" :src="`/image/pals/${pal.IconAccessKey}`" alt="">
                     <span class="pal-label">
                         <VariantBadge v-if="pal.IsTower" kind="tower" :size="14" />
-                        <VariantBadge v-if="pal.IsBOSS" kind="boss" :size="14" />
-                        <VariantBadge v-if="pal.IsRarePal" kind="rare" :size="14" />
                         <ElementIcon v-for="element in palStore.PAL_STATIC_DATA[pal.DataAccessKey]?.Elements || []"
                             :key="element" :element="element" :size="14" />
-                        <span>{{ displayNameWithoutVariantEmoji(pal.DisplayName) }}</span>
+                        <span class="pal-name">{{ displayNameWithoutVariantEmoji(pal.DisplayName) }}</span>
+                    </span>
+                    <span v-if="pal.IsBOSS || pal.IsRarePal" class="pal-variants">
+                        <span v-if="pal.IsBOSS" class="pal-variant-label">{{ palStore.getTranslatedText('Variant_Boss') }}</span>
+                        <span v-if="pal.IsRarePal" class="pal-variant-label">{{ palStore.getTranslatedText('Variant_Rare') }}</span>
                     </span>
                 </button>
             </div>
         </div>
-        <div v-if="showAdd" class="add-popover" role="dialog" aria-modal="true" :aria-label="palStore.getTranslatedText('PalList_AddPal')">
-            <div class="add-popover__head">
-                <strong>{{ palStore.getTranslatedText('PalList_AddPal') }}</strong>
-                <button @click="showAdd = false" :aria-label="palStore.getTranslatedText('Common_Close')">×</button>
-            </div>
-            <PalSpeciesPicker
-                v-model="newSpecies"
-                :options="constructibleSpecies"
-                :selected-option="palStore.PAL_STATIC_DATA[newSpecies]"
-                :disabled="palStore.LOADING_FLAG"
-                :placeholder="palStore.getTranslatedText('PalList_ChooseSpecies')"
-                :title="palStore.getTranslatedText('PalList_ChooseConstructiblePal')"
-                :search-placeholder="palStore.getTranslatedText('Editor_Species_Search_Placeholder')"
-                :results-label="palStore.getTranslatedText('Editor_Species_Results_Label')"
-                :empty-text="palStore.getTranslatedText('Editor_Species_Empty')"
-                :close-label="palStore.getTranslatedText('Common_Close')"
-            />
-            <label>
-                <span>{{ palStore.getTranslatedText('Common_Destination') }}</span>
-                <select v-model="targetContainer">
-                    <option value="AUTO">{{ palStore.getTranslatedText('Common_Automatic') }}</option>
-                    <option value="PARTY">{{ palStore.getTranslatedText('Common_Party') }}</option>
-                    <option value="PAL_STORAGE">{{ palStore.getTranslatedText('Common_PalStorage') }}</option>
-                </select>
-            </label>
-            <button class="add-confirm" :disabled="palStore.LOADING_FLAG || !newSpecies" @click="addSelectedPal">
-                <AppIcon name="plus" :size="15" /> {{ palStore.getTranslatedText('PalList_AddPending') }}
-            </button>
-        </div>
+        <PalSpeciesPicker
+            ref="addSpeciesPicker"
+            v-model="newSpecies"
+            :options="constructibleSpecies"
+            :selected-option="palStore.PAL_STATIC_DATA[newSpecies]"
+            :disabled="palStore.LOADING_FLAG"
+            :title="palStore.getTranslatedText('PalList_ChooseConstructiblePal')"
+            :search-placeholder="palStore.getTranslatedText('Editor_Species_Search_Placeholder')"
+            :results-label="palStore.getTranslatedText('Editor_Species_Results_Label')"
+            :empty-text="palStore.getTranslatedText('Editor_Species_Empty')"
+            :close-label="palStore.getTranslatedText('Common_Close')"
+            triggerless
+            @select="addSelectedPal"
+        />
     </aside>
 </template>
 
@@ -207,6 +209,7 @@ function displayNameWithoutVariantEmoji(displayName) {
 .panel-title { justify-content: space-between; }
 .panel-title span { color: var(--ui-text-muted); font-size: 11px; font-weight: 500; }
 .panel-actions { display: flex; align-items: center; gap: 5px; }
+.add_pal { display: inline-flex; align-items: center; justify-content: center; }
 .heal-all {
     display: inline-flex;
     min-height: 30px;
@@ -222,6 +225,13 @@ function displayNameWithoutVariantEmoji(displayName) {
     white-space: nowrap;
 }
 .heal-all:hover:not(:disabled) { border-color: var(--ui-accent); }
+.heal-all:disabled {
+    border-color: var(--ui-border);
+    color: var(--ui-text-muted);
+    background: var(--ui-surface);
+    opacity: 0.52;
+    cursor: not-allowed;
+}
 
 .overflow-list {
     display: flex;
@@ -244,27 +254,6 @@ function displayNameWithoutVariantEmoji(displayName) {
     border-bottom: 1px solid var(--ui-border);
 }
 
-.add-popover {
-    position: absolute;
-    z-index: 12;
-    top: 48px;
-    left: 8px;
-    display: grid;
-    width: min(360px, calc(100vw - 24px));
-    gap: 10px;
-    padding: 14px;
-    border: 1px solid var(--ui-border-strong);
-    border-radius: var(--ui-radius-md);
-    background: var(--ui-surface);
-    box-shadow: var(--ui-shadow-md);
-}
-.pal-panel { position: relative; }
-.add-popover__head { display: flex; align-items: center; justify-content: space-between; }
-.add-popover__head button { border: 0; color: var(--ui-text); background: transparent; font-size: 20px; }
-.add-popover label { display: grid; gap: 4px; color: var(--ui-text-muted); font-size: 11px; }
-.add-popover select { min-height: 36px; padding: 0 9px; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-sm); color: var(--ui-text); background: var(--ui-surface-raised); }
-.add-confirm { display: flex; min-height: 38px; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: var(--ui-radius-sm); color: white; background: var(--ui-accent-strong); }
-
 button.pal {
     display: flex;
     align-items: center;
@@ -274,7 +263,7 @@ button.pal {
     white-space: nowrap;
 }
 
-button.pal span {
+button.pal .pal-name {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -282,7 +271,20 @@ button.pal span {
 
 button.pal .pal-label {
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
+    min-width: 0;
     gap: 4px;
+}
+
+button.pal .pal-variants {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    color: var(--ui-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
 }
 </style>

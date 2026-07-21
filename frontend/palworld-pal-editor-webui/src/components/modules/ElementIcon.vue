@@ -7,9 +7,14 @@ const props = defineProps({
   alt: { type: String, default: '' }
 })
 
+const ELEMENT_ASSET_NAMES = {
+  Electricity: 'Electric'
+}
+
 const elementName = computed(() => {
   const name = props.element.split('::').pop().replace('EPalElementType_', '')
-  return name ? name[0].toUpperCase() + name.slice(1) : ''
+  const normalizedName = name ? name[0].toUpperCase() + name.slice(1) : ''
+  return ELEMENT_ASSET_NAMES[normalizedName] || normalizedName
 })
 
 const src = computed(() => elementName.value ? `/image/elements/Element_${elementName.value}` : '')

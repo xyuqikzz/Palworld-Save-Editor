@@ -98,6 +98,10 @@ class PalGroup:
         return self._group_param.get("guild_name")
 
     @property
+    def guild_format(self) -> Optional[str]:
+        return self._group_param.get("guild_format")
+
+    @property
     def players(self) -> Optional[list[tuple[UUID, str]]]:
         return [
             (player_data["player_uid"], player_data["player_info"]["player_name"])

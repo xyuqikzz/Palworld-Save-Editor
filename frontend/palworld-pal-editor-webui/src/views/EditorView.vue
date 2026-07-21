@@ -13,6 +13,14 @@ const palStore = usePalEditorStore()
             <div>
                 <strong>{{ palStore.LAST_ERROR.code }}</strong>
                 <span>{{ palStore.LAST_ERROR.message }}</span>
+                <small v-if="palStore.LAST_ERROR.details?.recovery_status">
+                    {{ palStore.getTranslatedText('Xgp_Recovery_Status') }}: {{ palStore.LAST_ERROR.details.recovery_status }}
+                </small>
+                <small v-if="palStore.LAST_ERROR.details?.backup_path">
+                    {{ palStore.getTranslatedText('Xgp_Backup_Path') }}: {{ palStore.LAST_ERROR.details.backup_path }}
+                </small>
+                <small v-if="palStore.LAST_ERROR.details?.manifest_path">{{ palStore.LAST_ERROR.details.manifest_path }}</small>
+                <small v-if="palStore.LAST_ERROR.details?.journal_path">{{ palStore.LAST_ERROR.details.journal_path }}</small>
             </div>
             <button @click="palStore.LAST_ERROR = null" :aria-label="palStore.getTranslatedText('Common_DismissError')">×</button>
         </aside>
@@ -34,17 +42,20 @@ div#EditorDiv {
     display: flow-root;
     min-height: 100dvh;
     width: 100%;
+    overflow-x: clip;
+    background: var(--ui-canvas);
 }
 
 div#EditorMain {
     display: grid;
-    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    grid-template-columns: minmax(364px, 416px) minmax(0, 1fr);
     align-items: stretch;
     gap: 14px;
-    width: calc(100vw - 20px);
+    width: 100%;
     margin-top: var(--editor-top-offset);
-    margin-inline: 10px;
-    padding-bottom: 16px;
+    margin-inline: 0;
+    padding: 0 10px 16px;
+    background: var(--ui-canvas);
 }
 
 .selection-column {
@@ -54,6 +65,7 @@ div#EditorMain {
     height: var(--sub-height);
     min-width: 0;
     min-height: 0;
+    background: var(--ui-canvas);
 }
 
 .selection-column :deep(.list-panel) {
@@ -79,6 +91,7 @@ div#EditorMain {
 .error-banner div { display: grid; gap: 2px; }
 .error-banner strong { color: var(--ui-danger); font-size: 11px; }
 .error-banner span { color: var(--ui-text); }
+.error-banner small { color: var(--ui-text-muted); overflow-wrap: anywhere; }
 .error-banner button { border: 0; color: var(--ui-text); background: transparent; font-size: 20px; }
 
 .editor-empty {
@@ -98,7 +111,7 @@ div#EditorMain {
 
 @media (max-width: 1120px) {
     div#EditorMain {
-        grid-template-columns: 288px minmax(720px, 1fr);
+        grid-template-columns: 374px minmax(720px, 1fr);
         width: max-content;
         min-width: calc(100vw - 24px);
         margin-inline: 12px;

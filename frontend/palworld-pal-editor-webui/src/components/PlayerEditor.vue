@@ -4,6 +4,7 @@ import { usePalEditorStore } from '@/stores/paleditor'
 import ItemCard from '@/components/modules/TechCard.vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import InventoryEditor from '@/components/InventoryEditor.vue'
+import MissionEditor from '@/components/MissionEditor.vue'
 
 const palStore = usePalEditorStore()
 const activeEditorTab = ref('inventory')
@@ -21,10 +22,7 @@ const isMinLv = () => {
     <div class="PalEditor player-editor-layout">
         <section class="EditorItem item flex-v basicInfo player-summary-card">
             <header class="player-summary-heading">
-                <div>
-                    <p class="player-summary-eyebrow">{{ palStore.getTranslatedText('PlayerEditor_Overview') }}</p>
-                    <p class="cat">{{ palStore.getTranslatedText("Editor_Basic_Info") }}</p>
-                </div>
+                <h2>{{ palStore.getTranslatedText("Editor_Basic_Info") }}</h2>
                 <div class="player-summary-identity">
                     <strong>{{ palStore.SELECTED_PLAYER_DATA.NickName }}</strong>
                     <span>{{ palStore.getTranslatedText('Common_LevelWithValue', [palStore.SELECTED_PLAYER_DATA.Level]) }}</span>
@@ -65,10 +63,6 @@ const isMinLv = () => {
                         :disabled="palStore.LOADING_FLAG || isMaxLv()" :title="palStore.getTranslatedText('Common_SetMaximum')"><AppIcon name="chevrons-up" /></button>
                 </div>
             </div>
-            <footer class="player-summary-actions">
-                <button class="edit text" @click="palStore.updatePlayer" name="unlock_all_techs"
-                    :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText("Editor_UnlockAllTech") }}</button>
-            </footer>
         </section>
         <nav
             class="player-editor-tabs"
@@ -83,7 +77,7 @@ const isMinLv = () => {
                 :aria-selected="activeEditorTab === 'inventory'"
                 aria-controls="player-inventory-panel"
                 @click="activeEditorTab = 'inventory'"
-            >{{ palStore.getTranslatedText('Editor_Inventory') }}</button>
+            >{{ palStore.getTranslatedText('PlayerTab_Inventory') }}</button>
             <button
                 id="player-technology-tab"
                 type="button"
@@ -92,7 +86,16 @@ const isMinLv = () => {
                 :aria-selected="activeEditorTab === 'technology'"
                 aria-controls="player-technology-panel"
                 @click="activeEditorTab = 'technology'"
-            >{{ palStore.getTranslatedText('Editor_TechEdit') }}</button>
+            >{{ palStore.getTranslatedText('PlayerTab_Technology') }}</button>
+            <button
+                id="player-missions-tab"
+                type="button"
+                role="tab"
+                :class="{ active: activeEditorTab === 'missions' }"
+                :aria-selected="activeEditorTab === 'missions'"
+                aria-controls="player-missions-panel"
+                @click="activeEditorTab = 'missions'"
+            >{{ palStore.getTranslatedText('PlayerTab_Missions') }}</button>
         </nav>
         <InventoryEditor
             v-show="activeEditorTab === 'inventory'"
@@ -112,9 +115,10 @@ const isMinLv = () => {
             role="tabpanel"
             aria-labelledby="player-technology-tab"
         >
-            <p class="cat">
-                {{ palStore.getTranslatedText("Editor_TechEdit") }}
-            </p>
+            <header class="technology-actions">
+                <button class="edit text" @click="palStore.updatePlayer" name="unlock_all_techs"
+                    :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText("Editor_UnlockAllTech") }}</button>
+            </header>
             <div class="EditorItem flex-h maxW no-margin">
                 <div class="levels-container">
                     <div class="level-row" v-for="(items, level) in palStore.TECH_LV_DICT" :key="level">
@@ -128,6 +132,12 @@ const isMinLv = () => {
                 </div>
             </div>
         </section>
+        <MissionEditor
+            v-show="activeEditorTab === 'missions'"
+            id="player-missions-panel"
+            role="tabpanel"
+            aria-labelledby="player-missions-tab"
+        />
         
     </div>
 </template>
@@ -563,14 +573,17 @@ select.selector {
     outline-offset: 1px;
 }
 
-:global(#EditorMain .player-editor-layout .player-summary-card) {
+:global(#EditorMain .PalEditor.player-editor-layout .EditorItem.basicInfo.player-summary-card) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 14px 18px;
+    grid-auto-rows: max-content;
+    align-items: center;
+    align-content: start;
+    gap: 12px 16px;
     width: 100%;
     max-width: none;
-    padding: 18px;
+    padding: 16px 18px 18px;
+    flex: 0 0 auto;
 }
 
 .player-summary-heading {
@@ -584,9 +597,7 @@ select.selector {
     border-bottom: 1px solid var(--ui-border);
 }
 
-.player-summary-heading > div:first-child { display: grid; gap: 1px; }
-.player-summary-eyebrow { margin: 0; color: var(--ui-accent); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-:global(#EditorMain .player-summary-heading p.cat) { margin: 0; font-size: 15px; }
+.player-summary-heading h2 { margin: 0; color: var(--ui-text); font-size: 16px; font-weight: 680; }
 .player-summary-identity { display: flex; align-items: baseline; gap: 8px; }
 .player-summary-identity strong { color: var(--ui-text); font-size: 14px; font-weight: 650; }
 .player-summary-identity span { color: var(--ui-text-muted); font-size: 11px; }
@@ -627,6 +638,16 @@ select.selector {
     padding: 18px;
 }
 
+.technology-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+:global(#EditorMain .technology-actions button.edit.text) { width: auto; margin: 0; padding-inline: 12px; }
+
 :global(#EditorMain .player-editor-layout .technology-panel > .EditorItem) {
     width: 100%;
     max-width: none;
@@ -644,7 +665,7 @@ select.selector {
 }
 
 @media (max-width: 920px) {
-    :global(#EditorMain .player-editor-layout .player-summary-card) { grid-template-columns: minmax(0, 1fr); }
+    :global(#EditorMain .PalEditor.player-editor-layout .EditorItem.basicInfo.player-summary-card) { grid-template-columns: minmax(0, 1fr); }
     .player-basic-grid { grid-template-columns: minmax(0, 1fr); }
     .player-summary-actions { justify-content: flex-start; }
 }

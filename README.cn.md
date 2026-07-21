@@ -8,14 +8,22 @@
   <strong>简体中文</strong> · <a href="README.md">English</a>
 </p>
 
-面向《幻兽帕鲁》Steam 存档的本地编辑器，提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
+面向《幻兽帕鲁》Steam 与 Xbox Game Pass/WGS 存档的本地编辑器，提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
 
 > [!WARNING]
 > 修改前请退出游戏或停止服务器，并手动备份整个世界存档目录。程序会在写入时创建备份，但自动备份不能代替你自己的离线副本。
 
+## 1.0.1 更新要点
+
+- 新增 Xbox Game Pass/WGS 槽位发现、直接编辑、WGS 外已验证备份和事务式写入。
+- 新增任务编辑器，支持预览批量操作，并补充 Palworld 1.0 任务数据。
+- 改进帕鲁新增与种类筛选、特殊形态控制、背包编辑和存档来源选择界面。
+- 新增韩语界面和应用内更新提醒，刷新 Palworld 1.0 数据资源，并修复多项存档完整性问题。
+
 ## 支持范围
 
-- 目前只直接支持 Steam 格式存档；Xbox Game Pass 存档需先转换为 Steam 格式。
+- 直接支持 Steam 格式目录和用户选择的 Xbox Game Pass WGS 文件夹。Game Pass 保存目标锁定为打开时的原槽位，并会先在 WGS 外创建已验证备份。
+- synthetic fixture 与一份经用户授权后复制到临时目录的真实 WGS 样本已完成打开、编辑、提交和重新打开测试；真实游戏加载与 Xbox 云同步尚未验证。
 - 当前数据与兼容性基线面向 Palworld 1.0 / Steam build 24088745。
 - 未知版本或未验证的数据布局会按能力门控处理；请勿强行写入不受支持的字段。
 - 本项目与 Pocketpair 无隶属或官方合作关系。
@@ -28,16 +36,19 @@ Steam 本地存档通常位于：
 
 选择包含 `Level.sav` 和 `Players/` 的完整世界目录，不要只选择单个 `.sav` 文件。
 
+Game Pass 使用前请完全退出 Palworld 并等待本地同步，再选择 WGS 根目录或包含 `containers.index` 的用户目录，读取槽位后明确选择要打开的世界。本地事务成功不代表 Xbox 云同步已经验证。
+
 ## 主要功能
 
 - 浏览玩家、帕鲁、世界容器和物品目录。
 - 修改玩家名称、等级、科技和玩家背包。
 - 修改帕鲁种类、特殊形态、昵称、性别、等级、个体值、浓缩、魂强化、工作适应性、主动技能和被动技能。
 - 新增、复制、删除和跨容器整理帕鲁；危险操作提供预览和引用检查。
+- 预览并应用已支持的任务进度变更。
 - 编辑物品数量、物品栏布局和已支持的动态物品属性。
 - 提供批量编辑、预设预览/应用、待保存变更统计和显式保存。
 - 写入采用临时文件、验证、备份和替换流程，失败时保留恢复信息。
-- 界面支持 English、日本語、简体中文和 Français。
+- 界面支持 English、Français、日本語、한국어 和简体中文。
 
 ## 安装与运行
 
@@ -87,7 +98,7 @@ python -m palworld_pal_editor --help
 
 | 参数 | 说明 |
 | --- | --- |
-| `--lang en|ja|zh-CN|fr` | 界面语言 |
+| `--lang en|fr|ja|ko|zh-CN` | 界面语言 |
 | `--path <目录>` | 包含 `Level.sav` 的世界目录 |
 | `--mode cli|gui|web` | 运行模式 |
 | `--port <端口>` | Web UI 监听端口 |

@@ -329,6 +329,11 @@ class PalEntity:
         )
         return value is not None and str(value) != str(PalObjects.EMPTY_UUID)
 
+    def unlock_expedition(self) -> None:
+        self._pal_param.pop(
+            "MapObjectConcreteInstanceIdAssignedToExpedition", None
+        )
+
     @property
     def IsRAID(self) -> bool:
         pattern = r"^RAID_([A-Za-z_\d]+?)(?:_\d+)?$"
@@ -377,6 +382,11 @@ class PalEntity:
             if DataProvider.has_human_icon(self.CharacterID):
                 return self.CharacterID
             return "Human"
+        raw_specie_key = self.RawSpecieKey
+        if raw_specie_key and raw_specie_key.endswith("_otomo"):
+            icon_key = raw_specie_key.removesuffix("_otomo")
+            if DataProvider.in_pal_data(icon_key):
+                return icon_key
         if self.IsOtomoTower:
             return self.DataAccessKey
         if self.IsTower:
@@ -420,6 +430,10 @@ class PalEntity:
                 key = "IceNarwhal"
             case "WereWolf_Ice":
                 key = "Werewolf_Ice"
+        if not DataProvider.in_pal_data(key) and DataProvider.in_pal_data(
+            self.CharacterID
+        ):
+            return self.CharacterID
         return key
 
     @property

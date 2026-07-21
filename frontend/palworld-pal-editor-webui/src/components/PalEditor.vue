@@ -5,7 +5,7 @@ import ElementIcon from '@/components/modules/ElementIcon.vue'
 import PalSkillPicker from '@/components/modules/PalSkillPicker.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
 import VariantBadge from '@/components/modules/VariantBadge.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 const palStore = usePalEditorStore()
 const cloneContainer = ref('AUTO')
 const presetInput = ref(null)
@@ -59,6 +59,17 @@ function filterInvalid(list) {
   })
 }
 
+const equippableMasteredSkills = computed(() => {
+  const masteredSkills = palStore.SELECTED_PAL_DATA?.MasteredWaza || []
+  const equippedSkills = new Set(palStore.SELECTED_PAL_DATA?.EquipWaza || [])
+  const availableSkills = [...new Set(masteredSkills)]
+    .filter(skill => !equippedSkills.has(skill))
+    .map(skill => palStore.ACTIVE_SKILLS[skill])
+    .filter(Boolean)
+
+  return filterInvalid(availableSkills)
+})
+
 const isMaxSuit = key => {
   return palStore.SELECTED_PAL_DATA.Suitabilities[key] >= palStore.MAX_SUITABILITY_LEVEL;
 };
@@ -82,7 +93,7 @@ const isMaxFriendshipLv = () => {
 };
 
 const isMinFriendshipLv = () => {
-  return palStore.SELECTED_PAL_DATA.FriendshipLevel <= -3;
+  return palStore.SELECTED_PAL_DATA.FriendshipLevel <= palStore.MIN_FRIENDSHIP_LEVEL;
 };
 
 const suitabilityIconSrc = key => {
@@ -96,7 +107,7 @@ const suitabilityIconSrc = key => {
     <div class="EditorItem item flex-v basicInfo">
       <header class="pal-summary">
         <div class="pal-identity">
-          <img :class="['palIcon']" :src="`/image/pals/${palStore.SELECTED_PAL_DATA.IconAccessKey}`" alt="">
+          <img class="pal-summary__portrait" :src="`/image/pals/${palStore.SELECTED_PAL_DATA.IconAccessKey}`" alt="">
           <div class="pal-summary__copy">
             <span class="pal-summary__eyebrow">{{ palStore.getTranslatedText("Editor_Basic_Info") }}</span>
             <strong>{{ palStore.SELECTED_PAL_DATA.NickName || palStore.SELECTED_PAL_DATA.I18nName }}</strong>
@@ -136,7 +147,7 @@ const suitabilityIconSrc = key => {
       </p>
 
       <div class="item flex-v left basic-fields">
-        <div class="editField">
+        <div class="editField identity-field">
           <p class="const" :title="palStore.SELECTED_PAL_DATA.InternalName">
             {{ palStore.getTranslatedText("Editor_Species") }}
           </p>
@@ -145,6 +156,7 @@ const suitabilityIconSrc = key => {
             :options="filterInvalid(palStore.PAL_STATIC_DATA_LIST)"
             :selected-option="palStore.PAL_STATIC_DATA[palStore.SELECTED_PAL_DATA.DataAccessKey]"
             :disabled="palStore.LOADING_FLAG"
+            :show-selected-icon="false"
             :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
             :title="palStore.getTranslatedText('Editor_Species_Picker_Title')"
             :search-placeholder="palStore.getTranslatedText('Editor_Species_Search_Placeholder')"
@@ -156,7 +168,7 @@ const suitabilityIconSrc = key => {
             :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('TopBar_Btn_Save')"><AppIcon name="check" /></button>
 
         </div>
-        <div class="editField">
+        <div class="editField identity-field">
           <p class="const">
             {{ palStore.getTranslatedText("Editor_Nickname") }}
           </p>
@@ -185,7 +197,7 @@ const suitabilityIconSrc = key => {
               :disabled="palStore.LOADING_FLAG || isMaxLv()" :title="palStore.getTranslatedText('Common_SetMaximum')"><AppIcon name="chevrons-up" /></button>
           </div>
         </div>
-        <div class="flex-h attribute-row">
+        <div class="flex-h attribute-row" v-if="!palStore.SELECTED_PAL_DATA.IsHuman">
           <div class="editField" v-if="palStore.SELECTED_PAL_DATA.Gender || !palStore.HIDE_INVALID_OPTIONS">
             <p class="const">
               {{ palStore.getTranslatedText("Editor_Gender") }}
@@ -195,7 +207,7 @@ const suitabilityIconSrc = key => {
               :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Toggle')"><AppIcon name="refresh" /></button>
           </div>
 
-          <div class="editField" v-if="!palStore.SELECTED_PAL_DATA.IsHuman">
+          <div class="editField">
             <p class="const">
               {{ palStore.getTranslatedText("Editor_Variant") }}
               <VariantBadge v-if="palStore.SELECTED_PAL_DATA.IsTower" kind="tower" />
@@ -205,10 +217,10 @@ const suitabilityIconSrc = key => {
             </p>
             <button class="edit" @click="palStore.SELECTED_PAL_DATA.swapTower" name="IsTower"
               v-if="palStore.SELECTED_PAL_DATA.HasTowerVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_TowerVariant')"><AppIcon name="building" :size="15" /></button>
-            <button class="edit" @click="palStore.SELECTED_PAL_DATA.swapBoss" name="IsBOSS"
-              v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_BossVariant')"><AppIcon name="crown" /></button>
-            <button class="edit" @click="palStore.SELECTED_PAL_DATA.swapRare" name="IsRarePal"
-              v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_RareVariant')"><AppIcon name="sparkles" /></button>
+            <button class="edit variant-toggle" :class="{ 'is-active': palStore.SELECTED_PAL_DATA.IsBOSS }" :aria-pressed="palStore.SELECTED_PAL_DATA.IsBOSS" @click="palStore.SELECTED_PAL_DATA.swapBoss" name="IsBOSS"
+              v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_BossVariant')">{{ palStore.getTranslatedText('Variant_Boss') }}</button>
+            <button class="edit variant-toggle" :class="{ 'is-active': palStore.SELECTED_PAL_DATA.IsRarePal }" :aria-pressed="palStore.SELECTED_PAL_DATA.IsRarePal" @click="palStore.SELECTED_PAL_DATA.swapRare" name="IsRarePal"
+              v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_RareVariant')">{{ palStore.getTranslatedText('Variant_Rare') }}</button>
           </div>
         </div>
         <div class="metadata-grid">
@@ -382,14 +394,34 @@ const suitabilityIconSrc = key => {
       </div>
     </div>
     <div class="EditorItem item flex-v left skillPanel skillsPanel">
-      <section class="skill-section">
-        <p class="cat">
-          {{ palStore.getTranslatedText("Editor_Passive_Skills") }}
-        </p>
-        <div class="flex-h">
-          <div class="editField skillList">
-          <div v-for="skill in palStore.SELECTED_PAL_DATA.PassiveSkillList">
-            <div class="passive-skill-row">
+      <section class="skill-section passive-skill-section">
+        <header class="skill-section-header">
+          <h3>{{ palStore.getTranslatedText("Editor_Passive_Skills") }}</h3>
+          <PalSkillPicker
+            v-model="palStore.PAL_PASSIVE_SELECTED_ITEM"
+            kind="passive"
+            icon-only
+            :options="palStore.PASSIVE_SKILLS_LIST"
+            :selected-option="palStore.PASSIVE_SKILLS[palStore.PAL_PASSIVE_SELECTED_ITEM]"
+            :disabled="palStore.LOADING_FLAG || (palStore.HIDE_INVALID_OPTIONS && palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4)"
+            :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
+            :placeholder="palStore.getTranslatedText('Editor_Select_Passive')"
+            :title="palStore.getTranslatedText('Editor_Passive_Picker_Title')"
+            :search-placeholder="palStore.getTranslatedText('Editor_Passive_Search_Placeholder')"
+            :results-label="palStore.getTranslatedText('Editor_Passive_Results_Label')"
+            :empty-text="palStore.getTranslatedText('Editor_Passive_Empty')"
+            :close-label="palStore.getTranslatedText('Common_Close')"
+            :rating-label="palStore.getTranslatedText('Editor_Skill_Rating')"
+            @select="palStore.SELECTED_PAL_DATA.add_PassiveSkillList($event.InternalName)"
+          />
+        </header>
+        <div class="skill-item-grid passive-skill-grid">
+          <div
+            v-for="(skill, index) in palStore.SELECTED_PAL_DATA.PassiveSkillList"
+            :key="`${skill}-${index}`"
+            class="skill-item passive-skill-item"
+          >
+            <div class="skill-item-row passive-skill-row">
               <div
                 class="passive-skill-card tooltip-container"
                 :class="passiveRatingClass(palStore.PASSIVE_SKILLS[skill]?.Rating)"
@@ -402,137 +434,137 @@ const suitabilityIconSrc = key => {
                 <span class="tooltip-text">{{ palStore.PASSIVE_SKILLS[skill]?.I18n[1] || skill }}</span>
               </div>
 
-              <button class="edit del" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList" :name="skill"
+              <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList" :name="skill"
               :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
             </div>
-          </div>
-          <div class="editField"
-            v-if="!palStore.HIDE_INVALID_OPTIONS || palStore.SELECTED_PAL_DATA.PassiveSkillList.length < 4">
-            <PalSkillPicker
-              v-model="palStore.PAL_PASSIVE_SELECTED_ITEM"
-              kind="passive"
-              :options="palStore.PASSIVE_SKILLS_LIST"
-              :selected-option="palStore.PASSIVE_SKILLS[palStore.PAL_PASSIVE_SELECTED_ITEM]"
-              :disabled="palStore.LOADING_FLAG"
-              :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
-              :placeholder="palStore.getTranslatedText('Editor_Select_Passive')"
-              :title="palStore.getTranslatedText('Editor_Passive_Picker_Title')"
-              :search-placeholder="palStore.getTranslatedText('Editor_Passive_Search_Placeholder')"
-              :results-label="palStore.getTranslatedText('Editor_Passive_Results_Label')"
-              :empty-text="palStore.getTranslatedText('Editor_Passive_Empty')"
-              :close-label="palStore.getTranslatedText('Common_Close')"
-              :rating-label="palStore.getTranslatedText('Editor_Skill_Rating')"
-              @select="palStore.SELECTED_PAL_DATA.add_PassiveSkillList($event.InternalName)"
-            />
-          </div>
           </div>
         </div>
       </section>
       <section class="skill-section">
-        <p class="cat">
-          {{ palStore.getTranslatedText("Editor_Equipped_Skills") }}
-        </p>
-        <div class="flex-h">
-          <div class="editField skillList">
-          <div v-for="skill in palStore.SELECTED_PAL_DATA.EquipWaza">
-            <div class="tooltip-container">
-              <p class="const skill-label" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
-                <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
-                  :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
-                {{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}
-              </p>
-              <span class="tooltip-text">
-                <h3>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</h3>
-                <p>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[1] || "" }}</p>
-                <p> --- </p>
-                <p>
-                  {{ palStore.getTranslatedText("Editor_Skill_ATK") }}
-                  {{ palStore.ACTIVE_SKILLS[skill]?.Power }} |
-                  {{ palStore.getTranslatedText("Editor_Skill_CD") }}
-                  {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
-                </p>
-                <p>
-                  {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+        <header class="skill-section-header">
+          <h3>{{ palStore.getTranslatedText("Editor_Equipped_Skills") }}</h3>
+          <PalSkillPicker
+            v-model="palStore.PAL_ACTIVE_SELECTED_ITEM"
+            kind="active"
+            icon-only
+            :options="equippableMasteredSkills"
+            :selected-option="palStore.ACTIVE_SKILLS[palStore.PAL_ACTIVE_SELECTED_ITEM]"
+            :disabled="palStore.LOADING_FLAG || (palStore.HIDE_INVALID_OPTIONS && palStore.SELECTED_PAL_DATA.isEquipSkillFull())"
+            :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
+            :placeholder="palStore.getTranslatedText('Editor_Equip_Active')"
+            :title="palStore.getTranslatedText('Editor_Equip_Picker_Title')"
+            :search-placeholder="palStore.getTranslatedText('Editor_Equip_Search_Placeholder')"
+            :results-label="palStore.getTranslatedText('Editor_Active_Results_Label')"
+            :empty-text="palStore.getTranslatedText('Editor_Equip_Empty')"
+            :close-label="palStore.getTranslatedText('Common_Close')"
+            :power-label="palStore.getTranslatedText('Editor_Skill_ATK').trim()"
+            :cooldown-label="palStore.getTranslatedText('Editor_Skill_CD').trim()"
+            :unique-label="palStore.getTranslatedText('Editor_Skill_Unique')"
+            :fruit-label="palStore.getTranslatedText('Editor_Skill_Fruit')"
+            @select="palStore.SELECTED_PAL_DATA.add_EquipWaza($event.InternalName)"
+          />
+        </header>
+        <div class="skill-item-grid active-skill-grid">
+          <div
+            v-for="(skill, index) in palStore.SELECTED_PAL_DATA.EquipWaza"
+            :key="`equipped-${skill}-${index}`"
+            class="skill-item active-skill-item"
+          >
+            <div class="skill-item-row">
+              <div class="active-skill-card tooltip-container" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
+                <div class="active-skill-card__label">
                   <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
-                    :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
-                  {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
-                </p>
-                <p>
-                  <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
-                  <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
-                </p>
-              </span>
+                    :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
+                  <span>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</span>
+                </div>
+                <article class="tooltip-text">
+                  <h3>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</h3>
+                  <p>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[1] || "" }}</p>
+                  <p>
+                    {{ palStore.getTranslatedText("Editor_Skill_ATK") }}
+                    {{ palStore.ACTIVE_SKILLS[skill]?.Power }} |
+                    {{ palStore.getTranslatedText("Editor_Skill_CD") }}
+                    {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
+                  </p>
+                  <p>
+                    {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+                    <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
+                      :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
+                    {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
+                  </p>
+                  <p>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
+                  </p>
+                </article>
+              </div>
+              <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_EquipWaza" :name="skill"
+                :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
             </div>
-
-            <button class="edit del" @click="palStore.SELECTED_PAL_DATA.pop_EquipWaza" :name="skill"
-              :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
-          </div>
           </div>
         </div>
       </section>
       <section class="skill-section">
-        <p class="cat">
-          {{ palStore.getTranslatedText("Editor_Mastered_Skills") }}
-        </p>
-        <div class="flex-h">
-          <div class="editField skillList">
-          <div v-for="skill in palStore.SELECTED_PAL_DATA.MasteredWaza">
-            <div class="tooltip-container">
-              <p class="const skill-label" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
-                <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
-                  :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
-                {{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}
-              </p>
-              <span class="tooltip-text">
-                <h3>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</h3>
-                <p>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[1] || "" }}</p>
-                <p> --- </p>
-                <p>
-                  {{ palStore.getTranslatedText("Editor_Skill_ATK") }}
-                  {{ palStore.ACTIVE_SKILLS[skill]?.Power }} |
-                  {{ palStore.getTranslatedText("Editor_Skill_CD") }}
-                  {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
-                </p>
-                <p>
-                  {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+        <header class="skill-section-header">
+          <h3>{{ palStore.getTranslatedText("Editor_Mastered_Skills") }}</h3>
+          <PalSkillPicker
+            v-model="palStore.PAL_ACTIVE_SELECTED_ITEM"
+            kind="active"
+            icon-only
+            :options="filterInvalid(palStore.ACTIVE_SKILLS_LIST)"
+            :selected-option="palStore.ACTIVE_SKILLS[palStore.PAL_ACTIVE_SELECTED_ITEM]"
+            :disabled="palStore.LOADING_FLAG"
+            :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
+            :placeholder="palStore.getTranslatedText('Editor_Select_Active')"
+            :title="palStore.getTranslatedText('Editor_Active_Picker_Title')"
+            :search-placeholder="palStore.getTranslatedText('Editor_Active_Search_Placeholder')"
+            :results-label="palStore.getTranslatedText('Editor_Active_Results_Label')"
+            :empty-text="palStore.getTranslatedText('Editor_Active_Empty')"
+            :close-label="palStore.getTranslatedText('Common_Close')"
+            :power-label="palStore.getTranslatedText('Editor_Skill_ATK').trim()"
+            :cooldown-label="palStore.getTranslatedText('Editor_Skill_CD').trim()"
+            :unique-label="palStore.getTranslatedText('Editor_Skill_Unique')"
+            :fruit-label="palStore.getTranslatedText('Editor_Skill_Fruit')"
+            @select="palStore.SELECTED_PAL_DATA.add_MasteredWaza($event.InternalName)"
+          />
+        </header>
+        <div class="skill-item-grid active-skill-grid">
+          <div
+            v-for="(skill, index) in palStore.SELECTED_PAL_DATA.MasteredWaza"
+            :key="`mastered-${skill}-${index}`"
+            class="skill-item active-skill-item"
+          >
+            <div class="skill-item-row">
+              <div class="active-skill-card tooltip-container" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
+                <div class="active-skill-card__label">
                   <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
-                    :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
-                  {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
-                </p>
-                <p>
-                  <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
-                  <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
-                </p>
-              </span>
+                    :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
+                  <span>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</span>
+                </div>
+                <article class="tooltip-text">
+                  <h3>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[0] || skill }}</h3>
+                  <p>{{ palStore.ACTIVE_SKILLS[skill]?.I18n[1] || "" }}</p>
+                  <p>
+                    {{ palStore.getTranslatedText("Editor_Skill_ATK") }}
+                    {{ palStore.ACTIVE_SKILLS[skill]?.Power }} |
+                    {{ palStore.getTranslatedText("Editor_Skill_CD") }}
+                    {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
+                  </p>
+                  <p>
+                    {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+                    <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
+                      :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
+                    {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
+                  </p>
+                  <p>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
+                  </p>
+                </article>
+              </div>
+              <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_MasteredWaza" :name="skill"
+                :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
             </div>
-            <button v-if="!palStore.SELECTED_PAL_DATA.isEquippedSkill(skill)
-              && (!palStore.SELECTED_PAL_DATA.isEquipSkillFull() || !palStore.HIDE_INVALID_OPTIONS)" class="edit"
-              @click="palStore.SELECTED_PAL_DATA.add_EquipWaza" :name="skill"
-              :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Equip')"><AppIcon name="chevron-up" /></button>
-            <button class="edit del" @click="palStore.SELECTED_PAL_DATA.pop_MasteredWaza" :name="skill"
-              :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
-          </div>
-          <div class="editField">
-            <PalSkillPicker
-              v-model="palStore.PAL_ACTIVE_SELECTED_ITEM"
-              kind="active"
-              :options="filterInvalid(palStore.ACTIVE_SKILLS_LIST)"
-              :selected-option="palStore.ACTIVE_SKILLS[palStore.PAL_ACTIVE_SELECTED_ITEM]"
-              :disabled="palStore.LOADING_FLAG"
-              :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
-              :placeholder="palStore.getTranslatedText('Editor_Select_Active')"
-              :title="palStore.getTranslatedText('Editor_Active_Picker_Title')"
-              :search-placeholder="palStore.getTranslatedText('Editor_Active_Search_Placeholder')"
-              :results-label="palStore.getTranslatedText('Editor_Active_Results_Label')"
-              :empty-text="palStore.getTranslatedText('Editor_Active_Empty')"
-              :close-label="palStore.getTranslatedText('Common_Close')"
-              :power-label="palStore.getTranslatedText('Editor_Skill_ATK').trim()"
-              :cooldown-label="palStore.getTranslatedText('Editor_Skill_CD').trim()"
-              :unique-label="palStore.getTranslatedText('Editor_Skill_Unique')"
-              :fruit-label="palStore.getTranslatedText('Editor_Skill_Fruit')"
-              @select="palStore.SELECTED_PAL_DATA.add_MasteredWaza($event.InternalName)"
-            />
-          </div>
           </div>
         </div>
       </section>
@@ -544,11 +576,12 @@ const suitabilityIconSrc = key => {
 .PalEditor {
   display: grid;
   grid-template-columns: minmax(0, 1.22fr) minmax(340px, 0.78fr);
-  height: var(--sub-height);
-  overflow-y: auto;
+  height: auto;
+  overflow: visible;
   align-items: flex-start;
   align-content: flex-start;
   gap: 10px;
+  background: var(--ui-canvas);
 }
 
 .PalEditor.unref {
@@ -743,15 +776,16 @@ p.out_of_container {
   color: #3db15e !important;
 }
 
-img.palIcon {
-  width: 58px;
-  height: 58px;
+.pal-summary__portrait {
+  width: 64px;
+  height: 64px;
   max-width: none;
   flex: 0 0 auto;
   align-self: auto;
   border-radius: 12px;
   box-shadow: var(--ui-shadow-sm);
   margin: 0;
+  object-fit: contain;
 }
 
 img.suitIcon {
@@ -1094,6 +1128,25 @@ div.basic-fields {
   width: 100%;
 }
 
+:global(#EditorMain .basic-fields > .identity-field) {
+  grid-template-columns: 100px minmax(0, 1fr) 32px;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+}
+
+:global(#EditorMain .identity-field > p.const),
+:global(#EditorMain .identity-field > input.edit),
+:global(#EditorMain .identity-field .pal-species-trigger) {
+  min-height: 34px;
+  height: 34px;
+  margin: 0;
+}
+
+:global(#EditorMain .identity-field .pal-species-trigger) {
+  padding-block: 0;
+}
+
 .basic-fields > .editField > p.const { margin-left: 0; }
 .basic-fields > .editField > input,
 .basic-fields > .editField > select { width: 100%; margin: 0; }
@@ -1113,6 +1166,22 @@ div.basic-fields {
 }
 
 .attribute-row > .editField > p.const { flex: 1 1 auto; }
+
+:global(#EditorMain) button.edit.variant-toggle {
+  width: auto;
+  min-width: 58px;
+  padding: 0 10px;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: 0.025em;
+}
+
+:global(#EditorMain) button.edit.variant-toggle.is-active {
+  color: oklch(0.16 0.025 252);
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
 
 .metadata-grid {
   display: grid;
@@ -1195,8 +1264,7 @@ div.basic-fields {
   min-width: 120px;
 }
 
-.suitabilityPanel .skillList,
-.skillsPanel .skillList { gap: 6px; }
+.suitabilityPanel .skillList { gap: 6px; }
 
 .suitabilityPanel .skillList {
   display: flex;
@@ -1226,30 +1294,97 @@ div.basic-fields {
   flex-direction: column;
 }
 
-.skill-section > .flex-h { width: 100%; }
-
-.suitabilityPanel .skillList > div,
-.skillsPanel .skillList > div {
+.suitabilityPanel .skillList > div {
   display: inline-flex;
   min-width: 0;
 }
 
-.skillsPanel .skillList > div:has(.passive-skill-row) {
-  width: 100%;
+.skill-section-header {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.passive-skill-row {
-  display: inline-flex;
+.skill-section-header h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.skill-item-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 40px;
+  align-content: start;
+  gap: 6px 8px;
+}
+
+.skill-item {
+  min-width: 0;
+  height: 40px;
+}
+
+.skill-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
   align-items: center;
   width: 100%;
-  gap: 6px;
+  height: 40px;
+  min-width: 0;
+  gap: 5px;
+}
+
+.active-skill-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.active-skill-card:hover,
+.active-skill-card:focus-within {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-border-strong);
+}
+
+.active-skill-card__label {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.active-skill-card__label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .passive-skill-card {
   position: relative;
   display: flex;
   flex: 1 1 auto;
-  min-height: 48px;
+  min-width: 0;
+  min-height: 40px;
   overflow: visible;
   border-radius: 0;
   transition: filter 160ms ease;
@@ -1263,32 +1398,35 @@ div.basic-fields {
 .passive-skill-banner {
   display: flex;
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 8px;
+  padding: 0 10px;
   overflow: hidden;
   background-color: rgb(0 0 0 / 0.2);
   border: 1px solid #495057;
-  border-left-width: 5px;
 }
 
 .passive-skill-name {
   min-width: 0;
   overflow: hidden;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .passive-rank-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
   object-fit: contain;
+}
+
+.skill-item-remove {
+  align-self: center;
 }
 
 .passive-skill-card.is-rank-5 .passive-skill-banner {
@@ -1348,7 +1486,8 @@ div.basic-fields {
 .passive-rating--2,
 .passive-rating--3 { --passive-color: #ef7777; }
 
-.skillsPanel .passive-skill-card .tooltip-text {
+.skillsPanel .passive-skill-card .tooltip-text,
+.skillsPanel .active-skill-card .tooltip-text {
   bottom: calc(100% + 8px);
   left: 0;
   width: min(360px, calc(100vw - 48px));
@@ -1364,10 +1503,22 @@ div.basic-fields {
 }
 
 .skillsPanel .passive-skill-card:hover .tooltip-text,
-.skillsPanel .passive-skill-card:focus-within .tooltip-text {
+.skillsPanel .passive-skill-card:focus-within .tooltip-text,
+.skillsPanel .active-skill-card:hover .tooltip-text,
+.skillsPanel .active-skill-card:focus-within .tooltip-text {
   visibility: visible;
   opacity: 1;
   transform: translateY(0);
+}
+
+.skillsPanel .active-skill-card .tooltip-text h3,
+.skillsPanel .active-skill-card .tooltip-text p {
+  margin: 0;
+}
+
+.skillsPanel .active-skill-card .tooltip-text {
+  display: grid;
+  gap: 6px;
 }
 
 @media (max-width: 1380px) {
@@ -1384,6 +1535,7 @@ div.basic-fields {
   div.palInfo { grid-template-columns: minmax(0, 1fr); }
   .statsPanel,
   .suitabilityPanel { grid-template-columns: minmax(0, 1fr); }
+  .skill-item-grid { grid-template-columns: minmax(0, 1fr); }
   .stat-group:nth-child(2) {
     grid-row: auto;
     padding: 14px 0 0;

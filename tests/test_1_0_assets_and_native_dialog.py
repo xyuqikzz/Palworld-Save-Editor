@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 import unittest
+from unittest.mock import patch
 
 import webview
 
@@ -10,6 +12,7 @@ import webview
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = PROJECT_ROOT / "src" / "palworld_pal_editor"
 ASSET_ROOT = PACKAGE_ROOT / "assets"
+SUPPORTED_LANGUAGES = ("en", "fr", "ja", "ko", "zh-CN")
 
 
 class TechnologyAssetTests(unittest.TestCase):
@@ -22,9 +25,10 @@ class TechnologyAssetTests(unittest.TestCase):
         self.assertEqual(80, max(row["Level"] for row in data.values()))
         self.assertEqual(66, data["AncientBlastFurnace"]["Level"])
         self.assertEqual(80, data["BeamLauncher"]["Level"])
+        self.assertEqual("원시적인 작업대", data["Workbench"]["I18n"]["ko"]["Name"])
 
         for internal_name, row in data.items():
-            for language in ("en", "fr", "ja", "zh-CN"):
+            for language in SUPPORTED_LANGUAGES:
                 localized = row["I18n"][language]
                 self.assertTrue(localized["Name"], (internal_name, language))
                 self.assertTrue(localized["Type"], (internal_name, language))
@@ -50,7 +54,7 @@ class SkillAssetTests(unittest.TestCase):
         self.assertIn(internal_name, localized_data["Passives"])
         self.assertIn(internal_name, editable_data)
         self.assertEqual(3, editable_data[internal_name]["Rating"])
-        for language in ("en", "fr", "ja", "zh-CN"):
+        for language in SUPPORTED_LANGUAGES:
             localized = localized_data["Passives"][internal_name]["I18n"][language]
             self.assertTrue(localized["Name"], language)
             self.assertNotEqual(internal_name, localized["Name"], language)
@@ -61,7 +65,7 @@ class SkillAssetTests(unittest.TestCase):
 
         previous_language = Config.i18n
         try:
-            for language in ("en", "fr", "ja", "zh-CN"):
+            for language in SUPPORTED_LANGUAGES:
                 Config.i18n = language
                 name, description = DataProvider.get_passive_i18n(internal_name)
                 self.assertNotEqual(internal_name, name, language)
@@ -77,6 +81,19 @@ class SkillAssetTests(unittest.TestCase):
         self.assertEqual(24088745, data["Build"])
         self.assertEqual(491, len(data["Passives"]))
         self.assertEqual(341, len(data["Attacks"]))
+        for section in ("Passives", "Attacks"):
+            for internal_name, row in data[section].items():
+                for language in SUPPORTED_LANGUAGES:
+                    localized = row["I18n"][language]
+                    self.assertEqual(
+                        set(row["I18n"]["en"]),
+                        set(localized),
+                        (section, internal_name, language),
+                    )
+                    self.assertTrue(
+                        localized["Name"],
+                        (section, internal_name, language),
+                    )
         for internal_name in (
             "PAL_ALLAttack_up3",
             "PAL_CorporateSlave",
@@ -93,6 +110,7 @@ class SkillAssetTests(unittest.TestCase):
         self.assertEqual(0.20, data["Legend"]["Buff"]["b_MoveSpeed"])
         self.assertEqual(0.20, data["Rare"]["Buff"]["b_CraftSpeed"])
         self.assertEqual(4, data["Salvation"]["Rating"])
+        self.assertEqual("전설", data["Legend"]["I18n"]["ko"]["Name"])
         self.assertIn("WorldTree_ATK", data)
         self.assertIn("MutationPal_Babysitter", data)
 
@@ -112,6 +130,7 @@ class SkillAssetTests(unittest.TestCase):
         self.assertEqual(12, attacks["EPalWazaID::WaterBall"]["CT"])
         self.assertEqual(200, attacks["EPalWazaID::WaterBall"]["Power"])
         self.assertFalse(attacks["EPalWazaID::Psychokinesis"]["SkillFruit"])
+        self.assertEqual("워터 제트", attacks["EPalWazaID::AquaJet"]["I18n"]["ko"]["Name"])
 
         used_attacks = {
             attack
@@ -120,7 +139,7 @@ class SkillAssetTests(unittest.TestCase):
         }
         self.assertLessEqual(used_attacks, set(attacks))
         for internal_name, row in attacks.items():
-            for language in ("en", "fr", "ja", "zh-CN"):
+            for language in SUPPORTED_LANGUAGES:
                 self.assertTrue(
                     row["I18n"][language]["Name"],
                     (internal_name, language),
@@ -157,6 +176,10 @@ class PalParameterAssetTests(unittest.TestCase):
         self.assertIn("EPalWorkSuitability::OilExtraction", data["Anubis"]["Suitabilities"])
         self.assertEqual(52, sum(not row["Attacks"] for row in data.values()))
         self.assertNotIn("PyramidTurtle", data)
+        self.assertEqual("도로롱", data["SheepBall"]["I18n"]["ko"])
+        for internal_name, row in data.items():
+            for language in SUPPORTED_LANGUAGES:
+                self.assertTrue(row["I18n"][language], (internal_name, language))
 
 
 class HumanAndProgressionAssetTests(unittest.TestCase):
@@ -174,6 +197,10 @@ class HumanAndProgressionAssetTests(unittest.TestCase):
             "永炎同心会 殉教者",
             data["Arena_FireCult_FlameThrower"]["I18n"]["zh-CN"],
         )
+        self.assertEqual(
+            "영원한 불꽃의 동지 순교자",
+            data["Arena_FireCult_FlameThrower"]["I18n"]["ko"],
+        )
         for internal_name, row in data.items():
             self.assertTrue(row["Human"], internal_name)
             self.assertIn(
@@ -181,7 +208,7 @@ class HumanAndProgressionAssetTests(unittest.TestCase):
                 row["Suitabilities"],
                 internal_name,
             )
-            for language in ("en", "fr", "ja", "zh-CN"):
+            for language in SUPPORTED_LANGUAGES:
                 self.assertTrue(row["I18n"][language], (internal_name, language))
 
     def test_1_0_experience_and_friendship_tables_are_synchronized(self) -> None:
@@ -218,6 +245,7 @@ class ItemAssetAndInventoryTests(unittest.TestCase):
             "Shield_Ultra": "超级护盾",
             "TreasureMap02": "藏宝图",
         }
+        self.assertEqual("울트라 방패", data["Shield_Ultra"]["I18n"]["ko"]["Name"])
 
         for internal_name, expected_name in expected_names.items():
             localized = data[internal_name]["I18n"]["zh-CN"]
@@ -249,7 +277,7 @@ class ItemAssetAndInventoryTests(unittest.TestCase):
 
         self.assertEqual(2466, len(data))
         for internal_name, row in data.items():
-            for language in ("en", "fr", "ja", "zh-CN"):
+            for language in SUPPORTED_LANGUAGES:
                 self.assertTrue(row["I18n"][language]["Name"], (internal_name, language))
             if row["Icon"]:
                 self.assertTrue(
@@ -260,6 +288,52 @@ class ItemAssetAndInventoryTests(unittest.TestCase):
         mapped_icons = [row["Icon"] for row in data.values() if row["Icon"]]
         self.assertEqual(2466, len(mapped_icons))
         self.assertEqual(918, len(set(mapped_icons)))
+
+    def test_korean_is_registered_for_runtime_and_cli(self) -> None:
+        from palworld_pal_editor.cli import lang
+        from palworld_pal_editor.config import Config
+        from palworld_pal_editor.utils.data_provider import DataProvider
+
+        self.assertTrue(DataProvider.is_valid_i18n("ko"))
+        self.assertEqual("한국어", DataProvider.get_i18n_map()["ko"])
+
+        previous_language = Config.i18n
+        try:
+            with patch.object(Config, "save_to_file"):
+                lang("ko")
+            self.assertEqual("ko", Config.i18n)
+        finally:
+            Config.i18n = previous_language
+
+    def test_lang_argument_accepts_korean_configuration(self) -> None:
+        from palworld_pal_editor import __main__ as application_main
+        from palworld_pal_editor.config import Config
+
+        previous = {
+            key: getattr(Config, key)
+            for key in ("i18n", "mode", "port", "debug", "path", "password", "nocli")
+        }
+        try:
+            with (
+                patch.object(Config, "load_from_file"),
+                patch.object(Config, "save_to_file"),
+                patch.object(
+                    application_main,
+                    "check_or_generate_port",
+                    side_effect=lambda port: port,
+                ),
+                patch.object(
+                    sys,
+                    "argv",
+                    ["palworld-pal-editor", "--lang", "ko", "--mode", "cli"],
+                ),
+            ):
+                application_main.setup_config_from_args()
+            self.assertEqual("ko", Config.i18n)
+            self.assertEqual("cli", Config.mode)
+        finally:
+            for key, value in previous.items():
+                setattr(Config, key, value)
 
     def test_rarity_suffix_uses_verified_base_item_metadata(self) -> None:
         from palworld_pal_editor.utils.data_provider import DataProvider
@@ -338,6 +412,20 @@ class NativeDialogTests(unittest.TestCase):
         self.assertEqual(r"D:\PalSave", api.select_save_directory())
         self.assertEqual([""], received)
 
+    def test_native_picker_accepts_the_game_pass_starting_folder(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        with TemporaryDirectory() as selected:
+            received = []
+            api = NativeDialogApi(
+                modern_folder_picker=lambda initial_directory: received.append(initial_directory)
+                or initial_directory,
+                platform_name="win32",
+            )
+            self.assertEqual(str(Path(selected).resolve()), api.select_save_directory(selected))
+            self.assertEqual([str(Path(selected).resolve())], received)
+
     def test_non_windows_keeps_pywebview_fallback(self) -> None:
         from palworld_pal_editor.gui import NativeDialogApi
 
@@ -405,7 +493,7 @@ class NativeDialogTests(unittest.TestCase):
         self.assertIn('<AppIcon name="chevron-up"', pal_editor_source)
         self.assertNotIn(">🔼</button>", pal_editor_source)
 
-    def test_element_and_variant_badges_replace_text_markers(self) -> None:
+    def test_element_icons_and_text_variant_labels(self) -> None:
         frontend = PROJECT_ROOT / "frontend" / "palworld-pal-editor-webui" / "src"
         pal_editor_source = (frontend / "components" / "PalEditor.vue").read_text(encoding="utf-8")
         pal_list_source = (frontend / "components" / "PalList.vue").read_text(encoding="utf-8")
@@ -421,7 +509,18 @@ class NativeDialogTests(unittest.TestCase):
         self.assertIn("<PalSpeciesPicker", pal_editor_source)
         self.assertNotIn("displayPalElement(pal.InternalName)", pal_editor_source)
         self.assertIn("displayNameWithoutVariantEmoji", pal_list_source)
-        self.assertIn('<VariantBadge v-if="pal.IsBOSS"', pal_list_source)
+        self.assertIn(
+            '<span v-if="pal.IsBOSS" class="pal-variant-label">',
+            pal_list_source,
+        )
+        self.assertIn(
+            '<span v-if="pal.IsRarePal" class="pal-variant-label">',
+            pal_list_source,
+        )
+        self.assertIn("getTranslatedText('Variant_Boss')", pal_list_source)
+        self.assertIn("getTranslatedText('Variant_Rare')", pal_list_source)
+        self.assertNotIn('<VariantBadge v-if="pal.IsBOSS"', pal_list_source)
+        self.assertNotIn('<VariantBadge v-if="pal.IsRarePal"', pal_list_source)
         self.assertTrue((ASSET_ROOT / "icons" / "elements" / "Element_Water.png").is_file())
 
     def test_active_skill_chips_use_element_images(self) -> None:
@@ -434,7 +533,6 @@ class NativeDialogTests(unittest.TestCase):
             / "PalEditor.vue"
         ).read_text(encoding="utf-8")
 
-        self.assertIn('class="const skill-label"', pal_editor_source)
         self.assertGreaterEqual(
             pal_editor_source.count(
                 ':element="palStore.ACTIVE_SKILLS[skill].Element"'

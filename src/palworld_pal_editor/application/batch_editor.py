@@ -15,6 +15,7 @@ from palworld_pal_editor.domain.commands import (
     PutItem,
     RecoverDetachedPal,
     SessionCommand,
+    UnlockPalExpedition,
     UpdateItemCount,
     UpdateDynamicItemAttributes,
     UpdatePalEnhancement,
@@ -44,6 +45,7 @@ CharacterCommand = (
     | UpdatePalProgression
     | UpdatePalSkills
     | UpdatePalEnhancement
+    | UnlockPalExpedition
 )
 StructuralCommand = AddPal | ClonePal | MovePal | DeletePal | RecoverDetachedPal
 BatchableCommand = InventoryCommand | CharacterCommand | StructuralCommand
@@ -160,6 +162,7 @@ class BatchEditor:
                 UpdatePalProgression,
                 UpdatePalSkills,
                 UpdatePalEnhancement,
+                UnlockPalExpedition,
             ),
         ):
             return CharacterEditor(self._session).execute(command)

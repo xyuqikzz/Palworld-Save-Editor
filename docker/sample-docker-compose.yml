@@ -9,7 +9,7 @@ services:
       - PUID=1000 # Change this to your uid
       - PGID=1000 # Change this to your gid
       - APP_PORT=58888 # The port Palworld-Save-Editor listens on, normally you don't modify it unless network is set to host mode.
-      - APP_LANG=en # Options: en, zh-CN, ja
+      - APP_LANG=en # Options: en, fr, ja, ko, zh-CN
       - MODE=web
       - PASSWORD=password # To prevent unauthorized access, a strong password is recommended.
     volumes:

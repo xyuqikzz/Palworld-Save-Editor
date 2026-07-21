@@ -15,7 +15,7 @@ EXPECTED_ITEM_COUNT = 2466
 RULE_SOURCE = (
     "Palworld 1.0 DA_StaticItemDataAsset + DT_ItemDataTable_Common"
 )
-SUPPORTED_LOCALES = ("en", "fr", "ja", "zh-CN")
+SUPPORTED_LOCALES = ("en", "fr", "ja", "ko", "zh-CN")
 
 _BASE_PROPERTY_OFFSET = {
     "PalStaticItemDataBase": 0,

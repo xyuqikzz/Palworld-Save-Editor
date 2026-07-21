@@ -3,7 +3,95 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any
+from pathlib import Path, PurePosixPath
+from typing import Any, Callable, Mapping
+
+
+class SavePlatform(StrEnum):
+    STEAM = "steam"
+    XGP = "xgp"
+
+
+@dataclass(frozen=True)
+class SaveSource:
+    platform: SavePlatform
+    canonical_path: Path
+    source_id: str
+    display_name: str
+    world_id: str | None = None
+    updated_at: datetime | None = None
+    status: str = "available"
+
+    def to_public_dict(self) -> dict[str, Any]:
+        updated_at = self.updated_at
+        if updated_at is not None and updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        return {
+            "sourceId": self.source_id,
+            "platform": self.platform.value,
+            "displayName": self.display_name,
+            "worldId": self.world_id[:8].upper() if self.world_id else None,
+            "updatedAt": updated_at.isoformat() if updated_at is not None else None,
+            "status": self.status,
+        }
+
+
+@dataclass(frozen=True)
+class LogicalSaveFile:
+    relative_path: PurePosixPath
+    physical_identity: str
+    size: int
+    sha256: str
+
+
+@dataclass(frozen=True)
+class StorageFileSnapshot:
+    relative_path: PurePosixPath
+    size: int
+    mtime_ns: int
+    sha256: str
+
+
+@dataclass(frozen=True)
+class StorageSnapshot:
+    files: tuple[StorageFileSnapshot, ...]
+    world_bindings: tuple[tuple[str, str], ...] = ()
+
+    def by_path(self) -> dict[str, StorageFileSnapshot]:
+        return {item.relative_path.as_posix(): item for item in self.files}
+
+
+@dataclass
+class OpenedSave:
+    source: SaveSource
+    workspace: Path
+    logical_files: dict[str, LogicalSaveFile]
+    snapshot: StorageSnapshot
+    cleanup_required: bool
+    storage_metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class StorageCommitRequest:
+    opened: OpenedSave
+    staged_workspace: Path
+    changed_files: tuple[PurePosixPath, ...]
+    expected_revision: int
+    target_path: Path | None = None
+    verify_file: Callable[[Path, str], Any] | None = None
+    failure_hook: Callable[[str, dict[str, Any]], None] | None = None
+
+
+@dataclass(frozen=True)
+class StorageCommitResult:
+    platform: SavePlatform
+    written_files: tuple[PurePosixPath, ...]
+    backup_path: Path | None
+    manifest_path: Path | None
+    source_reloaded: bool
+    recovery_status: str = "not_needed"
+    journal_path: Path | None = None
+    manifest: tuple[dict[str, Any], ...] = ()
 
 
 class ItemContainerType(StrEnum):
@@ -74,6 +162,10 @@ class SessionSummary:
     opened_at: datetime
     player_count: int
     pending_change_count: int
+    platform: SavePlatform = SavePlatform.STEAM
+    source_id: str | None = None
+    source_display_name: str | None = None
+    save_capabilities: Mapping[str, bool] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         opened_at = self.opened_at
@@ -86,6 +178,10 @@ class SessionSummary:
             "opened_at": opened_at.isoformat(),
             "player_count": self.player_count,
             "pending_change_count": self.pending_change_count,
+            "platform": self.platform.value,
+            "sourceId": self.source_id,
+            "sourceDisplayName": self.source_display_name,
+            "saveCapabilities": dict(self.save_capabilities),
         }
 
 
@@ -219,6 +315,12 @@ class SaveResult:
     staged_reload_verified: bool
     target_reload_verified: bool
     recovered: bool | None = None
+    platform: str = SavePlatform.STEAM.value
+    manifest_path: str | None = None
+    source_reloaded: bool = True
+    recovery_status: str = "not_needed"
+    journal_path: str | None = None
+    cloud_sync_verified: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -230,4 +332,10 @@ class SaveResult:
             "staged_reload_verified": self.staged_reload_verified,
             "target_reload_verified": self.target_reload_verified,
             "recovered": self.recovered,
+            "platform": self.platform,
+            "manifest_path": self.manifest_path,
+            "source_reloaded": self.source_reloaded,
+            "recovery_status": self.recovery_status,
+            "journal_path": self.journal_path,
+            "cloud_sync_verified": self.cloud_sync_verified,
         }

@@ -4,10 +4,12 @@ import axios from "axios";
 import enTranslations from "../i18n/en.js";
 import frTranslations from "../i18n/fr.js";
 import jaTranslations from "../i18n/ja.js";
+import koTranslations from "../i18n/ko.js";
 import zhCnTranslations from "../i18n/zh-CN.js";
 
 export const usePalEditorStore = defineStore("paleditor", () => {
     const MAX_LEVEL = 80;
+    const MIN_FRIENDSHIP_LEVEL = 0;
     const MAX_FRIENDSHIP_LEVEL = 10;
     const MAX_INVALID_LEVEL = 100;
     const MAX_SOULS_LEVEL = ref(0);
@@ -80,7 +82,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.NickName = obj.NickName;
             this.Gender = obj.Gender;
             this.Level = obj.Level;
-            this.FriendshipLevel = obj.FriendshipLevel;
+            this.FriendshipLevel = Math.max(
+                MIN_FRIENDSHIP_LEVEL,
+                obj.FriendshipLevel ?? MIN_FRIENDSHIP_LEVEL,
+            );
 
             this.HasBaseVariant = obj.HasBaseVariant;
             this.HasBossVariant = obj.HasBossVariant;
@@ -175,7 +180,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         friendshipLevelDown() {
-            if (this.FriendshipLevel > -3) {
+            if (this.FriendshipLevel > MIN_FRIENDSHIP_LEVEL) {
                 this.FriendshipLevel -= 1;
                 updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
             }
@@ -273,8 +278,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             });
         }
 
-        add_EquipWaza(e) {
-            const skill = e.currentTarget?.name || e.target?.name;
+        add_EquipWaza(skillOrEvent) {
+            const skill = typeof skillOrEvent === "string"
+                ? skillOrEvent
+                : skillOrEvent.currentTarget?.name || skillOrEvent.target?.name;
             updatePal({
                 target: {
                     name: "add_EquipWaza",
@@ -379,6 +386,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         en: enTranslations,
         fr: frTranslations,
         ja: jaTranslations,
+        ko: koTranslations,
         "zh-CN": zhCnTranslations,
     });
     const containerTranslationKeys = Object.freeze({
@@ -427,6 +435,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const SELECTED_PAL_DATA = ref(new Map());
     const SELECTED_PLAYER_DATA = ref(new Map());
     const PAL_MAP = ref(new Map());
+    const EXPEDITION_PAL_COUNT = computed(() =>
+        Array.from(PAL_MAP.value.values()).filter(pal => pal.IsExpeditionPal).length
+    );
 
     // selected id
     const SELECTED_PLAYER_ID = ref(null);
@@ -440,10 +451,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     // Configs
     const VERSION = ref("0.0.0");
     const IS_OFFICIAL_BUILD = ref(false);
+    const AVAILABLE_UPDATE = ref(null);
     const I18n = ref(localStorage.getItem("PAL_I18n"));
     const PAL_GAME_SAVE_PATH = ref(localStorage.getItem("PAL_GAME_SAVE_PATH"));
     const HAS_PASSWORD = ref(false);
     const PAL_WRITE_BACK_PATH = ref("");
+    const SAVE_SOURCE_MODE = ref("steam");
+    const XGP_WGS_PATH = ref("");
+    const XGP_SOURCES = ref([]);
+    const SELECTED_XGP_SOURCE_ID = ref(null);
+    const SAVE_PLATFORM = ref("steam");
+    const SOURCE_ID = ref(null);
+    const SOURCE_DISPLAY_NAME = ref("");
+    const SAVE_CAPABILITIES = ref({
+        commitOriginal: true,
+        exportSteamCopy: true,
+        targetPathEditable: true,
+        cloudSyncVerified: false,
+    });
+    const XGP_SAVE_CONFIRMED = ref(false);
     const PATH_CONTEXT = ref(new Map());
     const SESSION_ID = ref(null);
     const SESSION_REVISION = ref(0);
@@ -454,9 +480,18 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const ITEM_CATALOG_RESULTS = ref([]);
     let lastItemCatalogSearch = null;
     const ITEM_CLIPBOARD = ref(null);
+    const PLAYER_MISSIONS = ref({
+        missions: [],
+        summary: null,
+        warnings: [],
+        writable: false,
+        source: null,
+    });
+    const MISSION_LOADING = ref(false);
 
     const SHOW_FILE_PICKER = ref(false);
     const PAL_FILE_PICKER_PATH = ref(PAL_GAME_SAVE_PATH.value);
+    const FILE_PICKER_PURPOSE = ref("steam");
 
     // auth
     let auth_token = "";
@@ -571,10 +606,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     function acceptResponse(response, context, { command = false } = {}) {
         if (!response || response.status !== 0) {
+            const errorCode = response?.error?.code || "REQUEST_FAILED";
+            const localizedMessage = errorCode.startsWith("WGS_")
+                ? getTranslatedText(errorCode)
+                : response?.msg || "The operation failed.";
             LAST_ERROR.value = {
                 context,
-                message: response?.msg || "The operation failed.",
-                code: response?.error?.code || "REQUEST_FAILED",
+                message: localizedMessage,
+                code: errorCode,
                 details: response?.error?.details || {},
                 retryable: Boolean(response?.error?.retryable),
             };
@@ -681,15 +720,29 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SHOW_FILE_PICKER.value = true;
     }
 
-    async function show_file_picker() {
+    async function show_file_picker(purpose = SAVE_SOURCE_MODE.value) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
+        FILE_PICKER_PURPOSE.value = purpose === "xgp" ? "xgp" : "steam";
 
         const nativePicker = window.pywebview?.api?.select_save_directory;
         if (nativePicker) {
             try {
-                const selectedPath = await nativePicker();
+                const selectedPath = await nativePicker(
+                    FILE_PICKER_PURPOSE.value === "xgp"
+                        ? XGP_WGS_PATH.value
+                        : PAL_GAME_SAVE_PATH.value
+                );
                 if (!selectedPath) {
+                    if (!no_set_loading_flag) LOADING_FLAG.value = false;
+                    return;
+                }
+
+                if (FILE_PICKER_PURPOSE.value === "xgp") {
+                    XGP_WGS_PATH.value = selectedPath;
+                    PAL_FILE_PICKER_PATH.value = selectedPath;
+                    SHOW_FILE_PICKER.value = false;
+                    await discoverXgpSources(selectedPath);
                     if (!no_set_loading_flag) LOADING_FLAG.value = false;
                     return;
                 }
@@ -722,7 +775,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         let response = undefined;
-        if (PAL_GAME_SAVE_PATH.value) {
+        if (FILE_PICKER_PURPOSE.value === "xgp") {
+            response = await POST("/api/save/browse-directory", {
+                path: XGP_WGS_PATH.value || PAL_GAME_SAVE_PATH.value || undefined,
+            });
+            if (!response || response.status !== 0) {
+                response = await POST("/api/save/browse-directory", {});
+            }
+        } else if (PAL_GAME_SAVE_PATH.value) {
             response = await POST("/api/save/path", {
                 path: PAL_GAME_SAVE_PATH.value,
             });
@@ -754,7 +814,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        const response = await PATCH("/api/save/path");
+        const response = FILE_PICKER_PURPOSE.value === "xgp"
+            ? await POST("/api/save/browse-directory", {
+                path: PAL_FILE_PICKER_PATH.value,
+                parent: true,
+            })
+            : await PATCH("/api/save/path");
 
         if (response === false) return;
 
@@ -775,9 +840,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        const response = await POST("/api/save/path", {
-            path: path,
-        });
+        const response = await POST(
+            FILE_PICKER_PURPOSE.value === "xgp"
+                ? "/api/save/browse-directory"
+                : "/api/save/path",
+            { path }
+        );
 
         if (response === false) return;
 
@@ -812,6 +880,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 refreshes.push(fetchPlayerPal(PAL_BASE_WORKER_BTN.value));
                 if (SELECTED_PLAYER_ID.value && SESSION_ID.value) {
                     refreshes.push(loadInventory(SELECTED_PLAYER_ID.value));
+                    refreshes.push(loadPlayerMissions(SELECTED_PLAYER_ID.value));
                 }
             }
             if (lastItemCatalogSearch !== null) {
@@ -912,9 +981,27 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SAVE_COMPATIBILITY.value = null;
         LAST_ERROR.value = null;
         LAST_SAVE_RESULT.value = null;
+        SAVE_PLATFORM.value = "steam";
+        SOURCE_ID.value = null;
+        SOURCE_DISPLAY_NAME.value = "";
+        SAVE_CAPABILITIES.value = {
+            commitOriginal: true,
+            exportSteamCopy: true,
+            targetPathEditable: true,
+            cloudSyncVerified: false,
+        };
+        XGP_SAVE_CONFIRMED.value = false;
         ITEM_CATALOG_RESULTS.value = [];
         lastItemCatalogSearch = null;
         ITEM_CLIPBOARD.value = null;
+        PLAYER_MISSIONS.value = {
+            missions: [],
+            summary: null,
+            warnings: [],
+            writable: false,
+            source: null,
+        };
+        MISSION_LOADING.value = false;
 
         BASE_PAL_MAP.value = new Map();
         PLAYER_MAP.value = new Map();
@@ -1070,6 +1157,63 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
+    async function discoverXgpSources(path = XGP_WGS_PATH.value) {
+        const noSetLoadingFlag = LOADING_FLAG.value;
+        if (!noSetLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            XGP_SOURCES.value = [];
+            SELECTED_XGP_SOURCE_ID.value = null;
+            if (!path) {
+                LAST_ERROR.value = {
+                    context: "discover-xgp-sources",
+                    code: "WGS_NOT_FOUND",
+                    message: getTranslatedText("Entry_Xgp_PathRequired"),
+                    details: {},
+                    retryable: true,
+                };
+                return false;
+            }
+            XGP_WGS_PATH.value = path;
+            const response = await POST("/api/save/sources", { path });
+            if (!acceptResponse(response, "discover-xgp-sources")) return false;
+            const sources = response.data.sources || [];
+            if (!sources.length) {
+                LAST_ERROR.value = {
+                    context: "discover-xgp-sources",
+                    code: "WGS_NOT_FOUND",
+                    message: getTranslatedText("WGS_NOT_FOUND"),
+                    details: {},
+                    retryable: true,
+                };
+                return false;
+            }
+            XGP_SOURCES.value = sources;
+            return true;
+        } finally {
+            if (!noSetLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function checkForUpdate() {
+        AVAILABLE_UPDATE.value = null;
+        if (!IS_OFFICIAL_BUILD.value) return false;
+        try {
+            const response = await GET("/api/save/update");
+            if (!response || response.status !== 0 || !response.data?.version) return false;
+            AVAILABLE_UPDATE.value = {
+                version: response.data.version,
+                url: response.data.download_page || response.data.download_gh,
+            };
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function skipUpdate() {
+        AVAILABLE_UPDATE.value = null;
+    }
+
     async function loadInventory(playerId = SELECTED_PLAYER_ID.value) {
         if (!playerId || !SESSION_ID.value) return false;
         const response = await GET(
@@ -1082,6 +1226,72 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SELECTED_PLAYER_DATA.value.InventoryContainers = response.data.containers || [];
         }
         return true;
+    }
+
+    async function loadPlayerMissions(playerId = SELECTED_PLAYER_ID.value) {
+        if (!playerId || !SESSION_ID.value) return false;
+        MISSION_LOADING.value = true;
+        const params = new URLSearchParams({
+            session_id: SESSION_ID.value,
+            locale: I18n.value || "en",
+        });
+        try {
+            const response = await GET(
+                `/api/player/${encodeURIComponent(playerId)}/missions?${params.toString()}`
+            );
+            if (!acceptResponse(response, "load-player-missions")) return false;
+            if (SELECTED_PLAYER_ID.value === playerId) {
+                PLAYER_MISSIONS.value = response.data;
+            }
+            return true;
+        } finally {
+            MISSION_LOADING.value = false;
+        }
+    }
+
+    async function previewMissionCommand(operation, missionIds = []) {
+        if (!SELECTED_PLAYER_ID.value || !SESSION_ID.value) return null;
+        MISSION_LOADING.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(SELECTED_PLAYER_ID.value)}/missions/preview`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    operation,
+                    mission_ids: missionIds,
+                }
+            );
+            if (!acceptResponse(response, "preview-mission-command")) return null;
+            return response.data;
+        } finally {
+            MISSION_LOADING.value = false;
+        }
+    }
+
+    async function executeMissionCommand(operation, missionIds, previewToken) {
+        if (!SELECTED_PLAYER_ID.value || !SESSION_ID.value) return false;
+        MISSION_LOADING.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(SELECTED_PLAYER_ID.value)}/missions/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    operation,
+                    mission_ids: missionIds,
+                    preview_token: previewToken,
+                }
+            );
+            if (!acceptResponse(response, "execute-mission-command", { command: true })) {
+                return false;
+            }
+            PENDING_CHANGE_COUNT.value = response.data.pending_change_count;
+            await loadPlayerMissions(SELECTED_PLAYER_ID.value);
+            return true;
+        } finally {
+            MISSION_LOADING.value = false;
+        }
     }
 
     async function executeInventoryCommand(containerType, slotIndex, command) {
@@ -1282,26 +1492,41 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return true;
     }
 
-    async function executeBatchOperations(operations) {
-        const payload = {
-            session_id: SESSION_ID.value,
-            expected_revision: SESSION_REVISION.value,
-            operations,
-        };
-        const preview = await POST("/api/batch/preview", payload);
-        if (!acceptResponse(preview, "preview-batch")) return false;
-        if (!window.confirm(getTranslatedText(
+    async function executeBatchOperations(
+        operations,
+        { confirmBeforePreview = false, trackLoading = false } = {}
+    ) {
+        if (confirmBeforePreview && !window.confirm(getTranslatedText(
             "Confirm_ApplyAtomicBatch",
-            [preview.data.impact.operation_count]
+            [operations.length]
         ))) return false;
-        const response = await POST("/api/batch/commands", {
-            ...payload,
-            impact_token: preview.data.impact_token,
-        });
-        if (!acceptResponse(response, "execute-batch", { command: true })) return false;
-        if (SELECTED_PLAYER_ID.value) await loadInventory();
-        if (SELECTED_PAL_ID.value) await selectPal(SELECTED_PAL_ID.value, true);
-        return true;
+
+        const ownsLoadingFlag = trackLoading && !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+
+        try {
+            const payload = {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                operations,
+            };
+            const preview = await POST("/api/batch/preview", payload);
+            if (!acceptResponse(preview, "preview-batch")) return false;
+            if (!confirmBeforePreview && !window.confirm(getTranslatedText(
+                "Confirm_ApplyAtomicBatch",
+                [preview.data.impact.operation_count]
+            ))) return false;
+            const response = await POST("/api/batch/commands", {
+                ...payload,
+                impact_token: preview.data.impact_token,
+            });
+            if (!acceptResponse(response, "execute-batch", { command: true })) return false;
+            if (SELECTED_PLAYER_ID.value) await loadInventory();
+            if (SELECTED_PAL_ID.value) await selectPal(SELECTED_PAL_ID.value, true);
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function healAllPals() {
@@ -1312,7 +1537,27 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             values: { heal: true },
         }));
         if (!operations.length) return false;
-        return executeBatchOperations(operations);
+        return executeBatchOperations(operations, {
+            confirmBeforePreview: true,
+            trackLoading: true,
+        });
+    }
+
+    async function unlockExpeditionPals() {
+        const lockedPals = Array.from(PAL_MAP.value.entries()).filter(
+            ([, pal]) => pal.IsExpeditionPal
+        );
+        const operations = lockedPals.map(([palId]) => ({
+            resource: "pal",
+            command: "unlock_pal_expedition",
+            pal_id: palId,
+        }));
+        if (!operations.length) return false;
+        const succeeded = await executeBatchOperations(operations);
+        if (succeeded) {
+            for (const [, pal] of lockedPals) pal.IsExpeditionPal = false;
+        }
+        return succeeded;
     }
 
     async function loadPlayer(playerUId, updatePal = false) {
@@ -1442,15 +1687,31 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function loadSave() {
+        const requestedMode = SAVE_SOURCE_MODE.value;
+        const requestedSourceId = SELECTED_XGP_SOURCE_ID.value;
         reset();
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
         await updateI18n();
 
-        const response = await POST("/api/save/load", {
-            ReadPath: PAL_GAME_SAVE_PATH.value,
-        });
+        if (requestedMode === "xgp" && !requestedSourceId) {
+            LAST_ERROR.value = {
+                context: "load-save",
+                code: "WGS_WORLD_AMBIGUOUS",
+                message: getTranslatedText("Entry_Xgp_SelectRequired"),
+                details: {},
+                retryable: true,
+            };
+            if (!no_set_loading_flag) LOADING_FLAG.value = false;
+            return false;
+        }
+        const response = await POST(
+            "/api/save/load",
+            requestedMode === "xgp"
+                ? { sourceId: requestedSourceId }
+                : { ReadPath: PAL_GAME_SAVE_PATH.value }
+        );
         if (response === false) return;
 
         if (response.status == 0) {
@@ -1458,16 +1719,24 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SESSION_REVISION.value = response.data.session.revision;
             PENDING_CHANGE_COUNT.value = response.data.session.pending_change_count;
             SAVE_COMPATIBILITY.value = response.data.compatibility;
+            SAVE_PLATFORM.value = response.data.session.platform || "steam";
+            SOURCE_ID.value = response.data.session.sourceId || null;
+            SOURCE_DISPLAY_NAME.value = response.data.session.sourceDisplayName || "";
+            SAVE_CAPABILITIES.value = response.data.session.saveCapabilities || {};
             LAST_ERROR.value = null;
             await loadPlayers();
             await fetchStaticData();
 
             SAVE_LOADED_FLAG.value = true;
-            localStorage.setItem(
-                "PAL_GAME_SAVE_PATH",
-                PAL_GAME_SAVE_PATH.value
-            );
-            PAL_WRITE_BACK_PATH.value = PAL_GAME_SAVE_PATH.value;
+            if (SAVE_PLATFORM.value === "steam") {
+                localStorage.setItem(
+                    "PAL_GAME_SAVE_PATH",
+                    PAL_GAME_SAVE_PATH.value
+                );
+                PAL_WRITE_BACK_PATH.value = PAL_GAME_SAVE_PATH.value;
+            } else {
+                PAL_WRITE_BACK_PATH.value = SOURCE_DISPLAY_NAME.value;
+            }
         } else if (response.status == 2) {
             alert("Unauthorized Access, Please Login. ");
             IS_LOCKED.value = true;
@@ -1482,11 +1751,22 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let retval = false;
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
-        const response = await POST("/api/save/save", {
-            WritePath: PAL_WRITE_BACK_PATH.value,
+        if (
+            SAVE_PLATFORM.value === "xgp"
+            && !XGP_SAVE_CONFIRMED.value
+            && !window.confirm(getTranslatedText("Confirm_Xgp_Save"))
+        ) {
+            if (!no_set_loading_flag) LOADING_FLAG.value = false;
+            return false;
+        }
+        const savePayload = {
             session_id: SESSION_ID.value,
             expected_revision: SESSION_REVISION.value,
-        });
+        };
+        if (SAVE_PLATFORM.value !== "xgp") {
+            savePayload.WritePath = PAL_WRITE_BACK_PATH.value;
+        }
+        const response = await POST("/api/save/save", savePayload);
         if (response === false) return;
 
         if (response.status == 0) {
@@ -1494,9 +1774,15 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SESSION_REVISION.value = response.data.revision;
             PENDING_CHANGE_COUNT.value = 0;
             LAST_ERROR.value = null;
-            const Alert_Successful_Save = getTranslatedText(
-                "Alert_Successful_Save"
-            ).replace("{{path}}", PAL_WRITE_BACK_PATH.value);
+            if (SAVE_PLATFORM.value === "xgp") XGP_SAVE_CONFIRMED.value = true;
+            const Alert_Successful_Save = SAVE_PLATFORM.value === "xgp"
+                ? getTranslatedText("Alert_Xgp_Save_Success", [
+                    response.data.backup_path || getTranslatedText("Common_NotApplicable"),
+                ])
+                : getTranslatedText("Alert_Successful_Save").replace(
+                    "{{path}}",
+                    PAL_WRITE_BACK_PATH.value
+                );
             alert(Alert_Successful_Save);
             retval = true;
         } else if (response.status == 2) {
@@ -1509,6 +1795,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
         return retval;
+    }
+
+    async function exportSteamCopy() {
+        const targetPath = window.prompt(getTranslatedText("Prompt_Xgp_Export_Target"));
+        if (!targetPath) return false;
+        const noSetLoadingFlag = LOADING_FLAG.value;
+        if (!noSetLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/export-steam", {
+                targetPath,
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+            });
+            if (!acceptResponse(response, "export-steam-copy")) return false;
+            alert(getTranslatedText("Alert_Xgp_Export_Success", [targetPath]));
+            return true;
+        } finally {
+            if (!noSetLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function fetchPlayerPal(playerUId) {
@@ -1618,6 +1923,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
             SHOW_PLAYER_EDIT_FLAG.value = true;
             SELECTED_PLAYER_DATA.value = PLAYER_MAP.value.get(playerUId);
+            await loadPlayerMissions(playerUId);
         }
 
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
@@ -2178,6 +2484,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         MAX_INVALID_LEVEL,
         MAX_SOULS_LEVEL,
         MAX_SUITABILITY_LEVEL,
+        MIN_FRIENDSHIP_LEVEL,
         MAX_FRIENDSHIP_LEVEL,
 
         PAL_PASSIVE_SELECTED_ITEM,
@@ -2185,6 +2492,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_BASE_WORKER_BTN,
         PLAYER_MAP,
         PAL_MAP,
+        EXPEDITION_PAL_COUNT,
         SELECTED_PLAYER_ID,
         SELECTED_PLAYER_DATA,
         SELECTED_PAL_ID,
@@ -2210,12 +2518,21 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SHOW_FILE_PICKER,
         PAL_FILE_PICKER_PATH,
         IS_PAL_SAVE_PATH,
+        FILE_PICKER_PURPOSE,
 
         SHOW_PLAYER_EDIT_FLAG,
         HAS_WORKING_PAL_FLAG,
         BASE_PAL_BTN_CLK_FLAG,
         PAL_GAME_SAVE_PATH,
         PAL_WRITE_BACK_PATH,
+        SAVE_SOURCE_MODE,
+        XGP_WGS_PATH,
+        XGP_SOURCES,
+        SELECTED_XGP_SOURCE_ID,
+        SAVE_PLATFORM,
+        SOURCE_ID,
+        SOURCE_DISPLAY_NAME,
+        SAVE_CAPABILITIES,
         SESSION_ID,
         SESSION_REVISION,
         PENDING_CHANGE_COUNT,
@@ -2224,8 +2541,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         LAST_SAVE_RESULT,
         ITEM_CATALOG_RESULTS,
         ITEM_CLIPBOARD,
+        PLAYER_MISSIONS,
+        MISSION_LOADING,
         VERSION,
         IS_OFFICIAL_BUILD,
+        AVAILABLE_UPDATE,
         I18n,
         I18nList,
         PAL_STATIC_DATA,
@@ -2261,6 +2581,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         putInventoryItem,
         clearInventoryItem,
         loadInventory,
+        loadPlayerMissions,
+        previewMissionCommand,
+        executeMissionCommand,
         searchItemCatalog,
         copyInventoryItem,
         pasteInventoryItem,
@@ -2272,9 +2595,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         applyPreset,
         executeBatchOperations,
         healAllPals,
+        unlockExpeditionPals,
         refreshSessionMetadata,
         writeSave,
+        exportSteamCopy,
+        discoverXgpSources,
         fetch_config,
+        checkForUpdate,
+        skipUpdate,
         dumpPalData,
         delPal,
         addPal,

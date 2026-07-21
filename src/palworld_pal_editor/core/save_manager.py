@@ -378,6 +378,31 @@ class SaveManager:
     def _record_player_file_load(self, player_uid: str, elapsed: float) -> None:
         self.player_file_load_count += 1
         self.player_file_load_seconds[str(player_uid)] = elapsed
+
+    def _resolve_player_group_id(self, entity: dict, player_uid: str) -> Optional[UUID]:
+        group_id = self.group_data.get_player_group_id(player_uid)
+        if group_id is not None:
+            return group_id
+
+        raw_data = entity.get("value", {}).get("RawData", {}).get("value", {})
+        declared_group_id = raw_data.get("group_id")
+        group = self.group_data.get_group(declared_group_id)
+        instance_id = PalObjects.get_BaseType(
+            entity.get("key", {}).get("InstanceId")
+        )
+        if (
+            group is None
+            or group.guild_format != "raw"
+            or instance_id is None
+            or not group.has_pal(instance_id)
+        ):
+            return None
+
+        LOGGER.warning(
+            f"Guild player data is opaque; resolved player {player_uid} from "
+            "its verified character group handle"
+        )
+        return group.group_id
     
     
     def save_player_sav(self, player_entity: PlayerEntity, save_path: Optional[Path] = None) -> bool:
@@ -427,7 +452,7 @@ class SaveManager:
                         LOGGER.error(f"Duplicated player found: \n\t{self.player_mapping[uid_str]}, skipping...")
                         continue
                     
-                    group_id = self.group_data.get_player_group_id(uid_str)
+                    group_id = self._resolve_player_group_id(entity, uid_str)
 
                     if group_id is None:
                         LOGGER.warning(f"Player {uid_str} has no guild id")

@@ -8,14 +8,22 @@
   <a href="README.cn.md">简体中文</a> · <strong>English</strong>
 </p>
 
-A local editor for Palworld Steam saves with a desktop GUI, Web UI, and interactive CLI. This project is a modified version based on [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) and remains licensed under GPL-3.0.
+A local editor for Palworld Steam and Xbox Game Pass/WGS saves with a desktop GUI, Web UI, and interactive CLI. This project is a modified version based on [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) and remains licensed under GPL-3.0.
 
 > [!WARNING]
 > Exit the game or stop the server and make an offline copy of the entire world save directory before editing. The application creates backups during writes, but automatic backups are not a substitute for your own copy.
 
+## 1.0.1 highlights
+
+- Added direct Xbox Game Pass/WGS slot discovery, editing, verified external backups, and transactional writes.
+- Added a mission editor with previewed batch operations and Palworld 1.0 mission data.
+- Refined Pal creation and species filtering, variant controls, inventory editing, and the save-source entry flow.
+- Added Korean UI support, an in-app update notice, refreshed Palworld 1.0 data assets, and save-integrity fixes.
+
 ## Support scope
 
-- Steam-format saves are supported directly. Xbox Game Pass saves must first be converted to Steam format.
+- Steam-format directories and locally selected Xbox Game Pass WGS folders are supported directly. Game Pass writes are locked to the opened slot and create a verified backup outside WGS first.
+- Synthetic fixtures and a copied, user-authorized WGS sample have passed open, edit, commit, and reopen tests. Loading the result in the game and Xbox cloud synchronization have not been verified.
 - The current data and compatibility baseline targets Palworld 1.0 / Steam build 24088745.
 - Unknown versions and unverified layouts are capability-gated. Do not force unsupported fields to be written.
 - This is an unofficial community project and is not affiliated with Pocketpair.
@@ -28,16 +36,19 @@ Steam saves are normally stored under:
 
 Select the complete world directory containing `Level.sav` and `Players/`, not an individual `.sav` file.
 
+For Game Pass, exit Palworld and wait for local synchronization, then choose either the WGS root or the user directory containing `containers.index`. Read the slots and explicitly select the world to open. A successful local transaction does not prove Xbox cloud synchronization.
+
 ## Features
 
 - Browse players, Pals, world containers, and the item catalog.
 - Edit player names, levels, technologies, and player inventories.
 - Edit Pal species, variants, names, gender, level, IVs, condensation, souls, work suitability, active skills, and passive skills.
 - Add, duplicate, delete, and reorganize Pals across supported containers, with previews and reference checks for destructive operations.
+- Preview and apply supported mission progress changes.
 - Edit item quantities, inventory layouts, and supported dynamic item attributes.
 - Preview and apply batch operations and presets, review pending changes, and save explicitly.
 - Write through temporary files, validation, backup creation, and replacement, preserving recovery information on failure.
-- Use the UI in English, Japanese, Simplified Chinese, or French.
+- Use the UI in English, French, Japanese, Korean, or Simplified Chinese.
 
 ## Install and run
 
@@ -87,7 +98,7 @@ Common options:
 
 | Option | Description |
 | --- | --- |
-| `--lang en|ja|zh-CN|fr` | UI language |
+| `--lang en|fr|ja|ko|zh-CN` | UI language |
 | `--path <directory>` | World directory containing `Level.sav` |
 | `--mode cli|gui|web` | Runtime mode |
 | `--port <port>` | Web UI listening port |

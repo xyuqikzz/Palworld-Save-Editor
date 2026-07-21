@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 const sourceRoot = fileURLToPath(new URL('../src', import.meta.url))
 const storePath = fileURLToPath(new URL('../src/stores/paleditor.js', import.meta.url))
+const topBarPath = fileURLToPath(new URL('../src/components/TopBar.vue', import.meta.url))
 
 function vueFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -88,6 +89,7 @@ test('all supported locales expose the same translation keys', () => {
     en: loadMessages('en'),
     fr: loadMessages('fr'),
     ja: loadMessages('ja'),
+    ko: loadMessages('ko'),
     'zh-CN': loadMessages('zh-CN'),
   }
   const expected = Object.keys(locales.en).sort()
@@ -97,6 +99,27 @@ test('all supported locales expose the same translation keys', () => {
       assert.equal(typeof value, 'string', `${locale}.${key} must be a string`)
       assert.notEqual(value.trim(), '', `${locale}.${key} must not be empty`)
     }
+  }
+})
+
+test('Korean translations are complete translations rather than English placeholders', () => {
+  const en = loadMessages('en')
+  const ko = loadMessages('ko')
+  const intentionallyShared = new Set([
+    'EntryView_Period',
+    'Editor_IV_HP',
+    'Editor_Souls_HP',
+    'Common_AppName',
+    'Entry_Source_Beta',
+  ])
+  assert.deepEqual(
+    Object.keys(en).filter(key => en[key] === ko[key] && !intentionallyShared.has(key)),
+    [],
+  )
+  for (const key of Object.keys(en)) {
+    const expected = [...en[key].matchAll(/\{\{\d+\}\}/g)].map(match => match[0]).sort()
+    const actual = [...ko[key].matchAll(/\{\{\d+\}\}/g)].map(match => match[0]).sort()
+    assert.deepEqual(actual, expected, `ko.${key} interpolation placeholders differ`)
   }
 })
 
@@ -123,8 +146,15 @@ test('translation lookup is synchronous for every supported locale', async () =>
   setActivePinia(createPinia())
   const store = usePalEditorStore()
 
-  for (const locale of ['en', 'fr', 'ja', 'zh-CN']) {
+  for (const locale of ['en', 'fr', 'ja', 'ko', 'zh-CN']) {
     store.I18n = locale
-    assert.equal(typeof store.getTranslatedText('Common_AppName'), 'string', locale)
+    assert.notEqual(store.getTranslatedText('Common_Save'), 'I18N_MISSING', locale)
   }
+  store.I18n = 'ko'
+  assert.equal(store.getTranslatedText('Common_Save'), '저장')
+})
+
+test('the document language follows the selected locale', () => {
+  const source = readFileSync(topBarPath, 'utf8')
+  assert.match(source, /document\.documentElement\.lang = locale \|\| 'en'/)
 })

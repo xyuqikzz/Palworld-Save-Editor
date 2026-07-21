@@ -71,11 +71,12 @@ def main():
             LOGGER.info(f"New version available: {version[0]}")
             LOGGER.info(f"Release page: {PROJECT_RELEASES_URL}")
             LOGGER.info(f"Download: {version[1]}")
-    try:
-        loop = asyncio.get_running_loop()
-        loop.create_task(check_new_version())
-    except RuntimeError:
-        asyncio.run(check_new_version())
+    if Config.mode == "cli":
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(check_new_version())
+        except RuntimeError:
+            asyncio.run(check_new_version())
 
     match Config.mode:
         case "cli": cli_main()

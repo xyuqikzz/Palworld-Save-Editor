@@ -4,6 +4,25 @@ from dataclasses import dataclass, field as dataclass_field
 from typing import Any
 
 
+WGS_ERROR_CODES = frozenset(
+    {
+        "WGS_NOT_FOUND",
+        "WGS_USER_AMBIGUOUS",
+        "WGS_INDEX_UNSUPPORTED",
+        "WGS_CONTAINER_INCOMPLETE",
+        "WGS_WORLD_AMBIGUOUS",
+        "WGS_SOURCE_CHANGED",
+        "WGS_GAME_RUNNING",
+        "WGS_BACKUP_FAILED",
+        "WGS_STAGE_FAILED",
+        "WGS_COMMIT_FAILED",
+        "WGS_RECOVERY_FAILED",
+        "WGS_RELOAD_FAILED",
+        "WGS_CLOUD_SYNC_UNVERIFIED",
+    }
+)
+
+
 @dataclass(eq=False)
 class DomainError(Exception):
     """Expected, machine-readable rejection from a save-editor Interface."""

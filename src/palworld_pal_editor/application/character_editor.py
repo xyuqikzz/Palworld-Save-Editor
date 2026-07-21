@@ -6,6 +6,7 @@ from typing import Any, Callable
 
 from palworld_pal_editor.core.pal_objects import PalGender, PalObjects, PalSuitability
 from palworld_pal_editor.domain.commands import (
+    UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
     UpdatePalProgression,
@@ -54,6 +55,8 @@ class CharacterEditor:
             return self._update_pal_skills(command)
         if isinstance(command, UpdatePalEnhancement):
             return self._update_pal_enhancement(command)
+        if isinstance(command, UnlockPalExpedition):
+            return self._unlock_pal_expedition(command)
         raise DomainError(
             code="UNSUPPORTED_COMMAND",
             message="Unsupported character command.",
@@ -347,7 +350,7 @@ class CharacterEditor:
             )
         if "friendship_level" in values:
             self._require_int_range(
-                values["friendship_level"], -3, 10, "friendship_level"
+                values["friendship_level"], 0, 10, "friendship_level"
             )
             if DataProvider.get_pal_friendship(values["friendship_level"]) is None:
                 raise DomainError(
@@ -530,7 +533,7 @@ class CharacterEditor:
             "soul_attack": ("Rank_Attack", 0, MAX_ENHANCEMENT_CHEAT_LEVEL),
             "soul_defense": ("Rank_Defence", 0, MAX_ENHANCEMENT_CHEAT_LEVEL),
             "soul_craft_speed": ("Rank_CraftSpeed", 0, MAX_ENHANCEMENT_CHEAT_LEVEL),
-            "condensation": ("Rank", 1, 5),
+            "condensation": ("Rank", 1, MAX_ENHANCEMENT_CHEAT_LEVEL),
         }
         self._reject_unknown_fields(command.values, set(field_map))
         if not command.values and not command.work_suitability:
@@ -629,6 +632,39 @@ class CharacterEditor:
             after=lambda: self._pal_enhancement(pal),
         )
         return self._result(entry, self._pal_enhancement(pal))
+
+    def _unlock_pal_expedition(self, command: UnlockPalExpedition) -> dict:
+        pal = self._require_pal(command.pal_id)
+        if not pal.IsExpeditionPal:
+            raise DomainError(
+                code="PAL_NOT_EXPEDITION_ASSIGNED",
+                message="The Pal is not assigned to an expedition.",
+                field="pal_id",
+                details={"pal_id": str(pal.InstanceId)},
+                http_status=409,
+            )
+
+        def state() -> dict[str, Any]:
+            return {
+                "pal_id": str(pal.InstanceId),
+                "expedition_locked": bool(pal.IsExpeditionPal),
+            }
+
+        def validate() -> None:
+            if pal.IsExpeditionPal:
+                self._postcondition("The Pal expedition assignment was not removed.")
+
+        entry = self._apply_pal(
+            command=command,
+            pal=pal,
+            command_name="UnlockPalExpedition",
+            target={"pal_id": str(pal.InstanceId)},
+            before=state,
+            mutate=pal.unlock_expedition,
+            validate=validate,
+            after=state,
+        )
+        return self._result(entry, state())
 
     def _apply_player(
         self,

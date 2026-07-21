@@ -1,10 +1,11 @@
 import json
 import os
 from pathlib import Path
+import re
 import sys
 from typing import Optional
+from urllib.parse import unquote, urlparse
 import aiohttp
-import platform
 
 def get_program_path():
     # If running in AppImage, use the real file path
@@ -26,13 +27,12 @@ else:
 
 CONFIG_PATH = PROGRAM_PATH / 'config.json'
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 RELEASE_TYPE = "RELEASE"
 BUILD_TIME = "0000000001"
 GIT_HASH = "0000000"
 REPO = "undefined"
 PROJECT_RELEASES_URL = "https://github.com/xyuqikzz/Palworld-Save-Editor/releases/latest"
-PROJECT_RELEASES_API_URL = "https://api.github.com/repos/xyuqikzz/Palworld-Save-Editor/releases/latest"
 
 def version_info() -> str:
     if GIT_HASH == "0000000":
@@ -48,44 +48,33 @@ def is_gh_build() -> bool:
 async def get_new_version() -> Optional[tuple[str, str]]:
     if not is_gh_build():
         return None
-    async def fetch_latest_release():
-        async with aiohttp.ClientSession() as session:
-            async with session.get(PROJECT_RELEASES_API_URL) as resp:
-                if resp.status != 200:
-                    return None
-                return await resp.json()
 
-    def get_platform_asset_name():
-        sys_platform = platform.system()
-        if sys_platform == "Windows":
-            return "Windows"
-        elif sys_platform == "Darwin":
-            return "macOS"
-        elif sys_platform == "Linux":
-            return "Linux"
-        return None
+    def parse_version(value: str) -> Optional[tuple[int, int, int]]:
+        match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", value)
+        if not match:
+            return None
+        return tuple(int(part) for part in match.groups())
 
-    def parse_version(tag):
-        return tag
-
-    async def check_update() -> Optional[tuple[str, str]]:
-        release = await fetch_latest_release()
-        if not release or "tag_name" not in release:
-            return None
-        latest_version = parse_version(release["tag_name"])
-        current_version = VERSION
-        if latest_version == current_version:
-            return None
-        platform_name = get_platform_asset_name()
-        if not platform_name:
-            return None
-        for asset in release.get("assets", []):
-            if platform_name in asset["name"]:
-                return latest_version, asset["browser_download_url"]
-        return None
-    
     try:
-        return await check_update()
+        async with aiohttp.ClientSession() as session:
+            async with session.head(
+                PROJECT_RELEASES_URL,
+                allow_redirects=True,
+            ) as response:
+                if response.status != 200:
+                    return None
+                release_url = str(response.url)
+
+        release_path = urlparse(release_url).path
+        marker = "/releases/tag/"
+        if marker not in release_path:
+            return None
+        latest_version = unquote(release_path.split(marker, 1)[1]).strip("/")
+        latest_parts = parse_version(latest_version)
+        current_parts = parse_version(VERSION)
+        if not latest_parts or not current_parts or latest_parts <= current_parts:
+            return None
+        return latest_version, release_url
     except Exception as e:
         print(f"Error checking for updates: {e}")
         return None

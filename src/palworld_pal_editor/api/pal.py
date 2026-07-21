@@ -13,6 +13,7 @@ from palworld_pal_editor.domain.commands import (
     DeletePal,
     MovePal,
     RecoverDetachedPal,
+    UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
     UpdatePalProgression,
@@ -290,6 +291,7 @@ def execute_pal_command(pal_id: str):
         "update_pal_progression": {"values"},
         "update_pal_skills": {"active", "mastered", "passive"},
         "update_pal_enhancement": {"values", "work_suitability"},
+        "unlock_pal_expedition": set(),
     }
     command_name = payload.get("command")
     if command_name not in command_fields:
@@ -339,6 +341,8 @@ def execute_pal_command(pal_id: str):
                 mastered=payload.get("mastered"),
                 passive=payload.get("passive"),
             )
+        elif command_name == "unlock_pal_expedition":
+            command = UnlockPalExpedition(**base)
         else:
             command = UpdatePalEnhancement(
                 **base,

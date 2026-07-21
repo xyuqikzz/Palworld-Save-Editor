@@ -10,6 +10,7 @@
       "en": "TestNPC",
       "fr": "TestNPC",
       "ja": "TestNPC",
+      "ko": "TestNPC",
       "zh-CN": "TestNPC"
     },
     "Stats": {
@@ -51,6 +52,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -92,6 +94,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -133,6 +136,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -174,6 +178,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -215,6 +220,7 @@
       "en": "Syndicate Interceptor",
       "fr": "Braconniers — Intercepteur",
       "ja": "密猟団 インターセプター",
+      "ko": "밀렵단 방해꾼",
       "zh-CN": "盗猎集团 拦截者"
     },
     "Stats": {
@@ -256,6 +262,7 @@
       "en": "Syndicate Veteran",
       "fr": "Braconniers — Vétéran",
       "ja": "密猟団 ベテラン",
+      "ko": "밀렵단 고참",
       "zh-CN": "盗猎集团 老手"
     },
     "Stats": {
@@ -297,6 +304,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -338,6 +346,7 @@
       "en": "Syndicate Grenadier",
       "fr": "Braconniers — Grenadier",
       "ja": "密猟団 グレネーダー",
+      "ko": "밀렵단 척탄병",
       "zh-CN": "盗猎集团 投弹手"
     },
     "Stats": {
@@ -379,6 +388,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -420,6 +430,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -461,6 +472,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -502,6 +514,7 @@
       "en": "PIDF Guard",
       "fr": "Milice Populaire — Garde",
       "ja": "自警団 ガード",
+      "ko": "자경단 경비원",
       "zh-CN": "自卫队 守卫"
     },
     "Stats": {
@@ -543,6 +556,7 @@
       "en": "PIDF Elite",
       "fr": "Milice Populaire – Élite",
       "ja": "自警団 エリート",
+      "ko": "자경단 정예 대원",
       "zh-CN": "自卫队 精英"
     },
     "Stats": {
@@ -584,6 +598,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -625,6 +640,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -666,6 +682,7 @@
       "en": "Quest Client",
       "fr": "fr_Text",
       "ja": "クエストマン",
+      "ko": "ko_Text",
       "zh-CN": "Quest Client"
     },
     "Stats": {
@@ -707,6 +724,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -748,6 +766,7 @@
       "en": "Visitor",
       "fr": "fr_Text",
       "ja": "来訪者",
+      "ko": "ko_Text",
       "zh-CN": "来访者"
     },
     "Stats": {
@@ -789,6 +808,7 @@
       "en": "Weapons Dealer",
       "fr": "fr_Text",
       "ja": "武器商人",
+      "ko": "ko_Text",
       "zh-CN": "武器商人"
     },
     "Stats": {
@@ -830,6 +850,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -871,6 +892,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -912,6 +934,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -953,6 +976,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -994,6 +1018,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -1035,6 +1060,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -1076,6 +1102,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -1117,6 +1144,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -1158,6 +1186,7 @@
       "en": "TestAssassin",
       "fr": "TestAssassin",
       "ja": "TestAssassin",
+      "ko": "TestAssassin",
       "zh-CN": "TestAssassin"
     },
     "Stats": {
@@ -1199,6 +1228,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -1240,6 +1270,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -1281,6 +1312,7 @@
       "en": "Attack Chopper",
       "fr": "Hélicoptère de Combat",
       "ja": "武装ヘリ",
+      "ko": "무장 헬기",
       "zh-CN": "武装直升机"
     },
     "Stats": {
@@ -1322,6 +1354,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -1363,6 +1396,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -1404,6 +1438,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -1445,6 +1480,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -1486,6 +1522,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1527,6 +1564,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1568,6 +1606,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1609,6 +1648,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1650,6 +1690,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1691,6 +1732,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1732,6 +1774,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1773,6 +1816,7 @@
       "en": "Black Marketeer",
       "fr": "Contrebandier",
       "ja": "闇商人",
+      "ko": "암시장 상인",
       "zh-CN": "黑市商人"
     },
     "Stats": {
@@ -1814,6 +1858,7 @@
       "en": "Black Marketeer",
       "fr": "Contrebandier",
       "ja": "闇商人",
+      "ko": "암시장 상인",
       "zh-CN": "黑市商人"
     },
     "Stats": {
@@ -1855,6 +1900,7 @@
       "en": "Black Marketeer",
       "fr": "Contrebandier",
       "ja": "闇商人",
+      "ko": "암시장 상인",
       "zh-CN": "黑市商人"
     },
     "Stats": {
@@ -1896,6 +1942,7 @@
       "en": "Black Marketeer",
       "fr": "Contrebandier",
       "ja": "闇商人",
+      "ko": "암시장 상인",
       "zh-CN": "黑市商人"
     },
     "Stats": {
@@ -1937,6 +1984,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -1978,6 +2026,7 @@
       "en": "Villager",
       "fr": "Villageois",
       "ja": "村人",
+      "ko": "마을 사람",
       "zh-CN": "村民"
     },
     "Stats": {
@@ -2019,6 +2068,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -2060,6 +2110,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -2101,6 +2152,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -2142,6 +2194,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -2183,6 +2236,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -2224,6 +2278,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -2265,6 +2320,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -2306,6 +2362,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -2347,6 +2404,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -2388,6 +2446,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -2429,6 +2488,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -2470,6 +2530,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -2511,6 +2572,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {
@@ -2552,6 +2614,7 @@
       "en": "Pal Merchant",
       "fr": "Marchand de Pals",
       "ja": "パル商人",
+      "ko": "팰 상인",
       "zh-CN": "帕鲁商人"
     },
     "Stats": {
@@ -2593,6 +2656,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -2634,6 +2698,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -2675,6 +2740,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -2716,6 +2782,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -2757,6 +2824,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -2798,6 +2866,7 @@
       "en": "Syndicate Grenadier",
       "fr": "Braconniers — Grenadier",
       "ja": "密猟団 グレネーダー",
+      "ko": "밀렵단 척탄병",
       "zh-CN": "盗猎集团 投弹手"
     },
     "Stats": {
@@ -2839,6 +2908,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -2880,6 +2950,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -2921,6 +2992,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -2962,6 +3034,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -3003,6 +3076,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -3044,6 +3118,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -3085,6 +3160,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -3126,6 +3202,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -3167,6 +3244,7 @@
       "en": "Free Pal Alliance Judicator",
       "fr": "Ligue pour la Protection des Pals - Juge",
       "ja": "パル愛護団体 審判者",
+      "ko": "팰 애호 단체 심판자",
       "zh-CN": "帕鲁保护团体 审判官"
     },
     "Stats": {
@@ -3208,6 +3286,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3249,6 +3328,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3290,6 +3370,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3331,6 +3412,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3372,6 +3454,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3413,6 +3496,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -3454,6 +3538,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -3495,6 +3580,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -3536,6 +3622,7 @@
       "en": "Syndicate Grenadier",
       "fr": "Braconniers — Grenadier",
       "ja": "密猟団 グレネーダー",
+      "ko": "밀렵단 척탄병",
       "zh-CN": "盗猎集团 投弹手"
     },
     "Stats": {
@@ -3577,6 +3664,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -3618,6 +3706,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -3659,6 +3748,7 @@
       "en": "Syndicate Veteran",
       "fr": "Braconniers — Vétéran",
       "ja": "密猟団 ベテラン",
+      "ko": "밀렵단 고참",
       "zh-CN": "盗猎集团 老手"
     },
     "Stats": {
@@ -3700,6 +3790,7 @@
       "en": "Syndicate Interceptor",
       "fr": "Braconniers — Intercepteur",
       "ja": "密猟団 インターセプター",
+      "ko": "밀렵단 방해꾼",
       "zh-CN": "盗猎集团 拦截者"
     },
     "Stats": {
@@ -3741,6 +3832,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -3782,6 +3874,7 @@
       "en": "Medal Merchant",
       "fr": "Marchand de médailles",
       "ja": "メダル商人",
+      "ko": "메달 상인",
       "zh-CN": "奖章商人"
     },
     "Stats": {
@@ -3823,6 +3916,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -3864,6 +3958,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -3905,6 +4000,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -3946,6 +4042,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -3987,6 +4084,7 @@
       "en": "Free Pal Alliance Judicator",
       "fr": "Ligue pour la Protection des Pals - Juge",
       "ja": "パル愛護団体 審判者",
+      "ko": "팰 애호 단체 심판자",
       "zh-CN": "帕鲁保护团体 审判官"
     },
     "Stats": {
@@ -4028,6 +4126,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -4069,6 +4168,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -4110,6 +4210,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -4151,6 +4252,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -4192,6 +4294,7 @@
       "en": "PIDF Elite",
       "fr": "Milice Populaire – Élite",
       "ja": "自警団 エリート",
+      "ko": "자경단 정예 대원",
       "zh-CN": "自卫队 精英"
     },
     "Stats": {
@@ -4233,6 +4336,7 @@
       "en": "Hawk",
       "fr": "Recherché : Gwendou",
       "ja": "賞金首 ホーク",
+      "ko": "현상범 호크",
       "zh-CN": "通缉犯 霍克"
     },
     "Stats": {
@@ -4274,6 +4378,7 @@
       "en": "Grill",
       "fr": "Recherché : Grill",
       "ja": "賞金首 グリル",
+      "ko": "현상범 그릴",
       "zh-CN": "通缉犯 格里尔"
     },
     "Stats": {
@@ -4315,6 +4420,7 @@
       "en": "Ego",
       "fr": "Recherché : Ego",
       "ja": "賞金首 エゴ",
+      "ko": "현상범 에고",
       "zh-CN": "通缉犯 埃戈"
     },
     "Stats": {
@@ -4356,6 +4462,7 @@
       "en": "Brick",
       "fr": "Recherché : Brick",
       "ja": "賞金首 ブリック",
+      "ko": "현상범 브릭",
       "zh-CN": "通缉犯 布里克"
     },
     "Stats": {
@@ -4397,6 +4504,7 @@
       "en": "Whip",
       "fr": "Recherché : Whip",
       "ja": "賞金首 ウィップ",
+      "ko": "현상범 윕",
       "zh-CN": "通缉犯 威普"
     },
     "Stats": {
@@ -4438,6 +4546,7 @@
       "en": "Shadow",
       "fr": "Recherché : Shadow",
       "ja": "賞金首 シャドウ",
+      "ko": "현상범 섀도",
       "zh-CN": "通缉犯 暗影"
     },
     "Stats": {
@@ -4479,6 +4588,7 @@
       "en": "Whisk",
       "fr": "Recherché : Whisk",
       "ja": "賞金首 ウィスク",
+      "ko": "현상범 위스크",
       "zh-CN": "通缉犯 威斯克"
     },
     "Stats": {
@@ -4520,6 +4630,7 @@
       "en": "Fumble",
       "fr": "Recherché : Fumble",
       "ja": "賞金首 ファンブル",
+      "ko": "현상범 펌블",
       "zh-CN": "通缉犯 方博"
     },
     "Stats": {
@@ -4561,6 +4672,7 @@
       "en": "Urchin",
       "fr": "Recherché : Urchin",
       "ja": "賞金首 アーチン",
+      "ko": "현상범 어친",
       "zh-CN": "通缉犯 厄棘"
     },
     "Stats": {
@@ -4602,6 +4714,7 @@
       "en": "Gnaw",
       "fr": "Recherché : Gabou",
       "ja": "賞金首 ナア",
+      "ko": "현상범 노우",
       "zh-CN": "通缉犯 奈尔"
     },
     "Stats": {
@@ -4643,6 +4756,7 @@
       "en": "Cache",
       "fr": "Recherché : Cache",
       "ja": "賞金首 キャッシュ",
+      "ko": "현상범 캐시",
       "zh-CN": "通缉犯 卡什"
     },
     "Stats": {
@@ -4684,6 +4798,7 @@
       "en": "Jade",
       "fr": "Recherchée : Jade",
       "ja": "賞金首 ジェイド",
+      "ko": "현상범 제이드",
       "zh-CN": "通缉犯 姬蒂"
     },
     "Stats": {
@@ -4725,6 +4840,7 @@
       "en": "Dazzle",
       "fr": "Recherchée : Dazzle",
       "ja": "賞金首 ダズル",
+      "ko": "현상범 대즐",
       "zh-CN": "通缉犯 黛姿"
     },
     "Stats": {
@@ -4766,6 +4882,7 @@
       "en": "Aloha",
       "fr": "Recherchée : Aloha",
       "ja": "賞金首 アロハ",
+      "ko": "현상범 알로하",
       "zh-CN": "通缉犯 阿罗哈"
     },
     "Stats": {
@@ -4807,6 +4924,7 @@
       "en": "Nimble",
       "fr": "Recherchée : Nimble",
       "ja": "賞金首 ニンブル",
+      "ko": "현상범 님블",
       "zh-CN": "通缉犯 妮波"
     },
     "Stats": {
@@ -4848,6 +4966,7 @@
       "en": "Crash",
       "fr": "Recherché : Crash",
       "ja": "賞金首 クラッシュ",
+      "ko": "현상범 크래시",
       "zh-CN": "通缉犯 克雷斯"
     },
     "Stats": {
@@ -4889,6 +5008,7 @@
       "en": "Dart",
       "fr": "Recherché : Dart",
       "ja": "賞金首 ダート",
+      "ko": "현상범 다트",
       "zh-CN": "通缉犯 达特"
     },
     "Stats": {
@@ -4930,6 +5050,7 @@
       "en": "Clint",
       "fr": "Recherché : Clint",
       "ja": "賞金首 クリント",
+      "ko": "현상범 클린트",
       "zh-CN": "通缉犯 克林特"
     },
     "Stats": {
@@ -4971,6 +5092,7 @@
       "en": "Lasso",
       "fr": "Recherché : Lasso",
       "ja": "賞金首 ラッソ",
+      "ko": "현상범 라쏘",
       "zh-CN": "通缉犯 拉索"
     },
     "Stats": {
@@ -5012,6 +5134,7 @@
       "en": "Flare",
       "fr": "Recherchée : Flare",
       "ja": "賞金首 フレア",
+      "ko": "현상범 플레어",
       "zh-CN": "通缉犯 芙蕾雅"
     },
     "Stats": {
@@ -5053,6 +5176,7 @@
       "en": "Siren",
       "fr": "Recherchée : Siren",
       "ja": "賞金首 サイレン",
+      "ko": "현상범 사이렌",
       "zh-CN": "通缉犯 赛莲"
     },
     "Stats": {
@@ -5094,6 +5218,7 @@
       "en": "Turncoat",
       "fr": "Recherchée : Tanko",
       "ja": "賞金首 タンコ",
+      "ko": "현상범 턴코트",
       "zh-CN": "通缉犯 逆裳"
     },
     "Stats": {
@@ -5135,6 +5260,7 @@
       "en": "Dyna",
       "fr": "Recherché : Dyna",
       "ja": "賞金首 ダイナ",
+      "ko": "현상범 다이너",
       "zh-CN": "通缉犯 戴拿"
     },
     "Stats": {
@@ -5176,6 +5302,7 @@
       "en": "Mite",
       "fr": "Recherché : Mite",
       "ja": "賞金首 マイト",
+      "ko": "현상범 마이트",
       "zh-CN": "通缉犯 麦特"
     },
     "Stats": {
@@ -5217,6 +5344,7 @@
       "en": "Quill",
       "fr": "Recherché : Quill",
       "ja": "賞金首 クイル",
+      "ko": "현상범 퀼",
       "zh-CN": "通缉犯 柯伊尔"
     },
     "Stats": {
@@ -5258,6 +5386,7 @@
       "en": "Scoot",
       "fr": "Recherché : Scoot",
       "ja": "賞金首 スクート",
+      "ko": "현상범 스쿳",
       "zh-CN": "通缉犯 斯科特"
     },
     "Stats": {
@@ -5299,6 +5428,7 @@
       "en": "Phantom",
       "fr": "Recherché : Phantom",
       "ja": "賞金首 ファントム",
+      "ko": "현상범 팬텀",
       "zh-CN": "通缉犯 幻影"
     },
     "Stats": {
@@ -5340,6 +5470,7 @@
       "en": "Whisper",
       "fr": "Recherchée : Whisper",
       "ja": "賞金首 ウィスパー",
+      "ko": "현상범 위스퍼",
       "zh-CN": "通缉犯 低语"
     },
     "Stats": {
@@ -5381,6 +5512,7 @@
       "en": "Pinch",
       "fr": "Recherché : Pinch",
       "ja": "賞金首 ピンチ",
+      "ko": "현상범 핀치",
       "zh-CN": "通缉犯 狄奇"
     },
     "Stats": {
@@ -5422,6 +5554,7 @@
       "en": "Ram",
       "fr": "Recherché : Ram",
       "ja": "賞金首 ラム",
+      "ko": "현상범 램",
       "zh-CN": "通缉犯 拉姆"
     },
     "Stats": {
@@ -5463,6 +5596,7 @@
       "en": "Skim",
       "fr": "Recherché : Skim",
       "ja": "賞金首 スキム",
+      "ko": "현상범 스킴",
       "zh-CN": "通缉犯 斯吉姆"
     },
     "Stats": {
@@ -5504,6 +5638,7 @@
       "en": "Mimic",
       "fr": "Recherché : Mimic",
       "ja": "賞金首 ミミック",
+      "ko": "현상범 미믹",
       "zh-CN": "通缉犯 模仿者"
     },
     "Stats": {
@@ -5545,6 +5680,7 @@
       "en": "Billy",
       "fr": "Recherché : Billy",
       "ja": "賞金首 ビリー",
+      "ko": "현상범 빌리",
       "zh-CN": "通缉犯 比利"
     },
     "Stats": {
@@ -5586,6 +5722,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -5627,6 +5764,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -5668,6 +5806,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -5709,6 +5848,7 @@
       "en": "Syndicate Grenadier",
       "fr": "Braconniers — Grenadier",
       "ja": "密猟団 グレネーダー",
+      "ko": "밀렵단 척탄병",
       "zh-CN": "盗猎集团 投弹手"
     },
     "Stats": {
@@ -5750,6 +5890,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -5791,6 +5932,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -5832,6 +5974,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -5873,6 +6016,7 @@
       "en": "Sturdy Mercenary",
       "fr": "Mercenaire Solide",
       "ja": "屈強な傭兵",
+      "ko": "억센 용병",
       "zh-CN": "强壮的佣兵"
     },
     "Stats": {
@@ -5914,6 +6058,7 @@
       "en": "Sturdy Mercenary",
       "fr": "Mercenaire Solide",
       "ja": "屈強な傭兵",
+      "ko": "억센 용병",
       "zh-CN": "强壮的佣兵"
     },
     "Stats": {
@@ -5955,6 +6100,7 @@
       "en": "Syndicate Laser Rifleman",
       "fr": "Braconniers — Technophile",
       "ja": "密猟団 ハイテッカー",
+      "ko": "밀렵단 하이테커",
       "zh-CN": "盗猎团员 高科技部队"
     },
     "Stats": {
@@ -5996,6 +6142,7 @@
       "en": "Syndicate Crossbowman",
       "fr": "Braconniers — Arbalétrier",
       "ja": "密猟団 クロスボウマン",
+      "ko": "밀렵단 쇠뇌 사수",
       "zh-CN": "盗猎团员 十字弓手"
     },
     "Stats": {
@@ -6037,6 +6184,7 @@
       "en": "Syndicate Swordsman",
       "fr": "Braconniers — Épéiste",
       "ja": "密猟団 ソードマン",
+      "ko": "밀렵단 검사",
       "zh-CN": "盗猎团员 剑士"
     },
     "Stats": {
@@ -6078,6 +6226,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -6119,6 +6268,7 @@
       "en": "Syndicate Gunner",
       "fr": "Braconniers — Tireur",
       "ja": "密猟団 ガンナー",
+      "ko": "밀렵단 총잡이",
       "zh-CN": "盗猎集团 射手"
     },
     "Stats": {
@@ -6160,6 +6310,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -6201,6 +6352,7 @@
       "en": "Syndicate Grenadier",
       "fr": "Braconniers — Grenadier",
       "ja": "密猟団 グレネーダー",
+      "ko": "밀렵단 척탄병",
       "zh-CN": "盗猎集团 投弹手"
     },
     "Stats": {
@@ -6242,6 +6394,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -6283,6 +6436,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -6324,6 +6478,7 @@
       "en": "Syndicate Veteran",
       "fr": "Braconniers — Vétéran",
       "ja": "密猟団 ベテラン",
+      "ko": "밀렵단 고참",
       "zh-CN": "盗猎集团 老手"
     },
     "Stats": {
@@ -6365,6 +6520,7 @@
       "en": "Syndicate Interceptor",
       "fr": "Braconniers — Intercepteur",
       "ja": "密猟団 インターセプター",
+      "ko": "밀렵단 방해꾼",
       "zh-CN": "盗猎集团 拦截者"
     },
     "Stats": {
@@ -6406,6 +6562,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -6447,6 +6604,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -6488,6 +6646,7 @@
       "en": "Feybreak Berserker",
       "fr": "Berserker du Paradis Déchu",
       "ja": "天落の民 精鋭",
+      "ko": "천락의 민족 정예",
       "zh-CN": "天坠之民 精英"
     },
     "Stats": {
@@ -6529,6 +6688,7 @@
       "en": "Pal Recruiter",
       "fr": "Recruteur de Pals",
       "ja": "パルリクルーター",
+      "ko": "팰 리크루터",
       "zh-CN": "帕鲁中介"
     },
     "Stats": {
@@ -6570,6 +6730,7 @@
       "en": "Free Pal Alliance Judicator",
       "fr": "Ligue pour la Protection des Pals - Juge",
       "ja": "パル愛護団体 審判者",
+      "ko": "팰 애호 단체 심판자",
       "zh-CN": "帕鲁保护团体 审判官"
     },
     "Stats": {
@@ -6611,6 +6772,7 @@
       "en": "Emote_Tester",
       "fr": "Emote_Tester",
       "ja": "Emote_Tester",
+      "ko": "Emote_Tester",
       "zh-CN": "Emote_Tester"
     },
     "Stats": {
@@ -6652,6 +6814,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -6693,6 +6856,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -6734,6 +6898,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -6775,6 +6940,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -6816,6 +6982,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -6857,6 +7024,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -6898,6 +7066,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -6939,6 +7108,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -6980,6 +7150,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7021,6 +7192,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7062,6 +7234,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7103,6 +7276,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7144,6 +7318,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7185,6 +7360,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7226,6 +7402,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7267,6 +7444,7 @@
       "en": "Friendly Pal Tamer",
       "fr": "Paldresseur Amical",
       "ja": "親切なパルテイマー",
+      "ko": "친절한 팰 조련사",
       "zh-CN": "亲切的帕鲁驯养师"
     },
     "Stats": {
@@ -7308,6 +7486,7 @@
       "en": "Caravan Leader",
       "fr": "Capitaine de Caravane",
       "ja": "キャラバンの商隊長",
+      "ko": "캐러밴 상단 대장",
       "zh-CN": "流民商队长"
     },
     "Stats": {
@@ -7349,6 +7528,7 @@
       "en": "Caravan Leader",
       "fr": "Capitaine de Caravane",
       "ja": "キャラバンの商隊長",
+      "ko": "캐러밴 상단 대장",
       "zh-CN": "流民商队长"
     },
     "Stats": {
@@ -7390,6 +7570,7 @@
       "en": "Caravan Leader",
       "fr": "Capitaine de Caravane",
       "ja": "キャラバンの商隊長",
+      "ko": "캐러밴 상단 대장",
       "zh-CN": "流民商队长"
     },
     "Stats": {
@@ -7431,6 +7612,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -7472,6 +7654,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -7513,6 +7696,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -7554,6 +7738,7 @@
       "en": "Desert Town Ambassador",
       "fr": "Ambassadeur de la Ville du Désert",
       "ja": "砂漠街の大使",
+      "ko": "사막가의 천사",
       "zh-CN": "沙漠镇的大使"
     },
     "Stats": {
@@ -7595,6 +7780,7 @@
       "en": "Blacksmith in Training",
       "fr": "Forgeron en Activité",
       "ja": "修行中の鍛冶職人",
+      "ko": "수행 중인 대장장이",
       "zh-CN": "修行中的锻造专家"
     },
     "Stats": {
@@ -7636,6 +7822,7 @@
       "en": "Gourmet Hunter",
       "fr": "Chasseur de Cuisine Raffinée",
       "ja": "グルメハンター",
+      "ko": "고메 헌터",
       "zh-CN": "美食猎人"
     },
     "Stats": {
@@ -7677,6 +7864,7 @@
       "en": "Mercenary Bodyguard",
       "fr": "Mercenaire Protecteur",
       "ja": "護衛の傭兵",
+      "ko": "호위 용병",
       "zh-CN": "护卫的佣兵"
     },
     "Stats": {
@@ -7718,6 +7906,7 @@
       "en": "Pal Tamer Bodyguard",
       "fr": "Paldresseur Protecteur",
       "ja": "護衛のパルテイマー",
+      "ko": "호위 팰 조련사",
       "zh-CN": "佣兵帕鲁驯养师"
     },
     "Stats": {
@@ -7759,6 +7948,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -7800,6 +7990,7 @@
       "en": "Feybreak Berserker",
       "fr": "Berserker du Paradis Déchu",
       "ja": "天落の民 精鋭",
+      "ko": "천락의 민족 정예",
       "zh-CN": "天坠之民 精英"
     },
     "Stats": {
@@ -7841,6 +8032,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -7882,6 +8074,7 @@
       "en": "Feybreak Berserker",
       "fr": "Berserker du Paradis Déchu",
       "ja": "天落の民 精鋭",
+      "ko": "천락의 민족 정예",
       "zh-CN": "天坠之民 精英"
     },
     "Stats": {
@@ -7923,6 +8116,7 @@
       "en": "Fiery Pal Tamer",
       "fr": "Paldresseur Bouillonnant",
       "ja": "燃え滾るパルテイマー",
+      "ko": "이글거리는 팰 조련사",
       "zh-CN": "充满斗志的帕鲁驯养师"
     },
     "Stats": {
@@ -7964,6 +8158,7 @@
       "en": "Gemini Tamers",
       "fr": "Paldresseuses Jumelles",
       "ja": "双子のパルテイマー",
+      "ko": "쌍둥이 팰 조련사",
       "zh-CN": "双子帕鲁驯养师"
     },
     "Stats": {
@@ -8005,6 +8200,7 @@
       "en": "Gemini Tamers",
       "fr": "Paldresseuses Jumelles",
       "ja": "双子のパルテイマー",
+      "ko": "쌍둥이 팰 조련사",
       "zh-CN": "双子帕鲁驯养师"
     },
     "Stats": {
@@ -8046,6 +8242,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8087,6 +8284,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8128,6 +8326,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8169,6 +8368,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8210,6 +8410,7 @@
       "en": "Mercenary Bodyguard",
       "fr": "Mercenaire Protecteur",
       "ja": "護衛の傭兵",
+      "ko": "호위 용병",
       "zh-CN": "护卫的佣兵"
     },
     "Stats": {
@@ -8251,6 +8452,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8292,6 +8494,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8333,6 +8536,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8374,6 +8578,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8415,6 +8620,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8456,6 +8662,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8497,6 +8704,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8538,6 +8746,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8579,6 +8788,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8620,6 +8830,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8661,6 +8872,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8702,6 +8914,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8743,6 +8956,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8784,6 +8998,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8825,6 +9040,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8866,6 +9082,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8907,6 +9124,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8948,6 +9166,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -8989,6 +9208,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9030,6 +9250,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9071,6 +9292,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9112,6 +9334,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9153,6 +9376,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9194,6 +9418,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9235,6 +9460,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9276,6 +9502,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9317,6 +9544,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9358,6 +9586,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9399,6 +9628,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9440,6 +9670,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9481,6 +9712,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -9522,6 +9754,7 @@
       "en": "Veteran Pal Tamer",
       "fr": "Paldresseuse Aguerrie",
       "ja": "ベテランパルテイマー",
+      "ko": "베테랑 팰 조련사",
       "zh-CN": "老手帕鲁驯养师"
     },
     "Stats": {
@@ -9563,6 +9796,7 @@
       "en": "Friendly Pal Tamer",
       "fr": "Paldresseur Amical",
       "ja": "親切なパルテイマー",
+      "ko": "친절한 팰 조련사",
       "zh-CN": "亲切的帕鲁驯养师"
     },
     "Stats": {
@@ -9604,6 +9838,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -9645,6 +9880,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -9686,6 +9922,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -9727,6 +9964,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -9768,6 +10006,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -9809,6 +10048,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -9850,6 +10090,7 @@
       "en": "Jailed Ex-Chief",
       "fr": "Ancien Chef de la Milice Populaire Incarcéré",
       "ja": "投獄された元署長",
+      "ko": "투옥된 전 서장",
       "zh-CN": "进狱系前警长"
     },
     "Stats": {
@@ -9891,6 +10132,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -9932,6 +10174,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -9973,6 +10216,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -10014,6 +10258,7 @@
       "en": "Free Pal Alliance Judicator",
       "fr": "Ligue pour la Protection des Pals - Juge",
       "ja": "パル愛護団体 審判者",
+      "ko": "팰 애호 단체 심판자",
       "zh-CN": "帕鲁保护团体 审判官"
     },
     "Stats": {
@@ -10055,6 +10300,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -10096,6 +10342,7 @@
       "en": "Slacker Chief",
       "fr": "Chef de la Milice Populaire Blasé",
       "ja": "やる気のない署長",
+      "ko": "Slacker Chief",
       "zh-CN": "没干劲的警长"
     },
     "Stats": {
@@ -10137,6 +10384,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -10178,6 +10426,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -10219,6 +10468,7 @@
       "en": "Syndicate Laser Rifleman",
       "fr": "Braconniers — Technophile",
       "ja": "密猟団 ハイテッカー",
+      "ko": "밀렵단 하이테커",
       "zh-CN": "盗猎团员 高科技部队"
     },
     "Stats": {
@@ -10260,6 +10510,7 @@
       "en": "Syndicate Crossbowman",
       "fr": "Braconniers — Arbalétrier",
       "ja": "密猟団 クロスボウマン",
+      "ko": "밀렵단 쇠뇌 사수",
       "zh-CN": "盗猎团员 十字弓手"
     },
     "Stats": {
@@ -10301,6 +10552,7 @@
       "en": "Syndicate Swordsman",
       "fr": "Braconniers — Épéiste",
       "ja": "密猟団 ソードマン",
+      "ko": "밀렵단 검사",
       "zh-CN": "盗猎团员 剑士"
     },
     "Stats": {
@@ -10342,6 +10594,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -10383,6 +10636,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -10424,6 +10678,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -10465,6 +10720,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -10506,6 +10762,7 @@
       "en": "Zoe",
       "fr": "Zoe",
       "ja": "ゾーイ",
+      "ko": "조이",
       "zh-CN": "佐伊"
     },
     "Stats": {
@@ -10547,6 +10804,7 @@
       "en": "ForestBoss",
       "fr": "ForestBoss",
       "ja": "ForestBoss",
+      "ko": "ForestBoss",
       "zh-CN": "ForestBoss"
     },
     "Stats": {
@@ -10588,6 +10846,7 @@
       "en": "DesertBoss",
       "fr": "DesertBoss",
       "ja": "DesertBoss",
+      "ko": "DesertBoss",
       "zh-CN": "DesertBoss"
     },
     "Stats": {
@@ -10629,6 +10888,7 @@
       "en": "ElectricBoss",
       "fr": "ElectricBoss",
       "ja": "ElectricBoss",
+      "ko": "ElectricBoss",
       "zh-CN": "ElectricBoss"
     },
     "Stats": {
@@ -10670,6 +10930,7 @@
       "en": "SnowBoss",
       "fr": "SnowBoss",
       "ja": "SnowBoss",
+      "ko": "SnowBoss",
       "zh-CN": "SnowBoss"
     },
     "Stats": {
@@ -10711,6 +10972,7 @@
       "en": "SakurajimaBoss",
       "fr": "SakurajimaBoss",
       "ja": "SakurajimaBoss",
+      "ko": "SakurajimaBoss",
       "zh-CN": "SakurajimaBoss"
     },
     "Stats": {
@@ -10752,6 +11014,7 @@
       "en": "VikingBoss",
       "fr": "VikingBoss",
       "ja": "VikingBoss",
+      "ko": "VikingBoss",
       "zh-CN": "VikingBoss"
     },
     "Stats": {
@@ -10793,6 +11056,7 @@
       "en": "ArenaShop",
       "fr": "ArenaShop",
       "ja": "ArenaShop",
+      "ko": "ArenaShop",
       "zh-CN": "ArenaShop"
     },
     "Stats": {
@@ -10834,6 +11098,7 @@
       "en": "Newbie Pal Tamer",
       "fr": "Paldresseur Novice",
       "ja": "かけだしパルテイマー",
+      "ko": "초짜 팰 조련사",
       "zh-CN": "初出茅庐的帕鲁驯养师"
     },
     "Stats": {
@@ -10875,6 +11140,7 @@
       "en": "Up-and-Coming Pal Tamer",
       "fr": "Paldresseuse à Potentiel",
       "ja": "伸び盛りのパルテイマー",
+      "ko": "한창 크는 팰 조련사",
       "zh-CN": "锋芒毕露的帕鲁驯养师"
     },
     "Stats": {
@@ -10916,6 +11182,7 @@
       "en": "Cruel Pal Tamer",
       "fr": "Paldresseur sans Pitié",
       "ja": "冷酷なパルテイマー",
+      "ko": "냉혹한 팰 조련사",
       "zh-CN": "冷酷的帕鲁驯养师"
     },
     "Stats": {
@@ -10957,6 +11224,7 @@
       "en": "Veteran Pal Tamer",
       "fr": "Paldresseuse Aguerrie",
       "ja": "ベテランパルテイマー",
+      "ko": "베테랑 팰 조련사",
       "zh-CN": "老手帕鲁驯养师"
     },
     "Stats": {
@@ -10998,6 +11266,7 @@
       "en": "Sturdy Mercenary",
       "fr": "Mercenaire Solide",
       "ja": "屈強な傭兵",
+      "ko": "억센 용병",
       "zh-CN": "强壮的佣兵"
     },
     "Stats": {
@@ -11039,6 +11308,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -11080,6 +11350,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -11121,6 +11392,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -11162,6 +11434,7 @@
       "en": "Messenger of Love",
       "fr": "Évangéliste de l'amour",
       "ja": "愛の伝道師",
+      "ko": "사랑의 전도사",
       "zh-CN": "爱的传教者"
     },
     "Stats": {
@@ -11203,6 +11476,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -11244,6 +11518,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -11285,6 +11560,7 @@
       "en": "Vigorous Pal Tamer",
       "fr": "Paldresseur Combatif",
       "ja": "闘魂のパルテイマー",
+      "ko": "투혼의 팰 조련사",
       "zh-CN": "斗志昂扬的帕鲁驯养师"
     },
     "Stats": {
@@ -11326,6 +11602,7 @@
       "en": "Pal Ecological Researcher",
       "fr": "Chercheur en écologie de Pal",
       "ja": "パル生態調査員",
+      "ko": "팰 생태조사원",
       "zh-CN": "帕鲁生态调查员"
     },
     "Stats": {
@@ -11367,6 +11644,7 @@
       "en": "Sweet-Smelling Hunter",
       "fr": "La Chasseuse au Parfum envoûtant",
       "ja": "いい香りのする狩人",
+      "ko": "좋은 향기가 나는 사냥꾼",
       "zh-CN": "身上很好闻的猎人"
     },
     "Stats": {
@@ -11408,6 +11686,7 @@
       "en": "Reincarnated Guy",
       "fr": "Réincarné",
       "ja": "転生したおじさん",
+      "ko": "전생자 아저씨",
       "zh-CN": "异世界大叔"
     },
     "Stats": {
@@ -11449,6 +11728,7 @@
       "en": "Friendly Pal Tamer",
       "fr": "Paldresseur Amical",
       "ja": "親切なパルテイマー",
+      "ko": "친절한 팰 조련사",
       "zh-CN": "亲切的帕鲁驯养师"
     },
     "Stats": {
@@ -11490,6 +11770,7 @@
       "en": "Dr. Brawn",
       "fr": "Docteur Brawn",
       "ja": "ブラウン博士",
+      "ko": "브라운 박사",
       "zh-CN": "布朗博士"
     },
     "Stats": {
@@ -11531,6 +11812,7 @@
       "en": "Medal Merchant",
       "fr": "Marchand de médailles",
       "ja": "メダル商人",
+      "ko": "메달 상인",
       "zh-CN": "奖章商人"
     },
     "Stats": {
@@ -11572,6 +11854,7 @@
       "en": "Master Pal Tamer",
       "fr": "Paldresseuse au Sommet",
       "ja": "熟達したパルテイマー",
+      "ko": "숙달한 팰 조련사",
       "zh-CN": "经验老到的帕鲁驯养师"
     },
     "Stats": {
@@ -11613,6 +11896,7 @@
       "en": "Fiery Pal Tamer",
       "fr": "Paldresseur Bouillonnant",
       "ja": "燃え滾るパルテイマー",
+      "ko": "이글거리는 팰 조련사",
       "zh-CN": "充满斗志的帕鲁驯养师"
     },
     "Stats": {
@@ -11654,6 +11938,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -11695,6 +11980,7 @@
       "en": "Feybreak Berserker",
       "fr": "Berserker du Paradis Déchu",
       "ja": "天落の民 精鋭",
+      "ko": "천락의 민족 정예",
       "zh-CN": "天坠之民 精英"
     },
     "Stats": {
@@ -11736,6 +12022,7 @@
       "en": "Legend-Loving Researcher",
       "fr": "Le Chercheur en quête de Légendes",
       "ja": "伝説を追い求める研究員",
+      "ko": "전설을 추구하는 연구원",
       "zh-CN": "追寻传说的研究员"
     },
     "Stats": {
@@ -11777,6 +12064,7 @@
       "en": "Veteran Hunter",
       "fr": "Chasseur de Pals vétéran",
       "ja": "ベテランパルハンター",
+      "ko": "베테랑 팰 사냥꾼",
       "zh-CN": "老手帕鲁猎手"
     },
     "Stats": {
@@ -11818,6 +12106,7 @@
       "en": "Black Marketeer",
       "fr": "Contrebandier",
       "ja": "闇商人",
+      "ko": "암시장 상인",
       "zh-CN": "黑市商人"
     },
     "Stats": {
@@ -11859,6 +12148,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -11900,6 +12190,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -11941,6 +12232,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -11982,6 +12274,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12023,6 +12316,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12064,6 +12358,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12105,6 +12400,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12146,6 +12442,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12187,6 +12484,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12228,6 +12526,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12269,6 +12568,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12310,6 +12610,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12351,6 +12652,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12392,6 +12694,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12433,6 +12736,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12474,6 +12778,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12515,6 +12820,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12556,6 +12862,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12597,6 +12904,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12638,6 +12946,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12679,6 +12988,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -12720,6 +13030,7 @@
       "en": "Syndicate Swordsman",
       "fr": "Braconniers — Épéiste",
       "ja": "密猟団 ソードマン",
+      "ko": "밀렵단 검사",
       "zh-CN": "盗猎团员 剑士"
     },
     "Stats": {
@@ -12761,6 +13072,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -12802,6 +13114,7 @@
       "en": "Syndicate Crusher",
       "fr": "Braconniers — Broyeur",
       "ja": "密猟団 クラッシャー",
+      "ko": "밀렵단 분쇄자",
       "zh-CN": "盗猎集团 粉碎者"
     },
     "Stats": {
@@ -12843,6 +13156,7 @@
       "en": "Syndicate Cleaner",
       "fr": "Braconniers — Nettoyeur",
       "ja": "密猟団 クリーナー",
+      "ko": "밀렵단 청소부",
       "zh-CN": "盗猎集团 善后组"
     },
     "Stats": {
@@ -12884,6 +13198,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -12925,6 +13240,7 @@
       "en": "Free Pal Alliance Believer",
       "fr": "Ligue pour la Protection des Pals - Adhérent",
       "ja": "パル愛護団体 信者",
+      "ko": "팰 애호 단체 신자",
       "zh-CN": "帕鲁保护团体 支持者"
     },
     "Stats": {
@@ -12966,6 +13282,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -13007,6 +13324,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13048,6 +13366,7 @@
       "en": "Negotiator",
       "fr": "Negotiator",
       "ja": "Negotiator",
+      "ko": "Negotiator",
       "zh-CN": "Negotiator"
     },
     "Stats": {
@@ -13089,6 +13408,7 @@
       "en": "Patrol Drone",
       "fr": "Drone de Défense",
       "ja": "防衛ドローン",
+      "ko": "방어 드론",
       "zh-CN": "防卫无人机"
     },
     "Stats": {
@@ -13130,6 +13450,7 @@
       "en": "WorldTree_Hunter_MissileLauncher_test",
       "fr": "WorldTree_Hunter_MissileLauncher_test",
       "ja": "WorldTree_Hunter_MissileLauncher_test",
+      "ko": "WorldTree_Hunter_MissileLauncher_test",
       "zh-CN": "WorldTree_Hunter_MissileLauncher_test"
     },
     "Stats": {
@@ -13171,6 +13492,7 @@
       "en": "Fia",
       "fr": "Fia",
       "ja": "フィア",
+      "ko": "피아",
       "zh-CN": "菲亚"
     },
     "Stats": {
@@ -13212,6 +13534,7 @@
       "en": "Fia",
       "fr": "Fia",
       "ja": "フィア",
+      "ko": "피아",
       "zh-CN": "菲亚"
     },
     "Stats": {
@@ -13253,6 +13576,7 @@
       "en": "Fia",
       "fr": "Fia",
       "ja": "フィア",
+      "ko": "피아",
       "zh-CN": "菲亚"
     },
     "Stats": {
@@ -13294,6 +13618,7 @@
       "en": "Carla",
       "fr": "Karla",
       "ja": "カーラ",
+      "ko": "칼라",
       "zh-CN": "卡拉"
     },
     "Stats": {
@@ -13335,6 +13660,7 @@
       "en": "Carla",
       "fr": "Karla",
       "ja": "カーラ",
+      "ko": "칼라",
       "zh-CN": "卡拉"
     },
     "Stats": {
@@ -13376,6 +13702,7 @@
       "en": "Gadel",
       "fr": "Gaedel",
       "ja": "ガデル",
+      "ko": "가델",
       "zh-CN": "加德尔"
     },
     "Stats": {
@@ -13417,6 +13744,7 @@
       "en": "Gadel",
       "fr": "Gaedel",
       "ja": "ガデル",
+      "ko": "가델",
       "zh-CN": "加德尔"
     },
     "Stats": {
@@ -13458,6 +13786,7 @@
       "en": "Gadel",
       "fr": "Gaedel",
       "ja": "ガデル",
+      "ko": "가델",
       "zh-CN": "加德尔"
     },
     "Stats": {
@@ -13499,6 +13828,7 @@
       "en": "Harold",
       "fr": "Harold",
       "ja": "ハロルド",
+      "ko": "해럴드",
       "zh-CN": "哈罗德"
     },
     "Stats": {
@@ -13540,6 +13870,7 @@
       "en": "Harold",
       "fr": "Harold",
       "ja": "ハロルド",
+      "ko": "해럴드",
       "zh-CN": "哈罗德"
     },
     "Stats": {
@@ -13581,6 +13912,7 @@
       "en": "Syndicate Thug",
       "fr": "Braconniers — Nouvelle recrue",
       "ja": "密猟団 ルーキー",
+      "ko": "밀렵단 초짜",
       "zh-CN": "盗猎集团 新手"
     },
     "Stats": {
@@ -13622,6 +13954,7 @@
       "en": "Syndicate Hunter",
       "fr": "Braconniers — Chasseur",
       "ja": "密猟団 ハンター",
+      "ko": "밀렵단 사냥꾼",
       "zh-CN": "盗猎集团 猎人"
     },
     "Stats": {
@@ -13663,6 +13996,7 @@
       "en": "Syndicate Elite",
       "fr": "Braconniers – Élite",
       "ja": "密猟団 エリート",
+      "ko": "밀렵단 정예 대원",
       "zh-CN": "盗猎集团 精英"
     },
     "Stats": {
@@ -13704,6 +14038,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -13745,6 +14080,7 @@
       "en": "Guard",
       "fr": "Garde",
       "ja": "衛兵",
+      "ko": "위병",
       "zh-CN": "卫兵"
     },
     "Stats": {
@@ -13786,6 +14122,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13827,6 +14164,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13868,6 +14206,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13909,6 +14248,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13950,6 +14290,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -13991,6 +14332,7 @@
       "en": "Elder",
       "fr": "Recherché : Elder",
       "ja": "賞金首 エルダー",
+      "ko": "현상범 엘더",
       "zh-CN": "通缉犯 埃尔达"
     },
     "Stats": {
@@ -14032,6 +14374,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -14073,6 +14416,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -14114,6 +14458,7 @@
       "en": "Brothers of the Eternal Pyre Martyr",
       "fr": "Confrérie des Flammes Éternelles - Martyre",
       "ja": "永炎の同志 殉教者",
+      "ko": "영원한 불꽃의 동지 순교자",
       "zh-CN": "永炎同心会 殉教者"
     },
     "Stats": {
@@ -14155,6 +14500,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -14196,6 +14542,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -14237,6 +14584,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -14278,6 +14626,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -14319,6 +14668,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -14360,6 +14710,7 @@
       "en": "Feybreak Warrior",
       "fr": "Guerrier du Paradis Déchu",
       "ja": "天落の民",
+      "ko": "천락의 민족",
       "zh-CN": "天坠之民"
     },
     "Stats": {
@@ -14401,6 +14752,7 @@
       "en": "Feybreak Berserker",
       "fr": "Berserker du Paradis Déchu",
       "ja": "天落の民 精鋭",
+      "ko": "천락의 민족 정예",
       "zh-CN": "天坠之民 精英"
     },
     "Stats": {
@@ -14442,6 +14794,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14483,6 +14836,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14524,6 +14878,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14565,6 +14920,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14606,6 +14962,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14647,6 +15004,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14688,6 +15046,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14729,6 +15088,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14770,6 +15130,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14811,6 +15172,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -14852,6 +15214,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -14893,6 +15256,7 @@
       "en": "PIDF Guard",
       "fr": "Milice Populaire — Garde",
       "ja": "自警団 ガード",
+      "ko": "자경단 경비원",
       "zh-CN": "自卫队 守卫"
     },
     "Stats": {
@@ -14934,6 +15298,7 @@
       "en": "PIDF Elite",
       "fr": "Milice Populaire – Élite",
       "ja": "自警団 エリート",
+      "ko": "자경단 정예 대원",
       "zh-CN": "自卫队 精英"
     },
     "Stats": {
@@ -14975,6 +15340,7 @@
       "en": "PIDF Blader",
       "fr": "Milice Populaire — Épéiste",
       "ja": "自警団 ブレーダー",
+      "ko": "자경단 검객",
       "zh-CN": "自卫队 剑士"
     },
     "Stats": {
@@ -15016,6 +15382,7 @@
       "en": "PIDF Rioter",
       "fr": "Milice Populaire — Émeutier",
       "ja": "自警団 ライオット",
+      "ko": "자경단 진압대원",
       "zh-CN": "自卫队 暴徒"
     },
     "Stats": {
@@ -15057,6 +15424,7 @@
       "en": "PIDF Technophile",
       "fr": "Milice Populaire — Technophile",
       "ja": "自警団 ハイテッカー",
+      "ko": "자경단 기술자",
       "zh-CN": "自卫队 高科技分隊"
     },
     "Stats": {
@@ -15098,6 +15466,7 @@
       "en": "PIDF Veteran",
       "fr": "Milice Populaire — Vétéran",
       "ja": "自警団 ベテラン",
+      "ko": "자경단 베테랑",
       "zh-CN": "自卫队 老手"
     },
     "Stats": {
@@ -15139,6 +15508,7 @@
       "en": "PIDF Cleaner",
       "fr": "Milice Populaire — Nettoyeur",
       "ja": "自警団 クリーナー",
+      "ko": "자경단 청소부",
       "zh-CN": "自卫队 善后组"
     },
     "Stats": {
@@ -15180,6 +15550,7 @@
       "en": "PIDF Rocketeer",
       "fr": "Milice Populaire — Spationaute",
       "ja": "自警団 ロケッティア",
+      "ko": "자경단 로켓병",
       "zh-CN": "自卫队 火箭手"
     },
     "Stats": {
@@ -15221,6 +15592,7 @@
       "en": "PIDF Interceptor",
       "fr": "Milice Populaire — Intercepteur",
       "ja": "自警団 インターセプター",
+      "ko": "자경단 요격병",
       "zh-CN": "自卫队 拦截者"
     },
     "Stats": {
@@ -15262,6 +15634,7 @@
       "en": "Attack Chopper",
       "fr": "Hélicoptère de Combat",
       "ja": "武装ヘリ",
+      "ko": "무장 헬기",
       "zh-CN": "武装直升机"
     },
     "Stats": {
@@ -15303,6 +15676,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -15344,6 +15718,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -15385,6 +15760,7 @@
       "en": "Arena_Legend_1",
       "fr": "Arena_Legend_1",
       "ja": "Arena_Legend_1",
+      "ko": "Arena_Legend_1",
       "zh-CN": "Arena_Legend_1"
     },
     "Stats": {
@@ -15426,6 +15802,7 @@
       "en": "Arena_Legend_2",
       "fr": "Arena_Legend_2",
       "ja": "Arena_Legend_2",
+      "ko": "Arena_Legend_2",
       "zh-CN": "Arena_Legend_2"
     },
     "Stats": {
@@ -15467,6 +15844,7 @@
       "en": "Arena_Legend_3",
       "fr": "Arena_Legend_3",
       "ja": "Arena_Legend_3",
+      "ko": "Arena_Legend_3",
       "zh-CN": "Arena_Legend_3"
     },
     "Stats": {
@@ -15508,6 +15886,7 @@
       "en": "Arena_Legend_4",
       "fr": "Arena_Legend_4",
       "ja": "Arena_Legend_4",
+      "ko": "Arena_Legend_4",
       "zh-CN": "Arena_Legend_4"
     },
     "Stats": {
@@ -15549,6 +15928,7 @@
       "en": "Arena_Legend_5",
       "fr": "Arena_Legend_5",
       "ja": "Arena_Legend_5",
+      "ko": "Arena_Legend_5",
       "zh-CN": "Arena_Legend_5"
     },
     "Stats": {
@@ -15590,6 +15970,7 @@
       "en": "Arena_Legend_6",
       "fr": "Arena_Legend_6",
       "ja": "Arena_Legend_6",
+      "ko": "Arena_Legend_6",
       "zh-CN": "Arena_Legend_6"
     },
     "Stats": {
@@ -15631,6 +16012,7 @@
       "en": "Arena_Legend_7",
       "fr": "Arena_Legend_7",
       "ja": "Arena_Legend_7",
+      "ko": "Arena_Legend_7",
       "zh-CN": "Arena_Legend_7"
     },
     "Stats": {
@@ -15672,6 +16054,7 @@
       "en": "Arena_Legend_8",
       "fr": "Arena_Legend_8",
       "ja": "Arena_Legend_8",
+      "ko": "Arena_Legend_8",
       "zh-CN": "Arena_Legend_8"
     },
     "Stats": {
@@ -15713,6 +16096,7 @@
       "en": "Arena_Legend_9",
       "fr": "Arena_Legend_9",
       "ja": "Arena_Legend_9",
+      "ko": "Arena_Legend_9",
       "zh-CN": "Arena_Legend_9"
     },
     "Stats": {
@@ -15754,6 +16138,7 @@
       "en": "Arena_Legend_10",
       "fr": "Arena_Legend_10",
       "ja": "Arena_Legend_10",
+      "ko": "Arena_Legend_10",
       "zh-CN": "Arena_Legend_10"
     },
     "Stats": {
@@ -15795,6 +16180,7 @@
       "en": "Arena_Legend_11",
       "fr": "Arena_Legend_11",
       "ja": "Arena_Legend_11",
+      "ko": "Arena_Legend_11",
       "zh-CN": "Arena_Legend_11"
     },
     "Stats": {
@@ -15836,6 +16222,7 @@
       "en": "Arena_Legend_12",
       "fr": "Arena_Legend_12",
       "ja": "Arena_Legend_12",
+      "ko": "Arena_Legend_12",
       "zh-CN": "Arena_Legend_12"
     },
     "Stats": {
@@ -15877,6 +16264,7 @@
       "en": "Arena_Legend_13",
       "fr": "Arena_Legend_13",
       "ja": "Arena_Legend_13",
+      "ko": "Arena_Legend_13",
       "zh-CN": "Arena_Legend_13"
     },
     "Stats": {
@@ -15918,6 +16306,7 @@
       "en": "Arena_Legend_14",
       "fr": "Arena_Legend_14",
       "ja": "Arena_Legend_14",
+      "ko": "Arena_Legend_14",
       "zh-CN": "Arena_Legend_14"
     },
     "Stats": {
@@ -15959,6 +16348,7 @@
       "en": "Arena_Legend_15",
       "fr": "Arena_Legend_15",
       "ja": "Arena_Legend_15",
+      "ko": "Arena_Legend_15",
       "zh-CN": "Arena_Legend_15"
     },
     "Stats": {
@@ -16000,6 +16390,7 @@
       "en": "Arena_Legend_16",
       "fr": "Arena_Legend_16",
       "ja": "Arena_Legend_16",
+      "ko": "Arena_Legend_16",
       "zh-CN": "Arena_Legend_16"
     },
     "Stats": {
@@ -16041,6 +16432,7 @@
       "en": "Arena_Legend_17",
       "fr": "Arena_Legend_17",
       "ja": "Arena_Legend_17",
+      "ko": "Arena_Legend_17",
       "zh-CN": "Arena_Legend_17"
     },
     "Stats": {
@@ -16082,6 +16474,7 @@
       "en": "Arena_Legend_18",
       "fr": "Arena_Legend_18",
       "ja": "Arena_Legend_18",
+      "ko": "Arena_Legend_18",
       "zh-CN": "Arena_Legend_18"
     },
     "Stats": {
@@ -16123,6 +16516,7 @@
       "en": "Arena_Legend_19",
       "fr": "Arena_Legend_19",
       "ja": "Arena_Legend_19",
+      "ko": "Arena_Legend_19",
       "zh-CN": "Arena_Legend_19"
     },
     "Stats": {
@@ -16164,6 +16558,7 @@
       "en": "Arena_Legend_20",
       "fr": "Arena_Legend_20",
       "ja": "Arena_Legend_20",
+      "ko": "Arena_Legend_20",
       "zh-CN": "Arena_Legend_20"
     },
     "Stats": {
@@ -16205,6 +16600,7 @@
       "en": "Azure Covenant Enforcer",
       "fr": "Alliance Azurée — Exécuteur",
       "ja": "蒼天の盟約 執行人",
+      "ko": "창천의 맹약 집행인",
       "zh-CN": "苍天的盟约 执行者"
     },
     "Stats": {
@@ -16246,6 +16642,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -16287,6 +16684,7 @@
       "en": "Caravan Leader",
       "fr": "Capitaine de Caravane",
       "ja": "キャラバンの商隊長",
+      "ko": "캐러밴 상단 대장",
       "zh-CN": "流民商队长"
     },
     "Stats": {
@@ -16328,6 +16726,7 @@
       "en": "Butcher in Training",
       "fr": "Apprenti boucher",
       "ja": "見習い肉屋",
+      "ko": "견습 정육업자",
       "zh-CN": "肉铺学徒"
     },
     "Stats": {
@@ -16369,6 +16768,7 @@
       "en": "Village Grocer",
       "fr": "Maraîcher du village",
       "ja": "村の八百屋",
+      "ko": "마을 채소장수",
       "zh-CN": "蔬果摊老板"
     },
     "Stats": {
@@ -16410,6 +16810,7 @@
       "en": "Smugglers' Lackey",
       "fr": "Coursier des contrebandiers",
       "ja": "密輸人の使い走り",
+      "ko": "밀수업자 심부름꾼",
       "zh-CN": "走私者的跑腿小弟"
     },
     "Stats": {
@@ -16451,6 +16852,7 @@
       "en": "Foraging Merchant",
       "fr": "Chineur de matériaux",
       "ja": "素材拾いの商人",
+      "ko": "소재 줍는 상인",
       "zh-CN": "捡材料的商人"
     },
     "Stats": {
@@ -16492,6 +16894,7 @@
       "en": "Bakery Stand Baker",
       "fr": "Boulanger ambulant",
       "ja": "屋台のパン屋",
+      "ko": "길거리 빵 판매원",
       "zh-CN": "小摊面包师"
     },
     "Stats": {
@@ -16533,6 +16936,7 @@
       "en": "Shady Pharmacist",
       "fr": "Vendeur de remèdes louche",
       "ja": "怪しい薬売り",
+      "ko": "수상한 약장수",
       "zh-CN": "可疑的药贩子"
     },
     "Stats": {
@@ -16574,6 +16978,7 @@
       "en": "Surf & Turf Master",
       "fr": "Pêcheur-boucher chevronné",
       "ja": "熟練の漁師兼肉屋",
+      "ko": "숙련 어부 겸 정육업자",
       "zh-CN": "熟练渔夫兼肉铺老板"
     },
     "Stats": {
@@ -16615,6 +17020,7 @@
       "en": "Expert Hunter",
       "fr": "Maître chasseur",
       "ja": "狩猟の達人",
+      "ko": "수렵의 달인",
       "zh-CN": "狩猎达人"
     },
     "Stats": {
@@ -16656,6 +17062,7 @@
       "en": "Legendary Game Hunter",
       "fr": "Chasseur de gibier légendaire",
       "ja": "伝説のジビエハンター",
+      "ko": "전설의 야생육 헌터",
       "zh-CN": "传说中的野味猎人"
     },
     "Stats": {
@@ -16697,6 +17104,7 @@
       "en": "Mercenary Supplier",
       "fr": "Ravitailleur de mercenaires",
       "ja": "傭兵の補給係",
+      "ko": "용병 보급계원",
       "zh-CN": "佣兵的补给官"
     },
     "Stats": {
@@ -16738,6 +17146,7 @@
       "en": "Heavy Arms Merchant",
       "fr": "Marchand lourdement armé",
       "ja": "重武装商人",
+      "ko": "중무장한 상인",
       "zh-CN": "重武装商人"
     },
     "Stats": {
@@ -16779,6 +17188,7 @@
       "en": "Legendary Ammo Merchant",
       "fr": "Marchand de munitions légendaire",
       "ja": "伝説の弾薬商人",
+      "ko": "전설의 탄약 상인",
       "zh-CN": "传说中的弹药商"
     },
     "Stats": {
@@ -16820,6 +17230,7 @@
       "en": "Farm Peddler",
       "fr": "Colporteur des fermes",
       "ja": "農園の行商人",
+      "ko": "농원 행상인",
       "zh-CN": "旅行的农园商人"
     },
     "Stats": {
@@ -16861,6 +17272,7 @@
       "en": "Legendary Grocer",
       "fr": "Maraîcher légendaire",
       "ja": "伝説の八百屋",
+      "ko": "전설의 채소장수",
       "zh-CN": "传说中的蔬果店老板"
     },
     "Stats": {
@@ -16902,6 +17314,7 @@
       "en": "Authorized Pharmacist",
       "fr": "Apothicaire officiel",
       "ja": "正規の薬剤師",
+      "ko": "정규 약제사",
       "zh-CN": "正规药师"
     },
     "Stats": {
@@ -16943,6 +17356,7 @@
       "en": "Legendary Pharmacist",
       "fr": "Apothicaire légendaire",
       "ja": "伝説の薬師",
+      "ko": "전설의 약사",
       "zh-CN": "传说中的药师"
     },
     "Stats": {
@@ -16984,6 +17398,7 @@
       "en": "Local Restaurateur",
       "fr": "Gargotier de la ville",
       "ja": "街の定食屋",
+      "ko": "마을 정식요리 판매원",
       "zh-CN": "小饭馆老板"
     },
     "Stats": {
@@ -17025,6 +17440,7 @@
       "en": "Novice Gourmet",
       "fr": "Gastronome en herbe",
       "ja": "駆け出しの美食家",
+      "ko": "신출내기 미식가",
       "zh-CN": "初出茅庐的美食家"
     },
     "Stats": {
@@ -17066,6 +17482,7 @@
       "en": "Legendary Gourmet",
       "fr": "Gastronome légendaire",
       "ja": "伝説の美食家",
+      "ko": "전설의 미식가",
       "zh-CN": "传说中的美食家"
     },
     "Stats": {
@@ -17107,6 +17524,7 @@
       "en": "Authorized Materials Merchant",
       "fr": "Marchand de matériaux officiel",
       "ja": "正規の素材商人",
+      "ko": "정규 소재 상인",
       "zh-CN": "正规材料商人"
     },
     "Stats": {
@@ -17148,6 +17566,7 @@
       "en": "Element Merchant",
       "fr": "Marchand d'éléments",
       "ja": "エレメント商人",
+      "ko": "엘리먼트 상인",
       "zh-CN": "元素商人"
     },
     "Stats": {
@@ -17189,6 +17608,7 @@
       "en": "Legendary Materials Merchant",
       "fr": "Marchand de matériaux légendaire",
       "ja": "伝説の素材商人",
+      "ko": "전설의 소재 상인",
       "zh-CN": "传说中的材料商人"
     },
     "Stats": {
@@ -17230,6 +17650,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -17271,6 +17692,7 @@
       "en": "PAL Genetic Research Unit Executioner",
       "fr": "Unité de Recherche Génétique – Équipe d’exécution",
       "ja": "遺伝子研究部隊 実行班",
+      "ko": "유전자 연구 부대 실행반",
       "zh-CN": "基因研究部队 执行小队"
     },
     "Stats": {
@@ -17312,6 +17734,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -17353,6 +17776,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -17394,6 +17818,7 @@
       "en": "Fia",
       "fr": "Fia",
       "ja": "フィア",
+      "ko": "피아",
       "zh-CN": "菲亚"
     },
     "Stats": {
@@ -17435,6 +17860,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -17476,6 +17902,7 @@
       "en": "Moonflower Jonin",
       "fr": "Clan des Fleurs Lunaires — Jonin",
       "ja": "月花衆 上忍",
+      "ko": "달꽃단 상급 닌자",
       "zh-CN": "月花众 上忍"
     },
     "Stats": {
@@ -17517,6 +17944,7 @@
       "en": "Moonflower Genin",
       "fr": "Clan des Fleurs Lunaires — Genin",
       "ja": "月花衆 下忍",
+      "ko": "달꽃단 하급 닌자",
       "zh-CN": "月花众 下忍"
     },
     "Stats": {
@@ -17558,6 +17986,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -17599,6 +18028,7 @@
       "en": "PIDF Rifleman",
       "fr": "Milice Populaire — Fusilier",
       "ja": "自警団 ライフルマン",
+      "ko": "자경단 소총수",
       "zh-CN": "自卫队 步枪士兵"
     },
     "Stats": {
@@ -17640,6 +18070,7 @@
       "en": "Islander",
       "fr": "Habitant de l'Île",
       "ja": "島民",
+      "ko": "섬 주민",
       "zh-CN": "岛民"
     },
     "Stats": {
@@ -17681,6 +18112,7 @@
       "en": "Newbie Pal Tamer",
       "fr": "Paldresseur Novice",
       "ja": "かけだしパルテイマー",
+      "ko": "초짜 팰 조련사",
       "zh-CN": "初出茅庐的帕鲁驯养师"
     },
     "Stats": {
@@ -17722,6 +18154,7 @@
       "en": "Wandering Merchant",
       "fr": "Colporteur",
       "ja": "放浪商人",
+      "ko": "방랑 상인",
       "zh-CN": "流浪商人"
     },
     "Stats": {

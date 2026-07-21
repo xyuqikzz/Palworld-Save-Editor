@@ -23,9 +23,11 @@ class NativeDialogApi:
         self._modern_folder_picker = modern_folder_picker
         self._platform_name = platform_name or sys.platform
 
-    def select_save_directory(self):
+    def select_save_directory(self, requested_directory=None):
         initial_directory = ""
-        if Config.path and Path(Config.path).is_dir():
+        if requested_directory and Path(requested_directory).is_dir():
+            initial_directory = str(Path(requested_directory).resolve())
+        elif Config.path and Path(Config.path).is_dir():
             initial_directory = Config.path
 
         if self._platform_name == "win32":

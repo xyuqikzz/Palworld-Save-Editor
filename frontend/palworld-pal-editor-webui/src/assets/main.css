@@ -90,7 +90,7 @@ button:disabled { cursor: default; }
 /* Panels and data controls */
 #EditorMain .PalEditor.pal-editor-layout {
   gap: 16px;
-  padding-right: 4px;
+  padding-right: 0;
 }
 
 #EditorMain .EditorItem {
@@ -263,15 +263,19 @@ button:disabled { cursor: default; }
 #EditorMain > .selection-column > .flex {
   width: 100%;
   min-width: 0;
-  padding: 10px;
+  padding: 10px 0;
   border-radius: var(--ui-radius-md);
   box-shadow: var(--ui-shadow-sm);
 }
 
 #EditorMain .title {
   min-height: 35px;
-  padding: 1px 2px 9px;
+  padding: 1px 10px 9px;
   font-weight: 680;
+}
+
+#EditorMain .filter-field {
+  padding-inline: 10px;
 }
 
 #EditorMain .overflow-list { padding-top: 8px; gap: 3px; }
@@ -516,7 +520,7 @@ button:disabled { cursor: default; }
 
 #EditorMain .EditorItem.skillsPanel {
   display: grid;
-  grid-template-columns: minmax(270px, 0.9fr) minmax(230px, 0.72fr) minmax(340px, 1.38fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: 0;
 }

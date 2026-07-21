@@ -45,6 +45,9 @@ const toggleInvalidOptions = () => {
     </div>
     <div class="topbar__workspace">
       <template v-if="palStore.SAVE_LOADED_FLAG">
+        <span :class="['source-badge', `source-badge--${palStore.SAVE_PLATFORM}`]">
+          {{ palStore.getTranslatedText(palStore.SAVE_PLATFORM === 'xgp' ? 'SourceBadge_Xgp' : 'SourceBadge_Steam') }}
+        </span>
         <div class="session-state" :title="palStore.getTranslatedText('TopBar_SessionTitle', [palStore.SESSION_ID])">
           <span>r{{ palStore.SESSION_REVISION }}</span>
           <strong v-if="palStore.PENDING_CHANGE_COUNT">
@@ -52,19 +55,29 @@ const toggleInvalidOptions = () => {
           </strong>
           <em v-else>{{ palStore.getTranslatedText('TopBar_Saved') }}</em>
         </div>
-        <label class="save-location">
+        <label class="save-location" :title="palStore.SAVE_PLATFORM === 'xgp' ? palStore.getTranslatedText('TopBar_Xgp_TargetLocked') : ''">
           <span class="sr-only">{{ palStore.getTranslatedText('TopBar_Save_Path') }}</span>
           <input
+            v-if="palStore.SAVE_CAPABILITIES.targetPathEditable"
             class="savePath"
             type="text"
             v-model="palStore.PAL_WRITE_BACK_PATH"
             :placeholder="palStore.PAL_GAME_SAVE_PATH"
             :disabled="palStore.LOADING_FLAG"
           />
+          <span v-else class="savePath savePath--locked">{{ palStore.SOURCE_DISPLAY_NAME }}</span>
         </label>
         <div class="action-group action-group--primary">
           <button class="op op--primary" @click="save" :disabled="palStore.LOADING_FLAG || !palStore.PENDING_CHANGE_COUNT">
             {{ palStore.getTranslatedText('TopBar_Btn_Save') }}
+          </button>
+          <button
+            v-if="palStore.SAVE_CAPABILITIES.exportSteamCopy"
+            class="op op--compact"
+            @click="palStore.exportSteamCopy"
+            :disabled="palStore.LOADING_FLAG"
+          >
+            {{ palStore.getTranslatedText('TopBar_ExportSteam') }}
           </button>
           <button class="op op--icon" @click="palStore.loadSave" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('TopBar_Btn_Reload')">
             <AppIcon name="refresh" :size="16" />
@@ -102,6 +115,15 @@ const toggleInvalidOptions = () => {
           <option :value="key" v-for="translated, key in palStore.I18nList">{{ translated }}</option>
         </select>
       </label>
+    </div>
+    <div v-if="palStore.LAST_SAVE_RESULT?.backup_path || palStore.LAST_SAVE_RESULT?.recovery_status === 'failed'" class="save-evidence" role="status">
+      <span v-if="palStore.LAST_SAVE_RESULT?.backup_path">
+        {{ palStore.getTranslatedText('Xgp_Backup_Path') }}: {{ palStore.LAST_SAVE_RESULT.backup_path }}
+      </span>
+      <span v-if="palStore.LAST_SAVE_RESULT?.recovery_status">
+        {{ palStore.getTranslatedText('Xgp_Recovery_Status') }}: {{ palStore.LAST_SAVE_RESULT.recovery_status }}
+      </span>
+      <span v-if="palStore.SAVE_PLATFORM === 'xgp'">{{ palStore.getTranslatedText('Xgp_Cloud_Unverified') }}</span>
     </div>
   </header>
 </template>
@@ -163,6 +185,16 @@ const toggleInvalidOptions = () => {
   font-size: 11px;
   white-space: nowrap;
 }
+.source-badge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.source-badge--xgp { color: var(--ui-accent); border-color: var(--ui-accent); background: var(--ui-accent-soft); }
 .session-state strong { color: var(--ui-accent); font-weight: 650; }
 .session-state em { color: var(--ui-success); font-style: normal; }
 
@@ -202,6 +234,7 @@ const toggleInvalidOptions = () => {
 }
 
 .savePath:focus-visible { outline: 0; }
+.savePath--locked { display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .save-location:focus-within { border-color: var(--ui-accent); box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.16); }
 
 #languageSelect {
@@ -264,6 +297,22 @@ const toggleInvalidOptions = () => {
   height: 2px;
   background: var(--ui-accent);
   transition: width 180ms ease-out;
+}
+.save-evidence {
+  position: fixed;
+  top: 62px;
+  right: 12px;
+  display: grid;
+  gap: 2px;
+  max-width: min(620px, calc(100vw - 24px));
+  padding: 8px 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  box-shadow: var(--ui-shadow-md);
+  font-size: 10px;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 940px) {

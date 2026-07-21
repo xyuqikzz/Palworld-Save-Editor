@@ -230,6 +230,25 @@ class StructuralPalEditorTests(unittest.TestCase):
             failure_hook=failure_hook,
         )
 
+    def test_add_human_npc_to_pal_storage_with_safe_moveset(self) -> None:
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=str(PLAYER_ID),
+                species_id="Hunter_Rifle",
+                container_type=CharacterContainerType.PAL_STORAGE,
+            )
+        )["pal"]
+
+        npc = CharacterIndex(self.manager).pals[added["pal_id"]]
+        self.assertEqual("Hunter_Rifle", npc.CharacterID)
+        self.assertTrue(npc.IsHuman)
+        self.assertIsNone(npc.Gender)
+        self.assertEqual(["EPalWazaID::Human_Punch"], npc.MasteredWaza)
+        self.assertEqual(["EPalWazaID::Human_Punch"], npc.EquipWaza)
+        self.assertEqual(str(STORAGE_ID), added["container_id"])
+
     def test_add_clone_move_delete_and_recover_pal(self) -> None:
         editor = self.editor()
         added = editor.execute(

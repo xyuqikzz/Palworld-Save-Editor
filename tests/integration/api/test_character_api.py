@@ -11,6 +11,8 @@ from palworld_pal_editor.api.pal import _pal_data, pal_blueprint
 from palworld_pal_editor.api.player import player_blueprint, player_to_dict
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.application.save_session import SaveSession
+from palworld_pal_editor.config import Config
+from palworld_pal_editor.core.pal_objects import PalObjects
 from palworld_pal_editor.core.save_manager import SaveManager
 from tests.unit.test_character_editor import _Player, make_pal
 
@@ -103,6 +105,90 @@ class CharacterApiTests(unittest.TestCase):
         self.assertNotIn("PalStorageContainerId", player_payload)
         self.assertNotIn("ContainerId", pal_payload)
         self.assertIn("SlotIndex", pal_payload)
+
+    def test_boss_only_catalog_variant_uses_full_id_for_localization(self) -> None:
+        original_i18n = Config.i18n
+        try:
+            Config.i18n = "zh-CN"
+            PalObjects.set_BaseType(
+                self.pal._pal_param["CharacterID"],
+                "BOSS_KingWhale_otomo",
+            )
+            self.pal._pal_param.pop("NickName", None)
+            self.pal._display_name_cache.clear()
+            pal_payload = _pal_data(self.pal)
+        finally:
+            Config.i18n = original_i18n
+
+        self.assertEqual("BOSS_KingWhale_otomo", pal_payload["CharacterID"])
+        self.assertEqual("BOSS_KingWhale_otomo", pal_payload["DataAccessKey"])
+        self.assertEqual("KingWhale", pal_payload["IconAccessKey"])
+        self.assertEqual("奥沧鲸", pal_payload["I18nName"])
+        self.assertEqual("👑奥沧鲸", pal_payload["DisplayName"])
+        self.assertTrue(pal_payload["IsBOSS"])
+
+        PalObjects.set_BaseType(self.pal._pal_param["CharacterID"], "BOSS_SheepBall")
+        self.assertEqual("SheepBall", self.pal.DataAccessKey)
+
+    def test_initial_pal_list_includes_variant_flags(self) -> None:
+        PalObjects.set_BaseType(
+            self.pal._pal_param["CharacterID"],
+            "BOSS_KingWhale_otomo",
+        )
+        self.pal._display_name_cache.clear()
+        self.player.get_sorted_pals = lambda: [self.pal]
+        SaveManager().player_mapping[self.player.PlayerUId] = self.player
+
+        response = self.client.post(
+            "/api/player/player_pals",
+            headers=self.headers,
+            json={"PlayerUId": self.player.PlayerUId},
+        )
+
+        self.assertEqual(200, response.status_code)
+        pal_payload = response.get_json()["data"][0]
+        self.assertTrue(pal_payload["IsBOSS"])
+        self.assertFalse(pal_payload["IsRarePal"])
+        self.assertFalse(pal_payload["IsTower"])
+
+    def test_explicit_pal_command_unlocks_expedition_assignment(self) -> None:
+        field = "MapObjectConcreteInstanceIdAssignedToExpedition"
+        self.pal._pal_param[field] = PalObjects.Guid(
+            "44444444-5555-6666-7777-888888888888"
+        )
+
+        response = self.client.post(
+            f"/api/pal/{self.pal.InstanceId}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "unlock_pal_expedition",
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(response.get_json()["data"]["value"]["expedition_locked"])
+        self.assertFalse(self.pal.IsExpeditionPal)
+        self.assertNotIn(field, self.pal._pal_param)
+        self.assertEqual(1, self.session.revision)
+
+    def test_explicit_pal_command_allows_cheat_condensation_level_254(self) -> None:
+        response = self.client.post(
+            f"/api/pal/{self.pal.InstanceId}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_pal_enhancement",
+                "values": {"condensation": 254},
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        self.assertEqual(254, response.get_json()["data"]["value"]["condensation"])
+        self.assertEqual(254, self.pal.Rank)
+        self.assertEqual(1, self.session.revision)
 
     def test_unknown_top_level_and_domain_fields_are_rejected(self) -> None:
         response = self.client.post(

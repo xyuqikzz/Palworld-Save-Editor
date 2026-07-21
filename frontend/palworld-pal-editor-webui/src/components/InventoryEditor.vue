@@ -221,17 +221,7 @@ onMounted(loadCatalog)
 </script>
 
 <template>
-  <section class="inventory-editor" aria-labelledby="inventory-title">
-    <header class="inventory-heading">
-      <div>
-        <p class="eyebrow">{{ tr('Inventory_Eyebrow') }}</p>
-        <h2 id="inventory-title">{{ palStore.getTranslatedText('Editor_Inventory') }}</h2>
-      </div>
-      <span v-if="selectedContainer" class="capacity">
-        {{ occupiedCount(selectedContainer) }} / {{ selectedContainer.capacity ?? '—' }}
-      </span>
-    </header>
-
+  <section class="inventory-editor">
     <nav class="container-tabs" :aria-label="tr('Inventory_ContainersAriaLabel')">
       <button
         v-for="container in containers"
@@ -266,6 +256,8 @@ onMounted(loadCatalog)
                 {{ dynamicKindLabel(slot.item.dynamic_kind) }} · {{ tr('Inventory_Linked') }}
               </small>
             </div>
+          </div>
+          <div class="slot-controls">
             <input
               v-model.number="slot.item.count"
               class="slot-count"
@@ -275,39 +267,39 @@ onMounted(loadCatalog)
               step="1"
               :aria-label="tr('Inventory_ItemCountAriaLabel')"
             >
-          </div>
-          <div class="slot-actions">
-            <button
-              type="button"
-              class="max-action"
-              :disabled="palStore.LOADING_FLAG"
-              @click="slot.item.count = itemMaxStack(slot.item.static_id)"
-            >{{ tr('Inventory_Max') }}</button>
-            <button
-              class="icon-action"
-              :disabled="palStore.LOADING_FLAG"
-              :title="tr('Inventory_SaveCountTitle')"
-              @click="palStore.updateInventoryItem(selectedContainer, slot)"
-            ><AppIcon name="check" :size="15" /></button>
-            <button
-              class="icon-action"
-              :disabled="palStore.LOADING_FLAG"
-              :title="tr('Inventory_CopySlotTitle')"
-              @click="palStore.copyInventoryItem(selectedContainer, slot)"
-            ><AppIcon name="copy" :size="15" /></button>
-            <button
-              v-if="slot.item.dynamic_kind !== 'none'"
-              class="icon-action"
-              :disabled="palStore.LOADING_FLAG"
-              :title="tr('Inventory_EditDynamicTitle')"
-              @click="toggleDynamicEditor(slot)"
-            ><AppIcon name="settings" :size="15" /></button>
-            <button
-              class="icon-action danger"
-              :disabled="palStore.LOADING_FLAG"
-              :title="tr('Inventory_ClearSlotTitle')"
-              @click="palStore.clearInventoryItem(selectedContainer, slot)"
-            ><AppIcon name="trash" :size="15" /></button>
+            <div class="slot-actions">
+              <button
+                type="button"
+                class="max-action"
+                :disabled="palStore.LOADING_FLAG"
+                @click="slot.item.count = itemMaxStack(slot.item.static_id)"
+              >{{ tr('Inventory_Max') }}</button>
+              <button
+                class="icon-action"
+                :disabled="palStore.LOADING_FLAG"
+                :title="tr('Inventory_SaveCountTitle')"
+                @click="palStore.updateInventoryItem(selectedContainer, slot)"
+              ><AppIcon name="check" :size="15" /></button>
+              <button
+                class="icon-action"
+                :disabled="palStore.LOADING_FLAG"
+                :title="tr('Inventory_CopySlotTitle')"
+                @click="palStore.copyInventoryItem(selectedContainer, slot)"
+              ><AppIcon name="copy" :size="15" /></button>
+              <button
+                v-if="slot.item.dynamic_kind !== 'none'"
+                class="icon-action"
+                :disabled="palStore.LOADING_FLAG"
+                :title="tr('Inventory_EditDynamicTitle')"
+                @click="toggleDynamicEditor(slot)"
+              ><AppIcon name="settings" :size="15" /></button>
+              <button
+                class="icon-action danger"
+                :disabled="palStore.LOADING_FLAG"
+                :title="tr('Inventory_ClearSlotTitle')"
+                @click="palStore.clearInventoryItem(selectedContainer, slot)"
+              ><AppIcon name="trash" :size="15" /></button>
+            </div>
           </div>
           <div v-if="dynamicEditors[String(slot.slot_index)]" class="dynamic-editor">
             <header>
@@ -406,25 +398,20 @@ onMounted(loadCatalog)
   padding: 22px;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
   background: var(--ui-surface);
 }
 
-.inventory-heading,
 .slot-card {
   display: flex;
   align-items: center;
 }
 
-.inventory-heading { justify-content: space-between; gap: 20px; }
-.inventory-heading h2 { margin: 2px 0 0; font-size: 20px; }
-.eyebrow { margin: 0; color: var(--ui-accent); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-.capacity { color: var(--ui-text-secondary); font-variant-numeric: tabular-nums; }
-
 .container-tabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(112px, 1fr));
   gap: 6px;
-  margin: 18px 0;
+  margin: 0 0 18px;
   overflow-x: auto;
 }
 
@@ -451,7 +438,7 @@ onMounted(loadCatalog)
 .picker-dynamic-fields input { min-height: 34px; padding: 0 8px; color: var(--ui-text); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 6px; }
 .picker-dynamic-fields__egg { grid-column: 1 / -1; }
 .picker-dynamic-fields__error { grid-column: 1 / -1; margin: 0; color: var(--ui-danger); font-size: 11px; }
-.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 8px; }
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); gap: 8px; }
 .slot-card {
   position: relative;
   min-height: 82px;
@@ -465,15 +452,18 @@ onMounted(loadCatalog)
 .slot-card.empty { border-style: dashed; background: transparent; }
 .slot-index { position: absolute; top: 3px; left: 8px; color: var(--ui-text-muted); font-size: 10px; }
 .slot-main { display: flex; align-items: center; flex: 1 0 100%; min-width: 0; gap: 8px; }
-.slot-actions { display: flex; flex: 1 0 100%; justify-content: flex-end; gap: 6px; }
+.slot-controls { display: flex; align-items: center; flex: 1 0 100%; flex-wrap: wrap; min-width: 0; gap: 8px; }
+.slot-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 6px; }
 .slot-copy,
 .empty-copy { display: grid; min-width: 0; flex: 1; }
+.slot-copy strong { color: var(--ui-text); }
 .slot-copy strong,
 .slot-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-copy strong { color: var(--ui-text); }
 .slot-copy small,
 .empty-copy small { color: var(--ui-text-muted); font-size: 10px; }
 .dynamic-kind { color: var(--ui-accent) !important; }
-.slot-count { flex: 0 0 70px; width: 70px; min-height: 32px; padding: 0 7px; border: 1px solid var(--ui-border); border-radius: 6px; color: var(--ui-text); background: var(--ui-canvas); }
+.slot-count { flex: 1 1 120px; width: auto; min-width: 84px; max-width: 160px; min-height: 32px; padding: 0 9px; border: 1px solid var(--ui-border); border-radius: 6px; color: var(--ui-text); background: var(--ui-canvas); }
 .icon-action,
 .add-action,
 .max-action { min-height: 32px; border: 0; border-radius: 6px; color: var(--ui-text); background: var(--ui-accent-soft); }

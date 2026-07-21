@@ -15,6 +15,8 @@ from palworld_pal_editor.config import (
 )
 from palworld_pal_editor.core import SaveManager
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
+from palworld_pal_editor.domain.models import SavePlatform
+from palworld_pal_editor.storage.discovery import SOURCE_CATALOG
 from palworld_pal_editor.application.save_writer import SaveWriter
 from palworld_pal_editor.application.query_service import SaveQueryService
 from palworld_pal_editor.domain.errors import DomainError
@@ -44,9 +46,27 @@ def fetch_config():
 # @LOGGER.api_logger
 @jwt_required()
 def load():
-    path = request.json.get("ReadPath", None)
-    path = path or Config.path
+    payload = request.get_json(silent=True) or {}
+    path = payload.get("ReadPath") or payload.get("path")
+    source_id = payload.get("sourceId")
+    if path and source_id:
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="ReadPath and sourceId are mutually exclusive.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    path = path or (None if source_id else Config.path)
     try:
+        if source_id:
+            session = SESSION_RUNTIME.open_source(source_id)
+            return reply(
+                0,
+                {
+                    "session": session.summary().to_dict(),
+                    "compatibility": session.compatibility().to_dict(),
+                },
+            )
         if path:
             session = SESSION_RUNTIME.open(path)
             Config.path = path
@@ -73,6 +93,60 @@ def load():
 
     LOGGER.warning(f"Failed to load, check path: {path}")
     return reply(1, None, f"Failed to load, check path: {path}")
+
+
+@save_blueprint.route("/sources", methods=["GET", "POST"])
+@jwt_required()
+def discover_sources():
+    try:
+        if request.method == "POST":
+            payload = request.get_json(silent=True)
+            if not isinstance(payload, dict) or not payload.get("path"):
+                raise DomainError(
+                    code="INVALID_REQUEST",
+                    message="A Game Pass WGS folder path is required.",
+                    field="path",
+                    http_status=400,
+                )
+            sources = SOURCE_CATALOG.discover_selected(payload["path"])
+        else:
+            sources = SOURCE_CATALOG.discover()
+        return reply(
+            0,
+            {"sources": [source.to_public_dict() for source in sources]},
+        )
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/browse-directory", methods=["POST"])
+@jwt_required()
+def browse_directory():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="The request body must be a JSON object.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    raw_path = payload.get("path") or Config.path or str(PROGRAM_PATH)
+    try:
+        current_path = Path(raw_path).resolve(strict=True)
+        if payload.get("parent") is True:
+            current_path = current_path.parent.resolve(strict=True)
+        if not current_path.is_dir():
+            raise OSError("not a directory")
+        return reply(0, get_path_context(current_path))
+    except (OSError, RuntimeError, ValueError) as cause:
+        error = DomainError(
+            code="INVALID_SAVE_PATH",
+            message="The selected directory cannot be read.",
+            field="path",
+            http_status=400,
+        )
+        error.__cause__ = cause
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
 
 @save_blueprint.route("/session", methods=["GET"])
@@ -260,7 +334,9 @@ def save():
         session = SESSION_RUNTIME.get(payload.get("session_id"))
         result = SaveWriter().save(
             session,
-            path or session.source,
+            path if path is not None else (
+                session.source if session.platform is SavePlatform.STEAM else None
+            ),
             payload.get("expected_revision", session.revision),
         )
         return reply(0, result.to_dict())
@@ -273,6 +349,30 @@ def save():
         stack_trace = traceback.format_exc()
         LOGGER.error(f"Error in patch_paldata {stack_trace}")
         return reply(1, msg="Unexpected error while saving; see the local debug log."), 500
+
+
+@save_blueprint.route("/export-steam", methods=["POST"])
+@jwt_required()
+def export_steam_copy():
+    payload = request.get_json(silent=True) or {}
+    try:
+        target = payload.get("targetPath") or payload.get("WritePath")
+        if not target:
+            raise DomainError(
+                code="INVALID_SAVE_TARGET",
+                message="A Steam export target directory is required.",
+                field="targetPath",
+                http_status=400,
+            )
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = SaveWriter().export_steam_copy(
+            session,
+            target,
+            payload.get("expected_revision", session.revision),
+        )
+        return reply(0, result.to_dict())
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
 
 @save_blueprint.route("/passive_skills", methods=["GET"])
@@ -376,9 +476,8 @@ def get_pal_data():
     for pal in pals_raw:
         iname = pal["InternalName"]
         if (
-            "BOSS_" in iname
-            and DataProvider.boss_has_base_variant(iname)
-            or "Boss_" in iname
+            not DataProvider.is_pal_human(iname)
+            and ("BOSS_" in iname or "Boss_" in iname)
             and DataProvider.boss_has_base_variant(iname)
         ):
             continue
@@ -390,6 +489,7 @@ def get_pal_data():
             "I18n": DataProvider.get_pal_i18n(iname) or iname,
             "SortingKey": DataProvider.get_pal_sorting_key(iname),
             "IsHuman": DataProvider.is_pal_human(iname) or False,
+            "HasIcon": DataProvider.has_human_icon(iname),
         }
         pal_dict[iname] = data
         pal_arr.append(data)
@@ -476,7 +576,6 @@ def path_back():
 
 
 @save_blueprint.route("update", methods=["GET"])
-@jwt_required()
 def has_update():
     try:
         version = asyncio.run(get_new_version())
@@ -489,7 +588,7 @@ def has_update():
             {
                 "version": version[0],
                 "download_gh": version[1],
-                "download_page": PROJECT_RELEASES_URL,
+                "download_page": version[1],
             },
             msg="New version available.",
         )

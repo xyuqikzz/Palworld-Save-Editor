@@ -148,6 +148,8 @@ class StructuralPalEditor:
             )
             pal = PalEntity(pal_obj)
             pal.CharacterID = command.species_id
+            if pal.IsHuman:
+                pal.equip_all_pal_attacks()
             pal.is_new_pal = True
             context["pal"] = pal
             self._session.manager._entities_list.append(pal_obj)
@@ -923,7 +925,6 @@ class StructuralPalEditor:
         if (
             not DataProvider.in_pal_data(species_id)
             or DataProvider.is_pal_invalid(species_id)
-            or DataProvider.is_pal_human(species_id)
         ):
             raise StructuralPalEditor._error(
                 "PAL_SPECIES_UNSUPPORTED",

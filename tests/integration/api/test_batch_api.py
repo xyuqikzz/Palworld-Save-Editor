@@ -8,9 +8,11 @@ from flask_jwt_extended import JWTManager, create_access_token
 
 from palworld_pal_editor.api.batch import batch_blueprint
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
+from palworld_pal_editor.core.pal_objects import PalObjects
 from palworld_pal_editor.domain.item_catalog import ItemCatalog
 
 from tests.unit import test_inventory_read as inventory_fixtures
+from tests.unit.test_character_editor import make_pal
 
 
 class BatchApiTests(unittest.TestCase):
@@ -101,6 +103,42 @@ class BatchApiTests(unittest.TestCase):
         self.assertEqual(
             "UNSUPPORTED_COMMAND_FIELD", response.get_json()["error"]["code"]
         )
+
+    def test_batch_unlocks_an_expedition_pal(self) -> None:
+        pal = make_pal()
+        field = "MapObjectConcreteInstanceIdAssignedToExpedition"
+        pal._pal_param[field] = PalObjects.Guid(
+            "44444444-5555-6666-7777-888888888888"
+        )
+        self.manager.get_pal = lambda pal_id: (
+            pal if str(pal_id) == str(pal.InstanceId) else None
+        )
+        payload = {
+            "session_id": self.session.session_id,
+            "expected_revision": 0,
+            "operations": [
+                {
+                    "resource": "pal",
+                    "command": "unlock_pal_expedition",
+                    "pal_id": str(pal.InstanceId),
+                }
+            ],
+        }
+
+        preview = self.client.post(
+            "/api/batch/preview", headers=self.headers, json=payload
+        )
+        self.assertEqual(200, preview.status_code)
+        payload["impact_token"] = preview.get_json()["data"]["impact_token"]
+        response = self.client.post(
+            "/api/batch/commands", headers=self.headers, json=payload
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, response.get_json()["data"]["operation_count"])
+        self.assertFalse(pal.IsExpeditionPal)
+        self.assertNotIn(field, pal._pal_param)
+        self.assertEqual(1, self.session.revision)
 
 
 if __name__ == "__main__":

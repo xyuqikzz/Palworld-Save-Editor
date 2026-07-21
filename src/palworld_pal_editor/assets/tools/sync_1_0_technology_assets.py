@@ -19,12 +19,14 @@ LANGUAGE_SOURCES = {
     "en": "en",
     "fr": "fr",
     "ja": None,
+    "ko": "ko",
     "zh-CN": "zh-Hans",
 }
 TYPE_LABELS = {
     "en": {"build": "Structures", "item": "Items"},
     "fr": {"build": "Structures", "item": "Objets"},
     "ja": {"build": "建築物", "item": "アイテム"},
+    "ko": {"build": "건축물", "item": "아이템"},
     "zh-CN": {"build": "建筑", "item": "道具"},
 }
 PLACEHOLDER_TEXT = {
@@ -33,6 +35,8 @@ PLACEHOLDER_TEXT = {
     "en Text",
     "fr_Text",
     "ja Text",
+    "ko Text",
+    "ko_Text",
     "zh-hans text",
 }
 TABLE_NAMES = ("TechnologyName", "ItemName", "MapObjectName")
@@ -93,6 +97,20 @@ def load_localizations(directory: Path) -> dict[str, dict[str, dict[str, str | N
     }
 
 
+def add_item_catalog_aliases(
+    tables: dict[str, dict[str, dict[str, str | None]]],
+    item_catalog: dict[str, dict],
+) -> None:
+    for internal_name, row in item_catalog.items():
+        for language in LANGUAGE_SOURCES:
+            localized = row.get("I18n", {}).get(language, {})
+            name = localized.get("Name") if isinstance(localized, dict) else None
+            if name:
+                tables[language]["ItemName"].setdefault(
+                    f"ITEM_NAME_{internal_name}", name
+                )
+
+
 def row_properties(row: dict) -> dict[str, object]:
     return {value["Name"]: value.get("Value") for value in row["Value"]}
 
@@ -103,15 +121,38 @@ def array_values(value: object) -> list[str]:
     return [item["Value"] for item in value if item.get("Value")]
 
 
+def lookup_text(table: dict[str, str | None], key: str) -> str | None:
+    direct = table.get(key)
+    if direct:
+        return direct
+    folded_key = key.casefold()
+    return next(
+        (value for candidate, value in table.items() if candidate.casefold() == folded_key),
+        None,
+    )
+
+
 def resolve_name(
     properties: dict[str, object],
     language: str,
     tables: dict[str, dict[str, dict[str, str | None]]],
 ) -> str | None:
     text_id = properties["Name"]
-    text = tables[language]["TechnologyName"].get(text_id)
+    text = lookup_text(tables[language]["TechnologyName"], str(text_id))
     if language == "ja" and (not text or text in PLACEHOLDER_TEXT):
-        text = tables["en"]["TechnologyName"].get(text_id)
+        text = lookup_text(tables["en"]["TechnologyName"], str(text_id))
+    if not text and str(text_id).startswith("NAME_RECIPE_"):
+        source_id = str(text_id).removeprefix("NAME_RECIPE_")
+        text = (
+            lookup_text(
+                tables[language]["MapObjectName"],
+                f"MAPOBJECT_NAME_{source_id}",
+            )
+            or lookup_text(
+                tables[language]["ItemName"],
+                f"ITEM_NAME_{source_id}",
+            )
+        )
     if not text:
         return None
 
@@ -121,7 +162,21 @@ def resolve_name(
     if reference:
         table = "ItemName" if reference.group(1) == "itemName" else "MapObjectName"
         prefix = "ITEM_NAME_" if table == "ItemName" else "MAPOBJECT_NAME_"
-        return tables[language][table].get(prefix + reference.group(2))
+        localized = lookup_text(
+            tables[language][table], prefix + reference.group(2)
+        )
+        if not localized and table == "ItemName":
+            numbered_id = re.fullmatch(r"(.+?)(\d+)", reference.group(2))
+            if numbered_id:
+                localized = lookup_text(
+                    tables[language][table],
+                    prefix + numbered_id.group(1) + "_" + numbered_id.group(2),
+                )
+        if not localized and table == "ItemName":
+            localized = lookup_text(
+                tables[language][table], prefix + reference.group(2) + "_1"
+            )
+        return localized
     return text
 
 
@@ -141,15 +196,24 @@ def build_technology_data(
         i18n = {}
         for language in LANGUAGE_SOURCES:
             name = resolve_name(properties, language, tables)
+            existing_localized = (
+                existing.get(internal_name, {}).get("I18n", {}).get(language, {})
+            )
+            if language != "ko" and existing_localized.get("Name"):
+                name = existing_localized["Name"]
             if not name or name in PLACEHOLDER_TEXT:
-                name = existing.get(internal_name, {}).get("I18n", {}).get(language, {}).get("Name")
+                name = existing_localized.get("Name")
             if not name or name in PLACEHOLDER_TEXT:
                 raise ValueError(
                     f"Unable to resolve {internal_name}/{language}/{properties['Name']}"
                 )
             i18n[language] = {
                 "Name": name,
-                "Type": TYPE_LABELS[language][category],
+                "Type": (
+                    existing_localized.get("Type")
+                    if language != "ko" and existing_localized.get("Type")
+                    else TYPE_LABELS[language][category]
+                ),
             }
 
         result[internal_name] = {
@@ -251,10 +315,20 @@ def main() -> None:
         "--icon-urls",
         help="JSON icon URL map path, or - to read it from stdin",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Report localization drift without writing files.",
+    )
     args = parser.parse_args()
 
     existing = json.loads(args.tech_data.read_text(encoding="utf-8"))
     tables = load_localizations(args.localized_asset_directory)
+    item_data_path = args.tech_data.parent / "item_data.json"
+    add_item_catalog_aliases(
+        tables,
+        json.loads(item_data_path.read_text(encoding="utf-8")),
+    )
     technology_data = build_technology_data(args.recipe_asset, tables, existing)
     icon_urls = None
     if args.icon_urls:
@@ -263,18 +337,26 @@ def main() -> None:
         else:
             icon_urls = json.loads(Path(args.icon_urls).read_text(encoding="utf-8"))
     downloaded, unresolved = sync_icons(
-        technology_data, args.tech_icons, args.pal_icons, icon_urls
+        technology_data,
+        args.tech_icons,
+        args.pal_icons,
+        {} if args.check else icon_urls,
     )
     if unresolved:
         raise ValueError("Missing routed icons: " + ", ".join(unresolved))
 
-    args.tech_data.write_text(
-        json.dumps(technology_data, ensure_ascii=False, indent=4) + "\n",
-        encoding="utf-8",
-    )
+    has_drift = technology_data != existing
+    if not args.check:
+        args.tech_data.write_text(
+            json.dumps(technology_data, ensure_ascii=False, indent=4) + "\n",
+            encoding="utf-8",
+        )
     print(f"Official technologies: {len(technology_data)}")
     print(f"Maximum level: {max(row['Level'] for row in technology_data.values())}")
     print(f"Downloaded technology icons: {downloaded}")
+    print(f"Localization drift: {has_drift}")
+    if args.check and has_drift:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

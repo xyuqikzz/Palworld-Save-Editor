@@ -5,6 +5,7 @@ from palworld_pal_editor.application.inventory_editor import InventoryEditor
 from palworld_pal_editor.application.character_editor import CharacterEditor
 from palworld_pal_editor.application.inventory_layout_editor import InventoryLayoutEditor
 from palworld_pal_editor.application.dynamic_attribute_editor import DynamicAttributeEditor
+from palworld_pal_editor.application.mission_editor import MissionEditor
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.config import Config
 from palworld_pal_editor.domain.errors import DomainError
@@ -21,6 +22,7 @@ from palworld_pal_editor.domain.commands import (
     UpdatePlayerIdentity,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
+    UpdatePlayerMissions,
 )
 from palworld_pal_editor.utils.util import reply
 
@@ -35,6 +37,101 @@ def _domain_error(error: DomainError):
         reply(1, msg=error.message, error=error.to_dict()),
         error.http_status,
     )
+
+
+def _mission_command(
+    player_id: str, payload, *, require_preview_token: bool
+) -> UpdatePlayerMissions:
+    if not isinstance(payload, dict):
+        raise DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+    allowed = {
+        "session_id",
+        "expected_revision",
+        "operation",
+        "mission_ids",
+    }
+    if require_preview_token:
+        allowed.add("preview_token")
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        raise DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+    mission_ids = payload.get("mission_ids", [])
+    if not isinstance(mission_ids, list) or not all(
+        isinstance(mission_id, str) and mission_id for mission_id in mission_ids
+    ):
+        raise DomainError(
+            code="INVALID_REQUEST",
+            message="mission_ids must be an array of non-empty strings.",
+            field="mission_ids",
+            http_status=400,
+        )
+    return UpdatePlayerMissions(
+        session_id=payload.get("session_id"),
+        expected_revision=payload.get("expected_revision"),
+        player_id=player_id,
+        operation=payload.get("operation"),
+        mission_ids=tuple(mission_ids),
+        preview_token=(payload.get("preview_token") if require_preview_token else None),
+    )
+
+
+@player_blueprint.route("/<player_id>/missions", methods=["GET"])
+@jwt_required()
+def get_player_missions(player_id: str):
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        locale = request.args.get("locale") or Config.i18n
+        return reply(
+            0,
+            MissionEditor(session, locale=locale).get_missions(
+                player_id, locale=locale
+            ),
+        )
+    except DomainError as error:
+        return _domain_error(error)
+
+
+@player_blueprint.route("/<player_id>/missions/preview", methods=["POST"])
+@jwt_required()
+def preview_player_mission_command(player_id: str):
+    try:
+        command = _mission_command(
+            player_id, request.get_json(silent=True), require_preview_token=False
+        )
+        session = SESSION_RUNTIME.get(command.session_id)
+        return reply(0, MissionEditor(session, locale=Config.i18n).preview(command))
+    except (TypeError, ValueError) as error:
+        return _domain_error(
+            DomainError(code="INVALID_REQUEST", message=str(error), http_status=400)
+        )
+    except DomainError as error:
+        return _domain_error(error)
+
+
+@player_blueprint.route("/<player_id>/missions/commands", methods=["POST"])
+@jwt_required()
+def execute_player_mission_command(player_id: str):
+    try:
+        command = _mission_command(
+            player_id, request.get_json(silent=True), require_preview_token=True
+        )
+        session = SESSION_RUNTIME.get(command.session_id)
+        return reply(0, MissionEditor(session, locale=Config.i18n).execute(command))
+    except (TypeError, ValueError) as error:
+        return _domain_error(
+            DomainError(code="INVALID_REQUEST", message=str(error), http_status=400)
+        )
+    except DomainError as error:
+        return _domain_error(error)
 
 
 @player_blueprint.route("/<player_id>/commands", methods=["POST"])
@@ -465,9 +562,9 @@ def get_player_pals():
                 "I18nName": pal.I18nName or None,
                 "DisplayName": pal.DisplayName or None,
                 "Gender": pal.Gender.value if pal.Gender else None,
-                # "IsTower": pal.IsTower or False,
-                # "IsBOSS": pal.IsBOSS or False,
-                # "IsRarePal": pal.IsRarePal or False,
+                "IsTower": pal.IsTower or False,
+                "IsBOSS": pal.IsBOSS or False,
+                "IsRarePal": pal.IsRarePal or False,
                 # "NickName": pal.NickName or "",
                 # "Level": pal.Level or 1,
                 # "Rank": pal.Rank.value if pal.Rank else 1,

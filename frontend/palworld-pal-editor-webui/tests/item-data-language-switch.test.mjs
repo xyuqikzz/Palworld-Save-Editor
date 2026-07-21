@@ -39,6 +39,7 @@ test('language switching refreshes loaded inventory and the current item catalog
 
   let backendLocale = 'en'
   const catalogRequests = []
+  const staticDataRequests = []
   axios.patch = async (url, data) => {
     assert.equal(url, '/api/save/i18n')
     backendLocale = data.I18n
@@ -59,7 +60,7 @@ test('language switching refreshes loaded inventory and the current item catalog
           data: {
             items: [{
               static_id: 'Shield_Ultra',
-              name: backendLocale === 'zh-CN' ? '超级护盾' : 'Ultra Shield',
+              name: backendLocale === 'ko' ? '울트라 방패' : 'Ultra Shield',
             }],
           },
         },
@@ -77,7 +78,7 @@ test('language switching refreshes loaded inventory and the current item catalog
                 state: 'occupied',
                 item: {
                   static_id: 'Shield_Ultra',
-                  name: backendLocale === 'zh-CN' ? '超级护盾' : 'Ultra Shield',
+                  name: backendLocale === 'ko' ? '울트라 방패' : 'Ultra Shield',
                 },
               }],
             }],
@@ -86,31 +87,41 @@ test('language switching refreshes loaded inventory and the current item catalog
       }
     }
     if (url === '/api/save/passive_skills') {
+      staticDataRequests.push(url)
       return { data: { status: 0, data: { dict: {}, arr: [] } } }
     }
     if (url === '/api/save/active_skills') {
+      staticDataRequests.push(url)
       return { data: { status: 0, data: { dict: {}, arr: [] } } }
     }
     if (url === '/api/save/pal_data') {
+      staticDataRequests.push(url)
       return { data: { status: 0, data: { dict: {}, arr: [] } } }
     }
     if (url === '/api/save/tech_data') {
+      staticDataRequests.push(url)
       return { data: { status: 0, data: { techLvDict: {} } } }
     }
     throw new Error(`unexpected GET ${url}`)
   }
 
   await store.searchItemCatalog('shield', 'EQUIPMENT')
-  store.I18n = 'zh-CN'
+  store.I18n = 'ko'
   await store.updateI18n()
 
-  assert.equal(store.ITEM_CATALOG_RESULTS[0].name, '超级护盾')
+  assert.equal(store.ITEM_CATALOG_RESULTS[0].name, '울트라 방패')
   assert.equal(
     store.SELECTED_PLAYER_DATA.InventoryContainers[0].slots[0].item.name,
-    '超级护盾',
+    '울트라 방패',
   )
   assert.deepEqual(catalogRequests, [
     '/api/player/item_catalog?q=shield&container_type=EQUIPMENT',
     '/api/player/item_catalog?q=shield&container_type=EQUIPMENT',
+  ])
+  assert.deepEqual(staticDataRequests, [
+    '/api/save/passive_skills',
+    '/api/save/active_skills',
+    '/api/save/pal_data',
+    '/api/save/tech_data',
   ])
 })

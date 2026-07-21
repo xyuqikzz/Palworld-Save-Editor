@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 
-LANGUAGES = ("en", "fr", "ja", "zh-CN")
+LANGUAGES = ("en", "fr", "ja", "ko", "zh-CN")
 ROW_PREFIX = "PAL_NAME_"
 
 
@@ -26,22 +26,16 @@ def load_names(path: Path) -> dict[str, str]:
     return names
 
 
-def empty_pal(internal_name: str) -> dict:
-    return {
-        "InternalName": internal_name,
-        "Elements": [],
-        "Attacks": {},
-        "Stats": {},
-        "I18n": {},
-        "Suitabilities": {},
-    }
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("pal_data", type=Path)
     for language in LANGUAGES:
         parser.add_argument(f"--{language}", dest=language, type=Path, required=True)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Report multilingual Pal-name drift without writing the catalog.",
+    )
     args = parser.parse_args()
 
     localized = {
@@ -52,13 +46,11 @@ def main() -> None:
         raise RuntimeError("The localized Pal name tables have no common rows")
 
     pal_data = json.loads(args.pal_data.read_text(encoding="utf-8"))
-    added: list[str] = []
+    original_pal_data = json.loads(args.pal_data.read_text(encoding="utf-8"))
     updated: list[str] = []
-    for internal_name in sorted(official_ids):
-        if internal_name not in pal_data:
-            pal_data[internal_name] = empty_pal(internal_name)
-            added.append(internal_name)
-
+    catalog_ids = official_ids & set(pal_data)
+    source_only_ids = sorted(official_ids - set(pal_data))
+    for internal_name in sorted(catalog_ids):
         i18n = pal_data[internal_name].setdefault("I18n", {})
         before = dict(i18n)
         for language in LANGUAGES:
@@ -66,15 +58,18 @@ def main() -> None:
         if i18n != before:
             updated.append(internal_name)
 
-    args.pal_data.write_text(
-        json.dumps(pal_data, ensure_ascii=False, indent=4) + "\n",
-        encoding="utf-8",
-    )
+    has_drift = pal_data != original_pal_data
+    if not args.check:
+        args.pal_data.write_text(
+            json.dumps(pal_data, ensure_ascii=False, indent=4) + "\n",
+            encoding="utf-8",
+        )
     print(f"Official rows: {len(official_ids)}")
-    print(f"Added records: {len(added)}")
+    print(f"Catalog rows: {len(catalog_ids)}")
+    print(f"Source-only rows: {len(source_only_ids)}")
     print(f"Updated translations: {len(updated)}")
-    if added:
-        print("Added: " + ", ".join(added))
+    if args.check and has_drift:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

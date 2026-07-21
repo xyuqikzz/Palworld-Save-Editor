@@ -26,6 +26,7 @@
       "en": "Bellanoir",
       "fr": "Bellanoir",
       "ja": "ベラノワール",
+      "ko": "벨라누아르",
       "zh-CN": "贝菈诺娃"
     },
     "SortingKey": {
@@ -75,6 +76,7 @@
       "en": "Bellanoir Libero",
       "fr": "Bellanoir Libero",
       "ja": "ベラルージュ",
+      "ko": "벨라루주",
       "zh-CN": "贝菈露洁"
     },
     "SortingKey": {
@@ -124,6 +126,7 @@
       "en": "Bellanoir Libero",
       "fr": "Bellanoir Libero",
       "ja": "ベラルージュ",
+      "ko": "벨라루주",
       "zh-CN": "贝菈露洁"
     },
     "SortingKey": {
@@ -175,6 +178,7 @@
       "en": "Blazamut Ryu",
       "fr": "Blazamut Ryu",
       "ja": "ボルドラゴ",
+      "ko": "마그마드라고",
       "zh-CN": "殁殃"
     },
     "SortingKey": {
@@ -226,6 +230,7 @@
       "en": "Blazamut Ryu",
       "fr": "Blazamut Ryu",
       "ja": "ボルドラゴ",
+      "ko": "마그마드라고",
       "zh-CN": "殁殃"
     },
     "SortingKey": {
@@ -272,6 +277,7 @@
       "en": "Zenara & Astralym",
       "fr": "Zenara & Astralym",
       "ja": "ゼナーラ＆ゼロヴァース",
+      "ko": "제날라&제로버스",
       "zh-CN": "泽娜拉 & 枯星龙"
     },
     "SortingKey": {
@@ -318,6 +324,7 @@
       "en": "Zenara & Astralym",
       "fr": "Zenara & Astralym",
       "ja": "ゼナーラ＆ゼロヴァース",
+      "ko": "제날라&제로버스",
       "zh-CN": "泽娜拉 & 枯星龙"
     },
     "SortingKey": {
@@ -366,6 +373,7 @@
       "en": "Victor & Shadowbeak",
       "fr": "Victor & Shadowbeak",
       "ja": "ヴィクター＆ゼノグリフ",
+      "ko": "빅터&제노그리프",
       "zh-CN": "维克托 & 异构格里芬"
     },
     "SortingKey": {
@@ -411,6 +419,7 @@
       "en": "Zoe & Grizzbolt",
       "fr": "Zoe & Grizzbolt",
       "ja": "ゾーイ＆エレパンダ",
+      "ko": "조이&일렉판다",
       "zh-CN": "佐伊 & 暴电熊"
     },
     "SortingKey": {
@@ -459,6 +468,7 @@
       "en": "Marcus & Faleris",
       "fr": "Marcus & Faleris",
       "ja": "マーカス＆ホルス",
+      "ko": "마커스&호루스",
       "zh-CN": "马库斯 & 荷鲁斯"
     },
     "SortingKey": {
@@ -505,6 +515,7 @@
       "en": "Lily & Lyleen",
       "fr": "Lily & Lyleen",
       "ja": "リリィ＆リリクイン",
+      "ko": "릴리&릴린",
       "zh-CN": "莉莉 & 百合女王"
     },
     "SortingKey": {
@@ -553,6 +564,7 @@
       "en": "Axel & Orserk",
       "fr": "Axel & Orserk",
       "ja": "アクセル＆ボルゼクス",
+      "ko": "액슬&볼젝스",
       "zh-CN": "阿克塞尔 & 波鲁杰克斯"
     },
     "SortingKey": {
@@ -603,6 +615,7 @@
       "en": "Saya & Selyne",
       "fr": "Saya & Selyne",
       "ja": "サヤ＆セレムーン",
+      "ko": "사야&셀레문",
       "zh-CN": "纱夜 & 辉月伊"
     },
     "SortingKey": {
@@ -652,6 +665,7 @@
       "en": "Bjorn & Bastigor",
       "fr": "Björn & Bastigor",
       "ja": "ビョルン＆ヒョウガオー",
+      "ko": "비에른&빙호우거",
       "zh-CN": "比约恩 & 霜牙王"
     },
     "SortingKey": {
@@ -701,6 +715,7 @@
       "en": "Auri & Shaolong",
       "fr": "Auri & Shaolong",
       "ja": "アウリ＆シャオロン",
+      "ko": "아우리&샤오롱",
       "zh-CN": "苍璃 & 霄龙"
     },
     "SortingKey": {
@@ -750,6 +765,7 @@
       "en": "Zoe & Grizzbolt",
       "fr": "Zoe & Grizzbolt",
       "ja": "ゾーイ＆エレパンダ",
+      "ko": "조이&일렉판다",
       "zh-CN": "佐伊 & 暴电熊"
     },
     "SortingKey": {
@@ -801,6 +817,7 @@
       "en": "Lily & Lyleen",
       "fr": "Lily & Lyleen",
       "ja": "リリィ＆リリクイン",
+      "ko": "릴리&릴린",
       "zh-CN": "莉莉 & 百合女王"
     },
     "SortingKey": {
@@ -852,6 +869,7 @@
       "en": "Axel & Orserk",
       "fr": "Axel & Orserk",
       "ja": "アクセル＆ボルゼクス",
+      "ko": "액슬&볼젝스",
       "zh-CN": "阿克塞尔 & 波鲁杰克斯"
     },
     "SortingKey": {
@@ -902,6 +920,7 @@
       "en": "Marcus & Faleris",
       "fr": "Marcus & Faleris",
       "ja": "マーカス＆ホルス",
+      "ko": "마커스&호루스",
       "zh-CN": "马库斯 & 荷鲁斯"
     },
     "SortingKey": {
@@ -951,6 +970,7 @@
       "en": "Victor & Shadowbeak",
       "fr": "Victor & Shadowbeak",
       "ja": "ヴィクター＆ゼノグリフ",
+      "ko": "빅터&제노그리프",
       "zh-CN": "维克托 & 异构格里芬"
     },
     "SortingKey": {
@@ -1000,6 +1020,7 @@
       "en": "Victor & Shadowbeak",
       "fr": "Victor & Shadowbeak",
       "ja": "ヴィクター＆ゼノグリフ",
+      "ko": "빅터&제노그리프",
       "zh-CN": "维克托 & 异构格里芬"
     },
     "SortingKey": {
@@ -1053,6 +1074,7 @@
       "en": "Saya & Selyne",
       "fr": "Saya & Selyne",
       "ja": "サヤ＆セレムーン",
+      "ko": "사야&셀레문",
       "zh-CN": "纱夜 & 辉月伊"
     },
     "SortingKey": {
@@ -1102,6 +1124,7 @@
       "en": "Selyne",
       "fr": "Selyne",
       "ja": "セレムーン",
+      "ko": "셀레문",
       "zh-CN": "辉月伊"
     },
     "SortingKey": {
@@ -1152,6 +1175,7 @@
       "en": "Bjorn & Bastigor",
       "fr": "Björn & Bastigor",
       "ja": "ビョルン＆ヒョウガオー",
+      "ko": "비에른&빙호우거",
       "zh-CN": "比约恩 & 霜牙王"
     },
     "SortingKey": {
@@ -1202,6 +1226,7 @@
       "en": "Auri & Shaolong",
       "fr": "Auri & Shaolong",
       "ja": "アウリ＆シャオロン",
+      "ko": "아우리&샤오롱",
       "zh-CN": "苍璃 & 霄龙"
     },
     "SortingKey": {
@@ -1250,6 +1275,7 @@
       "en": "Nyafia",
       "fr": "Nyafia",
       "ja": "ニャニミテ",
+      "ko": "멀보냥",
       "zh-CN": "妮瞅莎"
     },
     "SortingKey": {
@@ -1299,6 +1325,7 @@
       "en": "Prunelia",
       "fr": "Prunelia",
       "ja": "プラムルリム",
+      "ko": "플럼린",
       "zh-CN": "梅莉姆"
     },
     "SortingKey": {
@@ -1347,6 +1374,7 @@
       "en": "Melpaca",
       "fr": "Melpaca",
       "ja": "メルパカ",
+      "ko": "멜파카",
       "zh-CN": "美露帕"
     },
     "SortingKey": {
@@ -1397,6 +1425,7 @@
       "en": "Kitsun",
       "fr": "Kitsun",
       "ja": "シラヌイ",
+      "ko": "불이리",
       "zh-CN": "苍焰狼"
     },
     "SortingKey": {
@@ -1446,6 +1475,7 @@
       "en": "Anubis",
       "fr": "Anubis",
       "ja": "アヌビス",
+      "ko": "아누비스",
       "zh-CN": "阿努比斯"
     },
     "SortingKey": {
@@ -1494,6 +1524,7 @@
       "en": "Nyafia",
       "fr": "Nyafia",
       "ja": "ニャニミテ",
+      "ko": "멀보냥",
       "zh-CN": "妮瞅莎"
     },
     "SortingKey": {
@@ -1543,6 +1574,7 @@
       "en": "Incineram",
       "fr": "Incineram",
       "ja": "ヘルゴート",
+      "ko": "헬고트",
       "zh-CN": "炎魔羊"
     },
     "SortingKey": {
@@ -1592,6 +1624,7 @@
       "en": "Incineram Noct",
       "fr": "Incineram Noct",
       "ja": "アビスゴート",
+      "ko": "아비스고트",
       "zh-CN": "暗魔羊"
     },
     "SortingKey": {
@@ -1640,6 +1673,7 @@
       "en": "Mau",
       "fr": "Mau",
       "ja": "ニャオテト",
+      "ko": "냐옹테트",
       "zh-CN": "喵丝特"
     },
     "SortingKey": {
@@ -1688,6 +1722,7 @@
       "en": "Mau Cryst",
       "fr": "Mau Cryst",
       "ja": "チルテト",
+      "ko": "칠테트",
       "zh-CN": "冰丝特"
     },
     "SortingKey": {
@@ -1727,6 +1762,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -1775,6 +1811,7 @@
       "en": "Caprity",
       "fr": "Caprity",
       "ja": "ベリゴート",
+      "ko": "베리고트",
       "zh-CN": "灌木羊"
     },
     "SortingKey": {
@@ -1825,6 +1862,7 @@
       "en": "Vanwyrm",
       "fr": "Vanwyrm",
       "ja": "カバネドリ",
+      "ko": "버드래곤",
       "zh-CN": "烽歌龙"
     },
     "SortingKey": {
@@ -1875,6 +1913,7 @@
       "en": "Vanwyrm Cryst",
       "fr": "Vanwyrm Cryst",
       "ja": "シロカバネ",
+      "ko": "버드아이스",
       "zh-CN": "霜歌龙"
     },
     "SortingKey": {
@@ -1925,6 +1964,7 @@
       "en": "Necromus",
       "fr": "Necromus",
       "ja": "ベイントール",
+      "ko": "켄타나이트",
       "zh-CN": "混沌骑士"
     },
     "SortingKey": {
@@ -1965,6 +2005,7 @@
       "en": "Dragostrophe",
       "fr": "Dragostrophe",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -2014,6 +2055,7 @@
       "en": "Shadowbeak",
       "fr": "Shadowbeak",
       "ja": "ゼノグリフ",
+      "ko": "제노그리프",
       "zh-CN": "异构格里芬"
     },
     "SortingKey": {
@@ -2064,6 +2106,7 @@
       "en": "Astegon",
       "fr": "Astegon",
       "ja": "ジオラーヴァ",
+      "ko": "라바드래곤",
       "zh-CN": "魔渊龙"
     },
     "SortingKey": {
@@ -2113,6 +2156,7 @@
       "en": "Prunelia",
       "fr": "Prunelia",
       "ja": "プラムルリム",
+      "ko": "플럼린",
       "zh-CN": "梅莉姆"
     },
     "SortingKey": {
@@ -2162,6 +2206,7 @@
       "en": "Azurobe",
       "fr": "Azurobe",
       "ja": "アズレーン",
+      "ko": "아주리비",
       "zh-CN": "碧海龙"
     },
     "SortingKey": {
@@ -2210,6 +2255,7 @@
       "en": "Fuack",
       "fr": "Fuack",
       "ja": "カモノスケ",
+      "ko": "청부리",
       "zh-CN": "冲浪鸭"
     },
     "SortingKey": {
@@ -2258,6 +2304,7 @@
       "en": "Rushoar",
       "fr": "Rushoar",
       "ja": "イノボウ",
+      "ko": "돌진돼지",
       "zh-CN": "草莽猪"
     },
     "SortingKey": {
@@ -2306,6 +2353,7 @@
       "en": "Lapiron",
       "fr": "Lapiron",
       "ja": "バトラビー",
+      "ko": "레패시",
       "zh-CN": "詹兔曼"
     },
     "SortingKey": {
@@ -2355,6 +2403,7 @@
       "en": "Penking",
       "fr": "Penking",
       "ja": "キャプペン",
+      "ko": "펭킹",
       "zh-CN": "企丸王"
     },
     "SortingKey": {
@@ -2403,6 +2452,7 @@
       "en": "Lifmunk",
       "fr": "Lifmunk",
       "ja": "クルリス",
+      "ko": "큐룰리스",
       "zh-CN": "翠叶鼠"
     },
     "SortingKey": {
@@ -2451,6 +2501,7 @@
       "en": "Tombat",
       "fr": "Tombat",
       "ja": "ニャンバット",
+      "ko": "냥뱃",
       "zh-CN": "猫蝠怪"
     },
     "SortingKey": {
@@ -2499,6 +2550,7 @@
       "en": "Katress",
       "fr": "Katress",
       "ja": "クレメーオ",
+      "ko": "캐티메이지",
       "zh-CN": "暗巫猫"
     },
     "SortingKey": {
@@ -2548,6 +2600,7 @@
       "en": "Katress Ignis",
       "fr": "Katress Ignis",
       "ja": "クレメーナ",
+      "ko": "캐티위자드",
       "zh-CN": "炽巫猫"
     },
     "SortingKey": {
@@ -2596,6 +2649,7 @@
       "en": "Felbat",
       "fr": "Felbat",
       "ja": "ヤミトバリ",
+      "ko": "블러드캐티",
       "zh-CN": "夜幕魔蝠"
     },
     "SortingKey": {
@@ -2644,6 +2698,7 @@
       "en": "Chikipi",
       "fr": "Chikipi",
       "ja": "タマコッコ",
+      "ko": "꼬꼬닭",
       "zh-CN": "皮皮鸡"
     },
     "SortingKey": {
@@ -2692,6 +2747,7 @@
       "en": "Tocotoco",
       "fr": "Tocotoco",
       "ja": "クルットリ",
+      "ko": "알록새",
       "zh-CN": "炸蛋鸟"
     },
     "SortingKey": {
@@ -2740,6 +2796,7 @@
       "en": "Mozzarina",
       "fr": "Mozzarina",
       "ja": "ミルカルビ",
+      "ko": "밀카우",
       "zh-CN": "波霸牛"
     },
     "SortingKey": {
@@ -2788,6 +2845,7 @@
       "en": "Cinnamoth",
       "fr": "Cinnamoth",
       "ja": "パピテフ",
+      "ko": "귀요비",
       "zh-CN": "幻悦蝶"
     },
     "SortingKey": {
@@ -2836,6 +2894,7 @@
       "en": "Vixy",
       "fr": "Vixy",
       "ja": "タマモ",
+      "ko": "미호",
       "zh-CN": "玉藻狐"
     },
     "SortingKey": {
@@ -2885,6 +2944,7 @@
       "en": "Fuddler",
       "fr": "Fuddler",
       "ja": "モグルン",
+      "ko": "두더비",
       "zh-CN": "遁地鼠"
     },
     "SortingKey": {
@@ -2933,6 +2993,7 @@
       "en": "Cawgnito",
       "fr": "Cawgnito",
       "ja": "マスクロウ",
+      "ko": "마스크로우",
       "zh-CN": "黑鸦隐士"
     },
     "SortingKey": {
@@ -2972,6 +3033,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -3022,6 +3084,7 @@
       "en": "Menasting",
       "fr": "Menasting",
       "ja": "デスティング",
+      "ko": "데스스팅",
       "zh-CN": "冥铠蝎"
     },
     "SortingKey": {
@@ -3070,6 +3133,7 @@
       "en": "Menasting Terra",
       "fr": "Menasting Terra",
       "ja": "ゴルディング",
+      "ko": "골드스팅",
       "zh-CN": "金铠蝎"
     },
     "SortingKey": {
@@ -3118,6 +3182,7 @@
       "en": "Eikthyrdeer",
       "fr": "Eikthyrdeer",
       "ja": "ツノガミ",
+      "ko": "신령사슴",
       "zh-CN": "紫霞鹿"
     },
     "SortingKey": {
@@ -3167,6 +3232,7 @@
       "en": "Eikthyrdeer Terra",
       "fr": "Eikthyrdeer Terra",
       "ja": "ヤマガミ",
+      "ko": "산령사슴",
       "zh-CN": "祇岳鹿"
     },
     "SortingKey": {
@@ -3215,6 +3281,7 @@
       "en": "Daedream",
       "fr": "Daedream",
       "ja": "ネムラム",
+      "ko": "몽마둥이",
       "zh-CN": "寐魔"
     },
     "SortingKey": {
@@ -3263,6 +3330,7 @@
       "en": "Digtoise",
       "fr": "Digtoise",
       "ja": "ドリタス",
+      "ko": "드릴북이",
       "zh-CN": "碎岩龟"
     },
     "SortingKey": {
@@ -3311,6 +3379,7 @@
       "en": "Galeclaw",
       "fr": "Galeclaw",
       "ja": "エアムルグ",
+      "ko": "질풍수리",
       "zh-CN": "天擒鸟"
     },
     "SortingKey": {
@@ -3359,6 +3428,7 @@
       "en": "Sparkit",
       "fr": "Sparkit",
       "ja": "ボルトラ",
+      "ko": "번개냥",
       "zh-CN": "伏特喵"
     },
     "SortingKey": {
@@ -3398,6 +3468,7 @@
       "en": "Boltmane",
       "fr": "Boltmane",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -3447,6 +3518,7 @@
       "en": "Grizzbolt",
       "fr": "Grizzbolt",
       "ja": "エレパンダ",
+      "ko": "일렉판다",
       "zh-CN": "暴电熊"
     },
     "SortingKey": {
@@ -3495,6 +3567,7 @@
       "en": "Elphidran",
       "fr": "Elphidran",
       "ja": "シルフィア",
+      "ko": "실피아",
       "zh-CN": "精灵龙"
     },
     "SortingKey": {
@@ -3544,6 +3617,7 @@
       "en": "Elphidran Aqua",
       "fr": "Elphidran Aqua",
       "ja": "シルティア",
+      "ko": "실티아",
       "zh-CN": "水灵龙"
     },
     "SortingKey": {
@@ -3592,6 +3666,7 @@
       "en": "Fenglope",
       "fr": "Fenglope",
       "ja": "ムラクモ",
+      "ko": "윈드디어",
       "zh-CN": "云海鹿"
     },
     "SortingKey": {
@@ -3640,6 +3715,7 @@
       "en": "Pyrin",
       "fr": "Pyrin",
       "ja": "サラブレイズ",
+      "ko": "파이린",
       "zh-CN": "火麒麟"
     },
     "SortingKey": {
@@ -3689,6 +3765,7 @@
       "en": "Pyrin Noct",
       "fr": "Pyrin Noct",
       "ja": "サラブラック",
+      "ko": "베이린",
       "zh-CN": "邪麒麟"
     },
     "SortingKey": {
@@ -3737,6 +3814,7 @@
       "en": "Rooby",
       "fr": "Rooby",
       "ja": "ヒノコジカ",
+      "ko": "불꽃밤비",
       "zh-CN": "燎火鹿"
     },
     "SortingKey": {
@@ -3785,6 +3863,7 @@
       "en": "Arsox",
       "fr": "Arsox",
       "ja": "ブルフェルノ",
+      "ko": "불페르노",
       "zh-CN": "炽焰牛"
     },
     "SortingKey": {
@@ -3834,6 +3913,7 @@
       "en": "Dinossom",
       "fr": "Dinossom",
       "ja": "アロアリュー",
+      "ko": "플로라디노",
       "zh-CN": "花冠龙"
     },
     "SortingKey": {
@@ -3884,6 +3964,7 @@
       "en": "Dinossom Lux",
       "fr": "Dinossom Lux",
       "ja": "ビリビリュー",
+      "ko": "찌르르디노",
       "zh-CN": "雷冠龙"
     },
     "SortingKey": {
@@ -3932,6 +4013,7 @@
       "en": "Petallia",
       "fr": "Petallia",
       "ja": "フラリーナ",
+      "ko": "플로리나",
       "zh-CN": "花丽娜"
     },
     "SortingKey": {
@@ -3981,6 +4063,7 @@
       "en": "Petallia Ignis",
       "fr": "Petallia Ignis",
       "ja": "チェリーナ",
+      "ko": "체를리나",
       "zh-CN": "樱丽娜"
     },
     "SortingKey": {
@@ -4029,6 +4112,7 @@
       "en": "Flopie",
       "fr": "Flopie",
       "ja": "ポプリーナ",
+      "ko": "토푸리",
       "zh-CN": "波娜兔"
     },
     "SortingKey": {
@@ -4077,6 +4161,7 @@
       "en": "Celaray",
       "fr": "Celaray",
       "ja": "ルミカイト",
+      "ko": "루미카이트",
       "zh-CN": "鲁米儿"
     },
     "SortingKey": {
@@ -4125,6 +4210,7 @@
       "en": "Wixen",
       "fr": "Wixen",
       "ja": "フォレーナ",
+      "ko": "마호",
       "zh-CN": "焰巫狐"
     },
     "SortingKey": {
@@ -4174,6 +4260,7 @@
       "en": "Wixen Noct",
       "fr": "Wixen Noct",
       "ja": "フォレーオ",
+      "ko": "영마호",
       "zh-CN": "幽巫狐"
     },
     "SortingKey": {
@@ -4222,6 +4309,7 @@
       "en": "Teafant",
       "fr": "Teafant",
       "ja": "チョロゾウ",
+      "ko": "차코리",
       "zh-CN": "壶小象"
     },
     "SortingKey": {
@@ -4271,6 +4359,7 @@
       "en": "Direhowl",
       "fr": "Direhowl",
       "ja": "ガウルフ",
+      "ko": "다크울프",
       "zh-CN": "猎狼"
     },
     "SortingKey": {
@@ -4320,6 +4409,7 @@
       "en": "Maraith",
       "fr": "Maraith",
       "ja": "ソルレイス",
+      "ko": "고스호스",
       "zh-CN": "噬魂兽"
     },
     "SortingKey": {
@@ -4370,6 +4460,7 @@
       "en": "Gildane",
       "fr": "Gildane",
       "ja": "キンガゼル",
+      "ko": "러시골드",
       "zh-CN": "金驰兽"
     },
     "SortingKey": {
@@ -4418,6 +4509,7 @@
       "en": "Gorirat",
       "fr": "Gorirat",
       "ja": "ゴリレイジ",
+      "ko": "고릴레이지",
       "zh-CN": "铁拳猿"
     },
     "SortingKey": {
@@ -4467,6 +4559,7 @@
       "en": "Gorirat Terra",
       "fr": "Gorirat Terra",
       "ja": "ゴリガイア",
+      "ko": "고릴가이아",
       "zh-CN": "石掌猿"
     },
     "SortingKey": {
@@ -4506,6 +4599,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -4555,6 +4649,7 @@
       "en": "Mammorest",
       "fr": "Mammorest",
       "ja": "グランモス",
+      "ko": "그린모스",
       "zh-CN": "森猛犸"
     },
     "SortingKey": {
@@ -4604,6 +4699,7 @@
       "en": "Mammorest Cryst",
       "fr": "Mammorest Cryst",
       "ja": "ブリザモス",
+      "ko": "블리자모스",
       "zh-CN": "雪猛犸"
     },
     "SortingKey": {
@@ -4652,6 +4748,7 @@
       "en": "Mossanda",
       "fr": "Mossanda",
       "ja": "ササゾー",
+      "ko": "풀바오",
       "zh-CN": "叶胖达"
     },
     "SortingKey": {
@@ -4700,6 +4797,7 @@
       "en": "Mossanda Lux",
       "fr": "Mossanda Lux",
       "ja": "ライゾー",
+      "ko": "라이바오",
       "zh-CN": "雷胖达"
     },
     "SortingKey": {
@@ -4749,6 +4847,7 @@
       "en": "Verdash",
       "fr": "Verdash",
       "ja": "ラベロット",
+      "ko": "초토리",
       "zh-CN": "踏春兔"
     },
     "SortingKey": {
@@ -4797,6 +4896,7 @@
       "en": "Helzephyr",
       "fr": "Helzephyr",
       "ja": "ヘルガルダ",
+      "ko": "헬가루다",
       "zh-CN": "雷冥鸟"
     },
     "SortingKey": {
@@ -4846,6 +4946,7 @@
       "en": "Helzephyr Lux",
       "fr": "Helzephyr Lux",
       "ja": "ライガルダ",
+      "ko": "라이가루다",
       "zh-CN": "雷鸣鸟"
     },
     "SortingKey": {
@@ -4894,6 +4995,7 @@
       "en": "Nitewing",
       "fr": "Nitewing",
       "ja": "ホークウィン",
+      "ko": "나이트윙",
       "zh-CN": "疾风隼"
     },
     "SortingKey": {
@@ -4942,6 +5044,7 @@
       "en": "Jolthog",
       "fr": "Jolthog",
       "ja": "パチグリ",
+      "ko": "찌릿도치",
       "zh-CN": "电棘鼠"
     },
     "SortingKey": {
@@ -4990,6 +5093,7 @@
       "en": "Jolthog Cryst",
       "fr": "Jolthog Cryst",
       "ja": "コチグリ",
+      "ko": "코치도치",
       "zh-CN": "冰刺鼠"
     },
     "SortingKey": {
@@ -5039,6 +5143,7 @@
       "en": "Warsect",
       "fr": "Warsect",
       "ja": "グラクレス",
+      "ko": "장수벌레",
       "zh-CN": "铠格力斯"
     },
     "SortingKey": {
@@ -5087,6 +5192,7 @@
       "en": "Warsect Terra",
       "fr": "Warsect Terra",
       "ja": "ゴルクレス",
+      "ko": "금강벌레",
       "zh-CN": "格鲁力斯"
     },
     "SortingKey": {
@@ -5136,6 +5242,7 @@
       "en": "Faleris",
       "fr": "Faleris",
       "ja": "ホルス",
+      "ko": "호루스",
       "zh-CN": "荷鲁斯"
     },
     "SortingKey": {
@@ -5184,6 +5291,7 @@
       "en": "Reindrix",
       "fr": "Reindrix",
       "ja": "ツララジカ",
+      "ko": "얼음사슴",
       "zh-CN": "严冬鹿"
     },
     "SortingKey": {
@@ -5232,6 +5340,7 @@
       "en": "Foxcicle",
       "fr": "Foxcicle",
       "ja": "フブキツネ",
+      "ko": "빙호",
       "zh-CN": "吹雪狐"
     },
     "SortingKey": {
@@ -5282,6 +5391,7 @@
       "en": "Frostallion",
       "fr": "Frostallion",
       "ja": "グレイシャル",
+      "ko": "빙천마",
       "zh-CN": "唤冬兽"
     },
     "SortingKey": {
@@ -5333,6 +5443,7 @@
       "en": "Frostallion Noct",
       "fr": "Frostallion Noct",
       "ja": "グレイシャドウ",
+      "ko": "흑천마",
       "zh-CN": "唤夜兽"
     },
     "SortingKey": {
@@ -5383,6 +5494,7 @@
       "en": "Jetragon",
       "fr": "Jetragon",
       "ja": "ジェッドラン",
+      "ko": "제트래곤",
       "zh-CN": "空涡龙"
     },
     "SortingKey": {
@@ -5431,6 +5543,7 @@
       "en": "Kelpsea",
       "fr": "Kelpsea",
       "ja": "ケルピス",
+      "ko": "켈시",
       "zh-CN": "水灵儿"
     },
     "SortingKey": {
@@ -5479,6 +5592,7 @@
       "en": "Kelpsea Ignis",
       "fr": "Kelpsea Ignis",
       "ja": "マグピス",
+      "ko": "마그시",
       "zh-CN": "火灵儿"
     },
     "SortingKey": {
@@ -5527,6 +5641,7 @@
       "en": "Kingpaca",
       "fr": "Kingpaca",
       "ja": "アルパオー",
+      "ko": "킹파카",
       "zh-CN": "君王美露帕"
     },
     "SortingKey": {
@@ -5576,6 +5691,7 @@
       "en": "Kingpaca Cryst",
       "fr": "Kingpaca Cryst",
       "ja": "アオパオー",
+      "ko": "블루파카",
       "zh-CN": "冰帝美露帕"
     },
     "SortingKey": {
@@ -5625,6 +5741,7 @@
       "en": "Blazamut",
       "fr": "Blazamut",
       "ja": "ボルカイザー",
+      "ko": "마그마카이저",
       "zh-CN": "焰煌"
     },
     "SortingKey": {
@@ -5674,6 +5791,7 @@
       "en": "Blazamut Ryu",
       "fr": "Blazamut Ryu",
       "ja": "ボルドラゴ",
+      "ko": "마그마드라고",
       "zh-CN": "殁殃"
     },
     "SortingKey": {
@@ -5723,6 +5841,7 @@
       "en": "Univolt",
       "fr": "Univolt",
       "ja": "ライコーン",
+      "ko": "썬더콘",
       "zh-CN": "雷角马"
     },
     "SortingKey": {
@@ -5771,6 +5890,7 @@
       "en": "Univolt Cryst",
       "fr": "Univolt Cryst",
       "ja": "レイコーン",
+      "ko": "레이콘",
       "zh-CN": "凌角马"
     },
     "SortingKey": {
@@ -5819,6 +5939,7 @@
       "en": "Foxparks",
       "fr": "Foxparks",
       "ja": "キツネビ",
+      "ko": "파이호",
       "zh-CN": "火绒狐"
     },
     "SortingKey": {
@@ -5867,6 +5988,7 @@
       "en": "Flambelle",
       "fr": "Flambelle",
       "ja": "ラヴィ",
+      "ko": "라비",
       "zh-CN": "融焰娘"
     },
     "SortingKey": {
@@ -5916,6 +6038,7 @@
       "en": "Dumud",
       "fr": "Dumud",
       "ja": "トドドドン",
+      "ko": "도도롱",
       "zh-CN": "趴趴鲶"
     },
     "SortingKey": {
@@ -5965,6 +6088,7 @@
       "en": "Relaxaurus",
       "fr": "Relaxaurus",
       "ja": "ペコドン",
+      "ko": "헤로롱",
       "zh-CN": "佩克龙"
     },
     "SortingKey": {
@@ -6014,6 +6138,7 @@
       "en": "Relaxaurus Lux",
       "fr": "Relaxaurus Lux",
       "ja": "パリピドン",
+      "ko": "핑피롱",
       "zh-CN": "派克龙"
     },
     "SortingKey": {
@@ -6063,6 +6188,7 @@
       "en": "Lyleen",
       "fr": "Lyleen",
       "ja": "リリクイン",
+      "ko": "릴린",
       "zh-CN": "百合女王"
     },
     "SortingKey": {
@@ -6112,6 +6238,7 @@
       "en": "Lyleen Noct",
       "fr": "Lyleen Noct",
       "ja": "ルナクイン",
+      "ko": "루나린",
       "zh-CN": "黑月女王 "
     },
     "SortingKey": {
@@ -6160,6 +6287,7 @@
       "en": "Bristla",
       "fr": "Bristla",
       "ja": "イバラヒメ",
+      "ko": "가시공주",
       "zh-CN": "荊棘魔仙"
     },
     "SortingKey": {
@@ -6208,6 +6336,7 @@
       "en": "Leezpunk",
       "fr": "Leezpunk",
       "ja": "ダリザード",
+      "ko": "도마맨",
       "zh-CN": "朋克蜥"
     },
     "SortingKey": {
@@ -6256,6 +6385,7 @@
       "en": "Leezpunk Ignis",
       "fr": "Leezpunk Ignis",
       "ja": "チリザード",
+      "ko": "도화맨",
       "zh-CN": "热血蜥"
     },
     "SortingKey": {
@@ -6305,6 +6435,7 @@
       "en": "Blazehowl",
       "fr": "Blazehowl",
       "ja": "ゴクエンオ",
+      "ko": "만티파이어",
       "zh-CN": "狱焰王"
     },
     "SortingKey": {
@@ -6355,6 +6486,7 @@
       "en": "Blazehowl Noct",
       "fr": "Blazehowl Noct",
       "ja": "シンエンオ",
+      "ko": "만티녹턴",
       "zh-CN": "狱阎王"
     },
     "SortingKey": {
@@ -6403,6 +6535,7 @@
       "en": "Tanzee",
       "fr": "Tanzee",
       "ja": "エテッパ",
+      "ko": "몽지",
       "zh-CN": "新叶猿"
     },
     "SortingKey": {
@@ -6442,6 +6575,7 @@
       "en": "Tanzee",
       "fr": "Tanzee",
       "ja": "エテッパ",
+      "ko": "몽지",
       "zh-CN": "新叶猿"
     },
     "SortingKey": {
@@ -6490,6 +6624,7 @@
       "en": "Tanzee Ignis",
       "fr": "Tanzee Ignis",
       "ja": "カレッパ",
+      "ko": "몽화",
       "zh-CN": "秋叶猿"
     },
     "SortingKey": {
@@ -6538,6 +6673,7 @@
       "en": "Swee",
       "fr": "Swee",
       "ja": "コモップ",
+      "ko": "모프링",
       "zh-CN": "毛掸儿"
     },
     "SortingKey": {
@@ -6586,6 +6722,7 @@
       "en": "Sweepa",
       "fr": "Sweepa",
       "ja": "ドンモップ",
+      "ko": "모프킹",
       "zh-CN": "毛老爹"
     },
     "SortingKey": {
@@ -6634,6 +6771,7 @@
       "en": "Lunaris",
       "fr": "Lunaris",
       "ja": "ミステリア",
+      "ko": "루나리스",
       "zh-CN": "秘斯媞雅"
     },
     "SortingKey": {
@@ -6682,6 +6820,7 @@
       "en": "Grintale",
       "fr": "Grintale",
       "ja": "ニャンギマリ",
+      "ko": "소름냥이",
       "zh-CN": "笑魇猫"
     },
     "SortingKey": {
@@ -6730,6 +6869,7 @@
       "en": "Depresso",
       "fr": "Depresso",
       "ja": "ンダコアラ",
+      "ko": "뚱코알라",
       "zh-CN": "瞅什魔"
     },
     "SortingKey": {
@@ -6779,6 +6919,7 @@
       "en": "Killamari",
       "fr": "Killamari",
       "ja": "ヤミイカ",
+      "ko": "고스문",
       "zh-CN": "勾魂鱿"
     },
     "SortingKey": {
@@ -6827,6 +6968,7 @@
       "en": "Nox",
       "fr": "Nox",
       "ja": "ルナティ",
+      "ko": "루나티",
       "zh-CN": "露娜蒂"
     },
     "SortingKey": {
@@ -6876,6 +7018,7 @@
       "en": "Pengullet",
       "fr": "Pengullet",
       "ja": "ペンタマ",
+      "ko": "펭키",
       "zh-CN": "企丸丸"
     },
     "SortingKey": {
@@ -6924,6 +7067,7 @@
       "en": "Cattiva",
       "fr": "Cattiva",
       "ja": "ツッパニャン",
+      "ko": "까부냥",
       "zh-CN": "捣蛋猫"
     },
     "SortingKey": {
@@ -6963,6 +7107,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -7013,6 +7158,7 @@
       "en": "Lovander",
       "fr": "Lovander",
       "ja": "ラブマンダー",
+      "ko": "핑크뇽",
       "zh-CN": "博爱蜥"
     },
     "SortingKey": {
@@ -7061,6 +7207,7 @@
       "en": "Ribbuny",
       "fr": "Ribbuny",
       "ja": "ヒメウサ",
+      "ko": "핑토",
       "zh-CN": "姬小兔"
     },
     "SortingKey": {
@@ -7110,6 +7257,7 @@
       "en": "Gumoss",
       "fr": "Gumoss",
       "ja": "ナエモチ",
+      "ko": "초롱이",
       "zh-CN": "叶泥泥"
     },
     "SortingKey": {
@@ -7159,6 +7307,7 @@
       "en": "Gumoss",
       "fr": "Gumoss",
       "ja": "ナエモチ",
+      "ko": "초롱이",
       "zh-CN": "叶泥泥"
     },
     "SortingKey": {
@@ -7207,6 +7356,7 @@
       "en": "Elizabee",
       "fr": "Elizabee",
       "ja": "クインビーナ",
+      "ko": "퀸비나",
       "zh-CN": "女皇蜂"
     },
     "SortingKey": {
@@ -7255,6 +7405,7 @@
       "en": "Dazzi",
       "fr": "Dazzi",
       "ja": "カミナラシ",
+      "ko": "썬더키드",
       "zh-CN": "雷鸣童子"
     },
     "SortingKey": {
@@ -7304,6 +7455,7 @@
       "en": "Ragnahawk",
       "fr": "Ragnahawk",
       "ja": "イグニクス",
+      "ko": "적토조",
       "zh-CN": "燧火鸟"
     },
     "SortingKey": {
@@ -7352,6 +7504,7 @@
       "en": "Robinquill",
       "fr": "Robinquill",
       "ja": "フェザーロ",
+      "ko": "로빈몽",
       "zh-CN": "羽箭射手"
     },
     "SortingKey": {
@@ -7401,6 +7554,7 @@
       "en": "Robinquill Terra",
       "fr": "Robinquill Terra",
       "ja": "サンドロ",
+      "ko": "샌드몽",
       "zh-CN": "山岳射手"
     },
     "SortingKey": {
@@ -7449,6 +7603,7 @@
       "en": "Bushi",
       "fr": "Bushi",
       "ja": "ツジギリ",
+      "ko": "불무사",
       "zh-CN": "浪刃武士"
     },
     "SortingKey": {
@@ -7499,6 +7654,7 @@
       "en": "Bushi Noct",
       "fr": "Bushi Noct",
       "ja": "ヤミウチ",
+      "ko": "어둠무사",
       "zh-CN": "鬼刃武士"
     },
     "SortingKey": {
@@ -7549,6 +7705,7 @@
       "en": "Paladius",
       "fr": "Paladius",
       "ja": "セイントール",
+      "ko": "팔라디우스",
       "zh-CN": "圣光骑士"
     },
     "SortingKey": {
@@ -7597,6 +7754,7 @@
       "en": "Broncherry",
       "fr": "Broncherry",
       "ja": "ラブラドン",
+      "ko": "라브라돈",
       "zh-CN": "连理龙"
     },
     "SortingKey": {
@@ -7647,6 +7805,7 @@
       "en": "Broncherry Aqua",
       "fr": "Broncherry Aqua",
       "ja": "スプラドン",
+      "ko": "스프라돈",
       "zh-CN": "海誓龙"
     },
     "SortingKey": {
@@ -7695,6 +7854,7 @@
       "en": "Surfent",
       "fr": "Surfent",
       "ja": "シーペント",
+      "ko": "씨무기",
       "zh-CN": "滑水蛇"
     },
     "SortingKey": {
@@ -7743,6 +7903,7 @@
       "en": "Surfent Terra",
       "fr": "Surfent Terra",
       "ja": "スナペント",
+      "ko": "샌무기",
       "zh-CN": "流沙蛇"
     },
     "SortingKey": {
@@ -7791,6 +7952,7 @@
       "en": "Gobfin",
       "fr": "Gobfin",
       "ja": "シャーキッド",
+      "ko": "샤키드",
       "zh-CN": "鲨小子"
     },
     "SortingKey": {
@@ -7839,6 +8001,7 @@
       "en": "Gobfin Ignis",
       "fr": "Gobfin Ignis",
       "ja": "シャーマンダー",
+      "ko": "샤맨더",
       "zh-CN": "红小鲨"
     },
     "SortingKey": {
@@ -7887,6 +8050,7 @@
       "en": "Lamball",
       "fr": "Lamball",
       "ja": "モコロン",
+      "ko": "도로롱",
       "zh-CN": "棉悠悠"
     },
     "SortingKey": {
@@ -7935,6 +8099,7 @@
       "en": "Quivern",
       "fr": "Quivern",
       "ja": "フェスキー",
+      "ko": "페스키",
       "zh-CN": "天羽龙"
     },
     "SortingKey": {
@@ -7984,6 +8149,7 @@
       "en": "Quivern Botan",
       "fr": "Quivern Botan",
       "ja": "フォレスキー",
+      "ko": "포레스키",
       "zh-CN": "翠羽龙"
     },
     "SortingKey": {
@@ -8033,6 +8199,7 @@
       "en": "Beegarde",
       "fr": "Beegarde",
       "ja": "ビーナイト",
+      "ko": "비나이트",
       "zh-CN": "骑士蜂"
     },
     "SortingKey": {
@@ -8081,6 +8248,7 @@
       "en": "Suzaku",
       "fr": "Suzaku",
       "ja": "スザク",
+      "ko": "주작",
       "zh-CN": "朱雀"
     },
     "SortingKey": {
@@ -8129,6 +8297,7 @@
       "en": "Suzaku Aqua",
       "fr": "Suzaku Aqua",
       "ja": "シヴァ",
+      "ko": "시바",
       "zh-CN": "清雀"
     },
     "SortingKey": {
@@ -8177,6 +8346,7 @@
       "en": "Woolipop",
       "fr": "Woolipop",
       "ja": "メリポップ",
+      "ko": "캔디쉽",
       "zh-CN": "棉花糖"
     },
     "SortingKey": {
@@ -8225,6 +8395,7 @@
       "en": "Woolipop Terra",
       "fr": "Woolipop Terra",
       "ja": "メリコロネ",
+      "ko": "비터쉽",
       "zh-CN": "可可棉花糖"
     },
     "SortingKey": {
@@ -8273,6 +8444,7 @@
       "en": "Turtacle",
       "fr": "Turtacle",
       "ja": "ヘルメッコ",
+      "ko": "헬터클",
       "zh-CN": "盔盔仔"
     },
     "SortingKey": {
@@ -8322,6 +8494,7 @@
       "en": "Beakon",
       "fr": "Beakon",
       "ja": "ライバード",
+      "ko": "라이버드",
       "zh-CN": "迅雷鸟"
     },
     "SortingKey": {
@@ -8370,6 +8543,7 @@
       "en": "Beakon Cryst",
       "fr": "Beakon Cryst",
       "ja": "チルバード",
+      "ko": "칠버드",
       "zh-CN": "疾霜鸟"
     },
     "SortingKey": {
@@ -8421,6 +8595,7 @@
       "en": "Rayhound",
       "fr": "Rayhound",
       "ja": "イヌズマ",
+      "ko": "썬도그",
       "zh-CN": "霹雳犬"
     },
     "SortingKey": {
@@ -8471,6 +8646,7 @@
       "en": "Rayhound Cryst",
       "fr": "Rayhound Cryst",
       "ja": "フリーズマ",
+      "ko": "프리도그",
       "zh-CN": "凛光犬"
     },
     "SortingKey": {
@@ -8521,6 +8697,7 @@
       "en": "Orserk",
       "fr": "Orserk",
       "ja": "ボルゼクス",
+      "ko": "볼젝스",
       "zh-CN": "波鲁杰克斯"
     },
     "SortingKey": {
@@ -8571,6 +8748,7 @@
       "en": "Jormuntide",
       "fr": "Jormuntide",
       "ja": "レヴィドラ",
+      "ko": "레비드라",
       "zh-CN": "覆海龙"
     },
     "SortingKey": {
@@ -8621,6 +8799,7 @@
       "en": "Jormuntide Ignis",
       "fr": "Jormuntide Ignis",
       "ja": "アグニドラ",
+      "ko": "아그니드라",
       "zh-CN": "腾炎龙"
     },
     "SortingKey": {
@@ -8669,6 +8848,7 @@
       "en": "Vaelet",
       "fr": "Vaelet",
       "ja": "ヴィオレッタ",
+      "ko": "비오레타",
       "zh-CN": "薇莉塔"
     },
     "SortingKey": {
@@ -8718,6 +8898,7 @@
       "en": "Reptyro",
       "fr": "Reptyro",
       "ja": "ボルカノン",
+      "ko": "볼카노",
       "zh-CN": "熔岩兽"
     },
     "SortingKey": {
@@ -8767,6 +8948,7 @@
       "en": "Reptyro Cryst",
       "fr": "Reptyro Cryst",
       "ja": "フロスカノン",
+      "ko": "프로스카노",
       "zh-CN": "寒霜兽"
     },
     "SortingKey": {
@@ -8806,6 +8988,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -8856,6 +9039,7 @@
       "en": "Chillet",
       "fr": "Chillet",
       "ja": "オコチョ",
+      "ko": "베비뇽",
       "zh-CN": "疾旋鼬"
     },
     "SortingKey": {
@@ -8905,6 +9089,7 @@
       "en": "Chillet Ignis",
       "fr": "Chillet Ignis",
       "ja": "モモチョ",
+      "ko": "천도뇽",
       "zh-CN": "桃旋鼬"
     },
     "SortingKey": {
@@ -8953,6 +9138,7 @@
       "en": "Loupmoon",
       "fr": "Loupmoon",
       "ja": "ツキカゲ",
+      "ko": "달서니",
       "zh-CN": "月镰魔"
     },
     "SortingKey": {
@@ -9001,6 +9187,7 @@
       "en": "Sibelyx",
       "fr": "Sibelyx",
       "ja": "シルキーヌ",
+      "ko": "실키누",
       "zh-CN": "绸笠蛾"
     },
     "SortingKey": {
@@ -9049,6 +9236,7 @@
       "en": "Sibelyx Primo",
       "fr": "Sibelyx Primo",
       "ja": "ソワレーヌ",
+      "ko": "수아레누",
       "zh-CN": "绢笠蛾"
     },
     "SortingKey": {
@@ -9098,6 +9286,7 @@
       "en": "Cryolinx",
       "fr": "Cryolinx",
       "ja": "ツンドラー",
+      "ko": "백랑이",
       "zh-CN": "冰棘兽"
     },
     "SortingKey": {
@@ -9146,6 +9335,7 @@
       "en": "Hangyu",
       "fr": "Hangyu",
       "ja": "シメナワ",
+      "ko": "건다리",
       "zh-CN": "吊缚灵"
     },
     "SortingKey": {
@@ -9194,6 +9384,7 @@
       "en": "Hangyu Cryst",
       "fr": "Hangyu Cryst",
       "ja": "オバケナワ",
+      "ko": "유령건다리",
       "zh-CN": "冰缚灵"
     },
     "SortingKey": {
@@ -9242,6 +9433,7 @@
       "en": "Hoocrates",
       "fr": "Hoocrates",
       "ja": "ホウロック",
+      "ko": "아테노울",
       "zh-CN": "啼卡尔"
     },
     "SortingKey": {
@@ -9290,6 +9482,7 @@
       "en": "Cremis",
       "fr": "Cremis",
       "ja": "ミルフィー",
+      "ko": "밀피",
       "zh-CN": "米露菲"
     },
     "SortingKey": {
@@ -9339,6 +9532,7 @@
       "en": "Wumpo",
       "fr": "Wumpo",
       "ja": "ヒエティ",
+      "ko": "움포",
       "zh-CN": "白绒雪怪"
     },
     "SortingKey": {
@@ -9388,6 +9582,7 @@
       "en": "Wumpo Botan",
       "fr": "Wumpo Botan",
       "ja": "トロピティ",
+      "ko": "움피티",
       "zh-CN": "绿苔绒怪"
     },
     "SortingKey": {
@@ -9436,6 +9631,7 @@
       "en": "Bellanoir",
       "fr": "Bellanoir",
       "ja": "ベラノワール",
+      "ko": "벨라누아르",
       "zh-CN": "贝菈诺娃"
     },
     "SortingKey": {
@@ -9484,6 +9680,7 @@
       "en": "Bellanoir Libero",
       "fr": "Bellanoir Libero",
       "ja": "ベラルージュ",
+      "ko": "벨라루주",
       "zh-CN": "贝菈露洁"
     },
     "SortingKey": {
@@ -9534,6 +9731,7 @@
       "en": "Selyne",
       "fr": "Selyne",
       "ja": "セレムーン",
+      "ko": "셀레문",
       "zh-CN": "辉月伊"
     },
     "SortingKey": {
@@ -9582,6 +9780,7 @@
       "en": "Croajiro",
       "fr": "Croajiro",
       "ja": "ブシガエル",
+      "ko": "칼구리",
       "zh-CN": "武道蛙"
     },
     "SortingKey": {
@@ -9630,6 +9829,7 @@
       "en": "Lullu",
       "fr": "Lullu",
       "ja": "フワフラワ",
+      "ko": "뷰티플라워",
       "zh-CN": "春彩娘"
     },
     "SortingKey": {
@@ -9678,6 +9878,7 @@
       "en": "Shroomer",
       "fr": "Shroomer",
       "ja": "キノッポ",
+      "ko": "머쉬드래곤",
       "zh-CN": "菇咚"
     },
     "SortingKey": {
@@ -9727,6 +9928,7 @@
       "en": "Shroomer Noct",
       "fr": "Shroomer Noct",
       "ja": "ベノッポ",
+      "ko": "머쉬포이즌",
       "zh-CN": "菇波"
     },
     "SortingKey": {
@@ -9775,6 +9977,7 @@
       "en": "Kikit",
       "fr": "Kikit",
       "ja": "コロマジロ",
+      "ko": "꼬마딜로",
       "zh-CN": "球犰"
     },
     "SortingKey": {
@@ -9823,6 +10026,7 @@
       "en": "Dazemu",
       "fr": "Dazemu",
       "ja": "トリステップ",
+      "ko": "페더치프",
       "zh-CN": "战冠雀"
     },
     "SortingKey": {
@@ -9872,6 +10076,7 @@
       "en": "Prixter",
       "fr": "Prixter",
       "ja": "ブッサソリ",
+      "ko": "스콜피어스",
       "zh-CN": "蛊刺妖"
     },
     "SortingKey": {
@@ -9921,6 +10126,7 @@
       "en": "Prixter Lux",
       "fr": "Prixter Lux",
       "ja": "ブッサンダー",
+      "ko": "썬더피어스",
       "zh-CN": "电针妖"
     },
     "SortingKey": {
@@ -9969,6 +10175,7 @@
       "en": "Knocklem",
       "fr": "Knocklem",
       "ja": "テラナイト",
+      "ko": "테라나이트",
       "zh-CN": "泰锋"
     },
     "SortingKey": {
@@ -10017,6 +10224,7 @@
       "en": "Knocklem Ignis",
       "fr": "Knocklem Ignis",
       "ja": "マグナイト",
+      "ko": "마그나이트",
       "zh-CN": "丹烽"
     },
     "SortingKey": {
@@ -10066,6 +10274,7 @@
       "en": "Sootseer",
       "fr": "Sootseer",
       "ja": "オドロクロ",
+      "ko": "유령초",
       "zh-CN": "恐炬灵"
     },
     "SortingKey": {
@@ -10116,6 +10325,7 @@
       "en": "Yakumo",
       "fr": "Yakumo",
       "ja": "ヤクモマル",
+      "ko": "둥실해치",
       "zh-CN": "八云犬"
     },
     "SortingKey": {
@@ -10164,6 +10374,7 @@
       "en": "Dogen",
       "fr": "Dogen",
       "ja": "ワンフー",
+      "ko": "시푸도그",
       "zh-CN": "汪宗师"
     },
     "SortingKey": {
@@ -10212,6 +10423,7 @@
       "en": "Mimog",
       "fr": "Mimog",
       "ja": "ミミドッグ",
+      "ko": "따라하개",
       "zh-CN": "旺财"
     },
     "SortingKey": {
@@ -10260,6 +10472,7 @@
       "en": "Xenovader",
       "fr": "Xenovader",
       "ja": "ゼノベーダ",
+      "ko": "제노베이더",
       "zh-CN": "杰诺贝达"
     },
     "SortingKey": {
@@ -10308,6 +10521,7 @@
       "en": "Xenogard",
       "fr": "Xenogard",
       "ja": "ゼノルーダ",
+      "ko": "제노루더",
       "zh-CN": "杰诺路达"
     },
     "SortingKey": {
@@ -10357,6 +10571,7 @@
       "en": "Moldron",
       "fr": "Moldron",
       "ja": "マグマンダー",
+      "ko": "마그맨더",
       "zh-CN": "流焰龙"
     },
     "SortingKey": {
@@ -10406,6 +10621,7 @@
       "en": "Moldron Cryst",
       "fr": "Moldron Cryst",
       "ja": "ブリザンダー",
+      "ko": "블리잰더",
       "zh-CN": "川霜龙"
     },
     "SortingKey": {
@@ -10455,6 +10671,7 @@
       "en": "Xenolord",
       "fr": "Xenolord",
       "ja": "ゼノドラン",
+      "ko": "제노드란",
       "zh-CN": "杰诺多兰"
     },
     "SortingKey": {
@@ -10503,6 +10720,7 @@
       "en": "Nitemary",
       "fr": "Nitemary",
       "ja": "ナイトメアリ",
+      "ko": "코쉬마리",
       "zh-CN": "魅爱莉"
     },
     "SortingKey": {
@@ -10551,6 +10769,7 @@
       "en": "Nitemary Botan",
       "fr": "Nitemary Botan",
       "ja": "グラスメアリ",
+      "ko": "에브마리",
       "zh-CN": "碧艾莉"
     },
     "SortingKey": {
@@ -10600,6 +10819,7 @@
       "en": "Starryon",
       "fr": "Starryon",
       "ja": "ナイトロット",
+      "ko": "나이트롯",
       "zh-CN": "夜冥驹"
     },
     "SortingKey": {
@@ -10648,6 +10868,7 @@
       "en": "Starryon Primo",
       "fr": "Starryon Primo",
       "ja": "ライトロット",
+      "ko": "라이트롯",
       "zh-CN": "日耀驹"
     },
     "SortingKey": {
@@ -10696,6 +10917,7 @@
       "en": "Silvegis",
       "fr": "Silvegis",
       "ja": "アイギルガ",
+      "ko": "드라이지스",
       "zh-CN": "艾基鲁迦"
     },
     "SortingKey": {
@@ -10746,6 +10968,7 @@
       "en": "Smokie",
       "fr": "Smokie",
       "ja": "クロマル",
+      "ko": "껌댕이",
       "zh-CN": "墨丸"
     },
     "SortingKey": {
@@ -10796,6 +11019,7 @@
       "en": "Smokie Cryst",
       "fr": "Smokie Cryst",
       "ja": "フユマル",
+      "ko": "눈댕이",
       "zh-CN": "冬丸"
     },
     "SortingKey": {
@@ -10844,6 +11068,7 @@
       "en": "Celesdir",
       "fr": "Celesdir",
       "ja": "セレスディア",
+      "ko": "셀레스디얼",
       "zh-CN": "净世鹿"
     },
     "SortingKey": {
@@ -10892,6 +11117,7 @@
       "en": "Celesdir Noct",
       "fr": "Celesdir Noct",
       "ja": "コスモディア",
+      "ko": "코스모디얼",
       "zh-CN": "织夜鹿"
     },
     "SortingKey": {
@@ -10940,6 +11166,7 @@
       "en": "Panthalus",
       "fr": "Panthalus",
       "ja": "グランジーラ",
+      "ko": "그랜웰",
       "zh-CN": "奥沧鲸"
     },
     "SortingKey": {
@@ -10988,6 +11215,7 @@
       "en": "Omascul",
       "fr": "Omascul",
       "ja": "オーメン",
+      "ko": "홀로페이스",
       "zh-CN": "面惧"
     },
     "SortingKey": {
@@ -11036,6 +11264,7 @@
       "en": "Hoodle",
       "fr": "Hoodle",
       "ja": "フードール",
+      "ko": "후드림",
       "zh-CN": "兜兜灵"
     },
     "SortingKey": {
@@ -11084,6 +11313,7 @@
       "en": "Sekhmet",
       "fr": "Sekhmet",
       "ja": "セクメト",
+      "ko": "세크메트",
       "zh-CN": "塞赫麦特"
     },
     "SortingKey": {
@@ -11132,6 +11362,7 @@
       "en": "Slowatt",
       "fr": "Slowatt",
       "ja": "ノンビリリ",
+      "ko": "밍기저드",
       "zh-CN": "电懒懒"
     },
     "SortingKey": {
@@ -11180,6 +11411,7 @@
       "en": "Splatterina",
       "fr": "Splatterina",
       "ja": "ヤンデリナ",
+      "ko": "얀데리나",
       "zh-CN": "幽恋娜"
     },
     "SortingKey": {
@@ -11228,6 +11460,7 @@
       "en": "Tarantriss",
       "fr": "Tarantriss",
       "ja": "モモンチュラ",
+      "ko": "스틱툴라",
       "zh-CN": "桃蛛娘"
     },
     "SortingKey": {
@@ -11277,6 +11510,7 @@
       "en": "Azurmane",
       "fr": "Azurmane",
       "ja": "オーマサンダ",
+      "ko": "썬더호스",
       "zh-CN": "驭雷马"
     },
     "SortingKey": {
@@ -11325,6 +11559,7 @@
       "en": "Pierdon",
       "fr": "Pierdon",
       "ja": "ジオルドン",
+      "ko": "지오르돈",
       "zh-CN": "磐峰兽"
     },
     "SortingKey": {
@@ -11373,6 +11608,7 @@
       "en": "Pierdon Cryst",
       "fr": "Pierdon Cryst",
       "ja": "フロスドン",
+      "ko": "프로스돈",
       "zh-CN": "寒峰兽"
     },
     "SortingKey": {
@@ -11422,6 +11658,7 @@
       "en": "Gloopie",
       "fr": "Gloopie",
       "ja": "ヒメンダコ",
+      "ko": "옥토비아",
       "zh-CN": "墨沫姬"
     },
     "SortingKey": {
@@ -11471,6 +11708,7 @@
       "en": "Gloopie Primo",
       "fr": "Gloopie Primo",
       "ja": "ユメンダコ",
+      "ko": "옥토넬라",
       "zh-CN": "梦沫姬"
     },
     "SortingKey": {
@@ -11520,6 +11758,7 @@
       "en": "Whalaska",
       "fr": "Whalaska",
       "ja": "コゴエール",
+      "ko": "빙등고래",
       "zh-CN": "凉晶鲸"
     },
     "SortingKey": {
@@ -11568,6 +11807,7 @@
       "en": "Jelliette",
       "fr": "Jelliette",
       "ja": "クララン",
+      "ko": "플루미",
       "zh-CN": "海月仙"
     },
     "SortingKey": {
@@ -11616,6 +11856,7 @@
       "en": "Caprity Noct",
       "fr": "Caprity Noct",
       "ja": "ベノゴート",
+      "ko": "베노고트",
       "zh-CN": "郁木羊"
     },
     "SortingKey": {
@@ -11664,6 +11905,7 @@
       "en": "Foxparks Cryst",
       "fr": "Foxparks Cryst",
       "ja": "ユキツネ",
+      "ko": "아이호",
       "zh-CN": "雪绒狐"
     },
     "SortingKey": {
@@ -11713,6 +11955,7 @@
       "en": "Dazzi Noct",
       "fr": "Dazzi Noct",
       "ja": "ヤミナラシ",
+      "ko": "다크키드",
       "zh-CN": "天阴童子"
     },
     "SortingKey": {
@@ -11762,6 +12005,7 @@
       "en": "Bastigor",
       "fr": "Bastigor",
       "ja": "ヒョウガオー",
+      "ko": "빙호우거",
       "zh-CN": "霜牙王"
     },
     "SortingKey": {
@@ -11810,6 +12054,7 @@
       "en": "Loupmoon Cryst",
       "fr": "Loupmoon Cryst",
       "ja": "ユキカゲ",
+      "ko": "얼서니",
       "zh-CN": "霜镰魔"
     },
     "SortingKey": {
@@ -11859,6 +12104,7 @@
       "en": "Cryolinx Terra",
       "fr": "Cryolinx Terra",
       "ja": "グランドラー",
+      "ko": "토랑이",
       "zh-CN": "金棘兽"
     },
     "SortingKey": {
@@ -11907,6 +12153,7 @@
       "en": "Faleris Aqua",
       "fr": "Faleris Aqua",
       "ja": "イシス",
+      "ko": "이시스",
       "zh-CN": "伊西斯"
     },
     "SortingKey": {
@@ -11955,6 +12202,7 @@
       "en": "Fenglope Lux",
       "fr": "Fenglope Lux",
       "ja": "ムラサメ",
+      "ko": "볼트디어",
       "zh-CN": "雷隐鹿"
     },
     "SortingKey": {
@@ -12005,6 +12253,7 @@
       "en": "Kitsun Noct",
       "fr": "Kitsun Noct",
       "ja": "カゲヌイ",
+      "ko": "음이리",
       "zh-CN": "幽焰狼"
     },
     "SortingKey": {
@@ -12053,6 +12302,7 @@
       "en": "Ribbuny Botan",
       "fr": "Ribbuny Botan",
       "ja": "ヨモギウサ",
+      "ko": "그래토",
       "zh-CN": "艾小兔"
     },
     "SortingKey": {
@@ -12101,6 +12351,7 @@
       "en": "Venusa",
       "fr": "Venusa",
       "ja": "メドゥーナ",
+      "ko": "메두나",
       "zh-CN": "梅杜娜"
     },
     "SortingKey": {
@@ -12150,6 +12401,7 @@
       "en": "Ghangler",
       "fr": "Ghangler",
       "ja": "アンドーン",
+      "ko": "빛초롱",
       "zh-CN": "冥灯鱼"
     },
     "SortingKey": {
@@ -12198,6 +12450,7 @@
       "en": "Icelyn",
       "fr": "Icelyn",
       "ja": "チルウィッチ",
+      "ko": "칠위치",
       "zh-CN": "冰姬灵"
     },
     "SortingKey": {
@@ -12246,6 +12499,7 @@
       "en": "Dupin",
       "fr": "Dupin",
       "ja": "ラピエール",
+      "ko": "라피에르",
       "zh-CN": "拉比耶尔"
     },
     "SortingKey": {
@@ -12294,6 +12548,7 @@
       "en": "Hartalis",
       "fr": "Hartalis",
       "ja": "レジェンディア",
+      "ko": "레젠디얼",
       "zh-CN": "默世鹿"
     },
     "SortingKey": {
@@ -12343,6 +12598,7 @@
       "en": "Herbil",
       "fr": "Herbil",
       "ja": "モモンパ",
+      "ko": "모몽파",
       "zh-CN": "达鼠泥"
     },
     "SortingKey": {
@@ -12391,6 +12647,7 @@
       "en": "Snugloo",
       "fr": "Snugloo",
       "ja": "ユキボウ",
+      "ko": "설뭉치",
       "zh-CN": "雪墩墩"
     },
     "SortingKey": {
@@ -12440,6 +12697,7 @@
       "en": "Munchill",
       "fr": "Munchill",
       "ja": "コチワニ",
+      "ko": "크로꽁",
       "zh-CN": "肚肚鳄"
     },
     "SortingKey": {
@@ -12488,6 +12746,7 @@
       "en": "Needoll",
       "fr": "Needoll",
       "ja": "ハグミー",
+      "ko": "허그미",
       "zh-CN": "球抱苞"
     },
     "SortingKey": {
@@ -12537,6 +12796,7 @@
       "en": "Needoll Noct",
       "fr": "Needoll Noct",
       "ja": "ハグユー",
+      "ko": "허그유",
       "zh-CN": "妖抱苞"
     },
     "SortingKey": {
@@ -12585,6 +12845,7 @@
       "en": "Mycora",
       "fr": "Mycora",
       "ja": "マシュリー",
+      "ko": "머슐리",
       "zh-CN": "红菇娘"
     },
     "SortingKey": {
@@ -12633,6 +12894,7 @@
       "en": "Finsider",
       "fr": "Finsider",
       "ja": "ガブルミ",
+      "ko": "무상이",
       "zh-CN": "布偶鲨"
     },
     "SortingKey": {
@@ -12681,6 +12943,7 @@
       "en": "Flaracle",
       "fr": "Flaracle",
       "ja": "センコ",
+      "ko": "센코",
       "zh-CN": "昭炎狐"
     },
     "SortingKey": {
@@ -12730,6 +12993,7 @@
       "en": "Polapup",
       "fr": "Polapup",
       "ja": "バニザラシ",
+      "ko": "크리범",
       "zh-CN": "香草豹冰"
     },
     "SortingKey": {
@@ -12779,6 +13043,7 @@
       "en": "Polapup Terra",
       "fr": "Polapup Terra",
       "ja": "チョコザラシ",
+      "ko": "초코범",
       "zh-CN": "巧克力豹冰"
     },
     "SortingKey": {
@@ -12828,6 +13093,7 @@
       "en": "Clovee",
       "fr": "Clovee",
       "ja": "ポワワ",
+      "ko": "브루밍",
       "zh-CN": "幸叶茸"
     },
     "SortingKey": {
@@ -12877,6 +13143,7 @@
       "en": "Puffolt",
       "fr": "Puffolt",
       "ja": "パチマル",
+      "ko": "짜리링",
       "zh-CN": "电汪汪"
     },
     "SortingKey": {
@@ -12925,6 +13192,7 @@
       "en": "Wispaw",
       "fr": "Wispaw",
       "ja": "ニャンシー",
+      "ko": "냥시",
       "zh-CN": "念影喵"
     },
     "SortingKey": {
@@ -12973,6 +13241,7 @@
       "en": "Roujay",
       "fr": "Roujay",
       "ja": "アルセーヴ",
+      "ko": "아르셉",
       "zh-CN": "盗影鸦"
     },
     "SortingKey": {
@@ -13021,6 +13290,7 @@
       "en": "Bakemi",
       "fr": "Bakemi",
       "ja": "ウラミィ",
+      "ko": "우라미",
       "zh-CN": "吓丝妮"
     },
     "SortingKey": {
@@ -13060,6 +13330,7 @@
       "en": "BOSS_KingCrab",
       "fr": "BOSS_KingCrab",
       "ja": "BOSS_KingCrab",
+      "ko": "BOSS_KingCrab",
       "zh-CN": "BOSS_KingCrab"
     },
     "SortingKey": {
@@ -13109,6 +13380,7 @@
       "en": "Braloha",
       "fr": "Braloha",
       "ja": "トコナッツ",
+      "ko": "풀레시오",
       "zh-CN": "梁叶龙"
     },
     "SortingKey": {
@@ -13157,6 +13429,7 @@
       "en": "Palumba",
       "fr": "Palumba",
       "ja": "ココヤンバ",
+      "ko": "트로조크",
       "zh-CN": "咕咕桑葩"
     },
     "SortingKey": {
@@ -13206,6 +13479,7 @@
       "en": "Dualith",
       "fr": "Dualith",
       "ja": "ウゴクゾー",
+      "ko": "스태초",
       "zh-CN": "双心岩傀"
     },
     "SortingKey": {
@@ -13255,6 +13529,7 @@
       "en": "Dualith Noct",
       "fr": "Dualith Noct",
       "ja": "ノロウゾー",
+      "ko": "스태그림",
       "zh-CN": "咒心岩傀"
     },
     "SortingKey": {
@@ -13303,6 +13578,7 @@
       "en": "Frostplume",
       "fr": "Frostplume",
       "ja": "クジャンナ",
+      "ko": "프리설라",
       "zh-CN": "白真雪雀"
     },
     "SortingKey": {
@@ -13351,6 +13627,7 @@
       "en": "Tetroise ",
       "fr": "Tetroise ",
       "ja": "オモシガメ",
+      "ko": "누름북",
       "zh-CN": "重岩龟"
     },
     "SortingKey": {
@@ -13399,6 +13676,7 @@
       "en": "Tetroise Primo",
       "fr": "Tetroise Primo",
       "ja": "オシロガメ",
+      "ko": "성채북",
       "zh-CN": "净岩龟"
     },
     "SortingKey": {
@@ -13447,6 +13725,7 @@
       "en": "Valentail",
       "fr": "Valentail",
       "ja": "ニャルル",
+      "ko": "냐를르",
       "zh-CN": "喵璐璐"
     },
     "SortingKey": {
@@ -13496,6 +13775,7 @@
       "en": "Jellroy",
       "fr": "Jellroy",
       "ja": "ユララン",
+      "ko": "흘루미",
       "zh-CN": "海月灵"
     },
     "SortingKey": {
@@ -13544,6 +13824,7 @@
       "en": "Dynamoff",
       "fr": "Dynamoff",
       "ja": "ダイナモフ",
+      "ko": "뇌운조",
       "zh-CN": "雷云鹫"
     },
     "SortingKey": {
@@ -13592,6 +13873,7 @@
       "en": "Wistella",
       "fr": "Wistella",
       "ja": "ホシノコ",
+      "ko": "달보미",
       "zh-CN": "缀夜星"
     },
     "SortingKey": {
@@ -13641,6 +13923,7 @@
       "en": "Pupperai",
       "fr": "Pupperai",
       "ja": "ポチムネ",
+      "ko": "솔바둑",
       "zh-CN": "宗铭丸"
     },
     "SortingKey": {
@@ -13690,6 +13973,7 @@
       "en": "Neptilius",
       "fr": "Neptilius",
       "ja": "ネプティオス",
+      "ko": "넵티오스",
       "zh-CN": "海皇鲸"
     },
     "SortingKey": {
@@ -13738,6 +14022,7 @@
       "en": "Skutlass",
       "fr": "Skutlass",
       "ja": "オオタチウオ",
+      "ko": "날검치",
       "zh-CN": "鞘刀鱼"
     },
     "SortingKey": {
@@ -13787,6 +14072,7 @@
       "en": "Skutlass Ignis",
       "fr": "Skutlass Ignis",
       "ja": "ヒノタチウオ",
+      "ko": "불검치",
       "zh-CN": "炼刃鱼"
     },
     "SortingKey": {
@@ -13836,6 +14122,7 @@
       "en": "Killamari Primo",
       "fr": "Killamari Primo",
       "ja": "ユメイカ",
+      "ko": "드리문",
       "zh-CN": "蚀魂鱿"
     },
     "SortingKey": {
@@ -13885,6 +14172,7 @@
       "en": "Pengullet Lux",
       "fr": "Pengullet Lux",
       "ja": "デンタマ",
+      "ko": "뎅키",
       "zh-CN": "闪丸丸"
     },
     "SortingKey": {
@@ -13934,6 +14222,7 @@
       "en": "Penking Lux",
       "fr": "Penking Lux",
       "ja": "ペンキッド",
+      "ko": "뎅킹",
       "zh-CN": "闪丸王"
     },
     "SortingKey": {
@@ -13983,6 +14272,7 @@
       "en": "Celaray Lux",
       "fr": "Celaray Lux",
       "ja": "エレカイト",
+      "ko": "일레카이트",
       "zh-CN": "雷米儿"
     },
     "SortingKey": {
@@ -14032,6 +14322,7 @@
       "en": "Fuack Ignis",
       "fr": "Fuack Ignis",
       "ja": "モモノスケ",
+      "ko": "적부리",
       "zh-CN": "热浪鸭"
     },
     "SortingKey": {
@@ -14081,6 +14372,7 @@
       "en": "Dumud Gild",
       "fr": "Dumud Gild",
       "ja": "ゴルドドン",
+      "ko": "골도롱",
       "zh-CN": "梆梆鲶"
     },
     "SortingKey": {
@@ -14130,6 +14422,7 @@
       "en": "Turtacle Terra",
       "fr": "Turtacle Terra",
       "ja": "ゴルメッコ",
+      "ko": "골터클",
       "zh-CN": "金盔仔"
     },
     "SortingKey": {
@@ -14179,6 +14472,7 @@
       "en": "Croajiro Noct",
       "fr": "Croajiro Noct",
       "ja": "ドスガエル",
+      "ko": "검구리",
       "zh-CN": "极道蛙"
     },
     "SortingKey": {
@@ -14228,6 +14522,7 @@
       "en": "Azurobe Cryst",
       "fr": "Azurobe Cryst",
       "ja": "アズルーナ",
+      "ko": "아주리나",
       "zh-CN": "碧月龙"
     },
     "SortingKey": {
@@ -14277,6 +14572,7 @@
       "en": "Whalaska Ignis",
       "fr": "Whalaska Ignis",
       "ja": "モモエール",
+      "ko": "홍등고래",
       "zh-CN": "桃晶鲸"
     },
     "SortingKey": {
@@ -14326,6 +14622,7 @@
       "en": "Ghangler Ignis",
       "fr": "Ghangler Ignis",
       "ja": "メラドーン",
+      "ko": "불초롱",
       "zh-CN": "炙灯鱼"
     },
     "SortingKey": {
@@ -14375,6 +14672,7 @@
       "en": "Finsider Ignis",
       "fr": "Finsider Ignis",
       "ja": "ヒグルミ",
+      "ko": "염상이",
       "zh-CN": "粉粉布偶鲨"
     },
     "SortingKey": {
@@ -14424,6 +14722,7 @@
       "en": "Gildra",
       "fr": "Gildra",
       "ja": "ヨミーラ",
+      "ko": "요미이라",
       "zh-CN": "缚乃伊"
     },
     "SortingKey": {
@@ -14472,6 +14771,7 @@
       "en": "Solmora",
       "fr": "Solmora",
       "ja": "オーマンボ",
+      "ko": "킹복치",
       "zh-CN": "曼波王"
     },
     "SortingKey": {
@@ -14521,6 +14821,7 @@
       "en": "Solmora Lux",
       "fr": "Solmora Lux",
       "ja": "トノサマンボ",
+      "ko": "쇼군복치",
       "zh-CN": "曼波皇"
     },
     "SortingKey": {
@@ -14570,6 +14871,7 @@
       "en": "Solenne",
       "fr": "Solenne",
       "ja": "モノクローナ",
+      "ko": "모노크로나",
       "zh-CN": "墨罗娜"
     },
     "SortingKey": {
@@ -14618,6 +14920,7 @@
       "en": "Snock",
       "fr": "Snock",
       "ja": "デンツム",
+      "ko": "전팽이",
       "zh-CN": "电涡蜗"
     },
     "SortingKey": {
@@ -14657,6 +14960,7 @@
       "en": "Snock",
       "fr": "Snock",
       "ja": "デンツム",
+      "ko": "전팽이",
       "zh-CN": "电涡蜗"
     },
     "SortingKey": {
@@ -14706,6 +15010,7 @@
       "en": "Snock Lux",
       "fr": "Snock Lux",
       "ja": "ドンツム",
+      "ko": "돌팽이",
       "zh-CN": "金涡蜗"
     },
     "SortingKey": {
@@ -14755,6 +15060,7 @@
       "en": "Loomen",
       "fr": "Loomen",
       "ja": "ヴィランタン",
+      "ko": "뷔랜턴",
       "zh-CN": "妖焰灯"
     },
     "SortingKey": {
@@ -14803,6 +15109,7 @@
       "en": "Bulldosu",
       "fr": "Bulldosu",
       "ja": "ドスコイヌ",
+      "ko": "와르차차",
       "zh-CN": "力士獒"
     },
     "SortingKey": {
@@ -14851,6 +15158,7 @@
       "en": "Carnibora",
       "fr": "Carnibora",
       "ja": "カプリリス",
+      "ko": "카프릴리스",
       "zh-CN": "颚莉丝"
     },
     "SortingKey": {
@@ -14890,6 +15198,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -14930,6 +15239,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -14978,6 +15288,7 @@
       "en": "Muffly",
       "fr": "Muffly",
       "ja": "モコチッチ",
+      "ko": "솜눈이",
       "zh-CN": "雪绵啾"
     },
     "SortingKey": {
@@ -15017,6 +15328,7 @@
       "en": "BOSS_FrozenBear",
       "fr": "BOSS_FrozenBear",
       "ja": "BOSS_FrozenBear",
+      "ko": "BOSS_FrozenBear",
       "zh-CN": "BOSS_FrozenBear"
     },
     "SortingKey": {
@@ -15065,6 +15377,7 @@
       "en": "Souffline",
       "fr": "Souffline",
       "ja": "ポポフィア",
+      "ko": "퍼프피아",
       "zh-CN": "蒲蒲飞芽"
     },
     "SortingKey": {
@@ -15105,6 +15418,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -15153,6 +15467,7 @@
       "en": "Amione",
       "fr": "Amione",
       "ja": "リオリネ",
+      "ko": "리오리네",
       "zh-CN": "莉欧·莉涅"
     },
     "SortingKey": {
@@ -15202,6 +15517,7 @@
       "en": "Majex",
       "fr": "Majex",
       "ja": "マジョルナ",
+      "ko": "마조리나",
       "zh-CN": "紫狐娇"
     },
     "SortingKey": {
@@ -15242,6 +15558,7 @@
       "en": "BOSS_IceVeilDragon",
       "fr": "BOSS_IceVeilDragon",
       "ja": "BOSS_IceVeilDragon",
+      "ko": "BOSS_IceVeilDragon",
       "zh-CN": "BOSS_IceVeilDragon"
     },
     "SortingKey": {
@@ -15290,6 +15607,7 @@
       "en": "Tropicaw",
       "fr": "Tropicaw",
       "ja": "フラペック",
+      "ko": "플라페크",
       "zh-CN": "大红呱"
     },
     "SortingKey": {
@@ -15339,6 +15657,7 @@
       "en": "Ophydia",
       "fr": "Ophydia",
       "ja": "ハナミズチ",
+      "ko": "연미르",
       "zh-CN": "沁莲龙"
     },
     "SortingKey": {
@@ -15388,6 +15707,7 @@
       "en": "Shaolong",
       "fr": "Shaolong",
       "ja": "シャオロン",
+      "ko": "샤오롱",
       "zh-CN": "霄龙"
     },
     "SortingKey": {
@@ -15427,6 +15747,7 @@
       "en": "BOSS_BlueWoolRabbit",
       "fr": "BOSS_BlueWoolRabbit",
       "ja": "BOSS_BlueWoolRabbit",
+      "ko": "BOSS_BlueWoolRabbit",
       "zh-CN": "BOSS_BlueWoolRabbit"
     },
     "SortingKey": {
@@ -15475,6 +15796,7 @@
       "en": "Leafan",
       "fr": "Leafan",
       "ja": "リーファン",
+      "ko": "리팡",
       "zh-CN": "莉芳"
     },
     "SortingKey": {
@@ -15523,6 +15845,7 @@
       "en": "Elgrove",
       "fr": "Elgrove",
       "ja": "モリタロス",
+      "ko": "그루타우",
       "zh-CN": "密林陶洛斯"
     },
     "SortingKey": {
@@ -15571,6 +15894,7 @@
       "en": "Elgrove Cryst",
       "fr": "Elgrove Cryst",
       "ja": "ユキタロス",
+      "ko": "블랑타우",
       "zh-CN": "冰峰陶洛斯"
     },
     "SortingKey": {
@@ -15611,6 +15935,7 @@
       "en": "BOSS_MonochromeMushroom",
       "fr": "BOSS_MonochromeMushroom",
       "ja": "BOSS_MonochromeMushroom",
+      "ko": "BOSS_MonochromeMushroom",
       "zh-CN": "BOSS_MonochromeMushroom"
     },
     "SortingKey": {
@@ -15659,6 +15984,7 @@
       "en": "Lapure",
       "fr": "Lapure",
       "ja": "ネモフィ",
+      "ko": "슬리비",
       "zh-CN": "兔绣袖"
     },
     "SortingKey": {
@@ -15698,6 +16024,7 @@
       "en": "BOSS_MedjedBird",
       "fr": "BOSS_MedjedBird",
       "ja": "BOSS_MedjedBird",
+      "ko": "BOSS_MedjedBird",
       "zh-CN": "BOSS_MedjedBird"
     },
     "SortingKey": {
@@ -15746,6 +16073,7 @@
       "en": "Silvance",
       "fr": "Silvance",
       "ja": "モスローン",
+      "ko": "모슬론",
       "zh-CN": "暮尘蛾"
     },
     "SortingKey": {
@@ -15795,6 +16123,7 @@
       "en": "Eidrolon",
       "fr": "Eidrolon",
       "ja": "レイバーン",
+      "ko": "레이번",
       "zh-CN": "灵曦龙"
     },
     "SortingKey": {
@@ -15844,6 +16173,7 @@
       "en": "Eidrolon Ignis",
       "fr": "Eidrolon Ignis",
       "ja": "ヘルバーン",
+      "ko": "헬번",
       "zh-CN": "狱熙龙"
     },
     "SortingKey": {
@@ -15893,6 +16223,7 @@
       "en": "Dandilord",
       "fr": "Dandilord",
       "ja": "ノクサージュ",
+      "ko": "녹사주",
       "zh-CN": "夜蔓爵"
     },
     "SortingKey": {
@@ -15930,6 +16261,7 @@
       "en": "Astralym",
       "fr": "Astralym",
       "ja": "ゼロヴァース",
+      "ko": "제로버스",
       "zh-CN": "枯星龙"
     },
     "SortingKey": {
@@ -15978,6 +16310,7 @@
       "en": "Renjishi",
       "fr": "Renjishi",
       "ja": "ゴウカブキ",
+      "ko": "업화무",
       "zh-CN": "燎火舞伶"
     },
     "SortingKey": {
@@ -16027,6 +16360,7 @@
       "en": "Aegidron",
       "fr": "Aegidron",
       "ja": "シェルガドラ",
+      "ko": "셸가드라",
       "zh-CN": "磐甲龙"
     },
     "SortingKey": {
@@ -16066,6 +16400,7 @@
       "en": "BOSS_RockCheetah",
       "fr": "BOSS_RockCheetah",
       "ja": "BOSS_RockCheetah",
+      "ko": "BOSS_RockCheetah",
       "zh-CN": "BOSS_RockCheetah"
     },
     "SortingKey": {
@@ -16105,6 +16440,7 @@
       "en": "BOSS_ArmorWoodlouse",
       "fr": "BOSS_ArmorWoodlouse",
       "ja": "BOSS_ArmorWoodlouse",
+      "ko": "BOSS_ArmorWoodlouse",
       "zh-CN": "BOSS_ArmorWoodlouse"
     },
     "SortingKey": {
@@ -16145,6 +16481,7 @@
       "en": "BOSS_MexicanSalamander",
       "fr": "BOSS_MexicanSalamander",
       "ja": "BOSS_MexicanSalamander",
+      "ko": "BOSS_MexicanSalamander",
       "zh-CN": "BOSS_MexicanSalamander"
     },
     "SortingKey": {
@@ -16184,6 +16521,7 @@
       "en": "BOSS_LeafBird",
       "fr": "BOSS_LeafBird",
       "ja": "BOSS_LeafBird",
+      "ko": "BOSS_LeafBird",
       "zh-CN": "BOSS_LeafBird"
     },
     "SortingKey": {
@@ -16223,6 +16561,7 @@
       "en": "BOSS_CuteOrca",
       "fr": "BOSS_CuteOrca",
       "ja": "BOSS_CuteOrca",
+      "ko": "BOSS_CuteOrca",
       "zh-CN": "BOSS_CuteOrca"
     },
     "SortingKey": {
@@ -16262,6 +16601,7 @@
       "en": "BOSS_SnakeQueen",
       "fr": "BOSS_SnakeQueen",
       "ja": "BOSS_SnakeQueen",
+      "ko": "BOSS_SnakeQueen",
       "zh-CN": "BOSS_SnakeQueen"
     },
     "SortingKey": {
@@ -16310,6 +16650,7 @@
       "en": "Lapiron",
       "fr": "Lapiron",
       "ja": "バトラビー",
+      "ko": "레패시",
       "zh-CN": "詹兔曼"
     },
     "SortingKey": {
@@ -16349,6 +16690,7 @@
       "en": "Boltmane",
       "fr": "Boltmane",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -16399,6 +16741,7 @@
       "en": "Gildane",
       "fr": "Gildane",
       "ja": "キンガゼル",
+      "ko": "러시골드",
       "zh-CN": "金驰兽"
     },
     "SortingKey": {
@@ -16438,6 +16781,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -16486,6 +16830,7 @@
       "en": "Turtacle",
       "fr": "Turtacle",
       "ja": "ヘルメッコ",
+      "ko": "헬터클",
       "zh-CN": "盔盔仔"
     },
     "SortingKey": {
@@ -16535,6 +16880,7 @@
       "en": "Turtacle Terra",
       "fr": "Turtacle Terra",
       "ja": "ゴルメッコ",
+      "ko": "골터클",
       "zh-CN": "金盔仔"
     },
     "SortingKey": {
@@ -16574,6 +16920,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -16613,6 +16960,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -16652,6 +17000,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -16701,6 +17050,7 @@
       "en": "Anubis",
       "fr": "Anubis",
       "ja": "アヌビス",
+      "ko": "아누비스",
       "zh-CN": "阿努比斯"
     },
     "SortingKey": {
@@ -16750,6 +17100,7 @@
       "en": "Incineram",
       "fr": "Incineram",
       "ja": "ヘルゴート",
+      "ko": "헬고트",
       "zh-CN": "炎魔羊"
     },
     "SortingKey": {
@@ -16799,6 +17150,7 @@
       "en": "Incineram Noct",
       "fr": "Incineram Noct",
       "ja": "アビスゴート",
+      "ko": "아비스고트",
       "zh-CN": "暗魔羊"
     },
     "SortingKey": {
@@ -16847,6 +17199,7 @@
       "en": "Mau",
       "fr": "Mau",
       "ja": "ニャオテト",
+      "ko": "냐옹테트",
       "zh-CN": "喵丝特"
     },
     "SortingKey": {
@@ -16895,6 +17248,7 @@
       "en": "Mau Cryst",
       "fr": "Mau Cryst",
       "ja": "チルテト",
+      "ko": "칠테트",
       "zh-CN": "冰丝特"
     },
     "SortingKey": {
@@ -16943,6 +17297,7 @@
       "en": "Rushoar",
       "fr": "Rushoar",
       "ja": "イノボウ",
+      "ko": "돌진돼지",
       "zh-CN": "草莽猪"
     },
     "SortingKey": {
@@ -16991,6 +17346,7 @@
       "en": "Lifmunk",
       "fr": "Lifmunk",
       "ja": "クルリス",
+      "ko": "큐룰리스",
       "zh-CN": "翠叶鼠"
     },
     "SortingKey": {
@@ -17039,6 +17395,7 @@
       "en": "Tocotoco",
       "fr": "Tocotoco",
       "ja": "クルットリ",
+      "ko": "알록새",
       "zh-CN": "炸蛋鸟"
     },
     "SortingKey": {
@@ -17087,6 +17444,7 @@
       "en": "Eikthyrdeer",
       "fr": "Eikthyrdeer",
       "ja": "ツノガミ",
+      "ko": "신령사슴",
       "zh-CN": "紫霞鹿"
     },
     "SortingKey": {
@@ -17136,6 +17494,7 @@
       "en": "Eikthyrdeer Terra",
       "fr": "Eikthyrdeer Terra",
       "ja": "ヤマガミ",
+      "ko": "산령사슴",
       "zh-CN": "祇岳鹿"
     },
     "SortingKey": {
@@ -17184,6 +17543,7 @@
       "en": "Digtoise",
       "fr": "Digtoise",
       "ja": "ドリタス",
+      "ko": "드릴북이",
       "zh-CN": "碎岩龟"
     },
     "SortingKey": {
@@ -17232,6 +17592,7 @@
       "en": "Galeclaw",
       "fr": "Galeclaw",
       "ja": "エアムルグ",
+      "ko": "질풍수리",
       "zh-CN": "天擒鸟"
     },
     "SortingKey": {
@@ -17281,6 +17642,7 @@
       "en": "Grizzbolt",
       "fr": "Grizzbolt",
       "ja": "エレパンダ",
+      "ko": "일렉판다",
       "zh-CN": "暴电熊"
     },
     "SortingKey": {
@@ -17329,6 +17691,7 @@
       "en": "Teafant",
       "fr": "Teafant",
       "ja": "チョロゾウ",
+      "ko": "차코리",
       "zh-CN": "壶小象"
     },
     "SortingKey": {
@@ -17378,6 +17741,7 @@
       "en": "Direhowl",
       "fr": "Direhowl",
       "ja": "ガウルフ",
+      "ko": "다크울프",
       "zh-CN": "猎狼"
     },
     "SortingKey": {
@@ -17426,6 +17790,7 @@
       "en": "Gorirat",
       "fr": "Gorirat",
       "ja": "ゴリレイジ",
+      "ko": "고릴레이지",
       "zh-CN": "铁拳猿"
     },
     "SortingKey": {
@@ -17475,6 +17840,7 @@
       "en": "Gorirat Terra",
       "fr": "Gorirat Terra",
       "ja": "ゴリガイア",
+      "ko": "고릴가이아",
       "zh-CN": "石掌猿"
     },
     "SortingKey": {
@@ -17523,6 +17889,7 @@
       "en": "Jolthog",
       "fr": "Jolthog",
       "ja": "パチグリ",
+      "ko": "찌릿도치",
       "zh-CN": "电棘鼠"
     },
     "SortingKey": {
@@ -17571,6 +17938,7 @@
       "en": "Jolthog Cryst",
       "fr": "Jolthog Cryst",
       "ja": "コチグリ",
+      "ko": "코치도치",
       "zh-CN": "冰刺鼠"
     },
     "SortingKey": {
@@ -17620,6 +17988,7 @@
       "en": "Univolt",
       "fr": "Univolt",
       "ja": "ライコーン",
+      "ko": "썬더콘",
       "zh-CN": "雷角马"
     },
     "SortingKey": {
@@ -17668,6 +18037,7 @@
       "en": "Univolt Cryst",
       "fr": "Univolt Cryst",
       "ja": "レイコーン",
+      "ko": "레이콘",
       "zh-CN": "凌角马"
     },
     "SortingKey": {
@@ -17716,6 +18086,7 @@
       "en": "Foxparks",
       "fr": "Foxparks",
       "ja": "キツネビ",
+      "ko": "파이호",
       "zh-CN": "火绒狐"
     },
     "SortingKey": {
@@ -17764,6 +18135,7 @@
       "en": "Bristla",
       "fr": "Bristla",
       "ja": "イバラヒメ",
+      "ko": "가시공주",
       "zh-CN": "荊棘魔仙"
     },
     "SortingKey": {
@@ -17812,6 +18184,7 @@
       "en": "Lunaris",
       "fr": "Lunaris",
       "ja": "ミステリア",
+      "ko": "루나리스",
       "zh-CN": "秘斯媞雅"
     },
     "SortingKey": {
@@ -17861,6 +18234,7 @@
       "en": "Pengullet",
       "fr": "Pengullet",
       "ja": "ペンタマ",
+      "ko": "펭키",
       "zh-CN": "企丸丸"
     },
     "SortingKey": {
@@ -17910,6 +18284,7 @@
       "en": "Pengullet Lux",
       "fr": "Pengullet Lux",
       "ja": "デンタマ",
+      "ko": "뎅키",
       "zh-CN": "闪丸丸"
     },
     "SortingKey": {
@@ -17958,6 +18333,7 @@
       "en": "Dazzi",
       "fr": "Dazzi",
       "ja": "カミナラシ",
+      "ko": "썬더키드",
       "zh-CN": "雷鸣童子"
     },
     "SortingKey": {
@@ -18006,6 +18382,7 @@
       "en": "Gobfin",
       "fr": "Gobfin",
       "ja": "シャーキッド",
+      "ko": "샤키드",
       "zh-CN": "鲨小子"
     },
     "SortingKey": {
@@ -18054,6 +18431,7 @@
       "en": "Gobfin Ignis",
       "fr": "Gobfin Ignis",
       "ja": "シャーマンダー",
+      "ko": "샤맨더",
       "zh-CN": "红小鲨"
     },
     "SortingKey": {
@@ -18102,6 +18480,7 @@
       "en": "Lamball",
       "fr": "Lamball",
       "ja": "モコロン",
+      "ko": "도로롱",
       "zh-CN": "棉悠悠"
     },
     "SortingKey": {
@@ -18152,6 +18531,7 @@
       "en": "Jormuntide",
       "fr": "Jormuntide",
       "ja": "レヴィドラ",
+      "ko": "레비드라",
       "zh-CN": "覆海龙"
     },
     "SortingKey": {
@@ -18202,6 +18582,7 @@
       "en": "Jormuntide Ignis",
       "fr": "Jormuntide Ignis",
       "ja": "アグニドラ",
+      "ko": "아그니드라",
       "zh-CN": "腾炎龙"
     },
     "SortingKey": {
@@ -18250,6 +18631,7 @@
       "en": "Loupmoon",
       "fr": "Loupmoon",
       "ja": "ツキカゲ",
+      "ko": "달서니",
       "zh-CN": "月镰魔"
     },
     "SortingKey": {
@@ -18298,6 +18680,7 @@
       "en": "Hangyu",
       "fr": "Hangyu",
       "ja": "シメナワ",
+      "ko": "건다리",
       "zh-CN": "吊缚灵"
     },
     "SortingKey": {
@@ -18346,6 +18729,7 @@
       "en": "Hangyu Cryst",
       "fr": "Hangyu Cryst",
       "ja": "オバケナワ",
+      "ko": "유령건다리",
       "zh-CN": "冰缚灵"
     },
     "SortingKey": {
@@ -18394,6 +18778,7 @@
       "en": "Suzaku",
       "fr": "Suzaku",
       "ja": "スザク",
+      "ko": "주작",
       "zh-CN": "朱雀"
     },
     "SortingKey": {
@@ -18442,6 +18827,7 @@
       "en": "Suzaku Aqua",
       "fr": "Suzaku Aqua",
       "ja": "シヴァ",
+      "ko": "시바",
       "zh-CN": "清雀"
     },
     "SortingKey": {
@@ -18490,6 +18876,7 @@
       "en": "Pyrin",
       "fr": "Pyrin",
       "ja": "サラブレイズ",
+      "ko": "파이린",
       "zh-CN": "火麒麟"
     },
     "SortingKey": {
@@ -18539,6 +18926,7 @@
       "en": "Pyrin Noct",
       "fr": "Pyrin Noct",
       "ja": "サラブラック",
+      "ko": "베이린",
       "zh-CN": "邪麒麟"
     },
     "SortingKey": {
@@ -18587,6 +18975,7 @@
       "en": "Elphidran",
       "fr": "Elphidran",
       "ja": "シルフィア",
+      "ko": "실피아",
       "zh-CN": "精灵龙"
     },
     "SortingKey": {
@@ -18636,6 +19025,7 @@
       "en": "Elphidran Aqua",
       "fr": "Elphidran Aqua",
       "ja": "シルティア",
+      "ko": "실티아",
       "zh-CN": "水灵龙"
     },
     "SortingKey": {
@@ -18684,6 +19074,7 @@
       "en": "Woolipop",
       "fr": "Woolipop",
       "ja": "メリポップ",
+      "ko": "캔디쉽",
       "zh-CN": "棉花糖"
     },
     "SortingKey": {
@@ -18732,6 +19123,7 @@
       "en": "Woolipop Terra",
       "fr": "Woolipop Terra",
       "ja": "メリコロネ",
+      "ko": "비터쉽",
       "zh-CN": "可可棉花糖"
     },
     "SortingKey": {
@@ -18781,6 +19173,7 @@
       "en": "Cryolinx",
       "fr": "Cryolinx",
       "ja": "ツンドラー",
+      "ko": "백랑이",
       "zh-CN": "冰棘兽"
     },
     "SortingKey": {
@@ -18829,6 +19222,7 @@
       "en": "Melpaca",
       "fr": "Melpaca",
       "ja": "メルパカ",
+      "ko": "멜파카",
       "zh-CN": "美露帕"
     },
     "SortingKey": {
@@ -18877,6 +19271,7 @@
       "en": "Surfent",
       "fr": "Surfent",
       "ja": "シーペント",
+      "ko": "씨무기",
       "zh-CN": "滑水蛇"
     },
     "SortingKey": {
@@ -18925,6 +19320,7 @@
       "en": "Surfent Terra",
       "fr": "Surfent Terra",
       "ja": "スナペント",
+      "ko": "샌무기",
       "zh-CN": "流沙蛇"
     },
     "SortingKey": {
@@ -18973,6 +19369,7 @@
       "en": "Cawgnito",
       "fr": "Cawgnito",
       "ja": "マスクロウ",
+      "ko": "마스크로우",
       "zh-CN": "黑鸦隐士"
     },
     "SortingKey": {
@@ -19022,6 +19419,7 @@
       "en": "Azurobe",
       "fr": "Azurobe",
       "ja": "アズレーン",
+      "ko": "아주리비",
       "zh-CN": "碧海龙"
     },
     "SortingKey": {
@@ -19071,6 +19469,7 @@
       "en": "Azurobe Cryst",
       "fr": "Azurobe Cryst",
       "ja": "アズルーナ",
+      "ko": "아주리나",
       "zh-CN": "碧月龙"
     },
     "SortingKey": {
@@ -19119,6 +19518,7 @@
       "en": "Cattiva",
       "fr": "Cattiva",
       "ja": "ツッパニャン",
+      "ko": "까부냥",
       "zh-CN": "捣蛋猫"
     },
     "SortingKey": {
@@ -19167,6 +19567,7 @@
       "en": "Depresso",
       "fr": "Depresso",
       "ja": "ンダコアラ",
+      "ko": "뚱코알라",
       "zh-CN": "瞅什魔"
     },
     "SortingKey": {
@@ -19215,6 +19616,7 @@
       "en": "Fenglope",
       "fr": "Fenglope",
       "ja": "ムラクモ",
+      "ko": "윈드디어",
       "zh-CN": "云海鹿"
     },
     "SortingKey": {
@@ -19264,6 +19666,7 @@
       "en": "Reptyro",
       "fr": "Reptyro",
       "ja": "ボルカノン",
+      "ko": "볼카노",
       "zh-CN": "熔岩兽"
     },
     "SortingKey": {
@@ -19313,6 +19716,7 @@
       "en": "Reptyro Cryst",
       "fr": "Reptyro Cryst",
       "ja": "フロスカノン",
+      "ko": "프로스카노",
       "zh-CN": "寒霜兽"
     },
     "SortingKey": {
@@ -19362,6 +19766,7 @@
       "en": "Maraith",
       "fr": "Maraith",
       "ja": "ソルレイス",
+      "ko": "고스호스",
       "zh-CN": "噬魂兽"
     },
     "SortingKey": {
@@ -19410,6 +19815,7 @@
       "en": "Robinquill",
       "fr": "Robinquill",
       "ja": "フェザーロ",
+      "ko": "로빈몽",
       "zh-CN": "羽箭射手"
     },
     "SortingKey": {
@@ -19459,6 +19865,7 @@
       "en": "Robinquill Terra",
       "fr": "Robinquill Terra",
       "ja": "サンドロ",
+      "ko": "샌드몽",
       "zh-CN": "山岳射手"
     },
     "SortingKey": {
@@ -19508,6 +19915,7 @@
       "en": "Relaxaurus",
       "fr": "Relaxaurus",
       "ja": "ペコドン",
+      "ko": "헤로롱",
       "zh-CN": "佩克龙"
     },
     "SortingKey": {
@@ -19557,6 +19965,7 @@
       "en": "Relaxaurus Lux",
       "fr": "Relaxaurus Lux",
       "ja": "パリピドン",
+      "ko": "핑피롱",
       "zh-CN": "派克龙"
     },
     "SortingKey": {
@@ -19607,6 +20016,7 @@
       "en": "Kitsun",
       "fr": "Kitsun",
       "ja": "シラヌイ",
+      "ko": "불이리",
       "zh-CN": "苍焰狼"
     },
     "SortingKey": {
@@ -19655,6 +20065,7 @@
       "en": "Leezpunk",
       "fr": "Leezpunk",
       "ja": "ダリザード",
+      "ko": "도마맨",
       "zh-CN": "朋克蜥"
     },
     "SortingKey": {
@@ -19703,6 +20114,7 @@
       "en": "Leezpunk Ignis",
       "fr": "Leezpunk Ignis",
       "ja": "チリザード",
+      "ko": "도화맨",
       "zh-CN": "热血蜥"
     },
     "SortingKey": {
@@ -19751,6 +20163,7 @@
       "en": "Fuack",
       "fr": "Fuack",
       "ja": "カモノスケ",
+      "ko": "청부리",
       "zh-CN": "冲浪鸭"
     },
     "SortingKey": {
@@ -19800,6 +20213,7 @@
       "en": "Fuack Ignis",
       "fr": "Fuack Ignis",
       "ja": "モモノスケ",
+      "ko": "적부리",
       "zh-CN": "热浪鸭"
     },
     "SortingKey": {
@@ -19840,6 +20254,7 @@
       "en": "Dragostrophe",
       "fr": "Dragostrophe",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -19890,6 +20305,7 @@
       "en": "Vanwyrm",
       "fr": "Vanwyrm",
       "ja": "カバネドリ",
+      "ko": "버드래곤",
       "zh-CN": "烽歌龙"
     },
     "SortingKey": {
@@ -19940,6 +20356,7 @@
       "en": "Vanwyrm Cryst",
       "fr": "Vanwyrm Cryst",
       "ja": "シロカバネ",
+      "ko": "버드아이스",
       "zh-CN": "霜歌龙"
     },
     "SortingKey": {
@@ -19988,6 +20405,7 @@
       "en": "Chikipi",
       "fr": "Chikipi",
       "ja": "タマコッコ",
+      "ko": "꼬꼬닭",
       "zh-CN": "皮皮鸡"
     },
     "SortingKey": {
@@ -20037,6 +20455,7 @@
       "en": "Dinossom",
       "fr": "Dinossom",
       "ja": "アロアリュー",
+      "ko": "플로라디노",
       "zh-CN": "花冠龙"
     },
     "SortingKey": {
@@ -20087,6 +20506,7 @@
       "en": "Dinossom Lux",
       "fr": "Dinossom Lux",
       "ja": "ビリビリュー",
+      "ko": "찌르르디노",
       "zh-CN": "雷冠龙"
     },
     "SortingKey": {
@@ -20135,6 +20555,7 @@
       "en": "Sparkit",
       "fr": "Sparkit",
       "ja": "ボルトラ",
+      "ko": "번개냥",
       "zh-CN": "伏特喵"
     },
     "SortingKey": {
@@ -20185,6 +20606,7 @@
       "en": "Frostallion",
       "fr": "Frostallion",
       "ja": "グレイシャル",
+      "ko": "빙천마",
       "zh-CN": "唤冬兽"
     },
     "SortingKey": {
@@ -20236,6 +20658,7 @@
       "en": "Frostallion Noct",
       "fr": "Frostallion Noct",
       "ja": "グレイシャドウ",
+      "ko": "흑천마",
       "zh-CN": "唤夜兽"
     },
     "SortingKey": {
@@ -20285,6 +20708,7 @@
       "en": "Mammorest",
       "fr": "Mammorest",
       "ja": "グランモス",
+      "ko": "그린모스",
       "zh-CN": "森猛犸"
     },
     "SortingKey": {
@@ -20334,6 +20758,7 @@
       "en": "Mammorest Cryst",
       "fr": "Mammorest Cryst",
       "ja": "ブリザモス",
+      "ko": "블리자모스",
       "zh-CN": "雪猛犸"
     },
     "SortingKey": {
@@ -20382,6 +20807,7 @@
       "en": "Felbat",
       "fr": "Felbat",
       "ja": "ヤミトバリ",
+      "ko": "블러드캐티",
       "zh-CN": "夜幕魔蝠"
     },
     "SortingKey": {
@@ -20430,6 +20856,7 @@
       "en": "Broncherry",
       "fr": "Broncherry",
       "ja": "ラブラドン",
+      "ko": "라브라돈",
       "zh-CN": "连理龙"
     },
     "SortingKey": {
@@ -20480,6 +20907,7 @@
       "en": "Broncherry Aqua",
       "fr": "Broncherry Aqua",
       "ja": "スプラドン",
+      "ko": "스프라돈",
       "zh-CN": "海誓龙"
     },
     "SortingKey": {
@@ -20529,6 +20957,7 @@
       "en": "Faleris",
       "fr": "Faleris",
       "ja": "ホルス",
+      "ko": "호루스",
       "zh-CN": "荷鲁斯"
     },
     "SortingKey": {
@@ -20578,6 +21007,7 @@
       "en": "Blazamut",
       "fr": "Blazamut",
       "ja": "ボルカイザー",
+      "ko": "마그마카이저",
       "zh-CN": "焰煌"
     },
     "SortingKey": {
@@ -20627,6 +21057,7 @@
       "en": "Blazamut Ryu",
       "fr": "Blazamut Ryu",
       "ja": "ボルドラゴ",
+      "ko": "마그마드라고",
       "zh-CN": "殁殃"
     },
     "SortingKey": {
@@ -20675,6 +21106,7 @@
       "en": "Caprity",
       "fr": "Caprity",
       "ja": "ベリゴート",
+      "ko": "베리고트",
       "zh-CN": "灌木羊"
     },
     "SortingKey": {
@@ -20723,6 +21155,7 @@
       "en": "Reindrix",
       "fr": "Reindrix",
       "ja": "ツララジカ",
+      "ko": "얼음사슴",
       "zh-CN": "严冬鹿"
     },
     "SortingKey": {
@@ -20772,6 +21205,7 @@
       "en": "Shadowbeak",
       "fr": "Shadowbeak",
       "ja": "ゼノグリフ",
+      "ko": "제노그리프",
       "zh-CN": "异构格里芬"
     },
     "SortingKey": {
@@ -20820,6 +21254,7 @@
       "en": "Sibelyx",
       "fr": "Sibelyx",
       "ja": "シルキーヌ",
+      "ko": "실키누",
       "zh-CN": "绸笠蛾"
     },
     "SortingKey": {
@@ -20868,6 +21303,7 @@
       "en": "Sibelyx Primo",
       "fr": "Sibelyx Primo",
       "ja": "ソワレーヌ",
+      "ko": "수아레누",
       "zh-CN": "绢笠蛾"
     },
     "SortingKey": {
@@ -20916,6 +21352,7 @@
       "en": "Vixy",
       "fr": "Vixy",
       "ja": "タマモ",
+      "ko": "미호",
       "zh-CN": "玉藻狐"
     },
     "SortingKey": {
@@ -20964,6 +21401,7 @@
       "en": "Wixen",
       "fr": "Wixen",
       "ja": "フォレーナ",
+      "ko": "마호",
       "zh-CN": "焰巫狐"
     },
     "SortingKey": {
@@ -21013,6 +21451,7 @@
       "en": "Wixen Noct",
       "fr": "Wixen Noct",
       "ja": "フォレーオ",
+      "ko": "영마호",
       "zh-CN": "幽巫狐"
     },
     "SortingKey": {
@@ -21063,6 +21502,7 @@
       "en": "Lovander",
       "fr": "Lovander",
       "ja": "ラブマンダー",
+      "ko": "핑크뇽",
       "zh-CN": "博爱蜥"
     },
     "SortingKey": {
@@ -21111,6 +21551,7 @@
       "en": "Hoocrates",
       "fr": "Hoocrates",
       "ja": "ホウロック",
+      "ko": "아테노울",
       "zh-CN": "啼卡尔"
     },
     "SortingKey": {
@@ -21159,6 +21600,7 @@
       "en": "Kelpsea",
       "fr": "Kelpsea",
       "ja": "ケルピス",
+      "ko": "켈시",
       "zh-CN": "水灵儿"
     },
     "SortingKey": {
@@ -21207,6 +21649,7 @@
       "en": "Kelpsea Ignis",
       "fr": "Kelpsea Ignis",
       "ja": "マグピス",
+      "ko": "마그시",
       "zh-CN": "火灵儿"
     },
     "SortingKey": {
@@ -21256,6 +21699,7 @@
       "en": "Killamari",
       "fr": "Killamari",
       "ja": "ヤミイカ",
+      "ko": "고스문",
       "zh-CN": "勾魂鱿"
     },
     "SortingKey": {
@@ -21305,6 +21749,7 @@
       "en": "Killamari Primo",
       "fr": "Killamari Primo",
       "ja": "ユメイカ",
+      "ko": "드리문",
       "zh-CN": "蚀魂鱿"
     },
     "SortingKey": {
@@ -21353,6 +21798,7 @@
       "en": "Mozzarina",
       "fr": "Mozzarina",
       "ja": "ミルカルビ",
+      "ko": "밀카우",
       "zh-CN": "波霸牛"
     },
     "SortingKey": {
@@ -21402,6 +21848,7 @@
       "en": "Wumpo",
       "fr": "Wumpo",
       "ja": "ヒエティ",
+      "ko": "움포",
       "zh-CN": "白绒雪怪"
     },
     "SortingKey": {
@@ -21451,6 +21898,7 @@
       "en": "Wumpo Botan",
       "fr": "Wumpo Botan",
       "ja": "トロピティ",
+      "ko": "움피티",
       "zh-CN": "绿苔绒怪"
     },
     "SortingKey": {
@@ -21499,6 +21947,7 @@
       "en": "Vaelet",
       "fr": "Vaelet",
       "ja": "ヴィオレッタ",
+      "ko": "비오레타",
       "zh-CN": "薇莉塔"
     },
     "SortingKey": {
@@ -21547,6 +21996,7 @@
       "en": "Nitewing",
       "fr": "Nitewing",
       "ja": "ホークウィン",
+      "ko": "나이트윙",
       "zh-CN": "疾风隼"
     },
     "SortingKey": {
@@ -21595,6 +22045,7 @@
       "en": "Flopie",
       "fr": "Flopie",
       "ja": "ポプリーナ",
+      "ko": "토푸리",
       "zh-CN": "波娜兔"
     },
     "SortingKey": {
@@ -21644,6 +22095,7 @@
       "en": "Lyleen",
       "fr": "Lyleen",
       "ja": "リリクイン",
+      "ko": "릴린",
       "zh-CN": "百合女王"
     },
     "SortingKey": {
@@ -21693,6 +22145,7 @@
       "en": "Lyleen Noct",
       "fr": "Lyleen Noct",
       "ja": "ルナクイン",
+      "ko": "루나린",
       "zh-CN": "黑月女王 "
     },
     "SortingKey": {
@@ -21741,6 +22194,7 @@
       "en": "Elizabee",
       "fr": "Elizabee",
       "ja": "クインビーナ",
+      "ko": "퀸비나",
       "zh-CN": "女皇蜂"
     },
     "SortingKey": {
@@ -21790,6 +22244,7 @@
       "en": "Beegarde",
       "fr": "Beegarde",
       "ja": "ビーナイト",
+      "ko": "비나이트",
       "zh-CN": "骑士蜂"
     },
     "SortingKey": {
@@ -21838,6 +22293,7 @@
       "en": "Tombat",
       "fr": "Tombat",
       "ja": "ニャンバット",
+      "ko": "냥뱃",
       "zh-CN": "猫蝠怪"
     },
     "SortingKey": {
@@ -21886,6 +22342,7 @@
       "en": "Mossanda",
       "fr": "Mossanda",
       "ja": "ササゾー",
+      "ko": "풀바오",
       "zh-CN": "叶胖达"
     },
     "SortingKey": {
@@ -21934,6 +22391,7 @@
       "en": "Mossanda Lux",
       "fr": "Mossanda Lux",
       "ja": "ライゾー",
+      "ko": "라이바오",
       "zh-CN": "雷胖达"
     },
     "SortingKey": {
@@ -21982,6 +22440,7 @@
       "en": "Arsox",
       "fr": "Arsox",
       "ja": "ブルフェルノ",
+      "ko": "불페르노",
       "zh-CN": "炽焰牛"
     },
     "SortingKey": {
@@ -22033,6 +22492,7 @@
       "en": "Rayhound",
       "fr": "Rayhound",
       "ja": "イヌズマ",
+      "ko": "썬도그",
       "zh-CN": "霹雳犬"
     },
     "SortingKey": {
@@ -22083,6 +22543,7 @@
       "en": "Rayhound Cryst",
       "fr": "Rayhound Cryst",
       "ja": "フリーズマ",
+      "ko": "프리도그",
       "zh-CN": "凛光犬"
     },
     "SortingKey": {
@@ -22132,6 +22593,7 @@
       "en": "Fuddler",
       "fr": "Fuddler",
       "ja": "モグルン",
+      "ko": "두더비",
       "zh-CN": "遁地鼠"
     },
     "SortingKey": {
@@ -22182,6 +22644,7 @@
       "en": "Astegon",
       "fr": "Astegon",
       "ja": "ジオラーヴァ",
+      "ko": "라바드래곤",
       "zh-CN": "魔渊龙"
     },
     "SortingKey": {
@@ -22231,6 +22694,7 @@
       "en": "Verdash",
       "fr": "Verdash",
       "ja": "ラベロット",
+      "ko": "초토리",
       "zh-CN": "踏春兔"
     },
     "SortingKey": {
@@ -22279,6 +22743,7 @@
       "en": "Foxcicle",
       "fr": "Foxcicle",
       "ja": "フブキツネ",
+      "ko": "빙호",
       "zh-CN": "吹雪狐"
     },
     "SortingKey": {
@@ -22329,6 +22794,7 @@
       "en": "Jetragon",
       "fr": "Jetragon",
       "ja": "ジェッドラン",
+      "ko": "제트래곤",
       "zh-CN": "空涡龙"
     },
     "SortingKey": {
@@ -22377,6 +22843,7 @@
       "en": "Daedream",
       "fr": "Daedream",
       "ja": "ネムラム",
+      "ko": "몽마둥이",
       "zh-CN": "寐魔"
     },
     "SortingKey": {
@@ -22425,6 +22892,7 @@
       "en": "Tanzee",
       "fr": "Tanzee",
       "ja": "エテッパ",
+      "ko": "몽지",
       "zh-CN": "新叶猿"
     },
     "SortingKey": {
@@ -22464,6 +22932,7 @@
       "en": "Tanzee",
       "fr": "Tanzee",
       "ja": "エテッパ",
+      "ko": "몽지",
       "zh-CN": "新叶猿"
     },
     "SortingKey": {
@@ -22512,6 +22981,7 @@
       "en": "Tanzee Ignis",
       "fr": "Tanzee Ignis",
       "ja": "カレッパ",
+      "ko": "몽화",
       "zh-CN": "秋叶猿"
     },
     "SortingKey": {
@@ -22561,6 +23031,7 @@
       "en": "Blazehowl",
       "fr": "Blazehowl",
       "ja": "ゴクエンオ",
+      "ko": "만티파이어",
       "zh-CN": "狱焰王"
     },
     "SortingKey": {
@@ -22611,6 +23082,7 @@
       "en": "Blazehowl Noct",
       "fr": "Blazehowl Noct",
       "ja": "シンエンオ",
+      "ko": "만티녹턴",
       "zh-CN": "狱阎王"
     },
     "SortingKey": {
@@ -22659,6 +23131,7 @@
       "en": "Kingpaca",
       "fr": "Kingpaca",
       "ja": "アルパオー",
+      "ko": "킹파카",
       "zh-CN": "君王美露帕"
     },
     "SortingKey": {
@@ -22708,6 +23181,7 @@
       "en": "Kingpaca Cryst",
       "fr": "Kingpaca Cryst",
       "ja": "アオパオー",
+      "ko": "블루파카",
       "zh-CN": "冰帝美露帕"
     },
     "SortingKey": {
@@ -22757,6 +23231,7 @@
       "en": "Gumoss",
       "fr": "Gumoss",
       "ja": "ナエモチ",
+      "ko": "초롱이",
       "zh-CN": "叶泥泥"
     },
     "SortingKey": {
@@ -22806,6 +23281,7 @@
       "en": "Gumoss",
       "fr": "Gumoss",
       "ja": "ナエモチ",
+      "ko": "초롱이",
       "zh-CN": "叶泥泥"
     },
     "SortingKey": {
@@ -22845,6 +23321,7 @@
       "en": "en_text",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -22893,6 +23370,7 @@
       "en": "Swee",
       "fr": "Swee",
       "ja": "コモップ",
+      "ko": "모프링",
       "zh-CN": "毛掸儿"
     },
     "SortingKey": {
@@ -22941,6 +23419,7 @@
       "en": "Sweepa",
       "fr": "Sweepa",
       "ja": "ドンモップ",
+      "ko": "모프킹",
       "zh-CN": "毛老爹"
     },
     "SortingKey": {
@@ -22989,6 +23468,7 @@
       "en": "Katress",
       "fr": "Katress",
       "ja": "クレメーオ",
+      "ko": "캐티메이지",
       "zh-CN": "暗巫猫"
     },
     "SortingKey": {
@@ -23038,6 +23518,7 @@
       "en": "Katress Ignis",
       "fr": "Katress Ignis",
       "ja": "クレメーナ",
+      "ko": "캐티위자드",
       "zh-CN": "炽巫猫"
     },
     "SortingKey": {
@@ -23086,6 +23567,7 @@
       "en": "Ribbuny",
       "fr": "Ribbuny",
       "ja": "ヒメウサ",
+      "ko": "핑토",
       "zh-CN": "姬小兔"
     },
     "SortingKey": {
@@ -23135,6 +23617,7 @@
       "en": "Beakon",
       "fr": "Beakon",
       "ja": "ライバード",
+      "ko": "라이버드",
       "zh-CN": "迅雷鸟"
     },
     "SortingKey": {
@@ -23183,6 +23666,7 @@
       "en": "Beakon Cryst",
       "fr": "Beakon Cryst",
       "ja": "チルバード",
+      "ko": "칠버드",
       "zh-CN": "疾霜鸟"
     },
     "SortingKey": {
@@ -23232,6 +23716,7 @@
       "en": "Warsect",
       "fr": "Warsect",
       "ja": "グラクレス",
+      "ko": "장수벌레",
       "zh-CN": "铠格力斯"
     },
     "SortingKey": {
@@ -23280,6 +23765,7 @@
       "en": "Warsect Terra",
       "fr": "Warsect Terra",
       "ja": "ゴルクレス",
+      "ko": "금강벌레",
       "zh-CN": "格鲁力斯"
     },
     "SortingKey": {
@@ -23330,6 +23816,7 @@
       "en": "Paladius",
       "fr": "Paladius",
       "ja": "セイントール",
+      "ko": "팔라디우스",
       "zh-CN": "圣光骑士"
     },
     "SortingKey": {
@@ -23378,6 +23865,7 @@
       "en": "Nox",
       "fr": "Nox",
       "ja": "ルナティ",
+      "ko": "루나티",
       "zh-CN": "露娜蒂"
     },
     "SortingKey": {
@@ -23427,6 +23915,7 @@
       "en": "Penking",
       "fr": "Penking",
       "ja": "キャプペン",
+      "ko": "펭킹",
       "zh-CN": "企丸王"
     },
     "SortingKey": {
@@ -23476,6 +23965,7 @@
       "en": "Penking Lux",
       "fr": "Penking Lux",
       "ja": "ペンキッド",
+      "ko": "뎅킹",
       "zh-CN": "闪丸王"
     },
     "SortingKey": {
@@ -23526,6 +24016,7 @@
       "en": "Chillet",
       "fr": "Chillet",
       "ja": "オコチョ",
+      "ko": "베비뇽",
       "zh-CN": "疾旋鼬"
     },
     "SortingKey": {
@@ -23575,6 +24066,7 @@
       "en": "Chillet Ignis",
       "fr": "Chillet Ignis",
       "ja": "モモチョ",
+      "ko": "천도뇽",
       "zh-CN": "桃旋鼬"
     },
     "SortingKey": {
@@ -23623,6 +24115,7 @@
       "en": "Quivern",
       "fr": "Quivern",
       "ja": "フェスキー",
+      "ko": "페스키",
       "zh-CN": "天羽龙"
     },
     "SortingKey": {
@@ -23672,6 +24165,7 @@
       "en": "Quivern Botan",
       "fr": "Quivern Botan",
       "ja": "フォレスキー",
+      "ko": "포레스키",
       "zh-CN": "翠羽龙"
     },
     "SortingKey": {
@@ -23720,6 +24214,7 @@
       "en": "Helzephyr",
       "fr": "Helzephyr",
       "ja": "ヘルガルダ",
+      "ko": "헬가루다",
       "zh-CN": "雷冥鸟"
     },
     "SortingKey": {
@@ -23769,6 +24264,7 @@
       "en": "Helzephyr Lux",
       "fr": "Helzephyr Lux",
       "ja": "ライガルダ",
+      "ko": "라이가루다",
       "zh-CN": "雷鸣鸟"
     },
     "SortingKey": {
@@ -23818,6 +24314,7 @@
       "en": "Ragnahawk",
       "fr": "Ragnahawk",
       "ja": "イグニクス",
+      "ko": "적토조",
       "zh-CN": "燧火鸟"
     },
     "SortingKey": {
@@ -23866,6 +24363,7 @@
       "en": "Bushi",
       "fr": "Bushi",
       "ja": "ツジギリ",
+      "ko": "불무사",
       "zh-CN": "浪刃武士"
     },
     "SortingKey": {
@@ -23916,6 +24414,7 @@
       "en": "Bushi Noct",
       "fr": "Bushi Noct",
       "ja": "ヤミウチ",
+      "ko": "어둠무사",
       "zh-CN": "鬼刃武士"
     },
     "SortingKey": {
@@ -23964,6 +24463,7 @@
       "en": "Celaray",
       "fr": "Celaray",
       "ja": "ルミカイト",
+      "ko": "루미카이트",
       "zh-CN": "鲁米儿"
     },
     "SortingKey": {
@@ -24013,6 +24513,7 @@
       "en": "Celaray Lux",
       "fr": "Celaray Lux",
       "ja": "エレカイト",
+      "ko": "일레카이트",
       "zh-CN": "雷米儿"
     },
     "SortingKey": {
@@ -24063,6 +24564,7 @@
       "en": "Necromus",
       "fr": "Necromus",
       "ja": "ベイントール",
+      "ko": "켄타나이트",
       "zh-CN": "混沌骑士"
     },
     "SortingKey": {
@@ -24111,6 +24613,7 @@
       "en": "Petallia",
       "fr": "Petallia",
       "ja": "フラリーナ",
+      "ko": "플로리나",
       "zh-CN": "花丽娜"
     },
     "SortingKey": {
@@ -24160,6 +24663,7 @@
       "en": "Petallia Ignis",
       "fr": "Petallia Ignis",
       "ja": "チェリーナ",
+      "ko": "체를리나",
       "zh-CN": "樱丽娜"
     },
     "SortingKey": {
@@ -24208,6 +24712,7 @@
       "en": "Grintale",
       "fr": "Grintale",
       "ja": "ニャンギマリ",
+      "ko": "소름냥이",
       "zh-CN": "笑魇猫"
     },
     "SortingKey": {
@@ -24256,6 +24761,7 @@
       "en": "Cinnamoth",
       "fr": "Cinnamoth",
       "ja": "パピテフ",
+      "ko": "귀요비",
       "zh-CN": "幻悦蝶"
     },
     "SortingKey": {
@@ -24306,6 +24812,7 @@
       "en": "Menasting",
       "fr": "Menasting",
       "ja": "デスティング",
+      "ko": "데스스팅",
       "zh-CN": "冥铠蝎"
     },
     "SortingKey": {
@@ -24354,6 +24861,7 @@
       "en": "Menasting Terra",
       "fr": "Menasting Terra",
       "ja": "ゴルディング",
+      "ko": "골드스팅",
       "zh-CN": "金铠蝎"
     },
     "SortingKey": {
@@ -24404,6 +24912,7 @@
       "en": "Orserk",
       "fr": "Orserk",
       "ja": "ボルゼクス",
+      "ko": "볼젝스",
       "zh-CN": "波鲁杰克斯"
     },
     "SortingKey": {
@@ -24452,6 +24961,7 @@
       "en": "Cremis",
       "fr": "Cremis",
       "ja": "ミルフィー",
+      "ko": "밀피",
       "zh-CN": "米露菲"
     },
     "SortingKey": {
@@ -24501,6 +25011,7 @@
       "en": "Dumud",
       "fr": "Dumud",
       "ja": "トドドドン",
+      "ko": "도도롱",
       "zh-CN": "趴趴鲶"
     },
     "SortingKey": {
@@ -24550,6 +25061,7 @@
       "en": "Dumud Gild",
       "fr": "Dumud Gild",
       "ja": "ゴルドドン",
+      "ko": "골도롱",
       "zh-CN": "梆梆鲶"
     },
     "SortingKey": {
@@ -24598,6 +25110,7 @@
       "en": "Flambelle",
       "fr": "Flambelle",
       "ja": "ラヴィ",
+      "ko": "라비",
       "zh-CN": "融焰娘"
     },
     "SortingKey": {
@@ -24646,6 +25159,7 @@
       "en": "Rooby",
       "fr": "Rooby",
       "ja": "ヒノコジカ",
+      "ko": "불꽃밤비",
       "zh-CN": "燎火鹿"
     },
     "SortingKey": {
@@ -24694,6 +25208,7 @@
       "en": "Bellanoir",
       "fr": "Bellanoir",
       "ja": "ベラノワール",
+      "ko": "벨라누아르",
       "zh-CN": "贝菈诺娃"
     },
     "SortingKey": {
@@ -24742,6 +25257,7 @@
       "en": "Bellanoir Libero",
       "fr": "Bellanoir Libero",
       "ja": "ベラルージュ",
+      "ko": "벨라루주",
       "zh-CN": "贝菈露洁"
     },
     "SortingKey": {
@@ -24792,6 +25308,7 @@
       "en": "Selyne",
       "fr": "Selyne",
       "ja": "セレムーン",
+      "ko": "셀레문",
       "zh-CN": "辉月伊"
     },
     "SortingKey": {
@@ -24840,6 +25357,7 @@
       "en": "Croajiro",
       "fr": "Croajiro",
       "ja": "ブシガエル",
+      "ko": "칼구리",
       "zh-CN": "武道蛙"
     },
     "SortingKey": {
@@ -24889,6 +25407,7 @@
       "en": "Croajiro Noct",
       "fr": "Croajiro Noct",
       "ja": "ドスガエル",
+      "ko": "검구리",
       "zh-CN": "极道蛙"
     },
     "SortingKey": {
@@ -24937,6 +25456,7 @@
       "en": "Lullu",
       "fr": "Lullu",
       "ja": "フワフラワ",
+      "ko": "뷰티플라워",
       "zh-CN": "春彩娘"
     },
     "SortingKey": {
@@ -24985,6 +25505,7 @@
       "en": "Shroomer",
       "fr": "Shroomer",
       "ja": "キノッポ",
+      "ko": "머쉬드래곤",
       "zh-CN": "菇咚"
     },
     "SortingKey": {
@@ -25034,6 +25555,7 @@
       "en": "Shroomer Noct",
       "fr": "Shroomer Noct",
       "ja": "ベノッポ",
+      "ko": "머쉬포이즌",
       "zh-CN": "菇波"
     },
     "SortingKey": {
@@ -25082,6 +25604,7 @@
       "en": "Kikit",
       "fr": "Kikit",
       "ja": "コロマジロ",
+      "ko": "꼬마딜로",
       "zh-CN": "球犰"
     },
     "SortingKey": {
@@ -25131,6 +25654,7 @@
       "en": "Sootseer",
       "fr": "Sootseer",
       "ja": "オドロクロ",
+      "ko": "유령초",
       "zh-CN": "恐炬灵"
     },
     "SortingKey": {
@@ -25180,6 +25704,7 @@
       "en": "Prixter",
       "fr": "Prixter",
       "ja": "ブッサソリ",
+      "ko": "스콜피어스",
       "zh-CN": "蛊刺妖"
     },
     "SortingKey": {
@@ -25229,6 +25754,7 @@
       "en": "Prixter Lux",
       "fr": "Prixter Lux",
       "ja": "ブッサンダー",
+      "ko": "썬더피어스",
       "zh-CN": "电针妖"
     },
     "SortingKey": {
@@ -25277,6 +25803,7 @@
       "en": "Knocklem",
       "fr": "Knocklem",
       "ja": "テラナイト",
+      "ko": "테라나이트",
       "zh-CN": "泰锋"
     },
     "SortingKey": {
@@ -25325,6 +25852,7 @@
       "en": "Knocklem Ignis",
       "fr": "Knocklem Ignis",
       "ja": "マグナイト",
+      "ko": "마그나이트",
       "zh-CN": "丹烽"
     },
     "SortingKey": {
@@ -25375,6 +25903,7 @@
       "en": "Yakumo",
       "fr": "Yakumo",
       "ja": "ヤクモマル",
+      "ko": "둥실해치",
       "zh-CN": "八云犬"
     },
     "SortingKey": {
@@ -25423,6 +25952,7 @@
       "en": "Dogen",
       "fr": "Dogen",
       "ja": "ワンフー",
+      "ko": "시푸도그",
       "zh-CN": "汪宗师"
     },
     "SortingKey": {
@@ -25471,6 +26001,7 @@
       "en": "Dazemu",
       "fr": "Dazemu",
       "ja": "トリステップ",
+      "ko": "페더치프",
       "zh-CN": "战冠雀"
     },
     "SortingKey": {
@@ -25519,6 +26050,7 @@
       "en": "Mimog",
       "fr": "Mimog",
       "ja": "ミミドッグ",
+      "ko": "따라하개",
       "zh-CN": "旺财"
     },
     "SortingKey": {
@@ -25567,6 +26099,7 @@
       "en": "Xenovader",
       "fr": "Xenovader",
       "ja": "ゼノベーダ",
+      "ko": "제노베이더",
       "zh-CN": "杰诺贝达"
     },
     "SortingKey": {
@@ -25615,6 +26148,7 @@
       "en": "Xenogard",
       "fr": "Xenogard",
       "ja": "ゼノルーダ",
+      "ko": "제노루더",
       "zh-CN": "杰诺路达"
     },
     "SortingKey": {
@@ -25664,6 +26198,7 @@
       "en": "Moldron",
       "fr": "Moldron",
       "ja": "マグマンダー",
+      "ko": "마그맨더",
       "zh-CN": "流焰龙"
     },
     "SortingKey": {
@@ -25713,6 +26248,7 @@
       "en": "Moldron Cryst",
       "fr": "Moldron Cryst",
       "ja": "ブリザンダー",
+      "ko": "블리잰더",
       "zh-CN": "川霜龙"
     },
     "SortingKey": {
@@ -25762,6 +26298,7 @@
       "en": "Xenolord",
       "fr": "Xenolord",
       "ja": "ゼノドラン",
+      "ko": "제노드란",
       "zh-CN": "杰诺多兰"
     },
     "SortingKey": {
@@ -25810,6 +26347,7 @@
       "en": "Nitemary",
       "fr": "Nitemary",
       "ja": "ナイトメアリ",
+      "ko": "코쉬마리",
       "zh-CN": "魅爱莉"
     },
     "SortingKey": {
@@ -25858,6 +26396,7 @@
       "en": "Nitemary Botan",
       "fr": "Nitemary Botan",
       "ja": "グラスメアリ",
+      "ko": "에브마리",
       "zh-CN": "碧艾莉"
     },
     "SortingKey": {
@@ -25907,6 +26446,7 @@
       "en": "Starryon",
       "fr": "Starryon",
       "ja": "ナイトロット",
+      "ko": "나이트롯",
       "zh-CN": "夜冥驹"
     },
     "SortingKey": {
@@ -25955,6 +26495,7 @@
       "en": "Starryon Primo",
       "fr": "Starryon Primo",
       "ja": "ライトロット",
+      "ko": "라이트롯",
       "zh-CN": "日耀驹"
     },
     "SortingKey": {
@@ -26003,6 +26544,7 @@
       "en": "Silvegis",
       "fr": "Silvegis",
       "ja": "アイギルガ",
+      "ko": "드라이지스",
       "zh-CN": "艾基鲁迦"
     },
     "SortingKey": {
@@ -26053,6 +26595,7 @@
       "en": "Smokie",
       "fr": "Smokie",
       "ja": "クロマル",
+      "ko": "껌댕이",
       "zh-CN": "墨丸"
     },
     "SortingKey": {
@@ -26103,6 +26646,7 @@
       "en": "Smokie Cryst",
       "fr": "Smokie Cryst",
       "ja": "フユマル",
+      "ko": "눈댕이",
       "zh-CN": "冬丸"
     },
     "SortingKey": {
@@ -26151,6 +26695,7 @@
       "en": "Celesdir",
       "fr": "Celesdir",
       "ja": "セレスディア",
+      "ko": "셀레스디얼",
       "zh-CN": "净世鹿"
     },
     "SortingKey": {
@@ -26199,6 +26744,7 @@
       "en": "Celesdir Noct",
       "fr": "Celesdir Noct",
       "ja": "コスモディア",
+      "ko": "코스모디얼",
       "zh-CN": "织夜鹿"
     },
     "SortingKey": {
@@ -26247,6 +26793,7 @@
       "en": "Panthalus",
       "fr": "Panthalus",
       "ja": "グランジーラ",
+      "ko": "그랜웰",
       "zh-CN": "奥沧鲸"
     },
     "SortingKey": {
@@ -26295,6 +26842,7 @@
       "en": "Omascul",
       "fr": "Omascul",
       "ja": "オーメン",
+      "ko": "홀로페이스",
       "zh-CN": "面惧"
     },
     "SortingKey": {
@@ -26343,6 +26891,7 @@
       "en": "Hoodle",
       "fr": "Hoodle",
       "ja": "フードール",
+      "ko": "후드림",
       "zh-CN": "兜兜灵"
     },
     "SortingKey": {
@@ -26391,6 +26940,7 @@
       "en": "Sekhmet",
       "fr": "Sekhmet",
       "ja": "セクメト",
+      "ko": "세크메트",
       "zh-CN": "塞赫麦特"
     },
     "SortingKey": {
@@ -26439,6 +26989,7 @@
       "en": "Slowatt",
       "fr": "Slowatt",
       "ja": "ノンビリリ",
+      "ko": "밍기저드",
       "zh-CN": "电懒懒"
     },
     "SortingKey": {
@@ -26487,6 +27038,7 @@
       "en": "Splatterina",
       "fr": "Splatterina",
       "ja": "ヤンデリナ",
+      "ko": "얀데리나",
       "zh-CN": "幽恋娜"
     },
     "SortingKey": {
@@ -26535,6 +27087,7 @@
       "en": "Tarantriss",
       "fr": "Tarantriss",
       "ja": "モモンチュラ",
+      "ko": "스틱툴라",
       "zh-CN": "桃蛛娘"
     },
     "SortingKey": {
@@ -26584,6 +27137,7 @@
       "en": "Azurmane",
       "fr": "Azurmane",
       "ja": "オーマサンダ",
+      "ko": "썬더호스",
       "zh-CN": "驭雷马"
     },
     "SortingKey": {
@@ -26632,6 +27186,7 @@
       "en": "Pierdon",
       "fr": "Pierdon",
       "ja": "ジオルドン",
+      "ko": "지오르돈",
       "zh-CN": "磐峰兽"
     },
     "SortingKey": {
@@ -26680,6 +27235,7 @@
       "en": "Pierdon Cryst",
       "fr": "Pierdon Cryst",
       "ja": "フロスドン",
+      "ko": "프로스돈",
       "zh-CN": "寒峰兽"
     },
     "SortingKey": {
@@ -26729,6 +27285,7 @@
       "en": "Gloopie",
       "fr": "Gloopie",
       "ja": "ヒメンダコ",
+      "ko": "옥토비아",
       "zh-CN": "墨沫姬"
     },
     "SortingKey": {
@@ -26778,6 +27335,7 @@
       "en": "Gloopie Primo",
       "fr": "Gloopie Primo",
       "ja": "ユメンダコ",
+      "ko": "옥토넬라",
       "zh-CN": "梦沫姬"
     },
     "SortingKey": {
@@ -26827,6 +27385,7 @@
       "en": "Whalaska",
       "fr": "Whalaska",
       "ja": "コゴエール",
+      "ko": "빙등고래",
       "zh-CN": "凉晶鲸"
     },
     "SortingKey": {
@@ -26876,6 +27435,7 @@
       "en": "Whalaska Ignis",
       "fr": "Whalaska Ignis",
       "ja": "モモエール",
+      "ko": "홍등고래",
       "zh-CN": "桃晶鲸"
     },
     "SortingKey": {
@@ -26924,6 +27484,7 @@
       "en": "Jelliette",
       "fr": "Jelliette",
       "ja": "クララン",
+      "ko": "플루미",
       "zh-CN": "海月仙"
     },
     "SortingKey": {
@@ -26967,6 +27528,7 @@
       "en": "Xenovader",
       "fr": "Xenovader",
       "ja": "ゼノベーダ",
+      "ko": "제노베이더",
       "zh-CN": "杰诺贝达"
     },
     "SortingKey": {
@@ -27010,6 +27572,7 @@
       "en": "Xenovader",
       "fr": "Xenovader",
       "ja": "ゼノベーダ",
+      "ko": "제노베이더",
       "zh-CN": "杰诺贝达"
     },
     "SortingKey": {
@@ -27053,6 +27616,7 @@
       "en": "Xenogard",
       "fr": "Xenogard",
       "ja": "ゼノルーダ",
+      "ko": "제노루더",
       "zh-CN": "杰诺路达"
     },
     "SortingKey": {
@@ -27096,6 +27660,7 @@
       "en": "Xenogard",
       "fr": "Xenogard",
       "ja": "ゼノルーダ",
+      "ko": "제노루더",
       "zh-CN": "杰诺路达"
     },
     "SortingKey": {
@@ -27149,6 +27714,7 @@
       "en": "Kitsun",
       "fr": "Kitsun",
       "ja": "シラヌイ",
+      "ko": "불이리",
       "zh-CN": "苍焰狼"
     },
     "SortingKey": {
@@ -27201,6 +27767,7 @@
       "en": "Vanwyrm",
       "fr": "Vanwyrm",
       "ja": "カバネドリ",
+      "ko": "버드래곤",
       "zh-CN": "烽歌龙"
     },
     "SortingKey": {
@@ -27252,6 +27819,7 @@
       "en": "Digtoise",
       "fr": "Digtoise",
       "ja": "ドリタス",
+      "ko": "드릴북이",
       "zh-CN": "碎岩龟"
     },
     "SortingKey": {
@@ -27301,6 +27869,7 @@
       "en": "Elphidran",
       "fr": "Elphidran",
       "ja": "シルフィア",
+      "ko": "실피아",
       "zh-CN": "精灵龙"
     },
     "SortingKey": {
@@ -27352,6 +27921,7 @@
       "en": "Dazemu",
       "fr": "Dazemu",
       "ja": "トリステップ",
+      "ko": "페더치프",
       "zh-CN": "战冠雀"
     },
     "SortingKey": {
@@ -27403,6 +27973,7 @@
       "en": "Dinossom",
       "fr": "Dinossom",
       "ja": "アロアリュー",
+      "ko": "플로라디노",
       "zh-CN": "花冠龙"
     },
     "SortingKey": {
@@ -27452,6 +28023,7 @@
       "en": "Direhowl",
       "fr": "Direhowl",
       "ja": "ガウルフ",
+      "ko": "다크울프",
       "zh-CN": "猎狼"
     },
     "SortingKey": {
@@ -27502,6 +28074,7 @@
       "en": "Maraith",
       "fr": "Maraith",
       "ja": "ソルレイス",
+      "ko": "고스호스",
       "zh-CN": "噬魂兽"
     },
     "SortingKey": {
@@ -27555,6 +28128,7 @@
       "en": "Gildane",
       "fr": "Gildane",
       "ja": "キンガゼル",
+      "ko": "러시골드",
       "zh-CN": "金驰兽"
     },
     "SortingKey": {
@@ -27605,6 +28179,7 @@
       "en": "Gorirat",
       "fr": "Gorirat",
       "ja": "ゴリレイジ",
+      "ko": "고릴레이지",
       "zh-CN": "铁拳猿"
     },
     "SortingKey": {
@@ -27655,6 +28230,7 @@
       "en": "Mossanda",
       "fr": "Mossanda",
       "ja": "ササゾー",
+      "ko": "풀바오",
       "zh-CN": "叶胖达"
     },
     "SortingKey": {
@@ -27705,6 +28281,7 @@
       "en": "Splatterina",
       "fr": "Splatterina",
       "ja": "ヤンデリナ",
+      "ko": "얀데리나",
       "zh-CN": "幽恋娜"
     },
     "SortingKey": {
@@ -27755,6 +28332,7 @@
       "en": "Faleris Aqua",
       "fr": "Faleris Aqua",
       "ja": "イシス",
+      "ko": "이시스",
       "zh-CN": "伊西斯"
     },
     "SortingKey": {
@@ -27806,6 +28384,7 @@
       "en": "Relaxaurus",
       "fr": "Relaxaurus",
       "ja": "ペコドン",
+      "ko": "헤로롱",
       "zh-CN": "佩克龙"
     },
     "SortingKey": {
@@ -27858,6 +28437,7 @@
       "en": "Blazehowl Noct",
       "fr": "Blazehowl Noct",
       "ja": "シンエンオ",
+      "ko": "만티녹턴",
       "zh-CN": "狱阎王"
     },
     "SortingKey": {
@@ -27908,6 +28488,7 @@
       "en": "Shroomer",
       "fr": "Shroomer",
       "ja": "キノッポ",
+      "ko": "머쉬드래곤",
       "zh-CN": "菇咚"
     },
     "SortingKey": {
@@ -27957,6 +28538,7 @@
       "en": "Omascul",
       "fr": "Omascul",
       "ja": "オーメン",
+      "ko": "홀로페이스",
       "zh-CN": "面惧"
     },
     "SortingKey": {
@@ -28009,6 +28591,7 @@
       "en": "Starryon",
       "fr": "Starryon",
       "ja": "ナイトロット",
+      "ko": "나이트롯",
       "zh-CN": "夜冥驹"
     },
     "SortingKey": {
@@ -28058,6 +28641,7 @@
       "en": "Lovander",
       "fr": "Lovander",
       "ja": "ラブマンダー",
+      "ko": "핑크뇽",
       "zh-CN": "博爱蜥"
     },
     "SortingKey": {
@@ -28109,6 +28693,7 @@
       "en": "Tarantriss",
       "fr": "Tarantriss",
       "ja": "モモンチュラ",
+      "ko": "스틱툴라",
       "zh-CN": "桃蛛娘"
     },
     "SortingKey": {
@@ -28161,6 +28746,7 @@
       "en": "Ragnahawk",
       "fr": "Ragnahawk",
       "ja": "イグニクス",
+      "ko": "적토조",
       "zh-CN": "燧火鸟"
     },
     "SortingKey": {
@@ -28212,6 +28798,7 @@
       "en": "Prixter",
       "fr": "Prixter",
       "ja": "ブッサソリ",
+      "ko": "스콜피어스",
       "zh-CN": "蛊刺妖"
     },
     "SortingKey": {
@@ -28262,6 +28849,7 @@
       "en": "Dogen",
       "fr": "Dogen",
       "ja": "ワンフー",
+      "ko": "시푸도그",
       "zh-CN": "汪宗师"
     },
     "SortingKey": {
@@ -28313,6 +28901,7 @@
       "en": "Rayhound",
       "fr": "Rayhound",
       "ja": "イヌズマ",
+      "ko": "썬도그",
       "zh-CN": "霹雳犬"
     },
     "SortingKey": {
@@ -28366,6 +28955,7 @@
       "en": "Jormuntide Ignis",
       "fr": "Jormuntide Ignis",
       "ja": "アグニドラ",
+      "ko": "아그니드라",
       "zh-CN": "腾炎龙"
     },
     "SortingKey": {
@@ -28418,6 +29008,7 @@
       "en": "Reptyro Cryst",
       "fr": "Reptyro Cryst",
       "ja": "フロスカノン",
+      "ko": "프로스카노",
       "zh-CN": "寒霜兽"
     },
     "SortingKey": {
@@ -28469,6 +29060,7 @@
       "en": "Loupmoon Cryst",
       "fr": "Loupmoon Cryst",
       "ja": "ユキカゲ",
+      "ko": "얼서니",
       "zh-CN": "霜镰魔"
     },
     "SortingKey": {
@@ -28521,6 +29113,7 @@
       "en": "Cryolinx Terra",
       "fr": "Cryolinx Terra",
       "ja": "グランドラー",
+      "ko": "토랑이",
       "zh-CN": "金棘兽"
     },
     "SortingKey": {
@@ -28572,6 +29165,7 @@
       "en": "Wumpo",
       "fr": "Wumpo",
       "ja": "ヒエティ",
+      "ko": "움포",
       "zh-CN": "白绒雪怪"
     },
     "SortingKey": {
@@ -28623,6 +29217,7 @@
       "en": "Helzephyr Lux",
       "fr": "Helzephyr Lux",
       "ja": "ライガルダ",
+      "ko": "라이가루다",
       "zh-CN": "雷鸣鸟"
     },
     "SortingKey": {
@@ -28676,6 +29271,7 @@
       "en": "Bushi Noct",
       "fr": "Bushi Noct",
       "ja": "ヤミウチ",
+      "ko": "어둠무사",
       "zh-CN": "鬼刃武士"
     },
     "SortingKey": {
@@ -28728,6 +29324,7 @@
       "en": "Sootseer",
       "fr": "Sootseer",
       "ja": "オドロクロ",
+      "ko": "유령초",
       "zh-CN": "恐炬灵"
     },
     "SortingKey": {
@@ -28779,6 +29376,7 @@
       "en": "Incineram Noct",
       "fr": "Incineram Noct",
       "ja": "アビスゴート",
+      "ko": "아비스고트",
       "zh-CN": "暗魔羊"
     },
     "SortingKey": {
@@ -28831,6 +29429,7 @@
       "en": "Moldron",
       "fr": "Moldron",
       "ja": "マグマンダー",
+      "ko": "마그맨더",
       "zh-CN": "流焰龙"
     },
     "SortingKey": {
@@ -28882,6 +29481,7 @@
       "en": "Gildra",
       "fr": "Gildra",
       "ja": "ヨミーラ",
+      "ko": "요미이라",
       "zh-CN": "缚乃伊"
     },
     "SortingKey": {
@@ -28932,6 +29532,7 @@
       "en": "Suzaku",
       "fr": "Suzaku",
       "ja": "スザク",
+      "ko": "주작",
       "zh-CN": "朱雀"
     },
     "SortingKey": {
@@ -28984,6 +29585,7 @@
       "en": "Mammorest Cryst",
       "fr": "Mammorest Cryst",
       "ja": "ブリザモス",
+      "ko": "블리자모스",
       "zh-CN": "雪猛犸"
     },
     "SortingKey": {
@@ -29035,6 +29637,7 @@
       "en": "Tropicaw",
       "fr": "Tropicaw",
       "ja": "フラペック",
+      "ko": "플라페크",
       "zh-CN": "大红呱"
     },
     "SortingKey": {
@@ -29085,6 +29688,7 @@
       "en": "Elgrove Cryst",
       "fr": "Elgrove Cryst",
       "ja": "ユキタロス",
+      "ko": "블랑타우",
       "zh-CN": "冰峰陶洛斯"
     },
     "SortingKey": {
@@ -29136,6 +29740,7 @@
       "en": "Leafan",
       "fr": "Leafan",
       "ja": "リーファン",
+      "ko": "리팡",
       "zh-CN": "莉芳"
     },
     "SortingKey": {
@@ -29187,6 +29792,7 @@
       "en": "Menasting",
       "fr": "Menasting",
       "ja": "デスティング",
+      "ko": "데스스팅",
       "zh-CN": "冥铠蝎"
     },
     "SortingKey": {
@@ -29236,6 +29842,7 @@
       "en": "Venusa",
       "fr": "Venusa",
       "ja": "メドゥーナ",
+      "ko": "메두나",
       "zh-CN": "梅杜娜"
     },
     "SortingKey": {
@@ -29286,6 +29893,7 @@
       "en": "Solenne",
       "fr": "Solenne",
       "ja": "モノクローナ",
+      "ko": "모노크로나",
       "zh-CN": "墨罗娜"
     },
     "SortingKey": {
@@ -29339,6 +29947,7 @@
       "en": "Xenolord",
       "fr": "Xenolord",
       "ja": "ゼノドラン",
+      "ko": "제노드란",
       "zh-CN": "杰诺多兰"
     },
     "SortingKey": {
@@ -29398,6 +30007,7 @@
       "en": "Xenolord",
       "fr": "Xenolord",
       "ja": "ゼノドラン",
+      "ko": "제노드란",
       "zh-CN": "杰诺多兰"
     },
     "SortingKey": {
@@ -29446,6 +30056,7 @@
       "en": "Foxparks Cryst",
       "fr": "Foxparks Cryst",
       "ja": "ユキツネ",
+      "ko": "아이호",
       "zh-CN": "雪绒狐"
     },
     "SortingKey": {
@@ -29494,6 +30105,7 @@
       "en": "Caprity Noct",
       "fr": "Caprity Noct",
       "ja": "ベノゴート",
+      "ko": "베노고트",
       "zh-CN": "郁木羊"
     },
     "SortingKey": {
@@ -29542,6 +30154,7 @@
       "en": "Ribbuny Botan",
       "fr": "Ribbuny Botan",
       "ja": "ヨモギウサ",
+      "ko": "그래토",
       "zh-CN": "艾小兔"
     },
     "SortingKey": {
@@ -29590,6 +30203,7 @@
       "en": "Loupmoon Cryst",
       "fr": "Loupmoon Cryst",
       "ja": "ユキカゲ",
+      "ko": "얼서니",
       "zh-CN": "霜镰魔"
     },
     "SortingKey": {
@@ -29640,6 +30254,7 @@
       "en": "Kitsun Noct",
       "fr": "Kitsun Noct",
       "ja": "カゲヌイ",
+      "ko": "음이리",
       "zh-CN": "幽焰狼"
     },
     "SortingKey": {
@@ -29689,6 +30304,7 @@
       "en": "Dazzi Noct",
       "fr": "Dazzi Noct",
       "ja": "ヤミナラシ",
+      "ko": "다크키드",
       "zh-CN": "天阴童子"
     },
     "SortingKey": {
@@ -29738,6 +30354,7 @@
       "en": "Cryolinx Terra",
       "fr": "Cryolinx Terra",
       "ja": "グランドラー",
+      "ko": "토랑이",
       "zh-CN": "金棘兽"
     },
     "SortingKey": {
@@ -29786,6 +30403,7 @@
       "en": "Fenglope Lux",
       "fr": "Fenglope Lux",
       "ja": "ムラサメ",
+      "ko": "볼트디어",
       "zh-CN": "雷隐鹿"
     },
     "SortingKey": {
@@ -29834,6 +30452,7 @@
       "en": "Faleris Aqua",
       "fr": "Faleris Aqua",
       "ja": "イシス",
+      "ko": "이시스",
       "zh-CN": "伊西斯"
     },
     "SortingKey": {
@@ -29883,6 +30502,7 @@
       "en": "Bastigor",
       "fr": "Bastigor",
       "ja": "ヒョウガオー",
+      "ko": "빙호우거",
       "zh-CN": "霜牙王"
     },
     "SortingKey": {
@@ -29930,6 +30550,7 @@
       "en": "Knocklem",
       "fr": "Knocklem",
       "ja": "テラナイト",
+      "ko": "테라나이트",
       "zh-CN": "泰锋"
     },
     "SortingKey": {
@@ -29978,6 +30599,7 @@
       "en": "Xenovader",
       "fr": "Xenovader",
       "ja": "ゼノベーダ",
+      "ko": "제노베이더",
       "zh-CN": "杰诺贝达"
     },
     "SortingKey": {
@@ -30027,6 +30649,7 @@
       "en": "Faleris",
       "fr": "Faleris",
       "ja": "ホルス",
+      "ko": "호루스",
       "zh-CN": "荷鲁斯"
     },
     "SortingKey": {
@@ -30076,6 +30699,7 @@
       "en": "Incineram Noct",
       "fr": "Incineram Noct",
       "ja": "アビスゴート",
+      "ko": "아비스고트",
       "zh-CN": "暗魔羊"
     },
     "SortingKey": {
@@ -30124,6 +30748,7 @@
       "en": "Helzephyr",
       "fr": "Helzephyr",
       "ja": "ヘルガルダ",
+      "ko": "헬가루다",
       "zh-CN": "雷冥鸟"
     },
     "SortingKey": {
@@ -30172,6 +30797,7 @@
       "en": "Leezpunk",
       "fr": "Leezpunk",
       "ja": "ダリザード",
+      "ko": "도마맨",
       "zh-CN": "朋克蜥"
     },
     "SortingKey": {
@@ -30220,6 +30846,7 @@
       "en": "Venusa",
       "fr": "Venusa",
       "ja": "メドゥーナ",
+      "ko": "메두나",
       "zh-CN": "梅杜娜"
     },
     "SortingKey": {
@@ -30269,6 +30896,7 @@
       "en": "Ghangler",
       "fr": "Ghangler",
       "ja": "アンドーン",
+      "ko": "빛초롱",
       "zh-CN": "冥灯鱼"
     },
     "SortingKey": {
@@ -30318,6 +30946,7 @@
       "en": "Ghangler Ignis",
       "fr": "Ghangler Ignis",
       "ja": "メラドーン",
+      "ko": "불초롱",
       "zh-CN": "炙灯鱼"
     },
     "SortingKey": {
@@ -30366,6 +30995,7 @@
       "en": "Icelyn",
       "fr": "Icelyn",
       "ja": "チルウィッチ",
+      "ko": "칠위치",
       "zh-CN": "冰姬灵"
     },
     "SortingKey": {
@@ -30414,6 +31044,7 @@
       "en": "Dupin",
       "fr": "Dupin",
       "ja": "ラピエール",
+      "ko": "라피에르",
       "zh-CN": "拉比耶尔"
     },
     "SortingKey": {
@@ -30462,6 +31093,7 @@
       "en": "Hartalis",
       "fr": "Hartalis",
       "ja": "レジェンディア",
+      "ko": "레젠디얼",
       "zh-CN": "默世鹿"
     },
     "SortingKey": {
@@ -30511,6 +31143,7 @@
       "en": "Herbil",
       "fr": "Herbil",
       "ja": "モモンパ",
+      "ko": "모몽파",
       "zh-CN": "达鼠泥"
     },
     "SortingKey": {
@@ -30559,6 +31192,7 @@
       "en": "Snugloo",
       "fr": "Snugloo",
       "ja": "ユキボウ",
+      "ko": "설뭉치",
       "zh-CN": "雪墩墩"
     },
     "SortingKey": {
@@ -30608,6 +31242,7 @@
       "en": "Munchill",
       "fr": "Munchill",
       "ja": "コチワニ",
+      "ko": "크로꽁",
       "zh-CN": "肚肚鳄"
     },
     "SortingKey": {
@@ -30656,6 +31291,7 @@
       "en": "Needoll",
       "fr": "Needoll",
       "ja": "ハグミー",
+      "ko": "허그미",
       "zh-CN": "球抱苞"
     },
     "SortingKey": {
@@ -30705,6 +31341,7 @@
       "en": "Needoll Noct",
       "fr": "Needoll Noct",
       "ja": "ハグユー",
+      "ko": "허그유",
       "zh-CN": "妖抱苞"
     },
     "SortingKey": {
@@ -30753,6 +31390,7 @@
       "en": "Mycora",
       "fr": "Mycora",
       "ja": "マシュリー",
+      "ko": "머슐리",
       "zh-CN": "红菇娘"
     },
     "SortingKey": {
@@ -30801,6 +31439,7 @@
       "en": "Finsider",
       "fr": "Finsider",
       "ja": "ガブルミ",
+      "ko": "무상이",
       "zh-CN": "布偶鲨"
     },
     "SortingKey": {
@@ -30850,6 +31489,7 @@
       "en": "Finsider Ignis",
       "fr": "Finsider Ignis",
       "ja": "ヒグルミ",
+      "ko": "염상이",
       "zh-CN": "粉粉布偶鲨"
     },
     "SortingKey": {
@@ -30898,6 +31538,7 @@
       "en": "Flaracle",
       "fr": "Flaracle",
       "ja": "センコ",
+      "ko": "센코",
       "zh-CN": "昭炎狐"
     },
     "SortingKey": {
@@ -30947,6 +31588,7 @@
       "en": "Polapup",
       "fr": "Polapup",
       "ja": "バニザラシ",
+      "ko": "크리범",
       "zh-CN": "香草豹冰"
     },
     "SortingKey": {
@@ -30996,6 +31638,7 @@
       "en": "Polapup Terra",
       "fr": "Polapup Terra",
       "ja": "チョコザラシ",
+      "ko": "초코범",
       "zh-CN": "巧克力豹冰"
     },
     "SortingKey": {
@@ -31045,6 +31688,7 @@
       "en": "Clovee",
       "fr": "Clovee",
       "ja": "ポワワ",
+      "ko": "브루밍",
       "zh-CN": "幸叶茸"
     },
     "SortingKey": {
@@ -31094,6 +31738,7 @@
       "en": "Puffolt",
       "fr": "Puffolt",
       "ja": "パチマル",
+      "ko": "짜리링",
       "zh-CN": "电汪汪"
     },
     "SortingKey": {
@@ -31142,6 +31787,7 @@
       "en": "Wispaw",
       "fr": "Wispaw",
       "ja": "ニャンシー",
+      "ko": "냥시",
       "zh-CN": "念影喵"
     },
     "SortingKey": {
@@ -31190,6 +31836,7 @@
       "en": "Roujay",
       "fr": "Roujay",
       "ja": "アルセーヴ",
+      "ko": "아르셉",
       "zh-CN": "盗影鸦"
     },
     "SortingKey": {
@@ -31238,6 +31885,7 @@
       "en": "Bakemi",
       "fr": "Bakemi",
       "ja": "ウラミィ",
+      "ko": "우라미",
       "zh-CN": "吓丝妮"
     },
     "SortingKey": {
@@ -31277,6 +31925,7 @@
       "en": "KingCrab",
       "fr": "KingCrab",
       "ja": "KingCrab",
+      "ko": "KingCrab",
       "zh-CN": "KingCrab"
     },
     "SortingKey": {
@@ -31326,6 +31975,7 @@
       "en": "Braloha",
       "fr": "Braloha",
       "ja": "トコナッツ",
+      "ko": "풀레시오",
       "zh-CN": "梁叶龙"
     },
     "SortingKey": {
@@ -31374,6 +32024,7 @@
       "en": "Palumba",
       "fr": "Palumba",
       "ja": "ココヤンバ",
+      "ko": "트로조크",
       "zh-CN": "咕咕桑葩"
     },
     "SortingKey": {
@@ -31423,6 +32074,7 @@
       "en": "Dualith",
       "fr": "Dualith",
       "ja": "ウゴクゾー",
+      "ko": "스태초",
       "zh-CN": "双心岩傀"
     },
     "SortingKey": {
@@ -31472,6 +32124,7 @@
       "en": "Dualith Noct",
       "fr": "Dualith Noct",
       "ja": "ノロウゾー",
+      "ko": "스태그림",
       "zh-CN": "咒心岩傀"
     },
     "SortingKey": {
@@ -31520,6 +32173,7 @@
       "en": "Frostplume",
       "fr": "Frostplume",
       "ja": "クジャンナ",
+      "ko": "프리설라",
       "zh-CN": "白真雪雀"
     },
     "SortingKey": {
@@ -31568,6 +32222,7 @@
       "en": "Tetroise ",
       "fr": "Tetroise ",
       "ja": "オモシガメ",
+      "ko": "누름북",
       "zh-CN": "重岩龟"
     },
     "SortingKey": {
@@ -31616,6 +32271,7 @@
       "en": "Tetroise Primo",
       "fr": "Tetroise Primo",
       "ja": "オシロガメ",
+      "ko": "성채북",
       "zh-CN": "净岩龟"
     },
     "SortingKey": {
@@ -31664,6 +32320,7 @@
       "en": "Valentail",
       "fr": "Valentail",
       "ja": "ニャルル",
+      "ko": "냐를르",
       "zh-CN": "喵璐璐"
     },
     "SortingKey": {
@@ -31713,6 +32370,7 @@
       "en": "Jellroy",
       "fr": "Jellroy",
       "ja": "ユララン",
+      "ko": "흘루미",
       "zh-CN": "海月灵"
     },
     "SortingKey": {
@@ -31761,6 +32419,7 @@
       "en": "Dynamoff",
       "fr": "Dynamoff",
       "ja": "ダイナモフ",
+      "ko": "뇌운조",
       "zh-CN": "雷云鹫"
     },
     "SortingKey": {
@@ -31809,6 +32468,7 @@
       "en": "Wistella",
       "fr": "Wistella",
       "ja": "ホシノコ",
+      "ko": "달보미",
       "zh-CN": "缀夜星"
     },
     "SortingKey": {
@@ -31858,6 +32518,7 @@
       "en": "Pupperai",
       "fr": "Pupperai",
       "ja": "ポチムネ",
+      "ko": "솔바둑",
       "zh-CN": "宗铭丸"
     },
     "SortingKey": {
@@ -31907,6 +32568,7 @@
       "en": "Neptilius",
       "fr": "Neptilius",
       "ja": "ネプティオス",
+      "ko": "넵티오스",
       "zh-CN": "海皇鲸"
     },
     "SortingKey": {
@@ -31955,6 +32617,7 @@
       "en": "Skutlass",
       "fr": "Skutlass",
       "ja": "オオタチウオ",
+      "ko": "날검치",
       "zh-CN": "鞘刀鱼"
     },
     "SortingKey": {
@@ -32004,6 +32667,7 @@
       "en": "Skutlass Ignis",
       "fr": "Skutlass Ignis",
       "ja": "ヒノタチウオ",
+      "ko": "불검치",
       "zh-CN": "炼刃鱼"
     },
     "SortingKey": {
@@ -32045,6 +32709,7 @@
       "en": "Green Slime",
       "fr": "Gelée verte",
       "ja": "グリーンスライム",
+      "ko": "녹색 슬라임",
       "zh-CN": "绿史莱姆"
     },
     "SortingKey": {
@@ -32086,6 +32751,7 @@
       "en": "Blue Slime",
       "fr": "Gelée bleue",
       "ja": "ブルースライム",
+      "ko": "파란 슬라임",
       "zh-CN": "蓝史莱姆"
     },
     "SortingKey": {
@@ -32127,6 +32793,7 @@
       "en": "Red Slime",
       "fr": "Gelée rouge",
       "ja": "レッドスライム",
+      "ko": "빨간 슬라임",
       "zh-CN": "红史莱姆"
     },
     "SortingKey": {
@@ -32168,6 +32835,7 @@
       "en": "Purple Slime",
       "fr": "Gelée violette",
       "ja": "パープルスライム",
+      "ko": "자주색 슬라임",
       "zh-CN": "紫史莱姆"
     },
     "SortingKey": {
@@ -32209,6 +32877,7 @@
       "en": "Illuminant Slime",
       "fr": "Gelée lumineuse",
       "ja": "かがやくスライム",
+      "ko": "발광 슬라임",
       "zh-CN": "夜明史莱姆"
     },
     "SortingKey": {
@@ -32250,6 +32919,7 @@
       "en": "Rainbow Slime",
       "fr": "Gelée arc-en-ciel",
       "ja": "レインボースライム",
+      "ko": "무지개 슬라임",
       "zh-CN": "彩虹史莱姆"
     },
     "SortingKey": {
@@ -32291,6 +32961,7 @@
       "en": "Enchanted Sword",
       "fr": "Épée envoûtée",
       "ja": "まほうのつるぎ",
+      "ko": "마법의 검",
       "zh-CN": "附魔剑"
     },
     "SortingKey": {
@@ -32332,6 +33003,7 @@
       "en": "Cave Bat",
       "fr": "Chauve-souris des grottes",
       "ja": "どうくつコウモリ",
+      "ko": "동굴 박쥐",
       "zh-CN": "洞穴蝙蝠"
     },
     "SortingKey": {
@@ -32373,6 +33045,7 @@
       "en": "Illuminant Bat",
       "fr": "Chauve-souris lumineuse",
       "ja": "かがやくコウモリ",
+      "ko": "발광 박쥐",
       "zh-CN": "夜明蝙蝠"
     },
     "SortingKey": {
@@ -32415,6 +33088,7 @@
       "en": "Eye of Cthulhu",
       "fr": "Œil de Cthulhu",
       "ja": "クトゥルフのめだま",
+      "ko": "크툴루의 눈",
       "zh-CN": "克苏鲁之眼"
     },
     "SortingKey": {
@@ -32457,6 +33131,7 @@
       "en": "Eye of Cthulhu",
       "fr": "Œil de Cthulhu",
       "ja": "クトゥルフのめだま",
+      "ko": "크툴루의 눈",
       "zh-CN": "克苏鲁之眼"
     },
     "SortingKey": {
@@ -32498,6 +33173,7 @@
       "en": "Demon Eye",
       "fr": "Œil de démon",
       "ja": "あくまのめだま",
+      "ko": "악마의 눈",
       "zh-CN": "恶魔眼"
     },
     "SortingKey": {
@@ -32540,6 +33216,7 @@
       "en": "True Eye of Cthulhu",
       "fr": "Véritable Œil de Cthulhu",
       "ja": "真のクトゥルフのめだま",
+      "ko": "진정한 크툴루의 눈",
       "zh-CN": "克苏鲁真眼"
     },
     "SortingKey": {
@@ -32580,6 +33257,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32621,6 +33299,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32662,6 +33341,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32710,6 +33390,7 @@
       "en": "Lamball",
       "fr": "Lamball",
       "ja": "モコロン",
+      "ko": "도로롱",
       "zh-CN": "棉悠悠"
     },
     "SortingKey": {
@@ -32758,6 +33439,7 @@
       "en": "Cattiva",
       "fr": "Cattiva",
       "ja": "ツッパニャン",
+      "ko": "까부냥",
       "zh-CN": "捣蛋猫"
     },
     "SortingKey": {
@@ -32810,6 +33492,7 @@
       "en": "Zoe & Grizzbolt",
       "fr": "Zoe & Grizzbolt",
       "ja": "ゾーイ＆エレパンダ",
+      "ko": "조이&일렉판다",
       "zh-CN": "佐伊 & 暴电熊"
     },
     "SortingKey": {
@@ -32847,6 +33530,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32887,6 +33571,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32928,6 +33613,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -32969,6 +33655,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -33006,6 +33693,7 @@
       "en": "Moon Lord",
       "fr": "Seigneur de la lune",
       "ja": "ムーンロード",
+      "ko": "달의 군주",
       "zh-CN": "月亮领主"
     },
     "SortingKey": {
@@ -33048,6 +33736,7 @@
       "en": "True Eye of Cthulhu",
       "fr": "Véritable Œil de Cthulhu",
       "ja": "真のクトゥルフのめだま",
+      "ko": "진정한 크툴루의 눈",
       "zh-CN": "克苏鲁真眼"
     },
     "SortingKey": {
@@ -33097,6 +33786,7 @@
       "en": "Gildra",
       "fr": "Gildra",
       "ja": "ヨミーラ",
+      "ko": "요미이라",
       "zh-CN": "缚乃伊"
     },
     "SortingKey": {
@@ -33145,6 +33835,7 @@
       "en": "Solmora",
       "fr": "Solmora",
       "ja": "オーマンボ",
+      "ko": "킹복치",
       "zh-CN": "曼波王"
     },
     "SortingKey": {
@@ -33194,6 +33885,7 @@
       "en": "Solmora Lux",
       "fr": "Solmora Lux",
       "ja": "トノサマンボ",
+      "ko": "쇼군복치",
       "zh-CN": "曼波皇"
     },
     "SortingKey": {
@@ -33243,6 +33935,7 @@
       "en": "Solenne",
       "fr": "Solenne",
       "ja": "モノクローナ",
+      "ko": "모노크로나",
       "zh-CN": "墨罗娜"
     },
     "SortingKey": {
@@ -33291,6 +33984,7 @@
       "en": "Snock",
       "fr": "Snock",
       "ja": "デンツム",
+      "ko": "전팽이",
       "zh-CN": "电涡蜗"
     },
     "SortingKey": {
@@ -33330,6 +34024,7 @@
       "en": "Snock",
       "fr": "Snock",
       "ja": "デンツム",
+      "ko": "전팽이",
       "zh-CN": "电涡蜗"
     },
     "SortingKey": {
@@ -33379,6 +34074,7 @@
       "en": "Snock Lux",
       "fr": "Snock Lux",
       "ja": "ドンツム",
+      "ko": "돌팽이",
       "zh-CN": "金涡蜗"
     },
     "SortingKey": {
@@ -33428,6 +34124,7 @@
       "en": "Loomen",
       "fr": "Loomen",
       "ja": "ヴィランタン",
+      "ko": "뷔랜턴",
       "zh-CN": "妖焰灯"
     },
     "SortingKey": {
@@ -33476,6 +34173,7 @@
       "en": "Bulldosu",
       "fr": "Bulldosu",
       "ja": "ドスコイヌ",
+      "ko": "와르차차",
       "zh-CN": "力士獒"
     },
     "SortingKey": {
@@ -33524,6 +34222,7 @@
       "en": "Carnibora",
       "fr": "Carnibora",
       "ja": "カプリリス",
+      "ko": "카프릴리스",
       "zh-CN": "颚莉丝"
     },
     "SortingKey": {
@@ -33563,6 +34262,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -33603,6 +34303,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -33651,6 +34352,7 @@
       "en": "Muffly",
       "fr": "Muffly",
       "ja": "モコチッチ",
+      "ko": "솜눈이",
       "zh-CN": "雪绵啾"
     },
     "SortingKey": {
@@ -33690,6 +34392,7 @@
       "en": "FrozenBear",
       "fr": "FrozenBear",
       "ja": "FrozenBear",
+      "ko": "FrozenBear",
       "zh-CN": "FrozenBear"
     },
     "SortingKey": {
@@ -33738,6 +34441,7 @@
       "en": "Souffline",
       "fr": "Souffline",
       "ja": "ポポフィア",
+      "ko": "퍼프피아",
       "zh-CN": "蒲蒲飞芽"
     },
     "SortingKey": {
@@ -33778,6 +34482,7 @@
       "en": "Unidentified Pal",
       "fr": "en_text",
       "ja": "-",
+      "ko": "ko_Text",
       "zh-CN": "zh_Hans_Text"
     },
     "SortingKey": {
@@ -33826,6 +34531,7 @@
       "en": "Hartalis",
       "fr": "Hartalis",
       "ja": "レジェンディア",
+      "ko": "레젠디얼",
       "zh-CN": "默世鹿"
     },
     "SortingKey": {
@@ -33874,6 +34580,7 @@
       "en": "Hartalis",
       "fr": "Hartalis",
       "ja": "レジェンディア",
+      "ko": "레젠디얼",
       "zh-CN": "默世鹿"
     },
     "SortingKey": {
@@ -33922,6 +34629,7 @@
       "en": "Amione",
       "fr": "Amione",
       "ja": "リオリネ",
+      "ko": "리오리네",
       "zh-CN": "莉欧·莉涅"
     },
     "SortingKey": {
@@ -33971,6 +34679,7 @@
       "en": "Majex",
       "fr": "Majex",
       "ja": "マジョルナ",
+      "ko": "마조리나",
       "zh-CN": "紫狐娇"
     },
     "SortingKey": {
@@ -34011,6 +34720,7 @@
       "en": "IceVeilDragon",
       "fr": "IceVeilDragon",
       "ja": "IceVeilDragon",
+      "ko": "IceVeilDragon",
       "zh-CN": "IceVeilDragon"
     },
     "SortingKey": {
@@ -34059,6 +34769,7 @@
       "en": "Tropicaw",
       "fr": "Tropicaw",
       "ja": "フラペック",
+      "ko": "플라페크",
       "zh-CN": "大红呱"
     },
     "SortingKey": {
@@ -34107,6 +34818,7 @@
       "en": "Lapure",
       "fr": "Lapure",
       "ja": "ネモフィ",
+      "ko": "슬리비",
       "zh-CN": "兔绣袖"
     },
     "SortingKey": {
@@ -34156,6 +34868,7 @@
       "en": "Ophydia",
       "fr": "Ophydia",
       "ja": "ハナミズチ",
+      "ko": "연미르",
       "zh-CN": "沁莲龙"
     },
     "SortingKey": {
@@ -34205,6 +34918,7 @@
       "en": "Shaolong",
       "fr": "Shaolong",
       "ja": "シャオロン",
+      "ko": "샤오롱",
       "zh-CN": "霄龙"
     },
     "SortingKey": {
@@ -34244,6 +34958,7 @@
       "en": "BlueWoolRabbit",
       "fr": "BlueWoolRabbit",
       "ja": "BlueWoolRabbit",
+      "ko": "BlueWoolRabbit",
       "zh-CN": "BlueWoolRabbit"
     },
     "SortingKey": {
@@ -34292,6 +35007,7 @@
       "en": "Leafan",
       "fr": "Leafan",
       "ja": "リーファン",
+      "ko": "리팡",
       "zh-CN": "莉芳"
     },
     "SortingKey": {
@@ -34340,6 +35056,7 @@
       "en": "Elgrove",
       "fr": "Elgrove",
       "ja": "モリタロス",
+      "ko": "그루타우",
       "zh-CN": "密林陶洛斯"
     },
     "SortingKey": {
@@ -34388,6 +35105,7 @@
       "en": "Elgrove Cryst",
       "fr": "Elgrove Cryst",
       "ja": "ユキタロス",
+      "ko": "블랑타우",
       "zh-CN": "冰峰陶洛斯"
     },
     "SortingKey": {
@@ -34428,6 +35146,7 @@
       "en": "MonochromeMushroom",
       "fr": "MonochromeMushroom",
       "ja": "MonochromeMushroom",
+      "ko": "MonochromeMushroom",
       "zh-CN": "MonochromeMushroom"
     },
     "SortingKey": {
@@ -34467,6 +35186,7 @@
       "en": "MedjedBird",
       "fr": "MedjedBird",
       "ja": "MedjedBird",
+      "ko": "MedjedBird",
       "zh-CN": "MedjedBird"
     },
     "SortingKey": {
@@ -34515,6 +35235,7 @@
       "en": "Silvance",
       "fr": "Silvance",
       "ja": "モスローン",
+      "ko": "모슬론",
       "zh-CN": "暮尘蛾"
     },
     "SortingKey": {
@@ -34564,6 +35285,7 @@
       "en": "Eidrolon",
       "fr": "Eidrolon",
       "ja": "レイバーン",
+      "ko": "레이번",
       "zh-CN": "灵曦龙"
     },
     "SortingKey": {
@@ -34613,6 +35335,7 @@
       "en": "Eidrolon Ignis",
       "fr": "Eidrolon Ignis",
       "ja": "ヘルバーン",
+      "ko": "헬번",
       "zh-CN": "狱熙龙"
     },
     "SortingKey": {
@@ -34662,6 +35385,7 @@
       "en": "Dandilord",
       "fr": "Dandilord",
       "ja": "ノクサージュ",
+      "ko": "녹사주",
       "zh-CN": "夜蔓爵"
     },
     "SortingKey": {
@@ -34699,6 +35423,7 @@
       "en": "Astralym",
       "fr": "Astralym",
       "ja": "ゼロヴァース",
+      "ko": "제로버스",
       "zh-CN": "枯星龙"
     },
     "SortingKey": {
@@ -34747,6 +35472,7 @@
       "en": "Renjishi",
       "fr": "Renjishi",
       "ja": "ゴウカブキ",
+      "ko": "업화무",
       "zh-CN": "燎火舞伶"
     },
     "SortingKey": {
@@ -34796,6 +35522,7 @@
       "en": "Aegidron",
       "fr": "Aegidron",
       "ja": "シェルガドラ",
+      "ko": "셸가드라",
       "zh-CN": "磐甲龙"
     },
     "SortingKey": {
@@ -34835,6 +35562,7 @@
       "en": "RockCheetah",
       "fr": "RockCheetah",
       "ja": "RockCheetah",
+      "ko": "RockCheetah",
       "zh-CN": "RockCheetah"
     },
     "SortingKey": {
@@ -34874,6 +35602,7 @@
       "en": "ArmorWoodlouse",
       "fr": "ArmorWoodlouse",
       "ja": "ArmorWoodlouse",
+      "ko": "ArmorWoodlouse",
       "zh-CN": "ArmorWoodlouse"
     },
     "SortingKey": {
@@ -34914,6 +35643,7 @@
       "en": "MexicanSalamander",
       "fr": "MexicanSalamander",
       "ja": "MexicanSalamander",
+      "ko": "MexicanSalamander",
       "zh-CN": "MexicanSalamander"
     },
     "SortingKey": {
@@ -34953,6 +35683,7 @@
       "en": "LeafBird",
       "fr": "LeafBird",
       "ja": "LeafBird",
+      "ko": "LeafBird",
       "zh-CN": "LeafBird"
     },
     "SortingKey": {
@@ -34992,6 +35723,7 @@
       "en": "CuteOrca",
       "fr": "CuteOrca",
       "ja": "CuteOrca",
+      "ko": "CuteOrca",
       "zh-CN": "CuteOrca"
     },
     "SortingKey": {
@@ -35031,6 +35763,7 @@
       "en": "SnakeQueen",
       "fr": "SnakeQueen",
       "ja": "SnakeQueen",
+      "ko": "SnakeQueen",
       "zh-CN": "SnakeQueen"
     },
     "SortingKey": {
@@ -35079,6 +35812,7 @@
       "en": "Panthalus",
       "fr": "Panthalus",
       "ja": "グランジーラ",
+      "ko": "그랜웰",
       "zh-CN": "奥沧鲸"
     },
     "SortingKey": {
@@ -35126,6 +35860,7 @@
       "en": "Silvegis",
       "fr": "Silvegis",
       "ja": "アイギルガ",
+      "ko": "드라이지스",
       "zh-CN": "艾基鲁迦"
     },
     "SortingKey": {
@@ -35173,6 +35908,7 @@
       "en": "Flopie",
       "fr": "Flopie",
       "ja": "ポプリーナ",
+      "ko": "토푸리",
       "zh-CN": "波娜兔"
     },
     "SortingKey": {
@@ -35224,6 +35960,7 @@
       "en": "PIDF Rider",
       "fr": "Milice Populaire — Chevaucheur",
       "ja": "自警団 ライダー",
+      "ko": "자경단 라이더",
       "zh-CN": "自卫队 骑士"
     },
     "SortingKey": {
@@ -35272,6 +36009,7 @@
       "en": "PIDF Rider",
       "fr": "Milice Populaire — Chevaucheur",
       "ja": "自警団 ライダー",
+      "ko": "자경단 라이더",
       "zh-CN": "自卫队 骑士"
     },
     "SortingKey": {
@@ -35319,6 +36057,7 @@
       "en": "Grizzbolt",
       "fr": "Grizzbolt",
       "ja": "エレパンダ",
+      "ko": "일렉판다",
       "zh-CN": "暴电熊"
     },
     "SortingKey": {
@@ -35367,6 +36106,7 @@
       "en": "Lyleen",
       "fr": "Lyleen",
       "ja": "リリクイン",
+      "ko": "릴린",
       "zh-CN": "百合女王"
     },
     "SortingKey": {
@@ -35414,6 +36154,7 @@
       "en": "Orserk",
       "fr": "Orserk",
       "ja": "ボルゼクス",
+      "ko": "볼젝스",
       "zh-CN": "波鲁杰克斯"
     },
     "SortingKey": {
@@ -35461,6 +36202,7 @@
       "en": "Faleris",
       "fr": "Faleris",
       "ja": "ホルス",
+      "ko": "호루스",
       "zh-CN": "荷鲁斯"
     },
     "SortingKey": {
@@ -35509,6 +36251,7 @@
       "en": "Shadowbeak",
       "fr": "Shadowbeak",
       "ja": "ゼノグリフ",
+      "ko": "제노그리프",
       "zh-CN": "异构格里芬"
     },
     "SortingKey": {
@@ -35558,6 +36301,7 @@
       "en": "Selyne",
       "fr": "Selyne",
       "ja": "セレムーン",
+      "ko": "셀레문",
       "zh-CN": "辉月伊"
     },
     "SortingKey": {
@@ -35607,6 +36351,7 @@
       "en": "Bastigor",
       "fr": "Bastigor",
       "ja": "ヒョウガオー",
+      "ko": "빙호우거",
       "zh-CN": "霜牙王"
     },
     "SortingKey": {
@@ -35656,6 +36401,7 @@
       "en": "Shaolong",
       "fr": "Shaolong",
       "ja": "シャオロン",
+      "ko": "샤오롱",
       "zh-CN": "霄龙"
     },
     "SortingKey": {
@@ -35704,6 +36450,7 @@
       "en": "Mossanda Lux",
       "fr": "Mossanda Lux",
       "ja": "ライゾー",
+      "ko": "라이바오",
       "zh-CN": "雷胖达"
     },
     "SortingKey": {
@@ -35753,6 +36500,7 @@
       "en": "Relaxaurus Lux",
       "fr": "Relaxaurus Lux",
       "ja": "パリピドン",
+      "ko": "핑피롱",
       "zh-CN": "派克龙"
     },
     "SortingKey": {
@@ -35802,6 +36550,7 @@
       "en": "Direhowl",
       "fr": "Direhowl",
       "ja": "ガウルフ",
+      "ko": "다크울프",
       "zh-CN": "猎狼"
     },
     "SortingKey": {
@@ -35851,6 +36600,7 @@
       "en": "Lovander",
       "fr": "Lovander",
       "ja": "ラブマンダー",
+      "ko": "핑크뇽",
       "zh-CN": "博爱蜥"
     },
     "SortingKey": {
@@ -35900,6 +36650,7 @@
       "en": "Jormuntide Ignis",
       "fr": "Jormuntide Ignis",
       "ja": "アグニドラ",
+      "ko": "아그니드라",
       "zh-CN": "腾炎龙"
     },
     "SortingKey": {
@@ -35950,6 +36701,7 @@
       "en": "Kitsun Noct",
       "fr": "Kitsun Noct",
       "ja": "カゲヌイ",
+      "ko": "음이리",
       "zh-CN": "幽焰狼"
     },
     "SortingKey": {
@@ -36000,6 +36752,7 @@
       "en": "Kitsun Noct",
       "fr": "Kitsun Noct",
       "ja": "カゲヌイ",
+      "ko": "음이리",
       "zh-CN": "幽焰狼"
     },
     "SortingKey": {

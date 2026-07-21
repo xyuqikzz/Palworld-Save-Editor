@@ -12,6 +12,7 @@ from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 from palworld_pal_editor.core.save_manager import SaveManager
 from palworld_pal_editor.domain.commands import (
+    UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
     UpdatePalProgression,
@@ -166,6 +167,42 @@ class CharacterEditorTests(unittest.TestCase):
             singleton.player_mapping = self._singleton_players
         else:
             del singleton.player_mapping
+
+    def test_unlock_pal_expedition_removes_only_the_assignment(self) -> None:
+        expedition_id = "44444444-5555-6666-7777-888888888888"
+        field = "MapObjectConcreteInstanceIdAssignedToExpedition"
+        self.pal._pal_param[field] = PalObjects.Guid(expedition_id)
+        level_before = deepcopy(self.pal._pal_param["Level"])
+
+        result = self.editor.execute(
+            UnlockPalExpedition(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+            )
+        )
+
+        self.assertFalse(self.pal.IsExpeditionPal)
+        self.assertNotIn(field, self.pal._pal_param)
+        self.assertEqual(level_before, self.pal._pal_param["Level"])
+        self.assertEqual(
+            {"pal_id": str(self.pal.InstanceId), "expedition_locked": False},
+            result["value"],
+        )
+        self.assertEqual(1, self.session.revision)
+
+    def test_unlock_pal_expedition_rejects_an_unassigned_pal(self) -> None:
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UnlockPalExpedition(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                )
+            )
+
+        self.assertEqual("PAL_NOT_EXPEDITION_ASSIGNED", raised.exception.code)
+        self.assertEqual(0, self.session.revision)
 
     def test_player_identity_and_progression_are_explicit_changes(self) -> None:
         identity = self.editor.execute(
@@ -487,6 +524,24 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertFalse(result["value"]["worker_sick"])
         self.assertFalse(result["value"]["fainted"])
         self.assertIsNone(result["value"]["hunger_status"])
+
+    def test_pal_progression_rejects_negative_friendship_level(self) -> None:
+        before = deepcopy(self.pal._pal_param)
+
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePalProgression(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    values={"friendship_level": -1},
+                )
+            )
+
+        self.assertEqual("VALUE_OUT_OF_RANGE", raised.exception.code)
+        self.assertEqual(0, raised.exception.details["minimum"])
+        self.assertEqual(before, self.pal._pal_param)
+        self.assertEqual(0, self.session.revision)
 
     def test_pal_progression_validates_health_against_requested_level(self) -> None:
         proposed = PalEntity(deepcopy(self.pal._pal_obj))
