@@ -212,7 +212,7 @@ button:disabled { cursor: default; }
 #EditorMain .tooltip-text { color: var(--ui-text); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 8px; box-shadow: 0 8px 16px oklch(0.25 0.03 250 / 0.12); }
 
 #EditorMain input[type="range"] { accent-color: var(--ui-accent); }
-#EditorMain img.suitIcon { width: 20px; height: 20px; margin: 0 5px 0 0; padding: 0; }
+#EditorMain img.suitIcon { display: block; width: 24px; height: 24px; align-self: center; margin: 0; padding: 0; }
 #EditorMain img.palIcon { box-shadow: none; }
 
 /* Technology cards */
@@ -511,7 +511,6 @@ button:disabled { cursor: default; }
 
 #EditorMain .EditorItem.statsPanel { grid-column: 2; width: 100%; }
 
-#EditorMain .EditorItem.suitabilityPanel,
 #EditorMain .EditorItem.skillsPanel {
   grid-column: 1 / -1;
   width: 100%;
@@ -567,17 +566,17 @@ button:disabled { cursor: default; }
 }
 
 #EditorMain .suitabilityPanel .skillList {
-  column-gap: 8px;
-  row-gap: 6px;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 8px;
 }
 
-#EditorMain .suitabilityPanel .skillList > div { gap: 4px; }
+#EditorMain .suitabilityPanel .skillList > div { align-items: center; gap: 4px; }
 
 @media (max-width: 1380px) {
   #EditorMain .PalEditor.pal-editor-layout { grid-template-columns: minmax(520px, 1fr); }
   #EditorMain .EditorItem.basicInfo,
   #EditorMain .EditorItem.statsPanel,
-  #EditorMain .EditorItem.suitabilityPanel,
   #EditorMain .EditorItem.skillsPanel { grid-column: 1; }
 }
 

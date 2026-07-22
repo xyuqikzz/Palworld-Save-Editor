@@ -405,6 +405,11 @@ NO_OP_TYPES = set(
 )
 
 
+def expedition_member_writer(writer: FArchiveWriter, member: dict[str, Any]) -> None:
+    writer.guid(member["owner_player_uid"])
+    writer.guid(member["instance_id"])
+
+
 def decode_bytes(
     parent_reader: FArchiveReader, m_bytes: Sequence[int], object_id: str
 ) -> Optional[dict[str, Any]]:
@@ -432,10 +437,40 @@ def decode_bytes(
         case model if model in NO_OP_TYPES:
             pass
         case "PalMapObjectCharacterTeamMissionModel":
-            data["mission_id"] = reader.fstring()
-            data["state"] = reader.byte()
-            data["start_time"] = reader.i64()
-            data["unknown_bytes"] = [int(b) for b in reader.read_to_end()]
+            expedition_start = reader.data.tell()
+            try:
+                prefix = reader.u32()
+                if prefix != 0:
+                    raise ValueError("unsupported expedition prefix")
+                mission_id = reader.fstring()
+                member_count = reader.u32()
+                remaining = reader.size - reader.data.tell()
+                if member_count > max(0, (remaining - 9) // 32):
+                    raise ValueError("invalid expedition member count")
+                members = []
+                for _ in range(member_count):
+                    members.append(
+                        {
+                            "owner_player_uid": reader.guid(),
+                            "instance_id": reader.guid(),
+                        }
+                    )
+                data["expedition_layout"] = "current"
+                data["unknown_prefix"] = prefix
+                data["mission_id"] = mission_id
+                data["members"] = members
+                data["state"] = reader.byte()
+                data["start_time"] = reader.i64()
+                data["unknown_bytes"] = [int(b) for b in reader.read_to_end()]
+            except Exception:
+                # Retain the pre-1.0 layout for older saves. Current saves add a
+                # zero prefix and the expedition member array before state/time.
+                reader.data.seek(expedition_start)
+                data["expedition_layout"] = "legacy"
+                data["mission_id"] = reader.fstring()
+                data["state"] = reader.byte()
+                data["start_time"] = reader.i64()
+                data["unknown_bytes"] = [int(b) for b in reader.read_to_end()]
         case "PalMapObjectFarmSkillFruitsModel":
             data["skill_fruits_id"] = reader.fstring()
             data["current_state"] = reader.byte()
@@ -565,10 +600,18 @@ def encode_bytes(p: Optional[dict[str, Any]]) -> bytes:
         case model if model in NO_OP_TYPES:
             pass
         case "PalMapObjectCharacterTeamMissionModel":
-            writer.fstring(p["mission_id"])
-            writer.byte(p["state"])
-            writer.i64(p["start_time"])
-            writer.write(bytes(p["unknown_bytes"]))
+            if p.get("expedition_layout") == "current":
+                writer.u32(p["unknown_prefix"])
+                writer.fstring(p["mission_id"])
+                writer.tarray(expedition_member_writer, p["members"])
+                writer.byte(p["state"])
+                writer.i64(p["start_time"])
+                writer.write(bytes(p["unknown_bytes"]))
+            else:
+                writer.fstring(p["mission_id"])
+                writer.byte(p["state"])
+                writer.i64(p["start_time"])
+                writer.write(bytes(p["unknown_bytes"]))
         case "PalMapObjectFarmSkillFruitsModel":
             writer.fstring(p["skill_fruits_id"])
             writer.byte(p["current_state"])

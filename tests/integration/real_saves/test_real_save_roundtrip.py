@@ -23,6 +23,7 @@ from palworld_pal_editor.application.preset_service import PresetService
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.application.save_writer import SaveWriter
 from palworld_pal_editor.application.structural_pal_editor import StructuralPalEditor
+from palworld_pal_editor.config import Config
 from palworld_pal_editor.core.character_index import CharacterIndex
 from palworld_pal_editor.core.save_manager import SaveManager
 from palworld_pal_editor.domain.commands import (
@@ -1373,14 +1374,16 @@ class RealSaveRoundTripTests(unittest.TestCase):
                     self.assertIsNotNone(
                         selected, "No real target with two free Pal slots and cloneable source"
                     )
-                    player_id, species_id, clone, _ = selected
+                    player_id, _species_id, clone, _ = selected
                     added = editor.execute(
                         AddPal(
                             session_id=session.session_id,
                             expected_revision=session.revision,
                             player_id=player_id,
-                            species_id=species_id,
+                            species_id="SheepBall",
                             container_type=CharacterContainerType.PAL_STORAGE,
+                            passive=("WorldTree_CraftSpeed", "CraftSpeed_up3"),
+                            max_pal=True,
                         )
                     )
                     added_pal_id = added["pal"]["pal_id"]
@@ -1396,6 +1399,23 @@ class RealSaveRoundTripTests(unittest.TestCase):
                 self.assertIn(added_pal_id, reloaded_index.pals)
                 self.assertIn(cloned_pal_id, reloaded_index.pals)
                 self.assertEqual([], reloaded_index.hard_issues())
+                reloaded_added_pal = reloaded_index.pals[added_pal_id]
+                self.assertEqual(
+                    ["WorldTree_CraftSpeed", "CraftSpeed_up3"],
+                    reloaded_added_pal.PassiveSkillList,
+                )
+                self.assertEqual(
+                    Config.max_souls_level,
+                    reloaded_added_pal.Rank_CraftSpeed,
+                )
+                self.assertEqual(10, reloaded_added_pal.FriendshipLevel)
+                self.assertEqual(5, reloaded_added_pal.Rank)
+                self.assertTrue(
+                    all(
+                        level == Config.max_suitability_level
+                        for level in reloaded_added_pal.WorkSuitabilities.values()
+                    )
+                )
                 first_after = _save_hashes(work)
                 first_changed = sorted(
                     path for path in before if before[path] != first_after[path]

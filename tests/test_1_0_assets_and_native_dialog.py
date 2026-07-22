@@ -13,6 +13,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = PROJECT_ROOT / "src" / "palworld_pal_editor"
 ASSET_ROOT = PACKAGE_ROOT / "assets"
 SUPPORTED_LANGUAGES = ("en", "fr", "ja", "ko", "zh-CN")
+TOOLS_ROOT = ASSET_ROOT / "tools"
+sys.path.insert(0, str(TOOLS_ROOT))
+
+from sync_1_0_pal_assets import PalRecord, build_human_catalog  # noqa: E402
 
 
 class TechnologyAssetTests(unittest.TestCase):
@@ -183,6 +187,38 @@ class PalParameterAssetTests(unittest.TestCase):
 
 
 class HumanAndProgressionAssetTests(unittest.TestCase):
+    def test_human_catalog_uses_official_default_weapon_for_generated_moves(self) -> None:
+        records = {
+            "ArmedNPC": PalRecord(
+                "ArmedNPC",
+                {"OverrideNameTextID": "ArmedNPC", "Weapon": 2},
+            ),
+            "UnarmedNPC": PalRecord(
+                "UnarmedNPC",
+                {"OverrideNameTextID": "UnarmedNPC", "Weapon": None},
+            ),
+        }
+        human_names = {
+            language: {
+                "ArmedNPC": "Armed NPC",
+                "UnarmedNPC": "Unarmed NPC",
+            }
+            for language in SUPPORTED_LANGUAGES
+        }
+
+        catalog = build_human_catalog({}, records, human_names, set())
+
+        self.assertEqual("Handgun", catalog["ArmedNPC"]["DefaultWeapon"])
+        self.assertEqual(
+            {"EPalWazaID::Weapon_Use": 1},
+            catalog["ArmedNPC"]["Attacks"],
+        )
+        self.assertEqual("None", catalog["UnarmedNPC"]["DefaultWeapon"])
+        self.assertEqual(
+            {"EPalWazaID::Human_Punch": 1},
+            catalog["UnarmedNPC"]["Attacks"],
+        )
+
     def test_1_0_human_parameter_table_is_fully_synchronized(self) -> None:
         data = json.loads(
             (ASSET_ROOT / "data" / "human_data.json").read_text(encoding="utf-8")
@@ -193,6 +229,27 @@ class HumanAndProgressionAssetTests(unittest.TestCase):
         self.assertIn("SorajimaTowerGuide", data)
         self.assertEqual(33, sum(row["HasIcon"] for row in data.values()))
         self.assertEqual(20, data["SorajimaTowerGuide"]["Stats"]["HP"])
+        self.assertEqual("Handgun", data["SalesPerson_Wander"]["DefaultWeapon"])
+        self.assertEqual(
+            {"EPalWazaID::Weapon_Use": 1},
+            data["SalesPerson_Wander"]["Attacks"],
+        )
+        self.assertEqual("GatlingGun", data["Male_DarkTrader02"]["DefaultWeapon"])
+        self.assertEqual(
+            {"EPalWazaID::Weapon_Use": 1},
+            data["Male_DarkTrader02"]["Attacks"],
+        )
+        for internal_name, row in data.items():
+            expected_attack = (
+                "EPalWazaID::Human_Punch"
+                if row["DefaultWeapon"] == "None"
+                else "EPalWazaID::Weapon_Use"
+            )
+            self.assertEqual(
+                {expected_attack: 1},
+                row["Attacks"],
+                internal_name,
+            )
         self.assertEqual(
             "永炎同心会 殉教者",
             data["Arena_FireCult_FlameThrower"]["I18n"]["zh-CN"],
@@ -486,8 +543,10 @@ class NativeDialogTests(unittest.TestCase):
             / "AppIcon.vue"
         )
 
-        self.assertIn("const MAX_SUITABILITY_LEVEL = 10;", store_source)
+        self.assertIn("const MAX_SUITABILITY_LEVEL = ref(10);", store_source)
+        self.assertIn("MAX_SUITABILITY_LEVEL.value = response.data.MaxSuitabilityLevel ?? 10;", store_source)
         self.assertIn("palStore.MAX_SUITABILITY_LEVEL", pal_editor_source)
+        self.assertIn("palStore.SELECTED_PAL_DATA.suitMax", pal_editor_source)
         self.assertNotIn("isMaxSuit(key) {\n  return palStore.SELECTED_PAL_DATA.Suitabilities[key] >= 5", pal_editor_source)
         self.assertTrue(icon_component.is_file())
         self.assertIn('<AppIcon name="chevron-up"', pal_editor_source)
@@ -510,7 +569,7 @@ class NativeDialogTests(unittest.TestCase):
         self.assertNotIn("displayPalElement(pal.InternalName)", pal_editor_source)
         self.assertIn("displayNameWithoutVariantEmoji", pal_list_source)
         self.assertIn(
-            '<span v-if="pal.IsBOSS" class="pal-variant-label">',
+            '<span v-if="pal.IsBOSS" class="pal-variant-label is-boss">',
             pal_list_source,
         )
         self.assertIn(

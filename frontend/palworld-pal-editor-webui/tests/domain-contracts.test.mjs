@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 
 import axios from 'axios'
 import { createPinia, setActivePinia } from 'pinia'
@@ -62,6 +63,138 @@ test('trust level clamps loaded negatives and does not decrement below zero', as
   assert.equal(pal.FriendshipLevel, 0)
 })
 
+test('human NPC trust uses the same progression command and refreshes the bonus field', async () => {
+  const { store, player, playerId } = makeStore()
+  const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  const npcData = {
+    InstanceId: palId,
+    IsHuman: true,
+    FriendshipLevel: 4,
+    DataAccessKey: 'SalesPerson_Wander',
+    DisplayName: 'Wandering Merchant',
+    PassiveSkillList: [],
+    EquipWaza: ['EPalWazaID::Weapon_Use'],
+    MasteredWaza: ['EPalWazaID::Weapon_Use'],
+    Suitabilities: {},
+  }
+  axios.post = async url => ({
+    data: url === '/api/player/player_pals'
+      ? { status: 0, data: [npcData] }
+      : { status: 0, data: {} },
+  })
+  await store.selectPlayer(playerId, true)
+  store.SELECTED_PAL_ID = palId
+  store.SELECTED_PAL_DATA = player.pals.get(palId)
+
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    if (url === `/api/pal/${palId}/commands`) {
+      return { data: { status: 0, data: {
+        revision: 1,
+        value: { friendship_level: 5 },
+      } } }
+    }
+    return { data: { status: 0, data: {
+      ...npcData,
+      FriendshipLevel: 5,
+    } } }
+  }
+
+  await store.SELECTED_PAL_DATA.friendshipLevelUp()
+
+  const command = calls.find(call => call.url === `/api/pal/${palId}/commands`)
+  assert.deepEqual(command.data, {
+    session_id: 'session-1',
+    expected_revision: 0,
+    command: 'update_pal_progression',
+    values: { friendship_level: 5 },
+  })
+  assert.equal(store.SELECTED_PAL_DATA.IsHuman, true)
+  assert.equal(store.SELECTED_PAL_DATA.FriendshipLevel, 5)
+  assert.equal(store.SESSION_REVISION, 1)
+})
+
+test('awakening sends a boolean enhancement command and refreshes the Pal detail', async () => {
+  const { store, player, playerId } = makeStore()
+  const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    if (url === '/api/player/player_pals') {
+      return { data: { status: 0, data: [{
+        InstanceId: palId,
+        IsAwakened: false,
+        DataAccessKey: 'SheepBall',
+        DisplayName: 'Lamball',
+        PassiveSkillList: [],
+        EquipWaza: [],
+        MasteredWaza: [],
+        Suitabilities: {},
+      }] } }
+    }
+    if (url === `/api/pal/${palId}/commands`) {
+      return { data: { status: 0, data: {
+        revision: 1,
+        value: { awakening: true },
+      } } }
+    }
+    if (url === '/api/pal/paldata') {
+      return { data: { status: 0, data: {
+        InstanceId: palId,
+        IsAwakened: true,
+        AwakeningStatusMultiplier: 1.5,
+        DataAccessKey: 'SheepBall',
+        DisplayName: 'Lamball',
+        PassiveSkillList: [],
+        EquipWaza: [],
+        MasteredWaza: [],
+        Suitabilities: {},
+      } } }
+    }
+    return { data: { status: 0, data: {} } }
+  }
+
+  await store.selectPlayer(playerId, true)
+  store.SELECTED_PAL_ID = palId
+  store.SELECTED_PAL_DATA = player.pals.get(palId)
+  await store.SELECTED_PAL_DATA.swapAwakening()
+
+  const command = calls.find(call => call.url === `/api/pal/${palId}/commands`)
+  assert.deepEqual(command.data, {
+    session_id: 'session-1',
+    expected_revision: 0,
+    command: 'update_pal_enhancement',
+    values: { awakening: true },
+  })
+  assert.equal(store.SELECTED_PAL_DATA.IsAwakened, true)
+  assert.equal(store.SELECTED_PAL_DATA.AwakeningStatusMultiplier, 1.5)
+})
+
+test('NPC weapon is displayed from catalog metadata without edit controls', () => {
+  const componentSource = readFileSync(
+    new URL('../src/components/PalEditor.vue', import.meta.url),
+    'utf8',
+  )
+  const storeSource = readFileSync(
+    new URL('../src/stores/paleditor.js', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(componentSource, /getNpcWeaponDisplayName\(palStore\.SELECTED_PAL_DATA\.NpcDefaultWeapon\)/)
+  assert.doesNotMatch(componentSource, /NpcWeaponSelection|updateNpcWeapon|npc-weapon-apply|NpcWeapon_Warning/)
+  assert.doesNotMatch(storeSource, /function updateNpcWeapon|command:\s*["']update_npc_weapon["']/)
+})
+
+test('NPC weapon names are localized while preserving the catalog identifier', () => {
+  const { store } = makeStore()
+  store.I18n = 'zh-CN'
+
+  assert.equal(store.getNpcWeaponDisplayName('GatlingGun'), '加特林机枪（GatlingGun）')
+  assert.equal(store.getNpcWeaponDisplayName('None'), '徒手（None）')
+  assert.equal(store.getNpcWeaponDisplayName('UnknownWeapon'), 'UnknownWeapon')
+})
+
 test('inventory writes use semantic container type and advance session revision', async () => {
   const { store, playerId } = makeStore()
   const calls = []
@@ -102,7 +235,7 @@ test('inventory writes use semantic container type and advance session revision'
   assert.equal(store.SELECTED_PLAYER_DATA.InventoryContainers[0].container_type, 'COMMON')
 })
 
-test('structural add uses explicit command and refreshes the target Pal', async () => {
+test('structural add sends creation presets in one command and refreshes the target Pal', async () => {
   const { store, player, playerId } = makeStore()
   const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
   const calls = []
@@ -151,7 +284,12 @@ test('structural add uses explicit command and refreshes the target Pal', async 
     }
   }
 
-  const succeeded = await store.addPal('SheepBall', 'PAL_STORAGE')
+  store.HIDE_INVALID_OPTIONS = false
+  const succeeded = await store.addPal('SheepBall', 'PAL_STORAGE', {
+    passive: ['WorldTree_CraftSpeed', 'CraftSpeed_up3'],
+    maxPal: false,
+    maxWork: true,
+  })
 
   assert.equal(succeeded, true)
   assert.deepEqual(calls[0], {
@@ -163,6 +301,10 @@ test('structural add uses explicit command and refreshes the target Pal', async 
       player_id: playerId,
       species_id: 'SheepBall',
       container_type: 'PAL_STORAGE',
+      passive: ['WorldTree_CraftSpeed', 'CraftSpeed_up3'],
+      max_pal: false,
+      max_work: true,
+      unrestricted: true,
     },
   })
   assert.equal(player.pals.has(palId), true)
@@ -427,4 +569,94 @@ test('unlock expedition Pals targets only locked Pals in the current list', asyn
   assert.equal(lockedPal.IsExpeditionPal, false)
   assert.equal(normalPal.IsExpeditionPal, false)
   assert.equal(store.EXPEDITION_PAL_COUNT, 0)
+})
+
+test('complete expeditions uses the global save command and disables completed targets', async () => {
+  const { store, player } = makeStore()
+  const expeditionId = '44444444-5555-6666-7777-888888888888'
+  const expeditionPal = {
+    IsExpeditionPal: true,
+    ExpeditionInstanceId: expeditionId,
+    ExpeditionAssignmentStatus: 'valid',
+    ExpeditionCanComplete: true,
+  }
+  player.pals.set('pal-expedition', expeditionPal)
+  store.PAL_MAP = player.pals
+  const calls = []
+  const previousConfirm = window.confirm
+  window.confirm = () => true
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: {
+      revision: 1,
+      value: { completed_count: 1, expedition_ids: [expeditionId] },
+    } } }
+  }
+
+  try {
+    assert.equal(store.COMPLETABLE_EXPEDITION_COUNT, 1)
+    const succeeded = await store.completeActiveExpeditions()
+
+    assert.equal(succeeded, true)
+    assert.deepEqual(calls, [{
+      url: '/api/save/expeditions/commands',
+      data: {
+        session_id: 'session-1',
+        expected_revision: 0,
+        command: 'complete_active_expeditions',
+      },
+    }])
+    assert.equal(expeditionPal.ExpeditionCanComplete, false)
+    assert.equal(store.COMPLETABLE_EXPEDITION_COUNT, 0)
+    assert.equal(store.SESSION_REVISION, 1)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('single expedition unlock confirms risk and clears the selected Pal status', async () => {
+  const { store, player } = makeStore()
+  const palId = 'pal-expedition'
+  const pal = {
+    InstanceId: palId,
+    IsExpeditionPal: true,
+    ExpeditionInstanceId: '44444444-5555-6666-7777-888888888888',
+    ExpeditionAssignmentStatus: 'valid',
+  }
+  player.pals.set(palId, pal)
+  store.PAL_MAP = player.pals
+  store.SELECTED_PAL_ID = palId
+  store.SELECTED_PAL_DATA = pal
+  const confirmations = []
+  const calls = []
+  const previousConfirm = window.confirm
+  window.confirm = message => {
+    confirmations.push(message)
+    return true
+  }
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: { revision: 1, value: { expedition_locked: false } } } }
+  }
+
+  try {
+    const succeeded = await store.cancelSelectedPalExpedition()
+
+    assert.equal(succeeded, true)
+    assert.equal(confirmations.length, 1)
+    assert.deepEqual(calls[0], {
+      url: `/api/pal/${palId}/commands`,
+      data: {
+        session_id: 'session-1',
+        expected_revision: 0,
+        command: 'unlock_pal_expedition',
+      },
+    })
+    assert.equal(pal.IsExpeditionPal, false)
+    assert.equal(pal.ExpeditionInstanceId, null)
+    assert.equal(pal.ExpeditionAssignmentStatus, null)
+    assert.equal(store.SESSION_REVISION, 1)
+  } finally {
+    window.confirm = previousConfirm
+  }
 })

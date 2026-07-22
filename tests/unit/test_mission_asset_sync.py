@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
+import palworld_pal_editor.domain.mission_catalog as mission_catalog_module
 from palworld_pal_editor.assets.tools.sync_1_0_mission_assets import (
     LANGUAGES,
     validate_catalog,
 )
+from palworld_pal_editor.domain.mission_catalog import MissionCatalog
 from palworld_pal_editor.utils.data_provider import DataProvider
 
 
@@ -84,6 +88,48 @@ class MissionAssetSyncTests(unittest.TestCase):
         self.assertTrue(
             DataProvider.get_mission_i18n("Main_Capture30Pal", "zh-CN")["title"]
         )
+
+    def test_default_catalog_uses_packaged_assets_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            assets_root = Path(temporary_directory)
+            data_directory = assets_root / "assets" / "data"
+            data_directory.mkdir(parents=True)
+            data_directory.joinpath("mission_data.json").write_text(
+                json.dumps(
+                    {
+                        "source": {"build_id": "packaged-test"},
+                        "missions": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            frozen_module_path = (
+                assets_root
+                / "palworld_pal_editor"
+                / "domain"
+                / "mission_catalog.py"
+            )
+            previous_default = MissionCatalog._default
+            try:
+                MissionCatalog._default = None
+                with (
+                    patch.object(
+                        mission_catalog_module,
+                        "ASSETS_PATH",
+                        assets_root,
+                        create=True,
+                    ),
+                    patch.object(
+                        mission_catalog_module,
+                        "__file__",
+                        str(frozen_module_path),
+                    ),
+                ):
+                    catalog = MissionCatalog.load_default()
+            finally:
+                MissionCatalog._default = previous_default
+
+            self.assertEqual("packaged-test", catalog.source["build_id"])
 
 
 if __name__ == "__main__":

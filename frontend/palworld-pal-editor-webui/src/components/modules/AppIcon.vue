@@ -28,6 +28,8 @@ defineProps({
     <template v-else-if="name === 'plus'"><path d="M12 5v14M5 12h14" /></template>
     <template v-else-if="name === 'x'"><path d="m6 6 12 12M18 6 6 18" /></template>
     <template v-else-if="name === 'trash'"><path d="M4 7h16M10 11v6M14 11v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13" /></template>
+    <template v-else-if="name === 'edit'"><path d="M4 20h4l11-11-4-4L4 16v4ZM13.5 6.5l4 4" /></template>
+    <template v-else-if="name === 'pin'"><path d="m14 4 6 6-3 1-4 4 1 3-1 1-4-4-4 4-1-1 4-4-4-4 1-1 3 1 4-4 1-3Z" /></template>
     <template v-else-if="name === 'copy'"><rect x="9" y="9" width="10" height="10" rx="2" /><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /></template>
     <template v-else-if="name === 'duplicate'"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></template>
     <template v-else-if="name === 'refresh'"><path d="M20 11a8 8 0 1 0 1.3 4.4M20 5v6h-6" /></template>

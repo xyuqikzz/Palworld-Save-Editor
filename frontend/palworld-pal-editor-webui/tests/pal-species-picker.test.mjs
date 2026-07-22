@@ -54,6 +54,7 @@ test('the common species picker renders category tabs and an element filter', ()
   assert.match(source, /activeCategory === 'npc'[\s\S]*?PalSpeciesPicker_Npcs/)
   assert.match(source, /class="pal-species-element-filters"[\s\S]*?activeElementFilter/)
   assert.match(source, /pal\?\.IsHuman[\s\S]*?pal\.HasIcon[\s\S]*?pal\.InternalName/)
+  assert.match(source, /pal\.IsHuman && pal\.DefaultWeapon[\s\S]*?PalSpeciesPicker_DefaultWeapon/)
 
   for (const localePath of localePaths) {
     const locale = readFileSync(localePath, 'utf8')
@@ -61,6 +62,7 @@ test('the common species picker renders category tabs and an element filter', ()
     assert.match(locale, /PalSpeciesPicker_Npcs:/, localePath)
     assert.match(locale, /PalSpeciesPicker_CategoryLabel:/, localePath)
     assert.match(locale, /PalSpeciesPicker_ElementFilterLabel:/, localePath)
+    assert.match(locale, /PalSpeciesPicker_DefaultWeapon:/, localePath)
   }
 })
 
@@ -77,5 +79,10 @@ test('the add flow exposes synchronized NPCs and their dedicated icons', () => {
     saveApiSource,
     /"HasIcon":\s*DataProvider\.has_human_icon\(iname\)/,
     'the static catalog API must expose official NPC icon availability',
+  )
+  assert.match(
+    saveApiSource,
+    /"DefaultWeapon":\s*pal\.get\("DefaultWeapon"\)/,
+    'the static catalog API must expose the NPC default weapon type',
   )
 })

@@ -4,18 +4,25 @@ from copy import deepcopy
 import math
 from typing import Any, Callable
 
+from palworld_pal_editor.config import Config
 from palworld_pal_editor.core.pal_objects import PalGender, PalObjects, PalSuitability
 from palworld_pal_editor.domain.commands import (
+    MaxPal,
     UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
     UpdatePalProgression,
     UpdatePalSkills,
     UpdatePlayerIdentity,
+    UpdatePlayerAttributes,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
 )
 from palworld_pal_editor.domain.errors import DomainError
+from palworld_pal_editor.domain.player_attributes import (
+    PLAYER_ATTRIBUTE_BY_KEY,
+    player_attribute_view,
+)
 from palworld_pal_editor.utils.data_provider import DataProvider
 
 from .save_session import SaveSession
@@ -28,9 +35,10 @@ MAX_TECHNOLOGY_POINTS = 65_535
 MAX_HEALTH = 2_147_483_647
 MAX_MASTERED_SKILLS = 255
 MAX_ENHANCEMENT_CHEAT_LEVEL = 255
-MAX_WORK_SUITABILITY_LEVEL = 10
-
-
+MAX_REGULAR_PAL_LEVEL = 80
+MAX_REGULAR_IV = 100
+MAX_REGULAR_CONDENSATION = 5
+MAX_FRIENDSHIP_LEVEL = 10
 class CharacterEditor:
     """Explicit, atomic player and Pal field commands."""
 
@@ -45,6 +53,8 @@ class CharacterEditor:
             return self._update_player_identity(command)
         if isinstance(command, UpdatePlayerProgression):
             return self._update_player_progression(command)
+        if isinstance(command, UpdatePlayerAttributes):
+            return self._update_player_attributes(command)
         if isinstance(command, UpdatePlayerTechnology):
             return self._update_player_technology(command)
         if isinstance(command, UpdatePalIdentity):
@@ -55,6 +65,8 @@ class CharacterEditor:
             return self._update_pal_skills(command)
         if isinstance(command, UpdatePalEnhancement):
             return self._update_pal_enhancement(command)
+        if isinstance(command, MaxPal):
+            return self._max_pal(command)
         if isinstance(command, UnlockPalExpedition):
             return self._unlock_pal_expedition(command)
         raise DomainError(
@@ -167,6 +179,74 @@ class CharacterEditor:
             affected_records=tuple(affected),
         )
         return self._result(entry, self._player_progression(player))
+
+    def _update_player_attributes(
+        self, command: UpdatePlayerAttributes
+    ) -> dict:
+        player = self._require_player(command.player_id)
+        if not isinstance(command.values, dict):
+            raise DomainError(
+                code="INVALID_FIELD_TYPE",
+                message="values must be an object.",
+                field="values",
+                http_status=400,
+            )
+        if not command.values:
+            self._empty_command()
+        unknown = sorted(set(command.values) - set(PLAYER_ATTRIBUTE_BY_KEY))
+        if unknown:
+            raise DomainError(
+                code="UNSUPPORTED_COMMAND_FIELD",
+                message="The command contains unsupported player attributes.",
+                details={"fields": unknown},
+                http_status=400,
+            )
+        for key, value in command.values.items():
+            definition = PLAYER_ATTRIBUTE_BY_KEY[key]
+            self._require_int_range(value, 0, definition.max_rank, key)
+
+        def current_values() -> dict[str, int]:
+            return {
+                key: player.status_point(PLAYER_ATTRIBUTE_BY_KEY[key].status_name) or 0
+                for key in command.values
+            }
+
+        def mutate() -> None:
+            for key, value in command.values.items():
+                player.set_status_point(
+                    PLAYER_ATTRIBUTE_BY_KEY[key].status_name,
+                    value,
+                )
+
+        def validate() -> None:
+            actual = current_values()
+            for key, expected in command.values.items():
+                if actual[key] != expected:
+                    self._postcondition(
+                        f"Player attribute {key} did not update as requested."
+                    )
+
+        entry = self._apply_player(
+            command=command,
+            player=player,
+            command_name="UpdatePlayerAttributes",
+            target={
+                "player_id": str(player.PlayerUId),
+                "fields": sorted(command.values),
+            },
+            before=current_values,
+            mutate=mutate,
+            validate=validate,
+            after=current_values,
+            affected_records=("level:CharacterSaveParameterMap",),
+        )
+        return self._result(
+            entry,
+            {
+                "attributes": player_attribute_view(player),
+                "updated": current_values(),
+            },
+        )
 
     def _update_player_technology(
         self, command: UpdatePlayerTechnology
@@ -535,10 +615,31 @@ class CharacterEditor:
             "soul_craft_speed": ("Rank_CraftSpeed", 0, MAX_ENHANCEMENT_CHEAT_LEVEL),
             "condensation": ("Rank", 1, MAX_ENHANCEMENT_CHEAT_LEVEL),
         }
-        self._reject_unknown_fields(command.values, set(field_map))
+        self._reject_unknown_fields(command.values, set(field_map) | {"awakening"})
         if not command.values and not command.work_suitability:
             self._empty_command()
         for field_name, value in command.values.items():
+            if field_name == "awakening":
+                if not isinstance(value, bool):
+                    raise DomainError(
+                        code="INVALID_FIELD_TYPE",
+                        message="awakening must be a boolean.",
+                        field="awakening",
+                        http_status=400,
+                    )
+                awakening = pal._pal_param.get("bIsAwakening")
+                if awakening is not None and (
+                    not isinstance(awakening, dict)
+                    or awakening.get("type") != "BoolProperty"
+                    or not isinstance(awakening.get("value"), bool)
+                ):
+                    raise DomainError(
+                        code="COMPATIBILITY_FIELD_MISSING",
+                        message="The save has an unsupported awakening field structure.",
+                        field="awakening",
+                        details={"property": "bIsAwakening"},
+                    )
+                continue
             _property_name, minimum, maximum = field_map[field_name]
             self._require_int_range(value, minimum, maximum, field_name)
 
@@ -554,7 +655,7 @@ class CharacterEditor:
                     details={"work_type": work_type},
                 )
             self._require_int_range(
-                value, 0, MAX_WORK_SUITABILITY_LEVEL, "work_suitability"
+                value, 0, Config.max_suitability_level, "work_suitability"
             )
             if (
                 suitability_rules is None
@@ -581,6 +682,9 @@ class CharacterEditor:
 
         def mutate() -> None:
             for field_name, value in command.values.items():
+                if field_name == "awakening":
+                    pal.IsAwakened = value
+                    continue
                 property_name = field_map[field_name][0]
                 if property_name == "Talent_HP":
                     pal.Talent_HP = value
@@ -632,6 +736,165 @@ class CharacterEditor:
             after=lambda: self._pal_enhancement(pal),
         )
         return self._result(entry, self._pal_enhancement(pal))
+
+    def _max_pal(self, command: MaxPal) -> dict:
+        pal = self._require_pal(command.pal_id)
+        if not isinstance(command.unrestricted, bool):
+            raise DomainError(
+                code="INVALID_FIELD_TYPE",
+                message="unrestricted must be a boolean.",
+                field="unrestricted",
+                http_status=400,
+            )
+
+        level = MAX_LEVEL if command.unrestricted else MAX_REGULAR_PAL_LEVEL
+        iv_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else MAX_REGULAR_IV
+        )
+        soul_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else Config.max_souls_level
+        )
+        condensation_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else MAX_REGULAR_CONDENSATION
+        )
+        self._require_int_range(soul_level, 0, MAX_ENHANCEMENT_CHEAT_LEVEL, "soul")
+        self._require_int_range(
+            Config.max_suitability_level,
+            0,
+            MAX_ENHANCEMENT_CHEAT_LEVEL,
+            "work_suitability",
+        )
+        if DataProvider.get_pal_level_xp(level) is None:
+            raise DomainError(
+                code="COMPATIBILITY_FIELD_MISSING",
+                message="No experience rule exists for the maximum Pal level.",
+                field="level",
+            )
+        if DataProvider.get_pal_friendship(MAX_FRIENDSHIP_LEVEL) is None:
+            raise DomainError(
+                code="COMPATIBILITY_FIELD_MISSING",
+                message="No trust rule exists for the maximum level.",
+                field="friendship_level",
+            )
+
+        suitability_rules = DataProvider.get_pal_suitabilities(pal.DataAccessKey)
+        if suitability_rules is None:
+            raise DomainError(
+                code="COMPATIBILITY_FIELD_MISSING",
+                message="No work suitability rule exists for this Pal variant.",
+                field="pal_id",
+            )
+        work_suitability = {
+            work_type: Config.max_suitability_level
+            for work_type, base_level in suitability_rules.items()
+            if base_level > 0
+        }
+        if not pal.IsHuman:
+            awakening = pal._pal_param.get("bIsAwakening")
+            if awakening is not None and (
+                not isinstance(awakening, dict)
+                or awakening.get("type") != "BoolProperty"
+                or not isinstance(awakening.get("value"), bool)
+            ):
+                raise DomainError(
+                    code="COMPATIBILITY_FIELD_MISSING",
+                    message="The save has an unsupported awakening field structure.",
+                    field="awakening",
+                    details={"property": "bIsAwakening"},
+                )
+
+        include_melee_iv = command.unrestricted
+        skipped_fields = []
+        if not include_melee_iv:
+            skipped_fields.append("iv_melee")
+        if pal.IsHuman:
+            skipped_fields.append("awakening")
+
+        expected_enhancements = {
+            "iv_hp": iv_level,
+            "iv_shot": iv_level,
+            "iv_defense": iv_level,
+            "soul_hp": soul_level,
+            "soul_attack": soul_level,
+            "soul_defense": soul_level,
+            "soul_craft_speed": soul_level,
+            "condensation": condensation_level,
+        }
+        if include_melee_iv:
+            expected_enhancements["iv_melee"] = iv_level
+        if not pal.IsHuman:
+            expected_enhancements["awakening"] = True
+
+        def state() -> dict[str, Any]:
+            enhancements = self._pal_enhancement(pal)
+            actual_suitabilities = pal.WorkSuitabilities or {}
+            return {
+                "level": pal.Level,
+                "friendship_level": pal.FriendshipLevel,
+                "enhancements": {
+                    field: enhancements[field] for field in expected_enhancements
+                },
+                "work_suitability": {
+                    work_type: actual_suitabilities.get(work_type, 0)
+                    for work_type in work_suitability
+                },
+                "skipped_fields": skipped_fields,
+            }
+
+        def mutate() -> None:
+            pal.Level = level
+            pal.FriendshipLevel = MAX_FRIENDSHIP_LEVEL
+            pal.Talent_HP = iv_level
+            pal.Talent_Shot = iv_level
+            pal.Talent_Defense = iv_level
+            if include_melee_iv:
+                pal.Talent_Melee = iv_level
+            pal.Rank_HP = soul_level
+            pal.Rank_Attack = soul_level
+            pal.Rank_Defence = soul_level
+            pal.Rank_CraftSpeed = soul_level
+            pal.Rank = condensation_level
+            if not pal.IsHuman:
+                pal.IsAwakened = True
+            for work_type, maximum in work_suitability.items():
+                pal.set_WorkSuitability(work_type, maximum)
+
+        def validate() -> None:
+            actual = state()
+            if actual["level"] != level:
+                self._postcondition("The Pal level did not reach maximum.")
+            if actual["friendship_level"] != MAX_FRIENDSHIP_LEVEL:
+                self._postcondition("The Pal trust level did not reach maximum.")
+            for field, expected in expected_enhancements.items():
+                if actual["enhancements"][field] != expected:
+                    self._postcondition(f"Pal field {field} did not reach maximum.")
+            for work_type, expected in work_suitability.items():
+                if actual["work_suitability"][work_type] != expected:
+                    self._postcondition(
+                        f"Pal work suitability {work_type} did not reach maximum."
+                    )
+
+        entry = self._apply_pal(
+            command=command,
+            pal=pal,
+            command_name="MaxPal",
+            target={
+                "pal_id": str(pal.InstanceId),
+                "unrestricted": command.unrestricted,
+                "skipped_fields": skipped_fields,
+            },
+            before=state,
+            mutate=mutate,
+            validate=validate,
+            after=state,
+        )
+        return self._result(entry, state())
 
     def _unlock_pal_expedition(self, command: UnlockPalExpedition) -> dict:
         pal = self._require_pal(command.pal_id)
@@ -997,7 +1260,7 @@ class CharacterEditor:
         gender = pal.Gender.value if pal.Gender is not None else "none"
         return {
             "pal_id": str(pal.InstanceId),
-            "name": pal.NickName or "",
+            "name": pal.CustomNickName or "",
             "gender": {
                 PalGender.MALE.value: "male",
                 PalGender.FEMALE.value: "female",
@@ -1045,6 +1308,8 @@ class CharacterEditor:
             "soul_defense": pal.Rank_Defence or 0,
             "soul_craft_speed": pal.Rank_CraftSpeed or 0,
             "condensation": pal.Rank or 1,
+            "awakening": pal.IsAwakened,
+            "awakening_status_multiplier": pal.AWAKENING_STATUS_MULTIPLIER,
             "work_suitability": dict(pal.WorkSuitabilities or {}),
             "derived": {
                 "max_health": pal.ComputedMaxHP,

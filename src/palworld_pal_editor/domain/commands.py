@@ -13,6 +13,12 @@ class SessionCommand:
 
 
 @dataclass(frozen=True, kw_only=True)
+class UpdateGuildName(SessionCommand):
+    guild_id: str
+    name: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class UpdateItemCount(SessionCommand):
     player_id: str
     container_type: ItemContainerType
@@ -93,6 +99,12 @@ class UpdatePlayerProgression(SessionCommand):
 
 
 @dataclass(frozen=True, kw_only=True)
+class UpdatePlayerAttributes(SessionCommand):
+    player_id: str
+    values: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, kw_only=True)
 class UpdatePlayerTechnology(SessionCommand):
     player_id: str
     recipe_id: str | None = None
@@ -144,8 +156,14 @@ class UpdatePalSkills(SessionCommand):
 @dataclass(frozen=True, kw_only=True)
 class UpdatePalEnhancement(SessionCommand):
     pal_id: str
-    values: dict[str, int] = field(default_factory=dict)
+    values: dict[str, int | bool] = field(default_factory=dict)
     work_suitability: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, kw_only=True)
+class MaxPal(SessionCommand):
+    pal_id: str
+    unrestricted: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -154,11 +172,20 @@ class UnlockPalExpedition(SessionCommand):
 
 
 @dataclass(frozen=True, kw_only=True)
+class CompleteActiveExpeditions(SessionCommand):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
 class AddPal(SessionCommand):
     player_id: str
     species_id: str
     container_type: CharacterContainerType = CharacterContainerType.AUTO
     target_slot: int | None = None
+    passive: tuple[str, ...] | None = None
+    max_pal: bool = False
+    max_work: bool = False
+    unrestricted: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePalEditorStore } from '@/stores/paleditor'
 import ItemCard from '@/components/modules/TechCard.vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
@@ -7,7 +8,41 @@ import InventoryEditor from '@/components/InventoryEditor.vue'
 import MissionEditor from '@/components/MissionEditor.vue'
 
 const palStore = usePalEditorStore()
-const activeEditorTab = ref('inventory')
+const route = useRoute()
+const router = useRouter()
+const playerEditorTabs = new Set(['inventory', 'technology', 'missions', 'attributes'])
+
+function requestedEditorTab() {
+    const tab = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
+    if (!playerEditorTabs.has(tab)) return 'inventory'
+    if (tab === 'attributes' && !palStore.SELECTED_PLAYER_DATA.PlayerAttributes?.length) {
+        return 'inventory'
+    }
+    return tab
+}
+
+const activeEditorTab = computed({
+    get: requestedEditorTab,
+    set: async (tab) => {
+        if (!playerEditorTabs.has(tab)) return
+        const query = { ...route.query }
+        if (tab === 'inventory') delete query.tab
+        else query.tab = tab
+        await router.replace({ query })
+    },
+})
+
+watch(
+    () => [route.query.tab, palStore.SELECTED_PLAYER_DATA.PlayerAttributes?.length],
+    async () => {
+        if (route.query.tab && requestedEditorTab() === 'inventory') {
+            const query = { ...route.query }
+            delete query.tab
+            await router.replace({ query })
+        }
+    },
+    { immediate: true },
+)
 
 const isMaxLv = () => {
     return palStore.SELECTED_PLAYER_DATA.Level >= (palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_LEVEL : palStore.MAX_INVALID_LEVEL);
@@ -16,6 +51,21 @@ const isMaxLv = () => {
 const isMinLv = () => {
     return palStore.SELECTED_PLAYER_DATA.Level <= 1;
 };
+
+const setPlayerAttributeToMaximum = (attribute) => {
+    attribute.rank = attribute.max_rank
+}
+
+const setAllPlayerAttributesToMaximum = () => {
+    for (const attribute of palStore.SELECTED_PLAYER_DATA.PlayerAttributes || []) {
+        setPlayerAttributeToMaximum(attribute)
+    }
+}
+
+const formatAttributeEffect = (value) => {
+    if (value === null || value === undefined) return ''
+    return Number.isInteger(value) ? String(value) : Number(value).toFixed(1)
+}
 </script>
 
 <template>
@@ -96,6 +146,16 @@ const isMinLv = () => {
                 aria-controls="player-missions-panel"
                 @click="activeEditorTab = 'missions'"
             >{{ palStore.getTranslatedText('PlayerTab_Missions') }}</button>
+            <button
+                v-if="palStore.SELECTED_PLAYER_DATA.PlayerAttributes?.length"
+                id="player-attributes-tab"
+                type="button"
+                role="tab"
+                :class="{ active: activeEditorTab === 'attributes' }"
+                :aria-selected="activeEditorTab === 'attributes'"
+                aria-controls="player-attributes-panel"
+                @click="activeEditorTab = 'attributes'"
+            >{{ palStore.getTranslatedText('PlayerTab_Attributes') }}</button>
         </nav>
         <InventoryEditor
             v-show="activeEditorTab === 'inventory'"
@@ -138,6 +198,87 @@ const isMinLv = () => {
             role="tabpanel"
             aria-labelledby="player-missions-tab"
         />
+        <section
+            v-show="activeEditorTab === 'attributes'"
+            id="player-attributes-panel"
+            class="EditorItem player-attributes-card"
+            role="tabpanel"
+            aria-labelledby="player-attributes-tab"
+        >
+            <header class="player-attributes-heading">
+                <div class="player-attributes-actions">
+                    <button
+                        type="button"
+                        class="attribute-secondary-action"
+                        :disabled="palStore.LOADING_FLAG"
+                        @click="setAllPlayerAttributesToMaximum"
+                    >{{ palStore.getTranslatedText('PlayerAttributes_SetAllMaximum') }}</button>
+                    <button
+                        type="button"
+                        class="attribute-primary-action"
+                        :disabled="palStore.LOADING_FLAG"
+                        @click="palStore.updatePlayerAttributes()"
+                    ><AppIcon name="check" />{{ palStore.getTranslatedText('PlayerAttributes_SaveAll') }}</button>
+                </div>
+            </header>
+            <div class="player-attributes-grid">
+                <article
+                    v-for="attribute in palStore.SELECTED_PLAYER_DATA.PlayerAttributes"
+                    :key="attribute.key"
+                    class="player-attribute-item"
+                    :title="palStore.getTranslatedText(`PlayerAttribute_${attribute.key}_Description`)"
+                >
+                    <div class="player-attribute-main">
+                        <img
+                            :src="`/image/player_attributes/${attribute.icon}`"
+                            :alt="palStore.getTranslatedText(`PlayerAttribute_${attribute.key}`)"
+                        >
+                        <div class="player-attribute-copy">
+                            <strong>{{ palStore.getTranslatedText(`PlayerAttribute_${attribute.key}`) }}</strong>
+                            <span v-if="attribute.kind === 'base'">
+                                {{ palStore.getTranslatedText('PlayerAttributes_CurrentValue') }}
+                                {{ attribute.display_value?.toLocaleString() }}
+                            </span>
+                            <span v-else-if="attribute.effect_percent !== null">
+                                {{ palStore.getTranslatedText('PlayerAttributes_Bonus', [formatAttributeEffect(attribute.effect_percent)]) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="player-attribute-controls">
+                        <label class="player-attribute-rank">
+                            <span class="sr-only">{{ palStore.getTranslatedText('PlayerAttributes_Rank') }}</span>
+                            <input
+                                v-model.number="attribute.rank"
+                                class="player-attribute-input"
+                                type="number"
+                                min="0"
+                                :max="attribute.max_rank"
+                                step="1"
+                                :disabled="palStore.LOADING_FLAG"
+                                @keydown.enter="palStore.updatePlayerAttributes(attribute)"
+                            >
+                            <span>/ {{ attribute.max_rank }}</span>
+                        </label>
+                        <div class="player-attribute-actions">
+                            <button
+                                type="button"
+                                class="player-attribute-max-action"
+                                :disabled="palStore.LOADING_FLAG"
+                                :title="palStore.getTranslatedText('Common_SetMaximum')"
+                                @click="setPlayerAttributeToMaximum(attribute)"
+                            >{{ palStore.getTranslatedText('Inventory_Max') }}</button>
+                            <button
+                                type="button"
+                                class="player-attribute-save-action"
+                                :disabled="palStore.LOADING_FLAG"
+                                :title="palStore.getTranslatedText('Common_Save')"
+                                @click="palStore.updatePlayerAttributes(attribute)"
+                            ><AppIcon name="check" :size="15" /></button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
         
     </div>
 </template>
@@ -602,6 +743,140 @@ select.selector {
 .player-summary-identity strong { color: var(--ui-text); font-size: 14px; font-weight: 650; }
 .player-summary-identity span { color: var(--ui-text-muted); font-size: 11px; }
 
+:global(#EditorMain .PalEditor.player-editor-layout .EditorItem.player-attributes-card) {
+    display: block;
+    width: 100%;
+    padding: 16px 18px 18px;
+}
+
+.player-attributes-heading {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.player-attributes-actions { display: flex; align-items: center; gap: 8px; }
+
+.player-attributes-actions button {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    color: var(--ui-text);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.attribute-secondary-action { background: var(--ui-surface-raised); }
+.attribute-primary-action { border-color: var(--ui-accent) !important; background: var(--ui-accent); }
+.player-attributes-actions button:disabled { opacity: .55; cursor: not-allowed; }
+
+.player-attributes-grid {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
+    gap: 8px;
+}
+
+.player-attribute-item {
+    display: flex;
+    height: 96px;
+    min-width: 0;
+    box-sizing: border-box;
+    align-items: stretch;
+    align-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-surface-raised);
+}
+
+.player-attribute-main {
+    display: flex;
+    min-width: 0;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-attribute-item img { width: 30px; height: 30px; object-fit: contain; }
+.player-attribute-copy { display: flex; min-width: 0; align-items: flex-start; flex-direction: column; gap: 2px; }
+.player-attribute-copy strong { max-width: 100%; overflow: hidden; color: var(--ui-text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.player-attribute-copy span { color: var(--ui-text-muted); font-size: 10px; }
+
+.player-attribute-controls {
+    display: flex;
+    min-width: 0;
+    flex: 1 0 100%;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.player-attribute-rank {
+    display: flex;
+    min-width: 112px;
+    flex: 1 1 144px;
+    align-items: center;
+    gap: 6px;
+    color: var(--ui-text-muted);
+    font-size: 11px;
+}
+
+.player-attribute-input {
+    width: auto;
+    min-width: 84px;
+    min-height: 32px;
+    flex: 1 1 120px;
+    box-sizing: border-box;
+    padding: 0 9px;
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+    background: var(--ui-canvas);
+    color: var(--ui-text);
+    text-align: right;
+}
+
+.player-attribute-input:focus { border-color: var(--ui-accent); outline: 2px solid var(--ui-accent-soft); }
+.player-attribute-input:disabled { opacity: .55; }
+
+.player-attribute-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 6px; }
+.player-attribute-max-action,
+.player-attribute-save-action {
+    min-height: 32px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--ui-text);
+    background: var(--ui-accent-soft);
+}
+.player-attribute-max-action { padding: 0 8px; color: var(--ui-accent); font-size: 10px; font-weight: 700; }
+.player-attribute-save-action { display: grid; width: 32px; padding: 0; place-content: center; }
+.player-attribute-max-action:hover:not(:disabled),
+.player-attribute-save-action:hover:not(:disabled) { color: var(--ui-accent-strong); background: var(--ui-surface); }
+.player-attribute-max-action:focus-visible,
+.player-attribute-save-action:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.player-attribute-max-action:disabled,
+.player-attribute-save-action:disabled { opacity: .55; cursor: not-allowed; }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .player-basic-grid {
     display: grid;
     min-width: 0;
@@ -668,5 +943,7 @@ select.selector {
     :global(#EditorMain .PalEditor.player-editor-layout .EditorItem.basicInfo.player-summary-card) { grid-template-columns: minmax(0, 1fr); }
     .player-basic-grid { grid-template-columns: minmax(0, 1fr); }
     .player-summary-actions { justify-content: flex-start; }
+    .player-attributes-actions { width: 100%; }
+    .player-attributes-actions button { flex: 1; }
 }
 </style>

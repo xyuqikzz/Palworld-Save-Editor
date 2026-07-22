@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, useSlots } from 'vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
 import { usePalEditorStore } from '@/stores/paleditor'
@@ -10,6 +10,7 @@ import {
 } from '@/components/modules/pal-species-filter'
 
 const palStore = usePalEditorStore()
+const slots = useSlots()
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -65,6 +66,7 @@ const searchPlaceholderText = computed(() => props.searchPlaceholder || palStore
 const resultsLabelText = computed(() => props.resultsLabel || palStore.getTranslatedText('Editor_Species_Results_Label'))
 const emptyTextValue = computed(() => props.emptyText || palStore.getTranslatedText('Editor_Species_Empty'))
 const closeLabelText = computed(() => props.closeLabel || palStore.getTranslatedText('Common_Close'))
+const hasFooter = computed(() => Boolean(slots.footer))
 const hasPalOptions = computed(() => props.options.some(option => !option.IsHuman))
 const hasNpcOptions = computed(() => props.options.some(option => option.IsHuman))
 const showCategoryTabs = computed(() => hasPalOptions.value && hasNpcOptions.value)
@@ -161,7 +163,7 @@ const focusOption = index => {
       :aria-label="titleText"
       @click="closeFromBackdrop"
     >
-      <section class="pal-species-dialog__surface">
+      <section :class="['pal-species-dialog__surface', { 'has-footer': hasFooter }]">
         <header class="pal-species-dialog__header">
           <div>
             <h2>{{ titleText }}</h2>
@@ -268,6 +270,9 @@ const focusOption = index => {
                 <strong>{{ pal.I18n || pal.InternalName }}</strong>
               </span>
               <span v-if="showInternalName || pal.IsHuman" class="pal-species-option__internal">{{ pal.InternalName }}</span>
+              <span v-if="pal.IsHuman && pal.DefaultWeapon" class="pal-species-option__weapon">
+                {{ palStore.getTranslatedText('PalSpeciesPicker_DefaultWeapon', [palStore.getNpcWeaponDisplayName(pal.DefaultWeapon)]) }}
+              </span>
             </span>
             <span class="pal-species-option__elements" aria-hidden="true">
               <ElementIcon
@@ -285,6 +290,10 @@ const focusOption = index => {
           <AppIcon name="search" :size="24" />
           <p>{{ emptyTextValue }}</p>
         </div>
+
+        <footer v-if="hasFooter" class="pal-species-dialog__footer">
+          <slot name="footer" />
+        </footer>
       </section>
     </dialog>
   </Teleport>
@@ -381,6 +390,10 @@ const focusOption = index => {
   display: grid;
   height: 100%;
   grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+
+.pal-species-dialog__surface.has-footer {
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
 }
 
 .pal-species-dialog__header {
@@ -597,13 +610,16 @@ const focusOption = index => {
   white-space: nowrap;
 }
 
-.pal-species-option__internal {
+.pal-species-option__internal,
+.pal-species-option__weapon {
   overflow: hidden;
   color: var(--ui-text-muted);
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.pal-species-option__weapon { color: var(--ui-text-secondary); }
 
 .pal-species-option__check { flex: 0 0 auto; color: var(--ui-accent); }
 
@@ -616,6 +632,15 @@ const focusOption = index => {
   flex-direction: column;
   gap: 9px;
   color: var(--ui-text-muted);
+}
+
+.pal-species-dialog__footer {
+  grid-row: 6;
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 12px 18px 14px;
+  background: var(--ui-surface-raised);
+  border-top: 1px solid var(--ui-border);
 }
 
 .pal-species-empty p { margin: 0; }

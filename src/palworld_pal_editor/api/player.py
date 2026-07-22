@@ -19,11 +19,13 @@ from palworld_pal_editor.domain.commands import (
     SortItemContainer,
     UpdateItemCount,
     UpdateDynamicItemAttributes,
+    UpdatePlayerAttributes,
     UpdatePlayerIdentity,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
     UpdatePlayerMissions,
 )
+from palworld_pal_editor.domain.player_attributes import player_attribute_view
 from palworld_pal_editor.utils.util import reply
 
 from palworld_pal_editor.core import SaveManager
@@ -155,6 +157,7 @@ def execute_player_command(player_id: str):
             "technology_points",
             "boss_technology_points",
         },
+        "update_player_attributes": {"values"},
         "update_player_technology": {"recipe_id", "unlocked", "unlock_all"},
     }
     command_name = payload.get("command")
@@ -193,6 +196,11 @@ def execute_player_command(player_id: str):
                 experience=payload.get("experience"),
                 technology_points=payload.get("technology_points"),
                 boss_technology_points=payload.get("boss_technology_points"),
+            )
+        elif command_name == "update_player_attributes":
+            command = UpdatePlayerAttributes(
+                **base,
+                values=payload.get("values"),
             )
         else:
             command = UpdatePlayerTechnology(
@@ -540,11 +548,27 @@ def search_item_catalog():
 @player_blueprint.route("/player_pals", methods=["POST"])
 @jwt_required()
 def get_player_pals():
-    id = request.json.get("PlayerUId")
+    payload = request.get_json(silent=True) or {}
+    id = payload.get("PlayerUId")
+    manager = SaveManager()
     if id == "PAL_BASE_WORKER_BTN":
-        pals = SaveManager().get_working_pals()
+        base_id = payload.get("BaseId")
+        if base_id:
+            pals = manager.get_working_pals(base_id=base_id)
+        elif payload.get("UnmatchedBase"):
+            group_id = None if payload.get("NoGuild") else payload.get("GuildId")
+            pals = manager.get_working_pals(
+                group_id=group_id,
+                unmatched_base=True,
+            )
+        elif payload.get("NoGuild"):
+            pals = manager.get_working_pals(group_id=None)
+        elif payload.get("GuildId"):
+            pals = manager.get_working_pals(group_id=payload["GuildId"])
+        else:
+            pals = manager.get_working_pals()
     else:
-        player_entity = SaveManager().get_player(id)
+        player_entity = manager.get_player(id)
         if not player_entity:
             return reply(1, None, f"Player {id} Not Found")
         pals = player_entity.get_sorted_pals()
@@ -565,8 +589,20 @@ def get_player_pals():
                 "IsTower": pal.IsTower or False,
                 "IsBOSS": pal.IsBOSS or False,
                 "IsRarePal": pal.IsRarePal or False,
+                "IsAwakened": pal.IsAwakened,
+                "IsExpeditionPal": pal.IsExpeditionPal,
+                "ExpeditionInstanceId": (
+                    str(pal.ExpeditionInstanceId)
+                    if pal.ExpeditionInstanceId
+                    else None
+                ),
+                "ExpeditionAssignmentStatus": manager.expedition_assignment_status(
+                    pal
+                ),
+                "ExpeditionCanComplete": manager.expedition_can_complete(pal),
+                "SlotIndex": pal.SlotIndex,
                 # "NickName": pal.NickName or "",
-                # "Level": pal.Level or 1,
+                "Level": pal.Level or 1,
                 # "Rank": pal.Rank.value if pal.Rank else 1,
                 # "Rank_HP": pal.Rank_HP or 0,
                 # "Rank_Attack": pal.Rank_Attack or 0,
@@ -646,6 +682,7 @@ def player_to_dict(player: PlayerEntity):
         "UnlockedRecipeTechnologyNames": [],
         "TechnologyPoint": player.TechnologyPoint or 0,
         "bossTechnologyPoint": player.bossTechnologyPoint or 0,
+        "PlayerAttributes": player_attribute_view(player),
     }
 
 

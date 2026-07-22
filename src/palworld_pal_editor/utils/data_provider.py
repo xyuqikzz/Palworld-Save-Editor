@@ -116,6 +116,17 @@ class DataProvider:
         i18n_list: dict = PAL_DATA[key]["I18n"]
         return i18n_list.get(Config.i18n, i18n_list.get("en"))
 
+    @none_guard(data_source=PAL_DATA, subkey="I18n")
+    @staticmethod
+    def is_pal_i18n_name(key: str, value: Optional[str]) -> bool:
+        if not value:
+            return False
+        return value in {
+            name
+            for name in PAL_DATA[key]["I18n"].values()
+            if isinstance(name, str) and name
+        }
+
     @none_guard(data_source=PAL_DATA, subkey="Stats")
     @staticmethod
     def get_pal_stats(pal: str, scaling_type: str) -> Optional[int]:
@@ -156,7 +167,14 @@ class DataProvider:
     @staticmethod
     def is_pal_human(key: str) -> Optional[bool]:
         return PAL_DATA[key].get("Human", False)
-    
+
+    @none_guard(data_source=PAL_DATA)
+    @staticmethod
+    def get_npc_default_weapon(key: str) -> Optional[str]:
+        if not PAL_DATA[key].get("Human", False):
+            return None
+        return PAL_DATA[key].get("DefaultWeapon")
+
     @none_guard(data_source=PAL_DATA)
     @staticmethod
     def has_human_icon(key: str) -> bool:

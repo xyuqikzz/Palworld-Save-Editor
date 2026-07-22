@@ -15,7 +15,7 @@ class PlayerEntity:
 
     def __init__(
         self,
-        group_id: UUID | str,
+        group_id: UUID | str | None,
         player_obj: dict,
         palbox: dict[str, PalEntity],
         gvas_file: GvasFile,
@@ -125,66 +125,51 @@ class PlayerEntity:
     @property
     def GotExStatusPointList(self) -> Optional[list[dict]]:
         return PalObjects.get_ArrayProperty(self._player_param.get("GotExStatusPointList"))
+
+    def status_point(self, name: str) -> Optional[int]:
+        for status in self.GotStatusPointList or ():
+            if PalObjects.get_BaseType(status.get("StatusName")) == name:
+                return PalObjects.get_BaseType(status.get("StatusPoint"))
+        return None
+
+    def set_status_point(self, name: str, value: int) -> None:
+        statuses = self.GotStatusPointList
+        if statuses is None:
+            if value == 0:
+                return
+            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+            statuses = self.GotStatusPointList
+            statuses.clear()
+        for status in statuses:
+            if PalObjects.get_BaseType(status.get("StatusName")) == name:
+                PalObjects.set_BaseType(status["StatusPoint"], value)
+                return
+        if value > 0:
+            statuses.append(PalObjects.StatusPointStruct(name, value))
     
     @property
     def StatusPointHP(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.MaxHP):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.MaxHP)
             
     @property
     def StatusPointSP(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.MaxSP):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.MaxSP)
             
     @property
     def StatusPointATK(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.Attack):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.Attack)
             
     @property
     def StatusPointCarryWeight(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.CarryWeight):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.CarryWeight)
             
     @property
     def StatusPointCaptureRate(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.CaptureRate):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.CaptureRate)
             
     @property
     def StatusPointWorkSpeed(self) -> Optional[int]:
-        if not self.GotStatusPointList:
-            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
-
-        for sp in self.GotStatusPointList:
-            if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.WorkSpeed):
-                status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
-                return status_point
+        return self.status_point(StatusName.WorkSpeed)
             
     # do this for ex points as well, while ex points do not have the capture rate thing
     @property
@@ -489,7 +474,12 @@ class PlayerEntity:
         ):
             LOGGER.info(f"Skip player records update for pal: {pal_entity}")
         else:
-            key = handle_special_keys(pal_entity.RawSpecieKey)
+            record_key = pal_entity.RawSpecieKey
+            if not DataProvider.in_pal_data(record_key) and DataProvider.in_pal_data(
+                pal_entity.IconAccessKey
+            ):
+                record_key = pal_entity.IconAccessKey
+            key = handle_special_keys(record_key)
             self.unlock_paldeck(key)
             self.inc_pal_capture_count(key)
             tech_key = "SkillUnlock_" + key

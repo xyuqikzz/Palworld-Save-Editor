@@ -10,8 +10,15 @@ class PalBaseCamp:
     def __init__(self, camp_obj: dict):
         self._camp_obj: dict = camp_obj
         self._camp_param: dict = camp_obj["value"]["RawData"]["value"]
+        worker_director = camp_obj.get("value", {}).get("WorkerDirector", {})
+        worker_director = worker_director.get("value", worker_director)
+        self._worker_director_param: dict = (
+            worker_director
+            .get("RawData", {})
+            .get("value", {})
+        )
 
-        if (not self.id) or (not self.owner_group_id):
+        if not self.id:
             LOGGER.warning(str(self._camp_param))
             raise Exception("possible broken camp object")
         
@@ -32,11 +39,12 @@ class PalBaseCamp:
     
     @property
     def container_id(self) -> Optional[UUID]:
-        return self._camp_param.get('container_id')
+        return self._worker_director_param.get('container_id')
 
 class BaseCampData:
     def __init__(self, gvas_file: GvasFile) -> None:
         self.camp_map = {}
+        self._camps = []
 
         self._wsd = gvas_file.properties["worldSaveData"]["value"]
         if "BaseCampSaveData" not in self._wsd:
@@ -56,13 +64,19 @@ class BaseCampData:
                 continue
 
             self.camp_map[str(camp_id)] = camp_entity
+            self.camp_map[str(camp_entity.id)] = camp_entity
+            self._camps.append(camp_entity)
             LOGGER.info(f"BaseCamp found: {camp_entity}")
 
     def get_camp(self, camp_id: UUID | str) -> Optional[PalBaseCamp]:
         return self.camp_map.get(str(camp_id))
 
     def get_camps(self) -> list[PalBaseCamp]:
-        return self.camp_map.values()
+        return list(self._camps)
 
     def get_owned_camp(self, group_id: UUID | str) -> list[PalBaseCamp]:
-        return [camp for camp in self.get_camps() if camp.owner_group_id == group_id]
+        return [
+            camp
+            for camp in self.get_camps()
+            if str(camp.owner_group_id) == str(group_id)
+        ]

@@ -15,6 +15,7 @@ PAL_ID = toUUID("33333333-3333-3333-3333-333333333333")
 CONTAINER_ID = toUUID("44444444-4444-4444-4444-444444444444")
 GROUP_ID = toUUID("55555555-5555-5555-5555-555555555555")
 BASE_ID = toUUID("66666666-6666-6666-6666-666666666666")
+UNKNOWN_GROUP_ID = toUUID("77777777-7777-7777-7777-777777777777")
 
 
 def player_object() -> dict:
@@ -104,7 +105,7 @@ class PlayerGroupResolutionTests(unittest.TestCase):
         self.assertEqual([str(PAL_ID)], list(player._palbox))
         self.assertEqual({}, manager._dangling_pals)
 
-    def test_raw_guild_tail_does_not_trust_unverified_group_id(self) -> None:
+    def test_unverified_group_id_keeps_player_without_a_guild(self) -> None:
         entities = [player_object()]
         gvas = synthetic_gvas(entities, include_player_handle=False)
 
@@ -114,7 +115,24 @@ class PlayerGroupResolutionTests(unittest.TestCase):
         manager.container_data = ContainerData(gvas)
         manager._load_entities(lazy_players=True)
 
-        self.assertEqual({}, manager.player_mapping)
+        player = manager.player_mapping[str(PLAYER_ID)]
+        self.assertIsNone(player.group_id)
+
+    def test_missing_group_record_preserves_unknown_group_identity(self) -> None:
+        player = player_object()
+        player["value"]["RawData"]["value"]["group_id"] = UNKNOWN_GROUP_ID
+        entities = [player]
+        gvas = synthetic_gvas(entities, include_player_handle=False)
+
+        manager = SaveManager.create_isolated()
+        manager._entities_list = entities
+        manager.group_data = GroupData(gvas)
+        manager.container_data = ContainerData(gvas)
+        manager._load_entities(lazy_players=True)
+
+        loaded = manager.player_mapping[str(PLAYER_ID)]
+        self.assertIsNone(loaded.group_id)
+        self.assertEqual(UNKNOWN_GROUP_ID, loaded._unresolved_group_id)
 
 
 if __name__ == "__main__":

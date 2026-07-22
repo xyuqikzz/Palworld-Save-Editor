@@ -5,7 +5,7 @@ import io
 from pathlib import Path
 import shutil
 import traceback
-from typing import Optional
+from typing import Any, Optional
 import uuid
 from time import perf_counter
 
@@ -13,6 +13,7 @@ from palworld_save_tools.gvas import GvasFile
 from palworld_save_tools.archive import FArchiveReader, FArchiveWriter, UUID
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
 from palworld_save_tools.paltypes import PALWORLD_CUSTOM_PROPERTIES, PALWORLD_TYPE_HINTS
+from palworld_save_tools.rawdata import map_concrete_model, map_object
 
 from palworld_pal_editor.core.basecamp_data import BaseCampData
 
@@ -28,6 +29,9 @@ from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.utils import LOGGER, alphanumeric_key
 from palworld_pal_editor.core.group_data import GroupData
 from palworld_pal_editor.config import ASSETS_PATH
+
+
+_ALL_GROUPS = object()
 
 
 def skip_decode(reader: FArchiveReader, type_name: str, size: int, path: str):
@@ -156,6 +160,7 @@ class SaveManager:
     def __init__(self):
         if not hasattr(self, "initialized"):
             self.initialized = True
+            self.reset_expedition_index()
 
     @classmethod
     def create_isolated(cls) -> "SaveManager":
@@ -163,9 +168,246 @@ class SaveManager:
         instance = object.__new__(cls)
         cls.__init__(instance)
         return instance
+
+    def reset_expedition_index(self) -> None:
+        self._expedition_instance_ids: Optional[frozenset[str]] = None
+        self._expedition_records: Optional[dict[str, dict[str, Any]]] = None
+        self._expedition_index_attempted = False
+
+    def _load_expedition_records(self) -> Optional[dict[str, dict[str, Any]]]:
+        if self._expedition_index_attempted:
+            return self._expedition_records
+
+        self._expedition_index_attempted = True
+        try:
+            prop = self.gvas_file.properties["worldSaveData"]["value"][
+                "MapObjectSaveData"
+            ]
+            writer = FArchiveWriter()
+            writer.fstring(prop["array_type"])
+            writer.optional_guid(prop.get("id"))
+            writer.write(prop["value"])
+            reader = FArchiveReader(
+                writer.bytes(),
+                type_hints=PALWORLD_TYPE_HINTS,
+                custom_properties={
+                    ".worldSaveData.MapObjectSaveData": (
+                        map_object.decode,
+                        map_object.encode,
+                    )
+                },
+            )
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+                io.StringIO()
+            ):
+                decoded = map_object.decode(
+                    reader,
+                    "ArrayProperty",
+                    len(prop["value"]),
+                    ".worldSaveData.MapObjectSaveData",
+                )
+
+            raw_map_objects = bytes(prop["value"])
+            records: dict[str, dict[str, Any]] = {}
+            for entry in decoded["value"]["values"]:
+                if entry.get("MapObjectId", {}).get("value") != "Expedition":
+                    continue
+                raw_data = (
+                    entry.get("ConcreteModel", {})
+                    .get("value", {})
+                    .get("RawData", {})
+                    .get("value", {})
+                )
+                instance_id = raw_data.get("instance_id")
+                if instance_id is not None:
+                    key = str(instance_id).lower()
+                    member_ids = frozenset(
+                        str(member.get("instance_id")).lower()
+                        for member in raw_data.get("members", ())
+                        if member.get("instance_id") is not None
+                    )
+                    original_payload = None
+                    offset = None
+                    try:
+                        original_payload = map_concrete_model.encode_bytes(
+                            copy.deepcopy(raw_data)
+                        )
+                        if raw_map_objects.count(original_payload) == 1:
+                            offset = raw_map_objects.find(original_payload)
+                    except Exception:
+                        pass
+                    records[key] = {
+                        "instance_id": key,
+                        "layout": raw_data.get("expedition_layout"),
+                        "mission_id": raw_data.get("mission_id"),
+                        "member_ids": member_ids,
+                        "state": raw_data.get("state"),
+                        "start_time": raw_data.get("start_time"),
+                        "raw_data": raw_data,
+                        "original_payload": original_payload,
+                        "offset": offset,
+                    }
+            self._expedition_records = records
+            self._expedition_instance_ids = frozenset(records)
+        except Exception as error:
+            LOGGER.warning(f"Unable to index expedition map objects: {error}")
+            self._expedition_records = None
+            self._expedition_instance_ids = None
+        return self._expedition_records
+
+    def get_expedition_instance_ids(self) -> Optional[frozenset[str]]:
+        """Return decoded expedition map-object IDs, or None when unavailable."""
+        self._load_expedition_records()
+        return self._expedition_instance_ids
+
+    @staticmethod
+    def _is_active_expedition(record: dict[str, Any]) -> bool:
+        mission_id = str(record.get("mission_id") or "")
+        return (
+            record.get("layout") == "current"
+            and record.get("state") == 2
+            and mission_id not in {"", "None"}
+            and bool(record.get("member_ids"))
+        )
+
+    def completable_expeditions(self) -> list[dict[str, Any]]:
+        records = self._load_expedition_records()
+        if records is None:
+            return []
+        return [
+            {
+                "expedition_id": record["instance_id"],
+                "mission_id": record["mission_id"],
+                "member_count": len(record["member_ids"]),
+                "state": record["state"],
+                "start_time": record["start_time"],
+            }
+            for record in records.values()
+            if self._is_active_expedition(record)
+            and isinstance(record.get("start_time"), int)
+            and record["start_time"] > 1
+            and record.get("offset") is not None
+            and record.get("original_payload") is not None
+        ]
+
+    def expedition_can_complete(self, pal: PalEntity) -> bool:
+        instance_id = pal.ExpeditionInstanceId
+        if instance_id is None:
+            return False
+        records = self._load_expedition_records()
+        if records is None:
+            return False
+        record = records.get(str(instance_id).lower())
+        return bool(
+            record
+            and self._is_active_expedition(record)
+            and str(pal.InstanceId).lower() in record["member_ids"]
+            and isinstance(record.get("start_time"), int)
+            and record["start_time"] > 1
+            and record.get("offset") is not None
+        )
+
+    def expedition_completion_state(
+        self, expedition_ids: tuple[str, ...] | list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        records = self._load_expedition_records()
+        if records is None:
+            return []
+        wanted = None if expedition_ids is None else {
+            str(value).lower() for value in expedition_ids
+        }
+        return [
+            {
+                "expedition_id": record["instance_id"],
+                "mission_id": record["mission_id"],
+                "member_count": len(record["member_ids"]),
+                "state": record["state"],
+                "start_time": record["start_time"],
+                "can_complete": (
+                    self._is_active_expedition(record)
+                    and isinstance(record.get("start_time"), int)
+                    and record["start_time"] > 1
+                    and record.get("offset") is not None
+                ),
+            }
+            for record in records.values()
+            if wanted is None or record["instance_id"] in wanted
+        ]
+
+    def snapshot_expedition_data(self) -> bytes:
+        return bytes(
+            self.gvas_file.properties["worldSaveData"]["value"][
+                "MapObjectSaveData"
+            ]["value"]
+        )
+
+    def restore_expedition_data(self, snapshot: bytes) -> None:
+        self.gvas_file.properties["worldSaveData"]["value"]["MapObjectSaveData"][
+            "value"
+        ] = bytes(snapshot)
+        self.reset_expedition_index()
+
+    def complete_active_expeditions(self) -> list[str]:
+        records = self._load_expedition_records()
+        if records is None:
+            raise ValueError("expedition map objects are unavailable")
+        raw_map_objects = self.snapshot_expedition_data()
+        replacements = []
+        completed_ids = []
+        for record in records.values():
+            if not (
+                self._is_active_expedition(record)
+                and isinstance(record.get("start_time"), int)
+                and record["start_time"] > 1
+                and record.get("offset") is not None
+                and record.get("original_payload") is not None
+            ):
+                continue
+            updated = copy.deepcopy(record["raw_data"])
+            updated["start_time"] = 1
+            encoded = map_concrete_model.encode_bytes(updated)
+            original = record["original_payload"]
+            if len(encoded) != len(original):
+                raise ValueError("expedition payload size changed")
+            offset = record["offset"]
+            if raw_map_objects[offset : offset + len(original)] != original:
+                raise ValueError("expedition payload no longer matches the index")
+            replacements.append((offset, original, encoded))
+            completed_ids.append(record["instance_id"])
+
+        for offset, original, encoded in sorted(replacements, reverse=True):
+            raw_map_objects = (
+                raw_map_objects[:offset]
+                + encoded
+                + raw_map_objects[offset + len(original) :]
+            )
+        self.restore_expedition_data(raw_map_objects)
+        return completed_ids
+
+    def expedition_assignment_status(self, pal: PalEntity) -> Optional[str]:
+        instance_id = pal.ExpeditionInstanceId
+        if instance_id is None:
+            return None
+        records = self._load_expedition_records()
+        if records is None:
+            return "unknown"
+        record = records.get(str(instance_id).lower())
+        if record is None:
+            return "invalid"
+        if record.get("layout") is None:
+            return "valid"
+        if record.get("layout") != "current":
+            return "unknown"
+        return (
+            "valid"
+            if self._is_active_expedition(record)
+            and str(pal.InstanceId).lower() in record["member_ids"]
+            else "invalid"
+        )
                 
     def open(self, file_path: str, *, lazy_players: bool = False) -> Optional[GvasFile]:
         self._file_path = Path(file_path).resolve()
+        self.reset_expedition_index()
         self.player_file_load_count = 0
         self.player_file_load_seconds = {}
         self._lazy_players = lazy_players
@@ -453,10 +695,23 @@ class SaveManager:
                         continue
                     
                     group_id = self._resolve_player_group_id(entity, uid_str)
+                    declared_group_id = (
+                        entity.get("value", {})
+                        .get("RawData", {})
+                        .get("value", {})
+                        .get("group_id")
+                    )
+                    unresolved_group_id = None
+                    if (
+                        group_id is None
+                        and declared_group_id is not None
+                        and str(declared_group_id) != str(PalObjects.EMPTY_UUID)
+                        and self.group_data.get_group(declared_group_id) is None
+                    ):
+                        unresolved_group_id = declared_group_id
 
                     if group_id is None:
                         LOGGER.warning(f"Player {uid_str} has no guild id")
-                        continue
 
                     palbox = temp_player_pal_mapping.pop(uid_str, {})
                     if lazy_players:
@@ -480,6 +735,12 @@ class SaveManager:
                             player_gvas_file,
                             player_compress_times,
                         )
+
+                    object.__setattr__(
+                        player_entity,
+                        "_unresolved_group_id",
+                        unresolved_group_id,
+                    )
                 
                     self.player_mapping[uid_str] = player_entity
                     LOGGER.info(f"Player Object Created: {player_entity}")
@@ -570,8 +831,55 @@ class SaveManager:
 
         LOGGER.warning(f"Can't find pal {guid}")
 
-    def get_working_pals(self) -> list[PalEntity]:
-        return sorted(self.baseworker_mapping.values(), key=lambda pal: (alphanumeric_key(pal.PalDeckID), pal.Level or 1))
+    def get_working_pals(
+        self,
+        *,
+        base_id: UUID | str | None = None,
+        group_id: UUID | str | None | object = _ALL_GROUPS,
+        unmatched_base: bool = False,
+    ) -> list[PalEntity]:
+        pals = list(self.baseworker_mapping.values())
+        camp_data = getattr(self, "camp_data", None)
+
+        if base_id is not None:
+            camp = camp_data.get_camp(base_id) if camp_data else None
+            if camp is None or camp.container_id is None:
+                return []
+            pals = [
+                pal
+                for pal in pals
+                if str(pal.ContainerId) == str(camp.container_id)
+            ]
+        elif group_id is not _ALL_GROUPS:
+            expected_group_id = None if group_id is None else str(group_id)
+            pals = [
+                pal
+                for pal in pals
+                if (None if pal.group_id is None else str(pal.group_id))
+                == expected_group_id
+            ]
+            if unmatched_base:
+                known_containers = {
+                    str(camp.container_id)
+                    for camp in (camp_data.get_camps() if camp_data else [])
+                    if camp.container_id is not None
+                    and (
+                        None
+                        if camp.owner_group_id is None
+                        else str(camp.owner_group_id)
+                    )
+                    == expected_group_id
+                }
+                pals = [
+                    pal
+                    for pal in pals
+                    if str(pal.ContainerId) not in known_containers
+                ]
+
+        return sorted(
+            pals,
+            key=lambda pal: (alphanumeric_key(pal.PalDeckID), pal.Level or 1),
+        )
 
     
     def move_pal(self, pal_id: UUID | str, target_container_ids: list[UUID | str]) -> bool:

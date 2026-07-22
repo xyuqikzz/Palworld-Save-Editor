@@ -21,8 +21,14 @@ const inventoryEditorPath = fileURLToPath(
 const palEditorPath = fileURLToPath(
   new URL('../src/components/PalEditor.vue', import.meta.url),
 )
+const palListPath = fileURLToPath(
+  new URL('../src/components/PalList.vue', import.meta.url),
+)
 const palSkillPickerPath = fileURLToPath(
   new URL('../src/components/modules/PalSkillPicker.vue', import.meta.url),
+)
+const passiveSkillCardPath = fileURLToPath(
+  new URL('../src/components/modules/PassiveSkillCard.vue', import.meta.url),
 )
 const palSpeciesPickerPath = fileURLToPath(
   new URL('../src/components/modules/PalSpeciesPicker.vue', import.meta.url),
@@ -62,6 +68,21 @@ test('entry save-source modes share stable workspace dimensions and internal scr
   assert.match(source, /@\/assets\/steam\.svg/, 'Steam navigation must use the Steam brand mark')
   assert.match(source, /@\/assets\/xbox\.svg/, 'Game Pass navigation must use the Xbox brand mark')
   assert.match(source, /Entry_Source_Beta/, 'Game Pass navigation must include the BETA badge')
+  assert.match(
+    source,
+    /\.source-switch\s*\{[^}]*gap:\s*8px/,
+    'save-source choices must keep enough space for selected and hover states',
+  )
+  assert.match(
+    source,
+    /\.source-switch label:has\(input:focus-visible\)/,
+    'save-source focus outlines must only appear for visible keyboard focus',
+  )
+  assert.doesNotMatch(
+    source,
+    /\.source-switch label:focus-within/,
+    'mouse selection must not leave a second focus outline around the active choice',
+  )
 })
 
 test('editor list panels contain their independently scrollable lists', () => {
@@ -131,20 +152,32 @@ test('editor workspace contains its top offset instead of collapsing it onto the
   )
 })
 
-test('Pal editor uses content height so the editor canvas is not exposed as empty space', () => {
+test('Pal editor lets the skills background fill the remaining viewport without clipping content', () => {
   const source = readFileSync(palEditorPath, 'utf8')
   const editorRule = source.match(/\.PalEditor\s*\{([^}]*)\}/)
+  const skillPanelRule = source.match(/div\.skillPanel\s*\{([^}]*)\}/)
 
   assert.ok(editorRule, 'PalEditor layout rule must exist')
+  assert.ok(skillPanelRule, 'skill panel layout rule must exist')
   assert.doesNotMatch(
     editorRule[1],
-    /height:\s*var\(--sub-height\)/,
-    'PalEditor must not reserve a viewport-height area below its content',
+    /(?:^|\n)\s*height:\s*var\(--sub-height\)/,
+    'PalEditor must not use a fixed viewport height that could clip skill content',
   )
   assert.match(
     editorRule[1],
-    /height:\s*auto[\s\S]*?overflow:\s*visible[\s\S]*?background:\s*var\(--ui-canvas\)/,
-    'PalEditor must use content height and the standard dark editor canvas',
+    /grid-template-rows:\s*max-content minmax\(min-content,\s*1fr\)[\s\S]*?min-height:\s*var\(--sub-height\)[\s\S]*?height:\s*auto[\s\S]*?overflow:\s*visible/,
+    'PalEditor must distribute remaining viewport height to its final grid row while allowing content growth',
+  )
+  assert.match(
+    skillPanelRule[1],
+    /min-height:\s*100%[\s\S]*?align-self:\s*stretch/,
+    'the skills card background must stretch across the remaining grid-row height',
+  )
+  assert.match(
+    source,
+    /@media \(max-width:\s*1380px\)\s*\{[\s\S]*?\.PalEditor\s*\{[^}]*grid-template-rows:\s*max-content max-content minmax\(min-content,\s*1fr\)/,
+    'the stacked layout must reserve its final flexible row for the skills card',
   )
 })
 
@@ -196,6 +229,42 @@ test('NPC basic information omits the gender editor', () => {
     source,
     /<div class="flex-h attribute-row" v-if="!palStore\.SELECTED_PAL_DATA\.IsHuman">\s*<div class="editField" v-if="palStore\.SELECTED_PAL_DATA\.Gender \|\| !palStore\.HIDE_INVALID_OPTIONS">[\s\S]*?Editor_Gender[\s\S]*?<div class="editField">[\s\S]*?Editor_Variant/,
     'gender and Pal-only variant controls must not render for NPC records',
+  )
+})
+
+test('awakened Pals expose the requested list marker and basic-info editor', () => {
+  const editorSource = readFileSync(palEditorPath, 'utf8')
+  const listSource = readFileSync(palListPath, 'utf8')
+
+  assert.match(
+    listSource,
+    /v-if="pal\.IsAwakened" class="pal-awakened-label"[\s\S]*?PalList_AwakenedMarker/,
+    'the Pal list must render the awakened marker from the initial summary payload',
+  )
+  assert.match(
+    listSource,
+    /\.pal-awakened-label\s*\{[^}]*color:\s*oklch\(0\.84 0\.16 92\)/,
+    'the awakened marker must use the requested yellow emphasis',
+  )
+  assert.match(
+    listSource,
+    /v-if="pal\.IsBOSS" class="pal-variant-label is-boss"[\s\S]*?Variant_Boss/,
+    'the Pal list must give the BOSS marker a dedicated state class',
+  )
+  assert.match(
+    listSource,
+    /\.pal-variant-label\.is-boss\s*\{[^}]*color:\s*var\(--ui-danger\)/,
+    'the Pal-list BOSS marker must use the semantic red colour',
+  )
+  assert.match(
+    editorSource,
+    /class="editField awakening-field"[\s\S]*?Editor_Awakening_Awakened[\s\S]*?Editor_Awakening_NotAwakened[\s\S]*?swapAwakening[\s\S]*?name="IsAwakened"[\s\S]*?<AppIcon name="refresh"/,
+    'basic info must present awakening as a standard editable status row',
+  )
+  assert.doesNotMatch(
+    editorSource,
+    /Editor_Awakening_Effect|AwakeningStatusMultiplier/,
+    'the awakening row must not repeat the IV multiplier and estimate explanation',
   )
 })
 
@@ -278,6 +347,7 @@ test('inventory omits its redundant inner title and keeps occupied item names le
 test('skill sections use consistent item sizing and title-row add actions', () => {
   const source = readFileSync(palEditorPath, 'utf8')
   const pickerSource = readFileSync(palSkillPickerPath, 'utf8')
+  const passiveCardSource = readFileSync(passiveSkillCardPath, 'utf8')
   const mainSource = readFileSync(mainCssPath, 'utf8')
 
   assert.equal(
@@ -301,7 +371,7 @@ test('skill sections use consistent item sizing and title-row add actions', () =
     'the three skill sections must receive equal panel widths',
   )
   assert.match(
-    source,
+    passiveCardSource,
     /\.passive-skill-card\s*\{[^}]*min-height:\s*40px/,
     'passive skill cards must use the compact height',
   )
@@ -315,6 +385,103 @@ test('skill sections use consistent item sizing and title-row add actions', () =
     /:aria-label="iconOnly \? placeholderText : undefined"[\s\S]*?<AppIcon :name="iconOnly \? 'plus' : 'chevron-down'"/,
     'the icon trigger must retain an accessible name and use a plus icon',
   )
+  assert.equal(
+    source.match(/class="active-skill-element"/g)?.length,
+    2,
+    'equipped and mastered skill tooltips must keep the element label and icon on one row',
+  )
+  assert.doesNotMatch(
+    source,
+    /\{\{ palStore\.ACTIVE_SKILLS\[skill\]\?\.Element \}\}/,
+    'skill tooltips must not repeat the internal English element name',
+  )
+  assert.equal(
+    source.match(/class="active-skill-tag"/g)?.length,
+    4,
+    'unique and skill-fruit states must use text tags in both active skill groups',
+  )
+  assert.doesNotMatch(source, /✨|🍐/, 'active skill tags must not use decorative icons')
+})
+
+test('estimated stats finish the left panel while work suitability remains in the right panel', () => {
+  const source = readFileSync(palEditorPath, 'utf8')
+  const basicPanelStart = source.indexOf('class="EditorItem item flex-v basicInfo"')
+  const statsPanelStart = source.indexOf('class="EditorItem flex-v item left statsPanel"')
+  const skillsPanelStart = source.indexOf('class="EditorItem item flex-v left skillPanel skillsPanel"')
+  const basicPanelSource = source.slice(basicPanelStart, statsPanelStart)
+  const statsPanelSource = source.slice(statsPanelStart, skillsPanelStart)
+
+  assert.ok(
+    basicPanelStart >= 0 && statsPanelStart > basicPanelStart && skillsPanelStart > statsPanelStart,
+    'the basic, stats, and skill panels must keep their expected order',
+  )
+  assert.match(
+    basicPanelSource,
+    /class="estimated-group">\s*<div class="palInfo"/,
+    'estimated metrics must render without a title at the bottom of the left basic-info panel',
+  )
+  assert.doesNotMatch(
+    basicPanelSource,
+    /Editor_Estimated_Stats/,
+    'the estimated metrics area must not render its title',
+  )
+  assert.match(
+    statsPanelSource,
+    /stat-group--condenser[\s\S]*?stat-group--suitabilities suitabilityPanel[\s\S]*?Editor_Suitabilities/,
+    'work suitability must remain after the condenser in the right panel',
+  )
+  assert.doesNotMatch(
+    statsPanelSource,
+    /Editor_Estimated_Stats|class="palInfo"/,
+    'the right panel must no longer contain estimated metrics',
+  )
+  assert.doesNotMatch(
+    source,
+    /class="EditorItem[^"]*suitabilityPanel/,
+    'work suitability must no longer render as a separate full-width card',
+  )
+  assert.match(
+    source,
+    /:global\(#EditorMain \.PalEditor > \.EditorItem\.basicInfo\),\s*:global\(#EditorMain \.PalEditor > \.EditorItem\.statsPanel\)\s*\{[^}]*align-self:\s*stretch/,
+    'the left basic-info card and right stats card must stretch to the same row height',
+  )
+  assert.match(
+    source,
+    /\.estimated-group\s*\{(?=[^}]*display:\s*flex)(?=[^}]*width:\s*100%)(?=[^}]*border-top:\s*1px solid var\(--ui-border\))[^}]*\}/,
+    'the left estimated group must keep the existing section spacing and divider',
+  )
+  assert.match(
+    source,
+    /\.statsPanel\s*\{(?=[^}]*position:\s*relative)[^}]*grid-template-areas:\s*"iv souls"\s*"condenser condenser"\s*"suitabilities suitabilities"/,
+    'the stats card must reserve full-width rows for the condenser and work suitability without a MAX layout row',
+  )
+  assert.match(
+    statsPanelSource,
+    /stat-group--condenser[\s\S]*?Editor_Condenser[\s\S]*?<\/p>\s*<div class="editField spaceBetween">/,
+    'the condenser level and slider must wrap onto a row below its heading',
+  )
+  assert.match(
+    source,
+    /\.suitabilityPanel \.skillList\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
+    'work suitability must show three controls per row at the target width',
+  )
+  assert.match(
+    source,
+    /:global\(#EditorMain button\.edit\.stats-max-all\)\s*\{(?=[^}]*position:\s*absolute)(?=[^}]*top:\s*18px)(?=[^}]*right:\s*18px)[^}]*\}/,
+    'the enhancement MAX action must be positioned at the top-right without taking layout height',
+  )
+  assert.match(
+    statsPanelSource,
+    /class="edit stats-max-all"[\s\S]*?PalEditor_MaxAllEnhancements[\s\S]*?maxAllEnhancements/,
+    'the stats card must expose one MAX action for all enhancement groups',
+  )
+  assert.match(
+    statsPanelSource,
+    /stat-group-header[\s\S]*?Editor_Suitabilities[\s\S]*?class="edit suitability-max-all"[\s\S]*?maxAllSuitabilities/,
+    'work suitability must expose its own MAX action in the section heading',
+  )
+  const statRowRule = source.match(/\.statsPanel \.spaceBetween\s*\{([^}]*)\}/)?.[1] || ''
+  assert.doesNotMatch(statRowRule, /border/, 'stat rows must use spacing instead of repeated dividers')
 })
 
 test('equipped skill picker only offers mastered skills that are not already equipped', () => {

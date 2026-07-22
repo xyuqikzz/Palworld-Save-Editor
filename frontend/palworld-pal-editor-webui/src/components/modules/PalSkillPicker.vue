@@ -72,8 +72,8 @@ const passiveFilters = computed(() => [
   { value: 'all', label: palStore.getTranslatedText('Editor_Passive_Filter_All') },
   { value: '5', label: palStore.getTranslatedText('Editor_Passive_Filter_Rainbow') },
   { value: '4', label: palStore.getTranslatedText('Editor_Passive_Filter_Legend') },
-  { value: '3', label: palStore.getTranslatedText('Editor_Passive_Filter_Gold') },
-  { value: '2', label: palStore.getTranslatedText('Editor_Passive_Filter_Gold') },
+  { value: '3', label: palStore.getTranslatedText('Editor_Passive_Filter_Gold2') },
+  { value: '2', label: palStore.getTranslatedText('Editor_Passive_Filter_Gold1') },
   { value: '1', label: palStore.getTranslatedText('Editor_Passive_Filter_Normal') },
   { value: '-1', label: palStore.getTranslatedText('Editor_Passive_Filter_Negative1') },
   { value: '-2', label: palStore.getTranslatedText('Editor_Passive_Filter_Negative2') },
@@ -710,15 +710,18 @@ const focusOption = index => {
 .pal-passive-option.is-rank-4 .pal-passive-option__banner strong { color: #68ffd8; }
 .pal-passive-option.is-rank-4 .pal-passive-option__banner img { filter: sepia(1) saturate(100) hue-rotate(75deg); }
 
-.pal-passive-option.is-rank-3 .pal-passive-option__banner {
+.pal-passive-option.is-rank-3 .pal-passive-option__banner,
+.pal-passive-option.is-rank-2 .pal-passive-option__banner {
   background-image: linear-gradient(rgb(255 221 0 / 12.5%), rgb(255 221 0 / 12.5%)), linear-gradient(rgb(17 17 17 / 53.3%), #111), url('/images/Pal/Texture/UI/Main_Menu/T_prt_pal_skill_base_02.webp');
   background-size: cover;
   background-position: center;
   border-color: #ffdd00;
 }
 
-.pal-passive-option.is-rank-3 .pal-passive-option__banner strong { color: #d1d560; }
-.pal-passive-option.is-rank-3 .pal-passive-option__banner img { filter: sepia(1) saturate(100) hue-rotate(0deg); }
+.pal-passive-option.is-rank-3 .pal-passive-option__banner strong,
+.pal-passive-option.is-rank-2 .pal-passive-option__banner strong { color: #d1d560; }
+.pal-passive-option.is-rank-3 .pal-passive-option__banner img,
+.pal-passive-option.is-rank-2 .pal-passive-option__banner img { filter: sepia(1) saturate(100) hue-rotate(0deg); }
 
 .pal-passive-option.is-negative .pal-passive-option__banner strong,
 .pal-passive-option.is-negative .pal-passive-option__description,

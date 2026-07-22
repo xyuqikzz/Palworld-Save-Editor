@@ -6,8 +6,10 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 
+from palworld_pal_editor.application.character_editor import CharacterEditor
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.application.structural_pal_editor import StructuralPalEditor
+from palworld_pal_editor.config import Config
 from palworld_pal_editor.core.character_index import (
     CharacterIndex,
     inspect_decoded_character_graph,
@@ -24,9 +26,11 @@ from palworld_pal_editor.domain.commands import (
     DeletePal,
     MovePal,
     RecoverDetachedPal,
+    UpdatePalProgression,
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.models import CharacterContainerType
+from palworld_pal_editor.utils.data_provider import DataProvider
 
 
 PLAYER_ID = toUUID("11111111-1111-1111-1111-111111111111")
@@ -236,18 +240,208 @@ class StructuralPalEditorTests(unittest.TestCase):
                 session_id=self.session.session_id,
                 expected_revision=0,
                 player_id=str(PLAYER_ID),
-                species_id="Hunter_Rifle",
+                species_id="SalesPerson_Wander",
                 container_type=CharacterContainerType.PAL_STORAGE,
             )
         )["pal"]
 
         npc = CharacterIndex(self.manager).pals[added["pal_id"]]
-        self.assertEqual("Hunter_Rifle", npc.CharacterID)
+        self.assertEqual("SalesPerson_Wander", npc.CharacterID)
         self.assertTrue(npc.IsHuman)
         self.assertIsNone(npc.Gender)
-        self.assertEqual(["EPalWazaID::Human_Punch"], npc.MasteredWaza)
-        self.assertEqual(["EPalWazaID::Human_Punch"], npc.EquipWaza)
+        self.assertEqual(["EPalWazaID::Weapon_Use"], npc.MasteredWaza)
+        self.assertEqual(["EPalWazaID::Weapon_Use"], npc.EquipWaza)
         self.assertEqual(str(STORAGE_ID), added["container_id"])
+
+    def test_add_max_human_npc_sets_trust_without_awakening(self) -> None:
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=str(PLAYER_ID),
+                species_id="SalesPerson_Wander",
+                container_type=CharacterContainerType.PAL_STORAGE,
+                max_pal=True,
+            )
+        )["pal"]
+
+        npc = CharacterIndex(self.manager).pals[added["pal_id"]]
+        self.assertTrue(npc.IsHuman)
+        self.assertEqual(10, npc.FriendshipLevel)
+        self.assertEqual(DataProvider.get_pal_friendship(10), npc.FriendshipPoint)
+        self.assertEqual(10, added["friendship_level"])
+        self.assertNotIn("bIsAwakening", npc._pal_param)
+        self.assertEqual(80, npc.Level)
+
+    def test_existing_human_npc_materializes_missing_trust_field(self) -> None:
+        PalObjects.set_BaseType(
+            self.pal._pal_param["CharacterID"], "SalesPerson_Wander"
+        )
+        self.pal._pal_param.pop("FriendshipPoint", None)
+
+        result = CharacterEditor(self.session).execute(
+            UpdatePalProgression(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"friendship_level": 10},
+            )
+        )
+
+        self.assertTrue(self.pal.IsHuman)
+        self.assertEqual(10, result["value"]["friendship_level"])
+        self.assertEqual(
+            DataProvider.get_pal_friendship(10),
+            self.pal.FriendshipPoint,
+        )
+        self.assertEqual(
+            "IntProperty",
+            self.pal._pal_param["FriendshipPoint"]["type"],
+        )
+        self.assertEqual(1, self.session.revision)
+
+    def test_add_boss_only_otomo_uses_species_moves_and_player_record_key(self) -> None:
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=str(PLAYER_ID),
+                species_id="BOSS_KingWhale_otomo",
+                container_type=CharacterContainerType.PAL_STORAGE,
+            )
+        )["pal"]
+
+        pal = CharacterIndex(self.manager).pals[added["pal_id"]]
+        pal.Level = 16
+
+        expected_moves = [
+            "EPalWazaID::Unique_KingWhale_HomingBubble",
+            "EPalWazaID::CreepingBubble",
+            "EPalWazaID::Unique_KingWhale_AquaBlade",
+        ]
+        self.assertEqual("BOSS_KingWhale_otomo", pal.CharacterID)
+        self.assertEqual("BOSS_KingWhale_otomo", pal.DataAccessKey)
+        self.assertEqual(expected_moves, pal.MasteredWaza)
+        self.assertEqual(expected_moves, pal.EquipWaza)
+        self.assertEqual(
+            ["KingWhale"],
+            [row["key"] for row in self.player.PaldeckUnlockFlag],
+        )
+        self.assertEqual(
+            ["KingWhale"],
+            [row["key"] for row in self.player.PalCaptureCount],
+        )
+
+    def test_add_pal_applies_passive_preset_and_max_work_atomically(self) -> None:
+        before_level = self.session.revision
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=before_level,
+                player_id=str(PLAYER_ID),
+                species_id="SheepBall",
+                container_type=CharacterContainerType.PAL_STORAGE,
+                passive=("WorldTree_CraftSpeed", "CraftSpeed_up3"),
+                max_work=True,
+            )
+        )["pal"]
+
+        pal = CharacterIndex(self.manager).pals[added["pal_id"]]
+        self.assertEqual(
+            ["WorldTree_CraftSpeed", "CraftSpeed_up3"],
+            pal.PassiveSkillList,
+        )
+        self.assertEqual(Config.max_souls_level, pal.Rank_CraftSpeed)
+        self.assertEqual(5, pal.Rank)
+        self.assertTrue(pal.WorkSuitabilities)
+        self.assertTrue(
+            all(
+                level == Config.max_suitability_level
+                for level in pal.WorkSuitabilities.values()
+            )
+        )
+        self.assertIsNone(pal.Level)
+        self.assertIsNone(pal.Rank_HP)
+        self.assertFalse(pal.IsAwakened)
+        self.assertEqual(before_level + 1, self.session.revision)
+        self.assertEqual(1, len(self.session.changes()))
+
+    def test_add_pal_max_pal_uses_the_existing_unrestricted_maxima(self) -> None:
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=str(PLAYER_ID),
+                species_id="SheepBall",
+                container_type=CharacterContainerType.PAL_STORAGE,
+                passive=("Rare",),
+                max_pal=True,
+                unrestricted=True,
+            )
+        )["pal"]
+
+        pal = CharacterIndex(self.manager).pals[added["pal_id"]]
+        self.assertEqual(["Rare"], pal.PassiveSkillList)
+        self.assertEqual(100, pal.Level)
+        self.assertEqual(10, pal.FriendshipLevel)
+        self.assertEqual(255, pal.Talent_HP)
+        self.assertEqual(255, pal.Talent_Melee)
+        self.assertEqual(255, pal.Talent_Shot)
+        self.assertEqual(255, pal.Talent_Defense)
+        self.assertEqual(255, pal.Rank_HP)
+        self.assertEqual(255, pal.Rank_Attack)
+        self.assertEqual(255, pal.Rank_Defence)
+        self.assertEqual(255, pal.Rank_CraftSpeed)
+        self.assertEqual(255, pal.Rank)
+        self.assertTrue(pal.IsAwakened)
+        self.assertTrue(
+            all(
+                level == Config.max_suitability_level
+                for level in pal.WorkSuitabilities.values()
+            )
+        )
+
+    def test_add_pal_rejects_invalid_passive_preset_without_partial_mutation(self) -> None:
+        before = normalized_state(self.manager)
+
+        with self.assertRaises(DomainError) as raised:
+            self.editor().execute(
+                AddPal(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    player_id=str(PLAYER_ID),
+                    species_id="SheepBall",
+                    container_type=CharacterContainerType.PAL_STORAGE,
+                    passive=("UnknownPassive",),
+                    max_work=True,
+                )
+            )
+
+        self.assertEqual("UNKNOWN_SKILL", raised.exception.code)
+        self.assertEqual(before, normalized_state(self.manager))
+        self.assertEqual(0, self.session.revision)
+        self.assertEqual([], self.session.changes())
+
+    def test_add_pal_rejects_conflicting_max_presets_without_partial_mutation(self) -> None:
+        before = normalized_state(self.manager)
+
+        with self.assertRaises(DomainError) as raised:
+            self.editor().execute(
+                AddPal(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    player_id=str(PLAYER_ID),
+                    species_id="SheepBall",
+                    container_type=CharacterContainerType.PAL_STORAGE,
+                    max_pal=True,
+                    max_work=True,
+                )
+            )
+
+        self.assertEqual("CONFLICTING_CREATION_PRESETS", raised.exception.code)
+        self.assertEqual(before, normalized_state(self.manager))
+        self.assertEqual(0, self.session.revision)
+        self.assertEqual([], self.session.changes())
 
     def test_add_clone_move_delete_and_recover_pal(self) -> None:
         editor = self.editor()

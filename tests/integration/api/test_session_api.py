@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -59,12 +60,99 @@ class SessionApiTests(unittest.TestCase):
         response = self.client.get("/api/save/session")
         self.assertEqual(401, response.status_code)
 
+    def test_fetch_config_only_reports_nonempty_password(self) -> None:
+        for password, expected in ((None, False), ("", False), ("configured", True)):
+            with self.subTest(password_state="nonempty" if password else "empty"):
+                with patch.object(Config, "password", password):
+                    response = self.client.get("/api/save/fetch_config")
+
+                self.assertEqual(200, response.status_code)
+                self.assertIs(expected, response.get_json()["data"]["HasPassword"])
+
+    def test_fetch_config_auto_selects_the_latest_valid_steam_world(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            local_app_data = Path(temporary_directory)
+            save_games = local_app_data / "Pal" / "Saved" / "SaveGames"
+            older_world = save_games / "111" / "WORLD_A"
+            latest_world = save_games / "222" / "WORLD_B"
+            invalid_world = save_games / "333" / "WORLD_C"
+
+            for world in (older_world, latest_world):
+                (world / "Players").mkdir(parents=True)
+                (world / "Level.sav").write_bytes(b"save")
+            invalid_world.mkdir(parents=True)
+            (invalid_world / "Level.sav").write_bytes(b"newer-but-incomplete")
+
+            os.utime(older_world / "Level.sav", ns=(1_000, 1_000))
+            os.utime(latest_world / "Level.sav", ns=(2_000, 2_000))
+            os.utime(invalid_world / "Level.sav", ns=(3_000, 3_000))
+
+            with (
+                patch.object(Config, "path", None),
+                patch.dict(os.environ, {"LOCALAPPDATA": str(local_app_data)}),
+            ):
+                response = self.client.get("/api/save/fetch_config")
+                self.assertIsNone(Config.path)
+
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                str(latest_world.resolve()),
+                response.get_json()["data"]["Path"],
+            )
+
+    def test_complete_active_expeditions_is_an_atomic_save_command(self) -> None:
+        expedition_id = "44444444-5555-6666-7777-888888888888"
+        state = {"start_time": 100}
+        manager = self.session.manager
+        manager.completable_expeditions = lambda: (
+            [{"expedition_id": expedition_id}] if state["start_time"] > 1 else []
+        )
+        manager.expedition_completion_state = lambda _ids: [
+            {
+                "expedition_id": expedition_id,
+                "mission_id": "DUNGEON_SAKURAJIMA",
+                "member_count": 56,
+                "state": 2,
+                "start_time": state["start_time"],
+                "can_complete": state["start_time"] > 1,
+            }
+        ]
+        manager.snapshot_expedition_data = lambda: state["start_time"]
+        manager.restore_expedition_data = lambda value: state.update(
+            start_time=value
+        )
+
+        def complete():
+            state["start_time"] = 1
+            return [expedition_id]
+
+        manager.complete_active_expeditions = complete
+        response = self.client.post(
+            "/api/save/expeditions/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "complete_active_expeditions",
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        payload = response.get_json()["data"]
+        self.assertEqual(1, payload["revision"])
+        self.assertEqual(1, payload["value"]["completed_count"])
+        self.assertEqual([expedition_id], payload["value"]["expedition_ids"])
+        self.assertEqual("on_next_game_load", payload["value"]["settlement"])
+        self.assertEqual(1, state["start_time"])
+        self.assertEqual(1, self.session.revision)
+
     def test_korean_is_exposed_and_accepted_by_save_i18n_endpoints(self) -> None:
         from palworld_pal_editor.config import Config
 
         response = self.client.get("/api/save/fetch_config")
         self.assertEqual(200, response.status_code)
         self.assertEqual("한국어", response.get_json()["data"]["I18nList"]["ko"])
+        self.assertEqual(10, response.get_json()["data"]["MaxSuitabilityLevel"])
 
         previous_language = Config.i18n
         try:

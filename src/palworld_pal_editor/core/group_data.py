@@ -8,9 +8,10 @@ from palworld_pal_editor.utils import LOGGER
 
 
 class PalGroup:
-    def __init__(self, group_obj: dict):
+    def __init__(self, group_obj: dict, group_type: str):
         self._group_obj: dict = group_obj
         self._group_param: dict = group_obj["value"]["RawData"]["value"]
+        self._group_type = group_type
         if (not self.players) and (not self.base_ids):
             raise Exception("Empty Guild")
 
@@ -95,7 +96,21 @@ class PalGroup:
 
     @property
     def guild_name(self) -> Optional[str]:
-        return self._group_param.get("guild_name")
+        return (
+            self._group_param.get("guild_name")
+            or self._group_param.get("guild_name_2")
+            or self._group_param.get("group_name")
+        )
+
+    def set_guild_name(self, name: str) -> None:
+        current = self._group_param.get("guild_name")
+        if not isinstance(current, str):
+            raise ValueError("Guild name field is unavailable")
+        self._group_param["guild_name"] = name
+
+    @property
+    def group_type(self) -> str:
+        return self._group_type
 
     @property
     def guild_format(self) -> Optional[str]:
@@ -103,6 +118,12 @@ class PalGroup:
 
     @property
     def players(self) -> Optional[list[tuple[UUID, str]]]:
+        if self.group_type == "EPalGroupType::IndependentGuild":
+            player_uid = self._group_param.get("player_uid")
+            if not player_uid:
+                return []
+            player_info = self._group_param.get("player_info") or {}
+            return [(player_uid, player_info.get("player_name") or "")]
         return [
             (player_data["player_uid"], player_data["player_info"]["player_name"])
             for player_data in self._group_param.get("players") or []
@@ -126,11 +147,14 @@ class GroupData:
             group_type = PalObjects.get_EnumProperty(
                 group.get("value", {}).get("GroupType")
             )
-            if group_type != "EPalGroupType::Guild":
+            if group_type not in {
+                "EPalGroupType::Guild",
+                "EPalGroupType::IndependentGuild",
+            }:
                 continue
 
             try:
-                group_entity = PalGroup(group)
+                group_entity = PalGroup(group, group_type)
             except Exception as e:
                 raise ValueError(f"Invalid guild group: {e}") from e
 

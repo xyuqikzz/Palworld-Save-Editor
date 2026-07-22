@@ -57,6 +57,11 @@ class StructuralPalApiTests(unittest.TestCase):
             if DataProvider.is_pal_human(internal_name)
         }
         self.assertEqual(expected_humans, set(humans))
+        self.assertEqual("Handgun", humans["SalesPerson_Wander"]["DefaultWeapon"])
+        self.assertEqual(
+            "GatlingGun",
+            humans["Male_DarkTrader02"]["DefaultWeapon"],
+        )
         self.assertEqual(
             {
                 internal_name
@@ -119,6 +124,61 @@ class StructuralPalApiTests(unittest.TestCase):
         self.assertEqual(200, deleted.status_code)
         self.assertNotIn(pal_id, CharacterIndex(self.manager).pals)
         self.assertEqual(2, self.session.revision)
+
+    def test_add_command_accepts_creation_presets_as_one_revision(self) -> None:
+        response = self.client.post(
+            "/api/pal/structural/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "add_pal",
+                "player_id": str(PLAYER_ID),
+                "species_id": "SheepBall",
+                "container_type": "PAL_STORAGE",
+                "passive": ["WorldTree_CraftSpeed", "CraftSpeed_up3"],
+                "max_pal": False,
+                "max_work": True,
+                "unrestricted": False,
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        payload = response.get_json()["data"]
+        pal = CharacterIndex(self.manager).pals[payload["pal"]["pal_id"]]
+        self.assertEqual(
+            ["WorldTree_CraftSpeed", "CraftSpeed_up3"],
+            pal.PassiveSkillList,
+        )
+        self.assertEqual(5, pal.Rank)
+        self.assertTrue(pal.WorkSuitabilities)
+        self.assertTrue(all(level == 10 for level in pal.WorkSuitabilities.values()))
+        self.assertEqual(1, self.session.revision)
+
+    def test_add_max_npc_reports_and_persists_maximum_trust(self) -> None:
+        response = self.client.post(
+            "/api/pal/structural/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "add_pal",
+                "player_id": str(PLAYER_ID),
+                "species_id": "SalesPerson_Wander",
+                "container_type": "PAL_STORAGE",
+                "max_pal": True,
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        payload = response.get_json()["data"]
+        npc = CharacterIndex(self.manager).pals[payload["pal"]["pal_id"]]
+        self.assertTrue(npc.IsHuman)
+        self.assertEqual(10, payload["pal"]["friendship_level"])
+        self.assertEqual(10, npc.FriendshipLevel)
+        self.assertEqual(DataProvider.get_pal_friendship(10), npc.FriendshipPoint)
+        self.assertNotIn("bIsAwakening", npc._pal_param)
+        self.assertEqual(1, self.session.revision)
 
     def test_raw_ids_unknown_fields_and_stale_revision_are_rejected(self) -> None:
         response = self.client.post(

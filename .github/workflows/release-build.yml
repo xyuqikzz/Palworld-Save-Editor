@@ -95,14 +95,6 @@ jobs:
         cat $CONFIG_FILE
         cat $PYPROJECT_FILE
 
-        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
-        if [[ -n "${LAST_TAG}" ]]; then
-          COMPARE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/${LAST_TAG}...${VERSION_TAG}"
-        else
-          COMPARE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${VERSION_TAG}"
-        fi
-        echo "COMPARE_URL=$COMPARE_URL" >> $GITHUB_ENV
-
     - name: Windows Build
       if: runner.os == 'Windows'
       shell: pwsh
@@ -188,8 +180,6 @@ jobs:
       with:
         tag_name: ${{ env.VERSION_TAG }}
         files: dist/*
-        body: |
-          ## Changes
-          View the changes between versions [here](${{ env.COMPARE_URL }}).
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

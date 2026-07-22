@@ -222,6 +222,7 @@ h1 {
 .source-switch {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   min-width: 0;
   padding: 18px 20px;
   border-right: 1px solid var(--ui-border);
@@ -239,6 +240,7 @@ h1 {
   border: 1px solid transparent;
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
 
 .source-switch label::before {
@@ -250,14 +252,14 @@ h1 {
   content: '';
 }
 
-.source-switch label:hover { color: var(--ui-text-secondary); background: var(--ui-surface-raised); }
+.source-switch label:hover:not(.active) { color: var(--ui-text-secondary); background: var(--ui-surface-raised); }
 .source-switch label.active {
   color: var(--ui-text);
   background: var(--ui-accent-soft);
   border-color: var(--ui-accent);
 }
 .source-switch label.active::before { background: var(--ui-accent); }
-.source-switch label:focus-within { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.source-switch label:has(input:focus-visible) { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 .source-switch input { position: absolute; opacity: 0; pointer-events: none; }
 .source-icon {
   display: grid;
@@ -427,6 +429,7 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .button { transition: none; }
+  .button,
+  .source-switch label { transition: none; }
 }
 </style>

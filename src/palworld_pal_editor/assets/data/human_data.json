@@ -5,6 +5,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "TestNPC",
@@ -45,8 +46,9 @@
     "InternalName": "Hunter_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -87,8 +89,9 @@
     "InternalName": "Hunter_Handgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -129,8 +132,9 @@
     "InternalName": "Hunter_Shotgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -171,8 +175,9 @@
     "InternalName": "Hunter_RocketLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -213,8 +218,9 @@
     "InternalName": "Hunter_MissileLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Interceptor",
@@ -255,8 +261,9 @@
     "InternalName": "Hunter_GrenadeLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Veteran",
@@ -297,8 +304,9 @@
     "InternalName": "Hunter_Bat",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -339,8 +347,9 @@
     "InternalName": "Hunter_Grenade",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Syndicate Grenadier",
@@ -381,8 +390,9 @@
     "InternalName": "Hunter_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -423,8 +433,9 @@
     "InternalName": "Hunter_Fat_GatlingGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -465,8 +476,9 @@
     "InternalName": "Police_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -507,8 +519,9 @@
     "InternalName": "Police_Handgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Guard",
@@ -549,8 +562,9 @@
     "InternalName": "Police_Shotgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Elite",
@@ -591,8 +605,9 @@
     "InternalName": "MobuCitizen",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -633,8 +648,9 @@
     "InternalName": "MobuVillager",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -675,8 +691,9 @@
     "InternalName": "QuestMan",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Quest Client",
@@ -717,8 +734,9 @@
     "InternalName": "SalesPerson",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -759,8 +777,9 @@
     "InternalName": "VisitingMerchant",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Visitor",
@@ -801,8 +820,9 @@
     "InternalName": "WeaponsDealer",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Weapons Dealer",
@@ -843,8 +863,9 @@
     "InternalName": "PalDealer",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -885,8 +906,9 @@
     "InternalName": "Inspector",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -927,8 +949,9 @@
     "InternalName": "PalTrader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -969,8 +992,9 @@
     "InternalName": "GoodwillAmbassador",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -1011,8 +1035,9 @@
     "InternalName": "Robbery_Leader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -1053,8 +1078,9 @@
     "InternalName": "Robbery_Minion",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -1095,8 +1121,9 @@
     "InternalName": "Guard_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -1137,8 +1164,9 @@
     "InternalName": "Guard_Shotgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -1179,8 +1207,9 @@
     "InternalName": "TestAssassin",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "TestAssassin",
@@ -1221,8 +1250,9 @@
     "InternalName": "Visitor_Hunter_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -1263,8 +1293,9 @@
     "InternalName": "Visitor_Present",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -1307,6 +1338,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Attack Chopper",
@@ -1347,8 +1379,9 @@
     "InternalName": "FireCult_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -1389,8 +1422,9 @@
     "InternalName": "FireCult_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -1431,8 +1465,9 @@
     "InternalName": "Believer_Bat",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -1473,8 +1508,9 @@
     "InternalName": "Believer_CrossBow",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -1515,8 +1551,9 @@
     "InternalName": "Male_People02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1557,8 +1594,9 @@
     "InternalName": "Male_People03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1601,6 +1639,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1643,6 +1682,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1683,8 +1723,9 @@
     "InternalName": "Male_Trader01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1725,8 +1766,9 @@
     "InternalName": "Male_Trader02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1767,8 +1809,9 @@
     "InternalName": "Male_Trader03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -1809,8 +1852,9 @@
     "InternalName": "Male_DarkTrader01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Black Marketeer",
@@ -1851,8 +1895,9 @@
     "InternalName": "Male_DarkTrader01_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Black Marketeer",
@@ -1893,8 +1938,9 @@
     "InternalName": "Male_DarkTrader01_03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Black Marketeer",
@@ -1935,8 +1981,9 @@
     "InternalName": "Male_DarkTrader01_04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Black Marketeer",
@@ -1977,8 +2024,9 @@
     "InternalName": "Male_DesertPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -2019,8 +2067,9 @@
     "InternalName": "Female_DesertPeople02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Villager",
@@ -2061,8 +2110,9 @@
     "InternalName": "MobuCitizen_Male",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -2103,8 +2153,9 @@
     "InternalName": "Male_Soldier01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -2145,8 +2196,9 @@
     "InternalName": "Female_Soldier01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -2187,8 +2239,9 @@
     "InternalName": "Male_Police_old",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -2229,8 +2282,9 @@
     "InternalName": "Male_Scientist01_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -2271,8 +2325,9 @@
     "InternalName": "Scientist_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -2313,8 +2368,9 @@
     "InternalName": "SalesPerson_Desert",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -2355,8 +2411,9 @@
     "InternalName": "SalesPerson_Desert2",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -2397,8 +2454,9 @@
     "InternalName": "PalDealer_Desert",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -2439,8 +2497,9 @@
     "InternalName": "SalesPerson_Volcano",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -2481,8 +2540,9 @@
     "InternalName": "SalesPerson_Volcano2",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -2523,8 +2583,9 @@
     "InternalName": "PalDealer_Volcano",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -2565,8 +2626,9 @@
     "InternalName": "SalesPerson_Wander",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",
@@ -2607,8 +2669,9 @@
     "InternalName": "RandomEventShop",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Merchant",
@@ -2649,8 +2712,9 @@
     "InternalName": "Hunter_Rifle_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -2691,8 +2755,9 @@
     "InternalName": "Hunter_Handgun_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -2733,8 +2798,9 @@
     "InternalName": "Hunter_Shotgun_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -2775,8 +2841,9 @@
     "InternalName": "Hunter_RocketLauncher_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -2817,8 +2884,9 @@
     "InternalName": "Hunter_Bat_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -2859,8 +2927,9 @@
     "InternalName": "Hunter_Grenade_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Syndicate Grenadier",
@@ -2901,8 +2970,9 @@
     "InternalName": "Hunter_FlameThrower_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -2943,8 +3013,9 @@
     "InternalName": "Hunter_Fat_GatlingGun_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -2985,8 +3056,9 @@
     "InternalName": "Believer_Bat_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -3027,8 +3099,9 @@
     "InternalName": "Believer_CrossBow_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -3069,8 +3142,9 @@
     "InternalName": "FireCult_Rifle_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -3111,8 +3185,9 @@
     "InternalName": "FireCult_FlameThrower_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -3153,8 +3228,9 @@
     "InternalName": "Male_Scientist01_LaserRifle_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -3195,8 +3271,9 @@
     "InternalName": "Scientist_FlameThrower_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -3237,8 +3314,9 @@
     "InternalName": "Believer_Fat_GatlingGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Judicator",
@@ -3279,8 +3357,9 @@
     "InternalName": "Male_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3321,8 +3400,9 @@
     "InternalName": "Female_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3363,8 +3443,9 @@
     "InternalName": "Male_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3405,8 +3486,9 @@
     "InternalName": "Female_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3447,8 +3529,9 @@
     "InternalName": "Male_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3489,8 +3572,9 @@
     "InternalName": "Female_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -3531,8 +3615,9 @@
     "InternalName": "Hunter_Rifle_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -3573,8 +3658,9 @@
     "InternalName": "Hunter_Shotgun_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -3615,8 +3701,9 @@
     "InternalName": "Hunter_Grenade_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Syndicate Grenadier",
@@ -3657,8 +3744,9 @@
     "InternalName": "Hunter_FlameThrower_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -3699,8 +3787,9 @@
     "InternalName": "Hunter_RocketLauncher_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -3741,8 +3830,9 @@
     "InternalName": "Hunter_GrenadeLauncher_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Veteran",
@@ -3783,8 +3873,9 @@
     "InternalName": "Hunter_MissileLauncher_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Interceptor",
@@ -3825,8 +3916,9 @@
     "InternalName": "Hunter_Fat_GatlingGun_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -3867,8 +3959,9 @@
     "InternalName": "Male_DarkTrader02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Medal Merchant",
@@ -3909,8 +4002,9 @@
     "InternalName": "Male_Ninja01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -3951,8 +4045,9 @@
     "InternalName": "Male_NinjaElite01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -3993,8 +4088,9 @@
     "InternalName": "Hunter_Fat_GatlingGun_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -4035,8 +4131,9 @@
     "InternalName": "Hunter_Rifle_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -4077,8 +4174,9 @@
     "InternalName": "Believer_Fat_Cane_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GiantClub",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Judicator",
@@ -4119,8 +4217,9 @@
     "InternalName": "Believer_CrossBow_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -4161,8 +4260,9 @@
     "InternalName": "Ninja01_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -4203,8 +4303,9 @@
     "InternalName": "NinjaElite01_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -4245,8 +4346,9 @@
     "InternalName": "Police_Rifle_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -4287,8 +4389,9 @@
     "InternalName": "Police_Shotgun_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Elite",
@@ -4329,8 +4432,9 @@
     "InternalName": "BOSS_Hunter_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Hawk",
@@ -4371,8 +4475,9 @@
     "InternalName": "BOSS_Hunter_Fat_GatlingGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Grill",
@@ -4413,8 +4518,9 @@
     "InternalName": "BOSS_Believer_CrossBow",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Ego",
@@ -4455,8 +4561,9 @@
     "InternalName": "BOSS_Believer_Fat_GiantClub",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GiantClub",
     "Human": true,
     "I18n": {
       "en": "Brick",
@@ -4497,8 +4604,9 @@
     "InternalName": "BOSS_Police_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Whip",
@@ -4539,8 +4647,9 @@
     "InternalName": "BOSS_FireCult_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Shadow",
@@ -4581,8 +4690,9 @@
     "InternalName": "BOSS_Scientist_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Whisk",
@@ -4623,8 +4733,9 @@
     "InternalName": "BOSS_Ninja",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Fumble",
@@ -4665,8 +4776,9 @@
     "InternalName": "BOSS_Male_NinjaElite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Urchin",
@@ -4707,8 +4819,9 @@
     "InternalName": "BOSS_Viking",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Gnaw",
@@ -4749,8 +4862,9 @@
     "InternalName": "BOSS_VikingElite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Cache",
@@ -4791,8 +4905,9 @@
     "InternalName": "BOSS_Female_Soldier",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Jade",
@@ -4833,8 +4948,9 @@
     "InternalName": "BOSS_Female_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Dazzle",
@@ -4875,8 +4991,9 @@
     "InternalName": "BOSS_Female_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Aloha",
@@ -4917,8 +5034,9 @@
     "InternalName": "BOSS_Female_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Nimble",
@@ -4959,8 +5077,9 @@
     "InternalName": "BOSS_Male_Soldier",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Crash",
@@ -5001,8 +5120,9 @@
     "InternalName": "BOSS_Male_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Dart",
@@ -5043,8 +5163,9 @@
     "InternalName": "BOSS_Male_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Clint",
@@ -5085,8 +5206,9 @@
     "InternalName": "BOSS_Male_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Lasso",
@@ -5127,8 +5249,9 @@
     "InternalName": "BOSS_Female_People",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Flare",
@@ -5169,8 +5292,9 @@
     "InternalName": "BOSS_Female_People02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Siren",
@@ -5211,8 +5335,9 @@
     "InternalName": "BOSS_Female_People03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Turncoat",
@@ -5253,8 +5378,9 @@
     "InternalName": "BOSS_Male_People",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Dyna",
@@ -5295,8 +5421,9 @@
     "InternalName": "BOSS_Male_People2",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Mite",
@@ -5337,8 +5464,9 @@
     "InternalName": "BOSS_Male_People02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Quill",
@@ -5379,8 +5507,9 @@
     "InternalName": "BOSS_Male_People03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Scoot",
@@ -5421,8 +5550,9 @@
     "InternalName": "BOSS_Male_DesertPeople",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Phantom",
@@ -5463,8 +5593,9 @@
     "InternalName": "BOSS_Female_DesertPeople",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Whisper",
@@ -5505,8 +5636,9 @@
     "InternalName": "BOSS_Police_old",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pinch",
@@ -5547,8 +5679,9 @@
     "InternalName": "BOSS_DarkTrader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Ram",
@@ -5589,8 +5722,9 @@
     "InternalName": "BOSS_Male_Trader01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Skim",
@@ -5631,8 +5765,9 @@
     "InternalName": "BOSS_Male_Trader02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Mimic",
@@ -5673,8 +5808,9 @@
     "InternalName": "BOSS_Male_Trader03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Billy",
@@ -5715,8 +5851,9 @@
     "InternalName": "Hunter_Handgun_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -5757,8 +5894,9 @@
     "InternalName": "Hunter_Rifle_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -5799,8 +5937,9 @@
     "InternalName": "Hunter_Shotgun_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -5841,8 +5980,9 @@
     "InternalName": "Hunter_Grenade_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Syndicate Grenadier",
@@ -5883,8 +6023,9 @@
     "InternalName": "Hunter_FlameThrower_MiiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -5925,8 +6066,9 @@
     "InternalName": "Hunter_RocketLauncher_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -5967,8 +6109,9 @@
     "InternalName": "Hunter_Fat_GatlingGun_MiniOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -6009,8 +6152,9 @@
     "InternalName": "Male_Soldier01_EnemyGroup",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Sturdy Mercenary",
@@ -6051,8 +6195,9 @@
     "InternalName": "Male_Soldier02_EnemyGroup",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Sturdy Mercenary",
@@ -6093,8 +6238,9 @@
     "InternalName": "Hunter_LaserRifle_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Laser Rifleman",
@@ -6135,8 +6281,9 @@
     "InternalName": "Hunter_BowGun_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crossbowman",
@@ -6177,8 +6324,9 @@
     "InternalName": "Hunter_Katana_Oilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Syndicate Swordsman",
@@ -6219,8 +6367,9 @@
     "InternalName": "Hunter_RocketLauncher_Oilrig_LD",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -6261,8 +6410,9 @@
     "InternalName": "Hunter_Rifle_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Gunner",
@@ -6303,8 +6453,9 @@
     "InternalName": "Hunter_Shotgun_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -6345,8 +6496,9 @@
     "InternalName": "Hunter_Grenade_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Syndicate Grenadier",
@@ -6387,8 +6539,9 @@
     "InternalName": "Hunter_FlameThrower_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -6429,8 +6582,9 @@
     "InternalName": "Hunter_RocketLauncher_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -6471,8 +6625,9 @@
     "InternalName": "Hunter_GrenadeLauncher_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Veteran",
@@ -6513,8 +6668,9 @@
     "InternalName": "Hunter_MissileLauncher_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Interceptor",
@@ -6555,8 +6711,9 @@
     "InternalName": "Hunter_Fat_GatlingGun_LargeOilrig",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -6597,8 +6754,9 @@
     "InternalName": "Viking",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -6639,8 +6797,9 @@
     "InternalName": "Viking_Elite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Berserker",
@@ -6681,8 +6840,9 @@
     "InternalName": "Visitor_Recruiter",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Pal Recruiter",
@@ -6723,8 +6883,9 @@
     "InternalName": "Believer_Fat_Cane",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GiantClub",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Judicator",
@@ -6765,8 +6926,9 @@
     "InternalName": "Emote_Tester",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Emote_Tester",
@@ -6807,8 +6969,9 @@
     "InternalName": "Doctor",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -6851,6 +7014,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -6893,6 +7057,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -6933,8 +7098,9 @@
     "InternalName": "Reward_Paldex",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -6975,8 +7141,9 @@
     "InternalName": "Reward_BossDefeat",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7017,8 +7184,9 @@
     "InternalName": "Reward_PalCaptureCount",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7059,8 +7227,9 @@
     "InternalName": "Reward_PalDisplay_A_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7101,8 +7270,9 @@
     "InternalName": "Reward_PalDisplay_B_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7143,8 +7313,9 @@
     "InternalName": "Reward_PalDisplay_C_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7185,8 +7356,9 @@
     "InternalName": "Reward_PalDisplay_D_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7227,8 +7399,9 @@
     "InternalName": "Reward_PalDisplay_E_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7269,8 +7442,9 @@
     "InternalName": "Reward_PalDisplay_F_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7311,8 +7485,9 @@
     "InternalName": "Reward_PalDisplay_G_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7353,8 +7528,9 @@
     "InternalName": "Reward_PalDisplay_H_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7395,8 +7571,9 @@
     "InternalName": "Reward_PalDisplay_I_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7437,8 +7614,9 @@
     "InternalName": "Female_Presenter01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Friendly Pal Tamer",
@@ -7479,8 +7657,9 @@
     "InternalName": "CaravanLeader01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Caravan Leader",
@@ -7521,8 +7700,9 @@
     "InternalName": "CaravanLeader02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Caravan Leader",
@@ -7563,8 +7743,9 @@
     "InternalName": "CaravanLeader03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Caravan Leader",
@@ -7605,8 +7786,9 @@
     "InternalName": "NPC_FoodRequire_1",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -7647,8 +7829,9 @@
     "InternalName": "NPC_PalDisplay_1",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -7689,8 +7872,9 @@
     "InternalName": "BountyTrader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -7731,8 +7915,9 @@
     "InternalName": "Ambassador01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Desert Town Ambassador",
@@ -7773,8 +7958,9 @@
     "InternalName": "Blacksmith01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Blacksmith in Training",
@@ -7815,8 +8001,9 @@
     "InternalName": "Epicure01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Gourmet Hunter",
@@ -7857,8 +8044,9 @@
     "InternalName": "Escort_Warrior01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Mercenary Bodyguard",
@@ -7899,8 +8087,9 @@
     "InternalName": "Escort_PalTamer01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Pal Tamer Bodyguard",
@@ -7941,8 +8130,9 @@
     "InternalName": "Viking_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -7983,8 +8173,9 @@
     "InternalName": "VikingElite_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Berserker",
@@ -8025,8 +8216,9 @@
     "InternalName": "Male_NinjaElite01_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -8067,8 +8259,9 @@
     "InternalName": "Viking_Elite_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Berserker",
@@ -8109,8 +8302,9 @@
     "InternalName": "Male_Soldier02_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Fiery Pal Tamer",
@@ -8151,8 +8345,9 @@
     "InternalName": "Female_Soldier03_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Gemini Tamers",
@@ -8193,8 +8388,9 @@
     "InternalName": "Female_Soldier04_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Gemini Tamers",
@@ -8237,6 +8433,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8279,6 +8476,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8321,6 +8519,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8363,6 +8562,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8403,8 +8603,9 @@
     "InternalName": "Yamishima_guide5",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Mercenary Bodyguard",
@@ -8445,8 +8646,9 @@
     "InternalName": "Reward_Emote_A_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8487,8 +8689,9 @@
     "InternalName": "Reward_Emote_B_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8529,8 +8732,9 @@
     "InternalName": "Reward_Emote_C_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8571,8 +8775,9 @@
     "InternalName": "Reward_Emote_D_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8613,8 +8818,9 @@
     "InternalName": "Reward_Emote_E_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8655,8 +8861,9 @@
     "InternalName": "Reward_Emote_F_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8697,8 +8904,9 @@
     "InternalName": "Reward_Emote_G_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8739,8 +8947,9 @@
     "InternalName": "Reward_Emote_H_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8781,8 +8990,9 @@
     "InternalName": "Reward_Emote_I_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8823,8 +9033,9 @@
     "InternalName": "Emote_location_A_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8865,8 +9076,9 @@
     "InternalName": "Emote_location_A_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8907,8 +9119,9 @@
     "InternalName": "Emote_location_B_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8949,8 +9162,9 @@
     "InternalName": "Emote_location_B_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -8991,8 +9205,9 @@
     "InternalName": "Emote_location_C_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9033,8 +9248,9 @@
     "InternalName": "Emote_location_C_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9075,8 +9291,9 @@
     "InternalName": "Emote_location_D_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9117,8 +9334,9 @@
     "InternalName": "Emote_location_D_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9159,8 +9377,9 @@
     "InternalName": "Emote_location_E_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9201,8 +9420,9 @@
     "InternalName": "Emote_location_E_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9243,8 +9463,9 @@
     "InternalName": "Emote_location_F_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9285,8 +9506,9 @@
     "InternalName": "Emote_location_F_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9327,8 +9549,9 @@
     "InternalName": "Emote_location_G_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9369,8 +9592,9 @@
     "InternalName": "Emote_location_G_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9411,8 +9635,9 @@
     "InternalName": "Emote_location_H_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9453,8 +9678,9 @@
     "InternalName": "Emote_location_H_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9495,8 +9721,9 @@
     "InternalName": "Emote_location_I_01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9537,8 +9764,9 @@
     "InternalName": "Emote_location_I_02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9579,8 +9807,9 @@
     "InternalName": "Help01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9621,8 +9850,9 @@
     "InternalName": "Help02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9663,8 +9893,9 @@
     "InternalName": "Help03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9705,8 +9936,9 @@
     "InternalName": "Help04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -9747,8 +9979,9 @@
     "InternalName": "DeathPenalty_guide",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Veteran Pal Tamer",
@@ -9789,8 +10022,9 @@
     "InternalName": "Respawn_guide",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Friendly Pal Tamer",
@@ -9831,8 +10065,9 @@
     "InternalName": "Police_TreasureGuard_NarrowSite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -9873,8 +10108,9 @@
     "InternalName": "Police_Vigilance",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -9915,8 +10151,9 @@
     "InternalName": "Police_BowGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -9957,8 +10194,9 @@
     "InternalName": "Hunter_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -9999,8 +10237,9 @@
     "InternalName": "Believer_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -10041,8 +10280,9 @@
     "InternalName": "FireCult_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -10083,8 +10323,9 @@
     "InternalName": "Police_old_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Jailed Ex-Chief",
@@ -10125,8 +10366,9 @@
     "InternalName": "Scientist_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -10167,8 +10409,9 @@
     "InternalName": "Ninja_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -10209,8 +10452,9 @@
     "InternalName": "Viking_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -10251,8 +10495,9 @@
     "InternalName": "Believer_Fat_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GiantClub",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Judicator",
@@ -10293,8 +10538,9 @@
     "InternalName": "Hunter_Fat_Prisoner",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GiantClub",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -10335,8 +10581,9 @@
     "InternalName": "Police_Chief",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Slacker Chief",
@@ -10377,8 +10624,9 @@
     "InternalName": "FireCult_Rifle_Relax",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -10419,8 +10667,9 @@
     "InternalName": "FireCult_FlameThrower_Relax",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -10461,8 +10710,9 @@
     "InternalName": "Hunter_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Syndicate Laser Rifleman",
@@ -10503,8 +10753,9 @@
     "InternalName": "Hunter_BowGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crossbowman",
@@ -10545,8 +10796,9 @@
     "InternalName": "Hunter_Katana",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Syndicate Swordsman",
@@ -10587,8 +10839,9 @@
     "InternalName": "Ninja_NoEquip",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -10629,8 +10882,9 @@
     "InternalName": "NinjaElite_NoEquip",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -10671,8 +10925,9 @@
     "InternalName": "Ninja_Bowgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -10713,8 +10968,9 @@
     "InternalName": "NinjaElite_Bowgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -10755,8 +11011,9 @@
     "InternalName": "GrassBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Zoe",
@@ -10797,8 +11054,9 @@
     "InternalName": "ForestBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "ForestBoss",
@@ -10839,8 +11097,9 @@
     "InternalName": "DesertBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "DesertBoss",
@@ -10881,8 +11140,9 @@
     "InternalName": "ElectricBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "ElectricBoss",
@@ -10923,8 +11183,9 @@
     "InternalName": "SnowBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "SnowBoss",
@@ -10965,8 +11226,9 @@
     "InternalName": "SakurajimaBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "SakurajimaBoss",
@@ -11007,8 +11269,9 @@
     "InternalName": "VikingBoss",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "VikingBoss",
@@ -11049,8 +11312,9 @@
     "InternalName": "ArenaShop",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "ArenaShop",
@@ -11091,8 +11355,9 @@
     "InternalName": "Arena_Male_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Newbie Pal Tamer",
@@ -11133,8 +11398,9 @@
     "InternalName": "Arena_Female_Soldier02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Up-and-Coming Pal Tamer",
@@ -11175,8 +11441,9 @@
     "InternalName": "Arena_Male_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Cruel Pal Tamer",
@@ -11217,8 +11484,9 @@
     "InternalName": "Arena_Female_Soldier03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Veteran Pal Tamer",
@@ -11259,8 +11527,9 @@
     "InternalName": "Arena_Soldier",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Sturdy Mercenary",
@@ -11301,8 +11570,9 @@
     "InternalName": "Arena_Hunter_Fat_GatlingGun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -11343,8 +11613,9 @@
     "InternalName": "Arena_FireCult_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -11385,8 +11656,9 @@
     "InternalName": "Arena_Ninja",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -11427,8 +11699,9 @@
     "InternalName": "Arena_Reward_Emote",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Messenger of Love",
@@ -11469,8 +11742,9 @@
     "InternalName": "Arena_Scientist_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -11511,8 +11785,9 @@
     "InternalName": "Arena_Viking",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -11553,8 +11828,9 @@
     "InternalName": "Arena_Male_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Vigorous Pal Tamer",
@@ -11595,8 +11871,9 @@
     "InternalName": "Arena_Reward_Paldex",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Pal Ecological Researcher",
@@ -11637,8 +11914,9 @@
     "InternalName": "Arena_Ranger04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Sweet-Smelling Hunter",
@@ -11679,8 +11957,9 @@
     "InternalName": "Arena_Male_Police_old",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Reincarnated Guy",
@@ -11721,8 +12000,9 @@
     "InternalName": "Arena_Female_Presenter",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Friendly Pal Tamer",
@@ -11763,8 +12043,9 @@
     "InternalName": "Arena_PalPassive_Doctor",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Dr. Brawn",
@@ -11805,8 +12086,9 @@
     "InternalName": "Arena_Male_DarkTrader02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Medal Merchant",
@@ -11847,8 +12129,9 @@
     "InternalName": "Arena_Female_Soldier04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Master Pal Tamer",
@@ -11889,8 +12172,9 @@
     "InternalName": "Arena_Male_Soldier02_Invader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Fiery Pal Tamer",
@@ -11931,8 +12215,9 @@
     "InternalName": "Arena_NinjaElite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -11973,8 +12258,9 @@
     "InternalName": "Arena_VikingElite",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Berserker",
@@ -12015,8 +12301,9 @@
     "InternalName": "Arena_Scholar01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Legend-Loving Researcher",
@@ -12057,8 +12344,9 @@
     "InternalName": "Arena_BossDefeat",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Veteran Hunter",
@@ -12099,8 +12387,9 @@
     "InternalName": "Arena_DarkTrader",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Black Marketeer",
@@ -12141,8 +12430,9 @@
     "InternalName": "Female_Farmer01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12183,8 +12473,9 @@
     "InternalName": "Female_Farmer01_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12225,8 +12516,9 @@
     "InternalName": "Female_Farmer01_v03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12267,8 +12559,9 @@
     "InternalName": "Female_Farmer01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12309,8 +12602,9 @@
     "InternalName": "Male_Scholar01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12351,8 +12645,9 @@
     "InternalName": "Male_Scholar01_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12393,8 +12688,9 @@
     "InternalName": "Male_Scholar01_v03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12435,8 +12731,9 @@
     "InternalName": "Male_Scholar01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12477,8 +12774,9 @@
     "InternalName": "Male_Breeder01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12519,8 +12817,9 @@
     "InternalName": "Male_Breeder01_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12561,8 +12860,9 @@
     "InternalName": "Male_Breeder01_v03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12603,8 +12903,9 @@
     "InternalName": "Male_Breeder01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12645,8 +12946,9 @@
     "InternalName": "Female_Ranger01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12687,8 +12989,9 @@
     "InternalName": "Female_Ranger01_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12729,8 +13032,9 @@
     "InternalName": "Female_Ranger01_v03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12771,8 +13075,9 @@
     "InternalName": "Female_Ranger01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12813,8 +13118,9 @@
     "InternalName": "Female_Nomad01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12855,8 +13161,9 @@
     "InternalName": "Female_Nomad01_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12897,8 +13204,9 @@
     "InternalName": "Female_Nomad01_v03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12939,8 +13247,9 @@
     "InternalName": "Female_Nomad01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -12981,8 +13290,9 @@
     "InternalName": "Male_Angler01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -13023,8 +13333,9 @@
     "InternalName": "Quest_Hunter_Katana01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Syndicate Swordsman",
@@ -13065,8 +13376,9 @@
     "InternalName": "Quest_Hunter_RocketLauncher01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -13107,8 +13419,9 @@
     "InternalName": "Quest_Hunter_Fat_GatlingGun01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Crusher",
@@ -13149,8 +13462,9 @@
     "InternalName": "Quest_Hunter_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Syndicate Cleaner",
@@ -13191,8 +13505,9 @@
     "InternalName": "Believer_Bat_Camp02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -13233,8 +13548,9 @@
     "InternalName": "Believer_CrossBow_Camp02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Free Pal Alliance Believer",
@@ -13275,8 +13591,9 @@
     "InternalName": "Police_Shield_Tower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -13317,8 +13634,9 @@
     "InternalName": "Male_Kigurumi01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -13359,8 +13677,9 @@
     "InternalName": "Negotiator",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Negotiator",
@@ -13403,6 +13722,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Patrol Drone",
@@ -13443,8 +13763,9 @@
     "InternalName": "WorldTree_Hunter_MissileLauncher_test",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "WorldTree_Hunter_MissileLauncher_test",
@@ -13485,8 +13806,9 @@
     "InternalName": "Female_SurveyGirl01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Fia",
@@ -13527,8 +13849,9 @@
     "InternalName": "Female_SurveyGirl02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Fia",
@@ -13569,8 +13892,9 @@
     "InternalName": "Female_SurveyGirl03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Fia",
@@ -13611,8 +13935,9 @@
     "InternalName": "Female_SurveyWoman01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Carla",
@@ -13653,8 +13978,9 @@
     "InternalName": "Female_SurveyWoman02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Carla",
@@ -13695,8 +14021,9 @@
     "InternalName": "Male_SurveyMan01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Gadel",
@@ -13737,8 +14064,9 @@
     "InternalName": "Male_SurveyMan02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Gadel",
@@ -13779,8 +14107,9 @@
     "InternalName": "Male_SurveyMan03",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Gadel",
@@ -13821,8 +14150,9 @@
     "InternalName": "Male_StrongOldMan01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Harold",
@@ -13863,8 +14193,9 @@
     "InternalName": "Male_StrongOldMan02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Harold",
@@ -13905,8 +14236,9 @@
     "InternalName": "Hunter_Handgun_Quest_StrongOldMan",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Thug",
@@ -13947,8 +14279,9 @@
     "InternalName": "Hunter_Shotgun_Quest_StrongOldMan",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Syndicate Hunter",
@@ -13989,8 +14322,9 @@
     "InternalName": "Hunter_RocketLauncher_Quest_StrongOldMan",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Syndicate Elite",
@@ -14031,8 +14365,9 @@
     "InternalName": "Reward_Paldex_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -14073,8 +14408,9 @@
     "InternalName": "Reward_PalCaptureCount_v02",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Guard",
@@ -14115,8 +14451,9 @@
     "InternalName": "Female_Farmer01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14157,8 +14494,9 @@
     "InternalName": "Male_Scholar01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14199,8 +14537,9 @@
     "InternalName": "Male_Breeder01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14241,8 +14580,9 @@
     "InternalName": "Female_Ranger01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14283,8 +14623,9 @@
     "InternalName": "Female_Nomad01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14325,8 +14666,9 @@
     "InternalName": "BOSS_Hunter_Fat_GatlingGun_Quest_StrongOldMan",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GatlingGun",
     "Human": true,
     "I18n": {
       "en": "Elder",
@@ -14367,8 +14709,9 @@
     "InternalName": "FireCult_GrenadeLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -14409,8 +14752,9 @@
     "InternalName": "FireCult_RocketLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -14451,8 +14795,9 @@
     "InternalName": "FireCult_MissileLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Brothers of the Eternal Pyre Martyr",
@@ -14493,8 +14838,9 @@
     "InternalName": "Scientist_GrenadeLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -14535,8 +14881,9 @@
     "InternalName": "Scientist_MissileLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -14577,8 +14924,9 @@
     "InternalName": "Ninja_Grenade",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -14619,8 +14967,9 @@
     "InternalName": "NinjaElite_Grenade",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -14661,8 +15010,9 @@
     "InternalName": "Viking_Melee",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -14703,8 +15053,9 @@
     "InternalName": "Viking_GrenadeLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Warrior",
@@ -14745,8 +15096,9 @@
     "InternalName": "Viking_RocketLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Feybreak Berserker",
@@ -14787,8 +15139,9 @@
     "InternalName": "Male_DTairikuPeople01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14829,8 +15182,9 @@
     "InternalName": "Female_DTairikuPeople01_v01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14871,8 +15225,9 @@
     "InternalName": "Male_TenrakuPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14913,8 +15268,9 @@
     "InternalName": "Female_TenrakuPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14955,8 +15311,9 @@
     "InternalName": "Male_SnowPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -14997,8 +15354,9 @@
     "InternalName": "Female_SnowPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15039,8 +15397,9 @@
     "InternalName": "Male_SakurajimaPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15081,8 +15440,9 @@
     "InternalName": "Female_SakurajimaPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15123,8 +15483,9 @@
     "InternalName": "Male_SorajimaPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15165,8 +15526,9 @@
     "InternalName": "Female_SorajimaPeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15207,8 +15569,9 @@
     "InternalName": "Police_Invader_Rifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -15249,8 +15612,9 @@
     "InternalName": "Police_Invader_Handgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Guard",
@@ -15291,8 +15655,9 @@
     "InternalName": "Police_Invader_Shotgun",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "PIDF Elite",
@@ -15333,8 +15698,9 @@
     "InternalName": "Police_Invader_Katana",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "PIDF Blader",
@@ -15375,8 +15741,9 @@
     "InternalName": "Police_Invader_CrossBow",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "PIDF Rioter",
@@ -15417,8 +15784,9 @@
     "InternalName": "Police_Invader_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Technophile",
@@ -15459,8 +15827,9 @@
     "InternalName": "Police_Invader_GrenadeLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "PIDF Veteran",
@@ -15501,8 +15870,9 @@
     "InternalName": "Police_Invader_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "PIDF Cleaner",
@@ -15543,8 +15913,9 @@
     "InternalName": "Police_Invader_RocketLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "PIDF Rocketeer",
@@ -15585,8 +15956,9 @@
     "InternalName": "Police_Invader_MissileLauncher",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "PIDF Interceptor",
@@ -15629,6 +16001,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Attack Chopper",
@@ -15669,8 +16042,9 @@
     "InternalName": "Male_WorldTreePeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15711,8 +16085,9 @@
     "InternalName": "Female_WorldTreePeople01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -15753,8 +16128,9 @@
     "InternalName": "Arena_Legend_1",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_1",
@@ -15795,8 +16171,9 @@
     "InternalName": "Arena_Legend_2",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_2",
@@ -15837,8 +16214,9 @@
     "InternalName": "Arena_Legend_3",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_3",
@@ -15879,8 +16257,9 @@
     "InternalName": "Arena_Legend_4",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_4",
@@ -15921,8 +16300,9 @@
     "InternalName": "Arena_Legend_5",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "GrenadeLauncher",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_5",
@@ -15963,8 +16343,9 @@
     "InternalName": "Arena_Legend_6",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_6",
@@ -16005,8 +16386,9 @@
     "InternalName": "Arena_Legend_7",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_7",
@@ -16047,8 +16429,9 @@
     "InternalName": "Arena_Legend_8",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MissileLauncher",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_8",
@@ -16089,8 +16472,9 @@
     "InternalName": "Arena_Legend_9",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "RocketLauncher",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_9",
@@ -16131,8 +16515,9 @@
     "InternalName": "Arena_Legend_10",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_10",
@@ -16173,8 +16558,9 @@
     "InternalName": "Arena_Legend_11",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Shotgun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_11",
@@ -16215,8 +16601,9 @@
     "InternalName": "Arena_Legend_12",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_12",
@@ -16257,8 +16644,9 @@
     "InternalName": "Arena_Legend_13",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_13",
@@ -16299,8 +16687,9 @@
     "InternalName": "Arena_Legend_14",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_14",
@@ -16341,8 +16730,9 @@
     "InternalName": "Arena_Legend_15",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_15",
@@ -16383,8 +16773,9 @@
     "InternalName": "Arena_Legend_16",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_16",
@@ -16425,8 +16816,9 @@
     "InternalName": "Arena_Legend_17",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_17",
@@ -16467,8 +16859,9 @@
     "InternalName": "Arena_Legend_18",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_18",
@@ -16509,8 +16902,9 @@
     "InternalName": "Arena_Legend_19",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_19",
@@ -16551,8 +16945,9 @@
     "InternalName": "Arena_Legend_20",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "ThrowObject",
     "Human": true,
     "I18n": {
       "en": "Arena_Legend_20",
@@ -16593,8 +16988,9 @@
     "InternalName": "Female_Kunoichi01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "Azure Covenant Enforcer",
@@ -16637,6 +17033,7 @@
     "Attacks": {
       "EPalWazaID::Human_Punch": 1
     },
+    "DefaultWeapon": "None",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -16677,8 +17074,9 @@
     "InternalName": "CaravanLeader04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Caravan Leader",
@@ -16719,8 +17117,9 @@
     "InternalName": "Male_Trader01_v04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Butcher in Training",
@@ -16761,8 +17160,9 @@
     "InternalName": "Male_Trader01_v05",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Village Grocer",
@@ -16803,8 +17203,9 @@
     "InternalName": "Male_Trader01_v06",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Smugglers' Lackey",
@@ -16845,8 +17246,9 @@
     "InternalName": "Male_Trader01_v07",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Foraging Merchant",
@@ -16887,8 +17289,9 @@
     "InternalName": "Male_Trader01_v08",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Bakery Stand Baker",
@@ -16929,8 +17332,9 @@
     "InternalName": "Male_Trader01_v09",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Shady Pharmacist",
@@ -16971,8 +17375,9 @@
     "InternalName": "Male_Trader01_v10",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Surf & Turf Master",
@@ -17013,8 +17418,9 @@
     "InternalName": "Male_Trader01_v11",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Expert Hunter",
@@ -17055,8 +17461,9 @@
     "InternalName": "Male_Trader01_v12",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Game Hunter",
@@ -17097,8 +17504,9 @@
     "InternalName": "Male_Trader01_v13",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Mercenary Supplier",
@@ -17139,8 +17547,9 @@
     "InternalName": "Male_Trader01_v14",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Heavy Arms Merchant",
@@ -17181,8 +17590,9 @@
     "InternalName": "Male_Trader01_v15",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Ammo Merchant",
@@ -17223,8 +17633,9 @@
     "InternalName": "Male_Trader01_v16",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Farm Peddler",
@@ -17265,8 +17676,9 @@
     "InternalName": "Male_Trader01_v17",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Grocer",
@@ -17307,8 +17719,9 @@
     "InternalName": "Male_Trader01_v18",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Authorized Pharmacist",
@@ -17349,8 +17762,9 @@
     "InternalName": "Male_Trader01_v19",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Pharmacist",
@@ -17391,8 +17805,9 @@
     "InternalName": "Male_Trader01_v20",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Local Restaurateur",
@@ -17433,8 +17848,9 @@
     "InternalName": "Male_Trader01_v21",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Novice Gourmet",
@@ -17475,8 +17891,9 @@
     "InternalName": "Male_Trader01_v22",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Gourmet",
@@ -17517,8 +17934,9 @@
     "InternalName": "Male_Trader01_v23",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Authorized Materials Merchant",
@@ -17559,8 +17977,9 @@
     "InternalName": "Male_Trader01_v24",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Element Merchant",
@@ -17601,8 +18020,9 @@
     "InternalName": "Male_Trader01_v25",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Legendary Materials Merchant",
@@ -17643,8 +18063,9 @@
     "InternalName": "Quest_Male_Scientist01_LaserRifle",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -17685,8 +18106,9 @@
     "InternalName": "Quest_Scientist_FlameThrower",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "FlameThrower",
     "Human": true,
     "I18n": {
       "en": "PAL Genetic Research Unit Executioner",
@@ -17727,8 +18149,9 @@
     "InternalName": "Quest_Male_Ninja01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -17769,8 +18192,9 @@
     "InternalName": "Quest_Male_NinjaElite01",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -17811,8 +18235,9 @@
     "InternalName": "Female_SurveyGirl04",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "LaserRifle",
     "Human": true,
     "I18n": {
       "en": "Fia",
@@ -17853,8 +18278,9 @@
     "InternalName": "Male_Ninja01_Seabase",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -17895,8 +18321,9 @@
     "InternalName": "Male_NinjaElite01_Seabase",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Katana",
     "Human": true,
     "I18n": {
       "en": "Moonflower Jonin",
@@ -17937,8 +18364,9 @@
     "InternalName": "Ninja_Bowgun_Seabase",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "BowGun",
     "Human": true,
     "I18n": {
       "en": "Moonflower Genin",
@@ -17979,8 +18407,9 @@
     "InternalName": "Police_Rifle_Crime_Lv4",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -18021,8 +18450,9 @@
     "InternalName": "Police_Rifle_Crime_Lv5",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "AssaultRifle",
     "Human": true,
     "I18n": {
       "en": "PIDF Rifleman",
@@ -18063,8 +18493,9 @@
     "InternalName": "SorajimaTowerGuide",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "MeleeWeapon",
     "Human": true,
     "I18n": {
       "en": "Islander",
@@ -18105,8 +18536,9 @@
     "InternalName": "WildlifeSanctuary_guide",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Newbie Pal Tamer",
@@ -18147,8 +18579,9 @@
     "InternalName": "NPC_Dungeon_Shop",
     "Elements": [],
     "Attacks": {
-      "EPalWazaID::Human_Punch": 1
+      "EPalWazaID::Weapon_Use": 1
     },
+    "DefaultWeapon": "Handgun",
     "Human": true,
     "I18n": {
       "en": "Wandering Merchant",

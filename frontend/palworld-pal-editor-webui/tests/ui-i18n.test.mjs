@@ -102,6 +102,13 @@ test('all supported locales expose the same translation keys', () => {
   }
 })
 
+test('the awakened Pal-list marker has no decorative prefix', () => {
+  for (const locale of ['en', 'fr', 'ja', 'ko', 'zh-CN']) {
+    const marker = loadMessages(locale).PalList_AwakenedMarker
+    assert.doesNotMatch(marker, /^[-–—]/, `${locale} awakened marker must not start with a dash`)
+  }
+})
+
 test('Korean translations are complete translations rather than English placeholders', () => {
   const en = loadMessages('en')
   const ko = loadMessages('ko')

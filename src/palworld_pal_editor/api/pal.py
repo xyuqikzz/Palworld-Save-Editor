@@ -11,6 +11,7 @@ from palworld_pal_editor.domain.commands import (
     AddPal,
     ClonePal,
     DeletePal,
+    MaxPal,
     MovePal,
     RecoverDetachedPal,
     UnlockPalExpedition,
@@ -22,6 +23,7 @@ from palworld_pal_editor.domain.commands import (
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.models import CharacterContainerType
 from palworld_pal_editor.utils import LOGGER
+from palworld_pal_editor.utils.data_provider import DataProvider
 
 pal_blueprint = Blueprint("pal", __name__)
 
@@ -59,7 +61,16 @@ def execute_structural_pal_command():
         )
     common_fields = {"session_id", "expected_revision", "command"}
     command_fields = {
-        "add_pal": {"player_id", "species_id", "container_type", "target_slot"},
+        "add_pal": {
+            "player_id",
+            "species_id",
+            "container_type",
+            "target_slot",
+            "passive",
+            "max_pal",
+            "max_work",
+            "unrestricted",
+        },
         "clone_pal": {
             "source_pal_id",
             "target_player_id",
@@ -117,6 +128,10 @@ def execute_structural_pal_command():
                     payload.get("container_type")
                 ),
                 target_slot=payload.get("target_slot"),
+                passive=payload.get("passive"),
+                max_pal=payload.get("max_pal", False),
+                max_work=payload.get("max_work", False),
+                unrestricted=payload.get("unrestricted", False),
             )
         elif command_name == "clone_pal":
             command = ClonePal(
@@ -291,6 +306,7 @@ def execute_pal_command(pal_id: str):
         "update_pal_progression": {"values"},
         "update_pal_skills": {"active", "mastered", "passive"},
         "update_pal_enhancement": {"values", "work_suitability"},
+        "max_pal": {"unrestricted"},
         "unlock_pal_expedition": set(),
     }
     command_name = payload.get("command")
@@ -343,6 +359,11 @@ def execute_pal_command(pal_id: str):
             )
         elif command_name == "unlock_pal_expedition":
             command = UnlockPalExpedition(**base)
+        elif command_name == "max_pal":
+            command = MaxPal(
+                **base,
+                unrestricted=payload.get("unrestricted", False),
+            )
         else:
             command = UpdatePalEnhancement(
                 **base,
@@ -432,6 +453,7 @@ def patch_paldata():
             "Rank_Defence",
             "Rank_CraftSpeed",
             "Rank",
+            "IsAwakened",
         }:
             field = {
                 "Talent_HP": "iv_hp",
@@ -443,6 +465,7 @@ def patch_paldata():
                 "Rank_Defence": "soul_defense",
                 "Rank_CraftSpeed": "soul_craft_speed",
                 "Rank": "condensation",
+                "IsAwakened": "awakening",
             }[key]
             command = UpdatePalEnhancement(**base, values={field: value})
         elif key == "set_Suitability":
@@ -586,6 +609,7 @@ def paldata():
 
 # Just some dumb shit
 def _pal_data(pal: PalEntity):
+    manager = SaveManager()
     return {
         "InstanceId": str(pal.InstanceId) if pal.InstanceId else None,
         "OwnerPlayerUId": (str(pal.OwnerPlayerUId) if pal.OwnerPlayerUId else None),
@@ -597,7 +621,7 @@ def _pal_data(pal: PalEntity):
         "DataAccessKey": pal.DataAccessKey or None,
         "I18nName": pal.I18nName or None,
         "DisplayName": pal.DisplayName or None,
-        "NickName": pal.NickName or "",
+        "NickName": pal.CustomNickName or "",
         "Gender": pal.Gender.value if pal.Gender else None,
         "Level": pal.Level or 1,
         "FriendshipLevel": pal.FriendshipLevel or 0,
@@ -609,13 +633,25 @@ def _pal_data(pal: PalEntity):
         "Is_Unref_Pal": pal.is_unreferenced_pal,
         "in_owner_palbox": pal.in_owner_palbox,
         "IsHuman": pal.IsHuman,
+        "NpcDefaultWeapon": (
+            DataProvider.get_npc_default_weapon(pal.CharacterID)
+            if pal.IsHuman
+            else None
+        ),
         "IsBOSS": pal.IsBOSS or False,
         "IsRarePal": pal.IsRarePal or False,
         "IsTower": pal.IsTower or False,
         "IsRAID": pal.IsRAID or False,
         "IsPREDATOR": pal.IsPREDATOR or False,
         "IsOilrig": pal.IsOilrig or False,
+        "IsAwakened": pal.IsAwakened,
+        "AwakeningStatusMultiplier": pal.AWAKENING_STATUS_MULTIPLIER,
         "IsExpeditionPal": pal.IsExpeditionPal,
+        "ExpeditionInstanceId": (
+            str(pal.ExpeditionInstanceId) if pal.ExpeditionInstanceId else None
+        ),
+        "ExpeditionAssignmentStatus": manager.expedition_assignment_status(pal),
+        "ExpeditionCanComplete": manager.expedition_can_complete(pal),
         "ComputedMaxHP": pal.ComputedMaxHP or None,
         "ComputedAttack": pal.ComputedAttack or None,
         "ComputedDefense": pal.ComputedDefense or None,
@@ -705,6 +741,10 @@ def add_pal():
                 payload.get("container_type")
             ),
             target_slot=payload.get("target_slot"),
+            passive=payload.get("passive"),
+            max_pal=payload.get("max_pal", False),
+            max_work=payload.get("max_work", False),
+            unrestricted=payload.get("unrestricted", False),
         )
         return reply(0, StructuralPalEditor(session).execute(command))
     except DomainError as error:

@@ -4,7 +4,153 @@ import PlayerList from '@/components/PlayerList.vue';
 import PalEditor from '@/components/PalEditor.vue';
 import PlayerEditor from '@/components/PlayerEditor.vue';
 import { usePalEditorStore } from '@/stores/paleditor'
+import { watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
 const palStore = usePalEditorStore()
+const route = useRoute();
+const router = useRouter();
+let applyingRoute = false;
+let routeApplyPending = false;
+let stateSyncedRoutePath = null;
+
+function routeParam(value) {
+    return Array.isArray(value) ? value[0] : value;
+}
+
+function findBase(baseKey) {
+    for (const guild of palStore.GUILD_TREE) {
+        const base = guild.bases?.find(item => item.node_id === baseKey);
+        if (base) return { guild, base };
+    }
+    return null;
+}
+
+function consumeStateSyncedRoute(path) {
+    const expectedPath = stateSyncedRoutePath;
+    stateSyncedRoutePath = null;
+    return expectedPath === path;
+}
+
+async function replaceWithEditor() {
+    palStore.clearEditorSelection();
+    if (route.name !== 'Editor') await router.replace({ name: 'Editor' });
+}
+
+async function applyCurrentRoute() {
+    if (!palStore.SAVE_LOADED_FLAG) return;
+    if (consumeStateSyncedRoute(route.fullPath)) return;
+    if (applyingRoute) {
+        routeApplyPending = true;
+        return;
+    }
+
+    applyingRoute = true;
+    try {
+        const playerId = routeParam(route.params.playerId);
+        const palId = routeParam(route.params.palId);
+        const baseKey = routeParam(route.params.baseKey);
+
+        if (route.name === 'Editor') {
+            palStore.clearEditorSelection();
+            return;
+        }
+
+        if (route.name === 'PlayerEditor' || route.name === 'PlayerPalEditor') {
+            if (!playerId || !palStore.PLAYER_MAP.has(playerId)) {
+                await replaceWithEditor();
+                return;
+            }
+            await palStore.selectPlayer(playerId, false, false);
+            if (route.name === 'PlayerEditor') return;
+            if (!palId || !palStore.PAL_MAP.has(palId)) {
+                await replaceWithEditor();
+                return;
+            }
+            await palStore.selectPal(palId);
+            return;
+        }
+
+        if (route.name === 'BasePalEditor') {
+            const target = findBase(baseKey);
+            if (!target) {
+                await replaceWithEditor();
+                return;
+            }
+            await palStore.selectBase(target.guild, target.base, false);
+            if (!palId || !palStore.PAL_MAP.has(palId)) {
+                await replaceWithEditor();
+                return;
+            }
+            await palStore.selectPal(palId);
+        }
+    } finally {
+        applyingRoute = false;
+        if (routeApplyPending) {
+            routeApplyPending = false;
+            await applyCurrentRoute();
+        }
+    }
+}
+
+async function syncRouteFromEditorState() {
+    if (applyingRoute || palStore.LOADING_FLAG || !palStore.SAVE_LOADED_FLAG) return;
+
+    let location = { name: 'Editor' };
+    if (palStore.SELECTED_PAL_ID && palStore.SELECTED_BASE_KEY) {
+        location = {
+            name: 'BasePalEditor',
+            params: {
+                baseKey: palStore.SELECTED_BASE_KEY,
+                palId: palStore.SELECTED_PAL_ID,
+            },
+        };
+    } else if (palStore.SELECTED_PAL_ID && palStore.SELECTED_PLAYER_ID) {
+        location = {
+            name: 'PlayerPalEditor',
+            params: {
+                playerId: palStore.SELECTED_PLAYER_ID,
+                palId: palStore.SELECTED_PAL_ID,
+            },
+        };
+    } else if (palStore.SHOW_PLAYER_EDIT_FLAG && palStore.SELECTED_PLAYER_ID) {
+        const tab = route.name === 'PlayerEditor' ? route.query.tab : undefined;
+        location = {
+            name: 'PlayerEditor',
+            params: { playerId: palStore.SELECTED_PLAYER_ID },
+            query: tab ? { tab } : {},
+        };
+    }
+
+    const targetPath = router.resolve(location).fullPath;
+    if (targetPath !== route.fullPath) {
+        stateSyncedRoutePath = targetPath;
+        try {
+            await router.replace(location);
+        } catch (error) {
+            if (stateSyncedRoutePath === targetPath) stateSyncedRoutePath = null;
+            throw error;
+        }
+    }
+}
+
+watch(
+    () => [route.name, route.params.playerId, route.params.palId, route.params.baseKey].join('|'),
+    applyCurrentRoute,
+    { immediate: true },
+);
+
+watch(
+    () => [
+        palStore.LOADING_FLAG,
+        palStore.SELECTED_PLAYER_ID,
+        palStore.SELECTED_BASE_KEY,
+        palStore.SELECTED_PAL_ID,
+        palStore.SHOW_PLAYER_EDIT_FLAG,
+    ],
+    syncRouteFromEditorState,
+    { flush: 'post' },
+);
 </script>
 
 <template>
@@ -60,7 +206,7 @@ div#EditorMain {
 
 .selection-column {
     display: grid;
-    grid-template-rows: minmax(148px, 24vh) minmax(0, 1fr);
+    grid-template-rows: minmax(220px, 34vh) minmax(0, 1fr);
     gap: 12px;
     height: var(--sub-height);
     min-width: 0;

@@ -30,6 +30,7 @@ LANGUAGE_TOKENS = {
     "ko": "_Pal_Content_L10N_ko_",
     "zh-CN": "_Pal_Content_L10N_zh-Hans_",
 }
+EFFECT_VALUE_PATTERN = re.compile(r"\{EffectValue\d+\}")
 
 # These are passive IDs that the game exposes as Pal traits but which do not
 # share the historical PAL_* naming convention. The existing editable rows
@@ -304,6 +305,24 @@ def fill_missing_with_english(i18n: dict[str, dict[str, str]]) -> None:
         )
 
 
+def preserve_rendered_passive_descriptions(
+    generated: dict[str, dict[str, Any]], existing: dict[str, dict[str, Any]]
+) -> None:
+    for internal_name, row in generated.items():
+        old_row = existing.get(internal_name, {})
+        for language, localized in row.get("I18n", {}).items():
+            description = localized.get("Description", "")
+            old_description = (
+                old_row.get("I18n", {}).get(language, {}).get("Description", "")
+            )
+            if (
+                EFFECT_VALUE_PATTERN.search(description)
+                and old_description
+                and not EFFECT_VALUE_PATTERN.search(old_description)
+            ):
+                localized["Description"] = old_description
+
+
 def render_korean_passive_buffs(buff: dict[str, Any]) -> str:
     effects = [
         (key, label, float(buff.get(key, 0.0)))
@@ -508,6 +527,9 @@ def main() -> int:
 
     skill_i18n_path = args.data_root / "skill_i18n.json"
     existing_skill_i18n = json.loads(skill_i18n_path.read_text(encoding="utf-8"))
+    preserve_rendered_passive_descriptions(
+        skill_i18n["Passives"], existing_skill_i18n.get("Passives", {})
+    )
     passive_data = rebuild_pal_passives(existing_passive_data, skill_i18n["Passives"])
 
     attack_data_path = args.data_root / "pal_attacks.json"

@@ -85,6 +85,9 @@ class LazyPlayerEntity:
             compression_times,
         )
         loaded._new_palbox = self._new_palbox
+        loaded._unresolved_group_id = object.__getattribute__(self, "__dict__").get(
+            "_unresolved_group_id"
+        )
         object.__setattr__(self, "_loaded_entity", loaded)
         for pal in self._palbox.values():
             pal.set_owner_player_entity(self)

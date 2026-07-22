@@ -12,12 +12,14 @@ from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 from palworld_pal_editor.core.save_manager import SaveManager
 from palworld_pal_editor.domain.commands import (
+    MaxPal,
     UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
     UpdatePalProgression,
     UpdatePalSkills,
     UpdatePlayerIdentity,
+    UpdatePlayerAttributes,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
 )
@@ -97,6 +99,33 @@ class _Player:
             self._player_save_data["bossTechnologyPoint"], value
         )
 
+    def status_point(self, name):
+        for status in PalObjects.get_ArrayProperty(
+            self._player_param.get("GotStatusPointList")
+        ) or ():
+            if PalObjects.get_BaseType(status.get("StatusName")) == name:
+                return PalObjects.get_BaseType(status.get("StatusPoint"))
+        return None
+
+    def set_status_point(self, name, value):
+        statuses = PalObjects.get_ArrayProperty(
+            self._player_param.get("GotStatusPointList")
+        )
+        if statuses is None:
+            if value == 0:
+                return
+            self._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+            statuses = PalObjects.get_ArrayProperty(
+                self._player_param["GotStatusPointList"]
+            )
+            statuses.clear()
+        for status in statuses:
+            if PalObjects.get_BaseType(status.get("StatusName")) == name:
+                PalObjects.set_BaseType(status["StatusPoint"], value)
+                return
+        if value > 0:
+            statuses.append(PalObjects.StatusPointStruct(name, value))
+
     @property
     def UnlockedRecipeTechnologyNames(self):
         return PalObjects.get_ArrayProperty(
@@ -172,6 +201,9 @@ class CharacterEditorTests(unittest.TestCase):
         expedition_id = "44444444-5555-6666-7777-888888888888"
         field = "MapObjectConcreteInstanceIdAssignedToExpedition"
         self.pal._pal_param[field] = PalObjects.Guid(expedition_id)
+
+        self.assertEqual(expedition_id, str(self.pal.ExpeditionInstanceId))
+        self.assertTrue(self.pal.IsExpeditionPal)
         level_before = deepcopy(self.pal._pal_param["Level"])
 
         result = self.editor.execute(
@@ -183,6 +215,7 @@ class CharacterEditorTests(unittest.TestCase):
         )
 
         self.assertFalse(self.pal.IsExpeditionPal)
+        self.assertIsNone(self.pal.ExpeditionInstanceId)
         self.assertNotIn(field, self.pal._pal_param)
         self.assertEqual(level_before, self.pal._pal_param["Level"])
         self.assertEqual(
@@ -242,6 +275,47 @@ class CharacterEditorTests(unittest.TestCase):
             },
             set(changes[1]["affected_records"]),
         )
+
+    def test_player_attributes_update_existing_and_new_status_rows(self) -> None:
+        self.player._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+        result = self.editor.execute(
+            UpdatePlayerAttributes(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=self.player.PlayerUId,
+                values={"max_hp": 50, "swim_speed": 20, "move_speed": 92},
+            )
+        )
+
+        self.assertEqual(
+            {"max_hp": 50, "move_speed": 92, "swim_speed": 20},
+            result["value"]["updated"],
+        )
+        views = {row["key"]: row for row in result["value"]["attributes"]}
+        self.assertEqual(5500, views["max_hp"]["display_value"])
+        self.assertEqual(100.0, views["swim_speed"]["effect_percent"])
+        self.assertEqual(50.0, views["move_speed"]["effect_percent"])
+        self.assertEqual(1, self.session.revision)
+        self.assertEqual(
+            ["level:CharacterSaveParameterMap"],
+            self.session.changes()[0]["affected_records"],
+        )
+
+    def test_player_attribute_range_error_does_not_mutate(self) -> None:
+        before = deepcopy(self.player._player_param)
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePlayerAttributes(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    player_id=self.player.PlayerUId,
+                    values={"move_speed": 93},
+                )
+            )
+
+        self.assertEqual("VALUE_OUT_OF_RANGE", raised.exception.code)
+        self.assertEqual(before, self.player._player_param)
+        self.assertEqual(0, self.session.revision)
 
     def test_player_setter_failure_rolls_back_all_fields(self) -> None:
         before_param = deepcopy(self.player._player_param)
@@ -441,6 +515,140 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertEqual(3, result["value"]["condensation"])
         self.assertEqual(3, result["value"]["work_suitability"][work_type])
         self.assertIsNotNone(result["value"]["derived"]["max_health"])
+
+    def test_pal_awakening_round_trips_and_updates_estimated_combat_stats(self) -> None:
+        self.pal.Talent_HP = 100
+        self.pal.Talent_Shot = 100
+        self.pal.Talent_Defense = 100
+        unawakened = {
+            "hp": self.pal.ComputedMaxHP,
+            "attack": self.pal.ComputedAttack,
+            "defense": self.pal.ComputedDefense,
+        }
+
+        awakened = self.editor.execute(
+            UpdatePalEnhancement(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"awakening": True},
+            )
+        )["value"]
+
+        self.assertTrue(awakened["awakening"])
+        self.assertEqual(1.5, awakened["awakening_status_multiplier"])
+        self.assertEqual(
+            {"value": True, "id": None, "type": "BoolProperty"},
+            self.pal._pal_param["bIsAwakening"],
+        )
+        self.assertGreater(awakened["derived"]["max_health"], unawakened["hp"])
+        self.assertGreater(awakened["derived"]["attack"], unawakened["attack"])
+        self.assertGreater(awakened["derived"]["defense"], unawakened["defense"])
+
+        restored = self.editor.execute(
+            UpdatePalEnhancement(
+                session_id=self.session.session_id,
+                expected_revision=1,
+                pal_id=str(self.pal.InstanceId),
+                values={"awakening": False},
+            )
+        )["value"]
+        self.assertFalse(restored["awakening"])
+        self.assertNotIn("bIsAwakening", self.pal._pal_param)
+        self.assertEqual(unawakened["hp"], restored["derived"]["max_health"])
+        self.assertEqual(unawakened["attack"], restored["derived"]["attack"])
+        self.assertEqual(unawakened["defense"], restored["derived"]["defense"])
+
+    def test_pal_awakening_rejects_unknown_property_structure(self) -> None:
+        self.pal._pal_param["bIsAwakening"] = PalObjects.IntProperty(1)
+        before = deepcopy(self.pal._pal_param)
+
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePalEnhancement(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    values={"awakening": True},
+                )
+            )
+
+        self.assertEqual("COMPATIBILITY_FIELD_MISSING", raised.exception.code)
+        self.assertEqual(before, self.pal._pal_param)
+        self.assertEqual(0, self.session.revision)
+
+    def test_max_pal_sets_every_applicable_regular_field_atomically(self) -> None:
+        result = self.editor.execute(
+            MaxPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+            )
+        )["value"]
+
+        self.assertEqual(80, result["level"])
+        self.assertEqual(10, result["friendship_level"])
+        self.assertEqual(
+            {
+                "iv_hp": 100,
+                "iv_shot": 100,
+                "iv_defense": 100,
+                "soul_hp": Config.max_souls_level,
+                "soul_attack": Config.max_souls_level,
+                "soul_defense": Config.max_souls_level,
+                "soul_craft_speed": Config.max_souls_level,
+                "condensation": 5,
+                "awakening": True,
+            },
+            result["enhancements"],
+        )
+        self.assertTrue(result["work_suitability"])
+        self.assertTrue(
+            all(
+                level == Config.max_suitability_level
+                for level in result["work_suitability"].values()
+            )
+        )
+        self.assertEqual(["iv_melee"], result["skipped_fields"])
+        self.assertEqual(1, self.session.revision)
+        self.assertEqual(1, len(self.session.changes()))
+        self.assertEqual("MaxPal", self.session.changes()[0]["command"])
+
+    def test_max_npc_skips_awakening_but_maxes_supported_fields(self) -> None:
+        PalObjects.set_BaseType(
+            self.pal._pal_param["CharacterID"], "SalesPerson_Wander"
+        )
+        unsupported_awakening = PalObjects.IntProperty(1)
+        self.pal._pal_param["bIsAwakening"] = deepcopy(unsupported_awakening)
+
+        result = self.editor.execute(
+            MaxPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+            )
+        )["value"]
+
+        self.assertTrue(self.pal.IsHuman)
+        self.assertEqual(80, result["level"])
+        self.assertEqual(10, result["friendship_level"])
+        self.assertNotIn("awakening", result["enhancements"])
+        self.assertEqual(
+            ["iv_melee", "awakening"], result["skipped_fields"]
+        )
+        self.assertEqual(
+            unsupported_awakening,
+            self.pal._pal_param["bIsAwakening"],
+        )
+        self.assertTrue(result["work_suitability"])
+        self.assertTrue(
+            all(
+                level == Config.max_suitability_level
+                for level in result["work_suitability"].values()
+            )
+        )
+        self.assertEqual(Config.max_souls_level, self.pal.Rank_CraftSpeed)
+        self.assertEqual(5, self.pal.Rank)
 
     def test_condensed_pal_work_suitability_reaches_level_ten(self) -> None:
         work_type = "EPalWorkSuitability::Handcraft"

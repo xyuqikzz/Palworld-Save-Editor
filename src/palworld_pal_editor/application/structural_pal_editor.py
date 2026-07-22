@@ -7,6 +7,7 @@ import re
 from typing import Any, Callable
 import uuid
 
+from palworld_pal_editor.config import Config
 from palworld_pal_editor.core.character_index import CharacterIndex
 from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects
@@ -21,6 +22,14 @@ from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.models import CharacterContainerType
 from palworld_pal_editor.utils.data_provider import DataProvider
 
+from .character_editor import (
+    MAX_ENHANCEMENT_CHEAT_LEVEL,
+    MAX_FRIENDSHIP_LEVEL,
+    MAX_LEVEL,
+    MAX_REGULAR_CONDENSATION,
+    MAX_REGULAR_IV,
+    MAX_REGULAR_PAL_LEVEL,
+)
 from .save_session import SaveSession
 
 
@@ -131,6 +140,7 @@ class StructuralPalEditor:
         self._assert_no_hard_issues(index)
         player = self._player(command.player_id)
         self._validate_species(command.species_id)
+        self._validate_add_options(command)
         container = self._target_container(
             player, command.container_type, command.target_slot
         )
@@ -147,11 +157,19 @@ class StructuralPalEditor:
                 player.group_id,
             )
             pal = PalEntity(pal_obj)
+            # PalSaveParameter is based on a Lamball-shaped record. Generated
+            # Pals must derive their active moves from the selected species,
+            # not inherit the template's exclusive roll attack.
+            (pal.EquipWaza or []).clear()
+            (pal.MasteredWaza or []).clear()
             pal.CharacterID = command.species_id
             if pal.IsHuman:
                 pal.equip_all_pal_attacks()
+            creation_settings = self._creation_settings(pal, command)
+            self._apply_creation_settings(pal, creation_settings)
             pal.is_new_pal = True
             context["pal"] = pal
+            context["creation_settings"] = creation_settings
             self._session.manager._entities_list.append(pal_obj)
             self._fail("after_character_record_insert", context)
             slot = container.add_pal(pal_id, command.target_slot)
@@ -188,7 +206,11 @@ class StructuralPalEditor:
             target={"player_id": str(player.PlayerUId), "pal_id": pal_id},
             before=lambda: self._world_summary(),
             mutate=mutate,
-            validate=lambda: self._validate_attached_pal(pal_id),
+            validate=lambda: self._validate_added_pal(
+                pal_id,
+                context["pal"],
+                context["creation_settings"],
+            ),
             after=lambda: self._pal_summary(context["pal"]),
             affected_records=(
                 "level:CharacterSaveParameterMap",
@@ -196,6 +218,233 @@ class StructuralPalEditor:
             ),
         )
         return {"change": entry.to_dict(), "pal": self._pal_summary(context["pal"])}
+
+    def _validate_add_options(self, command: AddPal) -> None:
+        for field_name in ("max_pal", "max_work", "unrestricted"):
+            if not isinstance(getattr(command, field_name), bool):
+                raise self._error(
+                    "INVALID_FIELD_TYPE",
+                    f"{field_name} must be a boolean.",
+                    field_name,
+                    status=400,
+                )
+        if command.max_pal and command.max_work:
+            raise self._error(
+                "CONFLICTING_CREATION_PRESETS",
+                "max_pal and max_work cannot both be selected.",
+                details={"fields": ["max_pal", "max_work"]},
+                status=400,
+            )
+        if command.passive is None:
+            return
+        if not isinstance(command.passive, (tuple, list)) or any(
+            not isinstance(skill, str) for skill in command.passive
+        ):
+            raise self._error(
+                "INVALID_FIELD_TYPE",
+                "passive must be a list of skill IDs.",
+                "passive",
+                status=400,
+            )
+        if len(command.passive) > 4:
+            raise self._error(
+                "SKILL_SLOT_LIMIT_EXCEEDED",
+                "passive contains too many skills.",
+                "passive",
+                details={"maximum": 4, "actual": len(command.passive)},
+            )
+        if len(set(command.passive)) != len(command.passive):
+            raise self._error(
+                "DUPLICATE_SKILL",
+                "passive contains a duplicate skill ID.",
+                "passive",
+            )
+        unknown = sorted(
+            skill
+            for skill in command.passive
+            if not DataProvider.has_passive_skill(skill)
+        )
+        if unknown:
+            raise self._error(
+                "UNKNOWN_SKILL",
+                "passive contains an unknown skill ID.",
+                "passive",
+                details={"skills": unknown},
+            )
+
+    def _creation_settings(self, pal: PalEntity, command: AddPal) -> dict[str, Any]:
+        settings: dict[str, Any] = {
+            "passive": None if command.passive is None else list(command.passive),
+            "level": None,
+            "friendship_level": None,
+            "enhancements": {},
+            "work_suitability": {},
+        }
+        if not command.max_pal and not command.max_work:
+            return settings
+
+        soul_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else Config.max_souls_level
+        )
+        condensation_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else MAX_REGULAR_CONDENSATION
+        )
+        settings["enhancements"] = {
+            "soul_craft_speed": soul_level,
+            "condensation": condensation_level,
+        }
+
+        suitability_rules = DataProvider.get_pal_suitabilities(pal.DataAccessKey)
+        if suitability_rules is None:
+            raise self._error(
+                "COMPATIBILITY_FIELD_MISSING",
+                "No work suitability rule exists for this Pal variant.",
+                "species_id",
+            )
+        settings["work_suitability"] = {
+            work_type: Config.max_suitability_level
+            for work_type, base_level in suitability_rules.items()
+            if base_level > 0
+        }
+        if not command.max_pal:
+            return settings
+
+        level = MAX_LEVEL if command.unrestricted else MAX_REGULAR_PAL_LEVEL
+        iv_level = (
+            MAX_ENHANCEMENT_CHEAT_LEVEL
+            if command.unrestricted
+            else MAX_REGULAR_IV
+        )
+        if DataProvider.get_pal_level_xp(level) is None:
+            raise self._error(
+                "COMPATIBILITY_FIELD_MISSING",
+                "No experience rule exists for the maximum Pal level.",
+                "level",
+            )
+        if DataProvider.get_pal_friendship(MAX_FRIENDSHIP_LEVEL) is None:
+            raise self._error(
+                "COMPATIBILITY_FIELD_MISSING",
+                "No trust rule exists for the maximum level.",
+                "friendship_level",
+            )
+        settings["level"] = level
+        settings["friendship_level"] = MAX_FRIENDSHIP_LEVEL
+        settings["enhancements"].update(
+            {
+                "iv_hp": iv_level,
+                "iv_shot": iv_level,
+                "iv_defense": iv_level,
+                "soul_hp": soul_level,
+                "soul_attack": soul_level,
+                "soul_defense": soul_level,
+            }
+        )
+        if command.unrestricted:
+            settings["enhancements"]["iv_melee"] = iv_level
+        if not pal.IsHuman:
+            settings["enhancements"]["awakening"] = True
+        return settings
+
+    @staticmethod
+    def _apply_creation_settings(pal: PalEntity, settings: dict[str, Any]) -> None:
+        if settings["passive"] is not None:
+            passive = pal.PassiveSkillList
+            if passive is None:
+                pal._pal_param["PassiveSkillList"] = PalObjects.ArrayProperty(
+                    "NameProperty", {"values": settings["passive"]}
+                )
+            else:
+                passive[:] = settings["passive"]
+
+        if settings["level"] is not None:
+            pal.Level = settings["level"]
+        # Trust is supported by both creature Pals and human NPC Pals. Keep it
+        # independent from level and awakening so future creation presets do
+        # not accidentally skip the NPC trust bonus.
+        if settings["friendship_level"] is not None:
+            pal.FriendshipLevel = settings["friendship_level"]
+        field_map = {
+            "iv_hp": "Talent_HP",
+            "iv_melee": "Talent_Melee",
+            "iv_shot": "Talent_Shot",
+            "iv_defense": "Talent_Defense",
+            "soul_hp": "Rank_HP",
+            "soul_attack": "Rank_Attack",
+            "soul_defense": "Rank_Defence",
+            "soul_craft_speed": "Rank_CraftSpeed",
+            "condensation": "Rank",
+            "awakening": "IsAwakened",
+        }
+        for field_name, value in settings["enhancements"].items():
+            setattr(pal, field_map[field_name], value)
+        for work_type, value in settings["work_suitability"].items():
+            pal.set_WorkSuitability(work_type, value)
+
+    def _validate_added_pal(
+        self,
+        pal_id: str,
+        pal: PalEntity,
+        settings: dict[str, Any],
+    ) -> None:
+        self._validate_attached_pal(pal_id)
+        if (
+            settings["passive"] is not None
+            and list(pal.PassiveSkillList or []) != settings["passive"]
+        ):
+            raise self._error(
+                "POSTCONDITION_FAILED",
+                "The created Pal passive skills were not applied.",
+                status=500,
+            )
+        if settings["level"] is not None and pal.Level != settings["level"]:
+            raise self._error(
+                "POSTCONDITION_FAILED",
+                "The created Pal level did not reach maximum.",
+                status=500,
+            )
+        if (
+            settings["friendship_level"] is not None
+            and pal.FriendshipLevel != settings["friendship_level"]
+        ):
+            raise self._error(
+                "POSTCONDITION_FAILED",
+                "The created Pal trust level did not reach maximum.",
+                status=500,
+            )
+        field_map = {
+            "iv_hp": "Talent_HP",
+            "iv_melee": "Talent_Melee",
+            "iv_shot": "Talent_Shot",
+            "iv_defense": "Talent_Defense",
+            "soul_hp": "Rank_HP",
+            "soul_attack": "Rank_Attack",
+            "soul_defense": "Rank_Defence",
+            "soul_craft_speed": "Rank_CraftSpeed",
+            "condensation": "Rank",
+            "awakening": "IsAwakened",
+        }
+        for field_name, expected in settings["enhancements"].items():
+            if getattr(pal, field_map[field_name]) != expected:
+                raise self._error(
+                    "POSTCONDITION_FAILED",
+                    f"The created Pal field {field_name} did not reach maximum.",
+                    status=500,
+                )
+        actual_suitabilities = pal.WorkSuitabilities or {}
+        for work_type, expected in settings["work_suitability"].items():
+            if actual_suitabilities.get(work_type) != expected:
+                raise self._error(
+                    "POSTCONDITION_FAILED",
+                    (
+                        f"The created Pal work suitability {work_type} "
+                        "did not reach maximum."
+                    ),
+                    status=500,
+                )
 
     def _clone(self, command: ClonePal) -> dict[str, Any]:
         self._session.require_command(command.session_id, command.expected_revision)
@@ -992,11 +1241,14 @@ class StructuralPalEditor:
         return {
             "pal_id": str(pal.InstanceId),
             "species_id": pal.CharacterID,
-            "name": pal.NickName or "",
+            "name": pal.CustomNickName or "",
             "owner_id": None if pal.OwnerPlayerUId is None else str(pal.OwnerPlayerUId),
             "group_id": None if pal.group_id is None else str(pal.group_id),
             "container_id": None if slot is None else str(slot[0]),
             "slot_index": None if slot is None else slot[1],
+            "friendship_level": (
+                pal.FriendshipLevel if pal.FriendshipLevel is not None else 0
+            ),
             "detached": bool(pal.is_unreferenced_pal),
         }
 

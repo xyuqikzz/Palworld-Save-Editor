@@ -9,12 +9,13 @@ const missionEditorPath = fileURLToPath(new URL('../src/components/MissionEditor
 const inventoryEditorPath = fileURLToPath(new URL('../src/components/InventoryEditor.vue', import.meta.url))
 const storePath = fileURLToPath(new URL('../src/stores/paleditor.js', import.meta.url))
 
-test('player editor exposes three independent tabs and keeps mission state mounted', () => {
+test('player editor exposes four independent tabs and keeps mission state mounted', () => {
   const source = readFileSync(playerEditorPath, 'utf8')
 
   assert.match(source, /PlayerTab_Inventory/)
   assert.match(source, /PlayerTab_Technology/)
   assert.match(source, /PlayerTab_Missions/)
+  assert.match(source, /id="player-attributes-tab"/)
   assert.match(
     source,
     /<MissionEditor[\s\S]*?v-show="activeEditorTab === 'missions'"/,

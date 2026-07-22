@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from copy import deepcopy
 from dataclasses import dataclass
 import json
 import mmap
@@ -54,6 +55,7 @@ EXPECTED_WAZA_PALS = 712
 EXPECTED_WAZA_ENUM_NAMES = 392
 EXPECTED_WAZA_DATA_ROWS = 384
 PAL_PARAMETER_STRUCT = "/Script/Pal.PalCharacterParameterDatabaseRow"
+EFFECT_VALUE_PATTERN = re.compile(r"\{EffectValue\d+\}")
 
 # Build 24088745 marks 86 ordinary traits as randomly assignable. These 28
 # additional traits are also valid Pal traits, but are obtained from species,
@@ -128,6 +130,29 @@ SUITABILITIES = (
     "Cool",
     "Transport",
     "MonsterFarm",
+)
+WEAPON_TYPES = (
+    "None",
+    "ThrowObject",
+    "Handgun",
+    "AssaultRifle",
+    "Shotgun",
+    "SniperRifle",
+    "RocketLauncher",
+    "MeleeWeapon",
+    "Bow",
+    "BowGun",
+    "FlameThrower",
+    "GatlingGun",
+    "Liftup",
+    "LaserRifle",
+    "MissileLauncher",
+    "GrenadeLauncher",
+    "Katana",
+    "MetalDetector",
+    "GiantClub",
+    "FishingRod",
+    "LaserMiningTool",
 )
 BUFF_EFFECTS = {
     3: "b_Attack",
@@ -229,6 +254,9 @@ def _read_passive_prefix(
         "uint8",
         "float32",
         "uint8",
+        "uint8",
+        "float32",
+        "uint8",
     )
     for property_index, kind in enumerate(kinds):
         if not state[property_index]:
@@ -256,7 +284,7 @@ def _read_passive_prefix(
             value=float(values[index + 1] or 0.0),
             target=int(values[index + 2] or 0),
         )
-        for index in (4, 7, 10)
+        for index in (4, 7, 10, 13)
         if values[index] is not None
     )
     override = values[2]
@@ -295,7 +323,7 @@ def decode_passive_asset(
         raise ValueError("Passive table outer schema does not match build 24088745")
 
     # Rows are found by their FName followed by the exact 38-property header.
-    # For the ordinary rows, properties 13..26 are all absent or serialized as
+    # For the ordinary rows, properties 16..26 are all absent or serialized as
     # one-byte true flags; property 25 is the assignable flag and property 26
     # is the Lucky-trait flag. The exact count guards against false byte hits.
     candidates: dict[str, list[PassiveRecord]] = {}
@@ -308,7 +336,7 @@ def decode_passive_asset(
             record, state, offset = _read_passive_prefix(data, position, name_map)
             candidates.setdefault(record.internal_name, []).append(record)
             flags: dict[int, int | None] = {}
-            for property_index in range(13, 27):
+            for property_index in range(16, 27):
                 if state[property_index]:
                     flags[property_index] = data[offset]
                     offset += 1
@@ -336,6 +364,45 @@ def decode_passive_asset(
         result[internal_name] = matches[0]
     if len(result) != expected_count:
         raise ValueError(f"Expected {expected_count} editable traits, found {len(result)}")
+    return result
+
+
+def decode_named_passive_records(
+    asset: dict[str, Any], internal_names: set[str]
+) -> dict[str, PassiveRecord]:
+    if not internal_names:
+        return {}
+
+    name_map = asset.get("NameMap")
+    if not isinstance(name_map, list) or not all(
+        isinstance(value, str) for value in name_map
+    ):
+        raise ValueError("Passive asset has an invalid NameMap")
+    data = _asset_payload(asset, "DT_PassiveSkill_Main_Common")
+    if (
+        data[:2] != b"\x00\x03"
+        or struct.unpack_from("<i", data, 6)[0] != 0
+        or struct.unpack_from("<i", data, 10)[0] != EXPECTED_PASSIVE_TABLE_ROWS
+    ):
+        raise ValueError("Passive table outer schema does not match build 24088745")
+    matches: dict[str, list[PassiveRecord]] = {
+        internal_name: [] for internal_name in internal_names
+    }
+    for position in range(14, len(data) - 12):
+        try:
+            record, _, _ = _read_passive_prefix(data, position, name_map)
+            if record.internal_name in matches:
+                matches[record.internal_name].append(record)
+        except (IndexError, UnicodeError, ValueError, struct.error):
+            continue
+
+    result: dict[str, PassiveRecord] = {}
+    for internal_name, records in matches.items():
+        if len(records) != 1:
+            raise ValueError(
+                f"Expected one passive row {internal_name}, found {len(records)}"
+            )
+        result[internal_name] = records[0]
     return result
 
 
@@ -749,6 +816,34 @@ def _render_passive_description(text: str, record: PassiveRecord) -> str:
     return text
 
 
+def render_skill_i18n_passive_values(
+    skill_i18n: dict[str, Any], records: dict[str, PassiveRecord]
+) -> dict[str, Any]:
+    result = deepcopy(skill_i18n)
+    for internal_name, row in result.get("Passives", {}).items():
+        localized_rows = row.get("I18n", {})
+        if not any(
+            EFFECT_VALUE_PATTERN.search(localized.get("Description", ""))
+            for localized in localized_rows.values()
+        ):
+            continue
+        record = records.get(internal_name)
+        if record is None:
+            raise ValueError(
+                f"Missing Build {BUILD} passive values for {internal_name}"
+            )
+        for language, localized in localized_rows.items():
+            description = _render_passive_description(
+                localized.get("Description", ""), record
+            )
+            if EFFECT_VALUE_PATTERN.search(description):
+                raise ValueError(
+                    f"Unresolved passive effect value for {internal_name} ({language})"
+                )
+            localized["Description"] = description
+    return result
+
+
 KOREAN_PASSIVE_EFFECT_LABELS = {
     3: "공격",
     4: "방어",
@@ -1095,10 +1190,28 @@ def build_human_catalog(
     result: dict[str, dict[str, Any]] = {}
     for record in records.values():
         values = record.values
+        weapon_index = values.get("Weapon")
+        if weapon_index is None:
+            weapon_index = 0
+        if (
+            not isinstance(weapon_index, int)
+            or not 0 <= weapon_index < len(WEAPON_TYPES)
+        ):
+            raise ValueError(
+                f"Unsupported EPalWeaponType value for {record.internal_name}: "
+                f"{weapon_index!r}"
+            )
+        default_weapon = WEAPON_TYPES[weapon_index]
+        default_attack = (
+            "EPalWazaID::Human_Punch"
+            if default_weapon == "None"
+            else "EPalWazaID::Weapon_Use"
+        )
         result[record.internal_name] = {
             "InternalName": record.internal_name,
             "Elements": [],
-            "Attacks": {"EPalWazaID::Human_Punch": 1},
+            "Attacks": {default_attack: 1},
+            "DefaultWeapon": default_weapon,
             "Human": True,
             "I18n": _human_i18n(
                 record,
@@ -1306,7 +1419,8 @@ def main() -> int:
             "--friendship-asset must be provided together"
         )
 
-    passive_records = decode_passive_asset(_read_asset(args.passive_asset))
+    passive_asset = _read_asset(args.passive_asset)
+    passive_records = decode_passive_asset(passive_asset)
     pal_records = decode_pal_parameter_asset(
         _read_asset(args.pal_parameter_asset), args.mapping
     )
@@ -1325,10 +1439,12 @@ def main() -> int:
         json_root
     )
     passive_path = args.data_root / "pal_passives.json"
+    skill_i18n_path = args.data_root / "skill_i18n.json"
     pal_path = args.data_root / "pal_data.json"
     attack_path = args.data_root / "pal_attacks.json"
     item_path = args.data_root / "item_data.json"
     old_passives = json.loads(passive_path.read_text(encoding="utf-8"))
+    old_skill_i18n = json.loads(skill_i18n_path.read_text(encoding="utf-8"))
     old_pals = json.loads(pal_path.read_text(encoding="utf-8"))
     old_attacks = json.loads(attack_path.read_text(encoding="utf-8"))
     items = json.loads(item_path.read_text(encoding="utf-8"))
@@ -1338,6 +1454,20 @@ def main() -> int:
         skill_names,
         skill_descriptions,
         references,
+    )
+    passive_value_ids = {
+        internal_name
+        for internal_name, row in old_skill_i18n.get("Passives", {}).items()
+        if any(
+            EFFECT_VALUE_PATTERN.search(localized.get("Description", ""))
+            for localized in row.get("I18n", {}).values()
+        )
+    }
+    passive_value_records = decode_named_passive_records(
+        passive_asset, passive_value_ids
+    )
+    new_skill_i18n = render_skill_i18n_passive_values(
+        old_skill_i18n, passive_value_records
     )
     new_pals = build_pal_catalog(pal_records, pal_names, matched_learnsets)
     new_attacks = build_attack_catalog(
@@ -1350,6 +1480,7 @@ def main() -> int:
     )
     catalogs: list[tuple[Path, dict[str, Any], dict[str, Any]]] = [
         (passive_path, old_passives, new_passives),
+        (skill_i18n_path, old_skill_i18n, new_skill_i18n),
         (pal_path, old_pals, new_pals),
         (attack_path, old_attacks, new_attacks),
     ]
@@ -1380,6 +1511,9 @@ def main() -> int:
             "unmatched_ids": unmatched_learnset_ids,
         },
         "passives": _diff_summary(old_passives, new_passives),
+        "skill_i18n": _diff_summary(
+            old_skill_i18n["Passives"], new_skill_i18n["Passives"]
+        ),
         "pals": _diff_summary(old_pals, new_pals),
         "attacks": _diff_summary(old_attacks, new_attacks),
     }

@@ -19,11 +19,46 @@ from palworld_pal_editor.domain.models import SavePlatform
 from palworld_pal_editor.storage.discovery import SOURCE_CATALOG
 from palworld_pal_editor.application.save_writer import SaveWriter
 from palworld_pal_editor.application.query_service import SaveQueryService
+from palworld_pal_editor.application.expedition_editor import ExpeditionEditor
+from palworld_pal_editor.application.guild_editor import GuildEditor
+from palworld_pal_editor.domain.commands import CompleteActiveExpeditions, UpdateGuildName
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.utils import LOGGER, DataProvider
 from palworld_pal_editor.utils.util import get_path_context, reply
 
 save_blueprint = Blueprint("save", __name__)
+
+
+def _default_steam_save_path() -> str | None:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if not local_app_data:
+        return None
+
+    save_games = Path(local_app_data) / "Pal" / "Saved" / "SaveGames"
+    if not save_games.is_dir():
+        return None
+
+    candidates: list[tuple[int, str, Path]] = []
+    try:
+        level_saves = save_games.glob("*/*/Level.sav")
+        for level_save in level_saves:
+            world_path = level_save.parent
+            if not (world_path / "Players").is_dir():
+                continue
+            try:
+                modified_at = level_save.stat().st_mtime_ns
+                resolved_path = world_path.resolve()
+            except OSError:
+                continue
+            candidates.append(
+                (modified_at, str(resolved_path).casefold(), resolved_path)
+            )
+    except OSError:
+        return None
+
+    if not candidates:
+        return None
+    return str(max(candidates, key=lambda candidate: candidate[:2])[2])
 
 
 @save_blueprint.route("/fetch_config", methods=["GET"])
@@ -33,11 +68,12 @@ def fetch_config():
         {
             "I18n": Config.i18n,
             "I18nList": DataProvider.get_i18n_map(),
-            "Path": Config.path,
-            "HasPassword": Config.password != None,
+            "Path": Config.path or _default_steam_save_path(),
+            "HasPassword": bool(Config.password),
             "VERSION": version_info(),
             "IsOfficialBuild": is_gh_build(),
             "MaxSoulsLevel": Config.max_souls_level,
+            "MaxSuitabilityLevel": Config.max_suitability_level,
         },
     )
 
@@ -213,6 +249,92 @@ def get_changes():
         )
 
 
+@save_blueprint.route("/guilds/<guild_id>/commands", methods=["POST"])
+@jwt_required()
+def execute_guild_command(guild_id: str):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    allowed = {"session_id", "expected_revision", "command", "name"}
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    if payload.get("command") != "update_guild_name":
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND",
+            message="Unsupported guild command.",
+            field="command",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = GuildEditor(session).execute(
+            UpdateGuildName(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+                guild_id=guild_id,
+                name=payload.get("name"),
+            )
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/expeditions/commands", methods=["POST"])
+@jwt_required()
+def execute_expedition_command():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    allowed = {"session_id", "expected_revision", "command"}
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    if payload.get("command") != "complete_active_expeditions":
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND",
+            message="Unsupported expedition command.",
+            field="command",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = ExpeditionEditor(session).execute(
+            CompleteActiveExpeditions(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+            )
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
 def _optional_int(name: str):
     value = request.args.get(name)
     if value is None or value == "":
@@ -249,18 +371,23 @@ def _optional_bool(name: str):
 def query_players():
     try:
         session = SESSION_RUNTIME.get(request.args.get("session_id"))
-        rows = SaveQueryService(session, locale=Config.i18n).players(
+        service = SaveQueryService(session, locale=Config.i18n)
+        rows = service.players(
             text=request.args.get("q", ""),
             min_level=_optional_int("min_level"),
             max_level=_optional_int("max_level"),
             sort_by=request.args.get("sort_by", "name"),
             descending=_optional_bool("descending") or False,
         )
+        guild_tree = service.guild_tree(
+            player_ids={row["player_id"] for row in rows}
+        )
         return reply(
             0,
             {
                 "revision": session.revision,
                 "players": rows,
+                "guilds": guild_tree,
                 "has_working_pal": bool(
                     getattr(session.manager, "baseworker_mapping", None)
                 ),
@@ -490,6 +617,7 @@ def get_pal_data():
             "SortingKey": DataProvider.get_pal_sorting_key(iname),
             "IsHuman": DataProvider.is_pal_human(iname) or False,
             "HasIcon": DataProvider.has_human_icon(iname),
+            "DefaultWeapon": pal.get("DefaultWeapon"),
         }
         pal_dict[iname] = data
         pal_arr.append(data)

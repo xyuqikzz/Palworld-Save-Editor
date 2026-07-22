@@ -1,4 +1,4 @@
-import { ref, computed, reactive, nextTick } from "vue";
+import { ref, computed, reactive, nextTick, watch } from "vue";
 import { defineStore } from "pinia";
 import axios from "axios";
 import enTranslations from "../i18n/en.js";
@@ -6,6 +6,33 @@ import frTranslations from "../i18n/fr.js";
 import jaTranslations from "../i18n/ja.js";
 import koTranslations from "../i18n/ko.js";
 import zhCnTranslations from "../i18n/zh-CN.js";
+import { PAL_LIST_SORT_MODES, sortPalList } from "../components/modules/pal-list-sort.js";
+
+const NPC_WEAPON_TRANSLATION_KEYS = Object.freeze({
+    AssaultRifle: "PalEditor_NpcWeapon_AssaultRifle",
+    BowGun: "PalEditor_NpcWeapon_BowGun",
+    FlameThrower: "PalEditor_NpcWeapon_FlameThrower",
+    GatlingGun: "PalEditor_NpcWeapon_GatlingGun",
+    GiantClub: "PalEditor_NpcWeapon_GiantClub",
+    GrenadeLauncher: "PalEditor_NpcWeapon_GrenadeLauncher",
+    Handgun: "PalEditor_NpcWeapon_Handgun",
+    Katana: "PalEditor_NpcWeapon_Katana",
+    LaserRifle: "PalEditor_NpcWeapon_LaserRifle",
+    MeleeWeapon: "PalEditor_NpcWeapon_MeleeWeapon",
+    MissileLauncher: "PalEditor_NpcWeapon_MissileLauncher",
+    None: "PalEditor_NpcWeapon_None",
+    RocketLauncher: "PalEditor_NpcWeapon_RocketLauncher",
+    Shotgun: "PalEditor_NpcWeapon_Shotgun",
+    ThrowObject: "PalEditor_NpcWeapon_ThrowObject",
+});
+
+const SAVE_SOURCE_MODE_STORAGE_KEY = "PAL_SAVE_SOURCE_MODE";
+
+function getInitialSaveSourceMode() {
+    return localStorage.getItem(SAVE_SOURCE_MODE_STORAGE_KEY) === "xgp"
+        ? "xgp"
+        : "steam";
+}
 
 export const usePalEditorStore = defineStore("paleditor", () => {
     const MAX_LEVEL = 80;
@@ -13,18 +40,20 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const MAX_FRIENDSHIP_LEVEL = 10;
     const MAX_INVALID_LEVEL = 100;
     const MAX_SOULS_LEVEL = ref(0);
-    const MAX_SUITABILITY_LEVEL = 10;
+    const MAX_SUITABILITY_LEVEL = ref(10);
     class Player {
         constructor(obj) {
             this.InstanceId = obj.InstanceId || obj.player_id;
             this.NickName = obj.NickName ?? obj.name ?? "";
             this.Level = obj.Level ?? obj.level ?? 1;
+            this.GuildId = obj.GuildId ?? obj.guild_id ?? null;
             this.DetailsLoaded = obj.DetailsLoaded ?? obj.details_loaded ?? false;
             this.HasViewingCage = obj.HasViewingCage;
             this.pals = new Map();
             this.UnlockedRecipeTechnologyNames = obj.UnlockedRecipeTechnologyNames;
             this.TechnologyPoint = obj.TechnologyPoint;
             this.bossTechnologyPoint = obj.bossTechnologyPoint;
+            this.PlayerAttributes = obj.PlayerAttributes || [];
             this.Inventory = obj.Inventory || { Capacity: 0, Items: [] };
             this.InventoryContainers = obj.InventoryContainers || [];
         }
@@ -96,13 +125,19 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.in_owner_palbox = obj.in_owner_palbox;
 
             this.IsHuman = obj.IsHuman;
+            this.NpcDefaultWeapon = obj.NpcDefaultWeapon ?? null;
             this.IsBOSS = obj.IsBOSS;
             this.IsRarePal = obj.IsRarePal;
             this.IsTower = obj.IsTower;
             this.IsRAID = obj.IsRAID;
             this.IsPREDATOR = obj.IsPREDATOR;
             this.IsOilrig = obj.IsOilrig;
+            this.IsAwakened = Boolean(obj.IsAwakened);
+            this.AwakeningStatusMultiplier = obj.AwakeningStatusMultiplier ?? 1.5;
             this.IsExpeditionPal = obj.IsExpeditionPal;
+            this.ExpeditionInstanceId = obj.ExpeditionInstanceId;
+            this.ExpeditionAssignmentStatus = obj.ExpeditionAssignmentStatus;
+            this.ExpeditionCanComplete = Boolean(obj.ExpeditionCanComplete);
 
             this.ComputedMaxHP = obj.ComputedMaxHP;
             this.ComputedAttack = obj.ComputedAttack;
@@ -155,6 +190,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             updatePal({ target: { name: "IsRarePal", value: this.IsRarePal } });
         }
 
+        swapAwakening() {
+            this.IsAwakened = !this.IsAwakened;
+            return updatePal({
+                target: { name: "IsAwakened", value: this.IsAwakened },
+            });
+        }
+
         levelDown() {
             if (this.Level > 1) {
                 this.Level -= 1;
@@ -182,20 +224,20 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         friendshipLevelDown() {
             if (this.FriendshipLevel > MIN_FRIENDSHIP_LEVEL) {
                 this.FriendshipLevel -= 1;
-                updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
+                return updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
             }
         }
 
         friendshipLevelUp() {
             if (this.FriendshipLevel < MAX_FRIENDSHIP_LEVEL) {
                 this.FriendshipLevel += 1;
-                updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
+                return updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
             }
         }
 
         maxFriendshipLevel() {
             this.FriendshipLevel = MAX_FRIENDSHIP_LEVEL;
-            updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
+            return updatePal({ target: { name: "FriendshipLevel", value: this.FriendshipLevel } });
         }
 
         displayGender() {
@@ -248,6 +290,15 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 target: {
                     name: "add_PassiveSkillList",
                     value: skill,
+                },
+            });
+        }
+
+        replacePassiveSkills(skills) {
+            updatePal({
+                target: {
+                    name: "replace_PassiveSkillList",
+                    value: [...skills],
                 },
             });
         }
@@ -338,11 +389,101 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
         }
 
+        suitMax(e) {
+            try {
+                const name = e.currentTarget.name;
+                this.set_Suitability(name, MAX_SUITABILITY_LEVEL.value);
+            } catch (error) {
+                console.log(error);
+                return;
+            }
+        }
+
+        maxAllSuitabilities() {
+            try {
+                const baseSuitabilities =
+                    PAL_STATIC_DATA.value[SELECTED_PAL_DATA.value.DataAccessKey]
+                        ?.Suitabilities || {};
+                const updates = {};
+                for (const [name, value] of Object.entries(this.Suitabilities || {})) {
+                    if (
+                        HIDE_INVALID_OPTIONS.value
+                        && Number(baseSuitabilities[name] || 0) <= 0
+                    ) {
+                        continue;
+                    }
+                    if (Number(value) < MAX_SUITABILITY_LEVEL.value) {
+                        updates[name] = MAX_SUITABILITY_LEVEL.value;
+                    }
+                }
+                if (!Object.keys(updates).length) return;
+                updatePal({
+                    target: {
+                        name: "set_AllSuitabilities",
+                        value: updates,
+                    },
+                });
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        maximumEnhancementPayload() {
+            const unrestricted = !HIDE_INVALID_OPTIONS.value;
+            const ivMax = unrestricted ? 255 : 100;
+            const soulMax = unrestricted ? 255 : MAX_SOULS_LEVEL.value;
+            const condensationMax = unrestricted ? 255 : 5;
+            const values = {
+                iv_hp: ivMax,
+                iv_shot: ivMax,
+                iv_defense: ivMax,
+                soul_hp: soulMax,
+                soul_attack: soulMax,
+                soul_defense: soulMax,
+                soul_craft_speed: soulMax,
+                condensation: condensationMax,
+            };
+            if (unrestricted) {
+                values.iv_melee = ivMax;
+            }
+
+            return { values };
+        }
+
+        areAllEnhancementsMax() {
+            const { values } = this.maximumEnhancementPayload();
+            const propertyNames = {
+                iv_hp: "Talent_HP",
+                iv_melee: "Talent_Melee",
+                iv_shot: "Talent_Shot",
+                iv_defense: "Talent_Defense",
+                soul_hp: "Rank_HP",
+                soul_attack: "Rank_Attack",
+                soul_defense: "Rank_Defence",
+                soul_craft_speed: "Rank_CraftSpeed",
+                condensation: "Rank",
+            };
+            return Object.entries(values).every(
+                ([name, maximum]) =>
+                    Number(this[propertyNames[name]] || 0) >= Number(maximum),
+            );
+        }
+
+        maxAllEnhancements() {
+            if (this.areAllEnhancementsMax()) return;
+            updatePal({
+                target: {
+                    name: "set_AllEnhancements",
+                    value: this.maximumEnhancementPayload(),
+                },
+            });
+        }
+
         set_Suitability(name, value) {
             const min =
                 PAL_STATIC_DATA.value[SELECTED_PAL_DATA.value.DataAccessKey]
                     ?.Suitabilities[name];
-            const max = MAX_SUITABILITY_LEVEL;
+            const max = MAX_SUITABILITY_LEVEL.value;
             if (HIDE_INVALID_OPTIONS.value && min == 0 && value != 0) {
                 alert(
                     "Invalid suitability level, You can only modify suitabilities that the Pal is capable of."
@@ -428,6 +569,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     // data
     const BASE_PAL_MAP = ref(new Map());
     const PLAYER_MAP = ref(new Map());
+    const GUILD_TREE = ref([]);
     const PAL_PASSIVE_SELECTED_ITEM = ref("");
     const PAL_ACTIVE_SELECTED_ITEM = ref("");
 
@@ -438,9 +580,16 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const EXPEDITION_PAL_COUNT = computed(() =>
         Array.from(PAL_MAP.value.values()).filter(pal => pal.IsExpeditionPal).length
     );
+    const COMPLETABLE_EXPEDITION_COUNT = computed(() => new Set(
+        Array.from(PAL_MAP.value.values())
+            .filter(pal => pal.ExpeditionCanComplete && pal.ExpeditionInstanceId)
+            .map(pal => pal.ExpeditionInstanceId)
+    ).size);
 
     // selected id
     const SELECTED_PLAYER_ID = ref(null);
+    const SELECTED_BASE_KEY = ref(null);
+    const SELECTED_BASE_DATA = ref(null);
     const SELECTED_PAL_ID = ref(null);
     const BULK_PLAYER_IDS = ref([]);
     const BULK_PAL_IDS = ref([]);
@@ -456,7 +605,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const PAL_GAME_SAVE_PATH = ref(localStorage.getItem("PAL_GAME_SAVE_PATH"));
     const HAS_PASSWORD = ref(false);
     const PAL_WRITE_BACK_PATH = ref("");
-    const SAVE_SOURCE_MODE = ref("steam");
+    const SAVE_SOURCE_MODE = ref(getInitialSaveSourceMode());
+    watch(SAVE_SOURCE_MODE, (mode) => {
+        if (mode === "steam" || mode === "xgp") {
+            localStorage.setItem(SAVE_SOURCE_MODE_STORAGE_KEY, mode);
+        }
+    }, { immediate: true });
     const XGP_WGS_PATH = ref("");
     const XGP_SOURCES = ref([]);
     const SELECTED_XGP_SOURCE_ID = ref(null);
@@ -607,12 +761,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     function acceptResponse(response, context, { command = false } = {}) {
         if (!response || response.status !== 0) {
             const errorCode = response?.error?.code || "REQUEST_FAILED";
-            const localizedMessage = errorCode.startsWith("WGS_")
-                ? getTranslatedText(errorCode)
+            const messageKey = errorCode.startsWith("WGS_") ? errorCode : null;
+            const localizedMessage = messageKey
+                ? getTranslatedText(messageKey)
                 : response?.msg || "The operation failed.";
             LAST_ERROR.value = {
                 context,
                 message: localizedMessage,
+                messageKey,
                 code: errorCode,
                 details: response?.error?.details || {},
                 retryable: Boolean(response?.error?.retryable),
@@ -628,6 +784,64 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SESSION_REVISION.value = revision;
         }
         return true;
+    }
+
+    function applySessionState(data) {
+        const session = data.session;
+        SESSION_ID.value = session.session_id;
+        SESSION_REVISION.value = session.revision;
+        PENDING_CHANGE_COUNT.value = session.pending_change_count;
+        SAVE_COMPATIBILITY.value = data.compatibility;
+        SAVE_PLATFORM.value = session.platform || "steam";
+        SAVE_SOURCE_MODE.value = SAVE_PLATFORM.value;
+        SOURCE_ID.value = session.sourceId || null;
+        SOURCE_DISPLAY_NAME.value = session.sourceDisplayName || "";
+        SAVE_CAPABILITIES.value = session.saveCapabilities || {};
+        LAST_ERROR.value = null;
+
+        if (SAVE_PLATFORM.value === "steam") {
+            const sourcePath = session.source || PAL_GAME_SAVE_PATH.value;
+            PAL_GAME_SAVE_PATH.value = sourcePath;
+            PAL_WRITE_BACK_PATH.value = sourcePath;
+            if (sourcePath) localStorage.setItem("PAL_GAME_SAVE_PATH", sourcePath);
+        } else {
+            SELECTED_XGP_SOURCE_ID.value = SOURCE_ID.value;
+            PAL_WRITE_BACK_PATH.value = SOURCE_DISPLAY_NAME.value;
+        }
+    }
+
+    async function loadSessionState(data) {
+        applySessionState(data);
+        await loadPlayers();
+        if (IS_LOCKED.value || !SESSION_ID.value) return false;
+        await fetchStaticData();
+        if (IS_LOCKED.value || !SESSION_ID.value) return false;
+        SAVE_LOADED_FLAG.value = true;
+        return true;
+    }
+
+    async function resumeCurrentSession() {
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        reset();
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await GET("/api/save/session");
+            if (response === false) return false;
+            if (response.status === 0) return await loadSessionState(response.data);
+            if (response?.error?.code === "SESSION_NOT_FOUND") {
+                LAST_ERROR.value = null;
+                return false;
+            }
+            if (response.status === 2) {
+                IS_LOCKED.value = true;
+                reset();
+                return false;
+            }
+            acceptResponse(response, "resume-session");
+            return false;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function refreshSessionMetadata() {
@@ -647,7 +861,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
         const response = await GET("/api/auth/auth");
-        if (response === false) return;
+        if (response === false) return false;
 
         if (response.status == 0) {
             IS_LOCKED.value = false;
@@ -657,6 +871,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
+        return response.status == 0;
     }
 
     async function login(e) {
@@ -666,7 +881,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const response = await POST("/api/auth/login", {
             password: e.target.value,
         });
-        if (response === false) return;
+        if (response === false) return false;
 
         if (response.status == 0) {
             IS_LOCKED.value = false;
@@ -680,6 +895,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
+        return response.status == 0;
     }
 
     async function fetch_config() {
@@ -702,6 +918,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             VERSION.value = response.data.VERSION;
             IS_OFFICIAL_BUILD.value = response.data.IsOfficialBuild;
             MAX_SOULS_LEVEL.value = response.data.MaxSoulsLevel;
+            MAX_SUITABILITY_LEVEL.value = response.data.MaxSuitabilityLevel ?? 10;
         } else if (response.status == 2) {
             alert("Unauthorized Access, Please Login. ");
             IS_LOCKED.value = true;
@@ -877,7 +1094,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 PLAYER_MAP.value.forEach((player, playerUId) => {
                     refreshes.push(fetchPlayerPal(playerUId));
                 });
-                refreshes.push(fetchPlayerPal(PAL_BASE_WORKER_BTN.value));
+                refreshes.push(fetchPlayerPal(
+                    PAL_BASE_WORKER_BTN.value,
+                    SELECTED_BASE_DATA.value
+                ));
                 if (SELECTED_PLAYER_ID.value && SESSION_ID.value) {
                     refreshes.push(loadInventory(SELECTED_PLAYER_ID.value));
                     refreshes.push(loadPlayerMissions(SELECTED_PLAYER_ID.value));
@@ -891,6 +1111,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
             if (!IS_LOCKED.value) refreshes.push(fetchStaticData());
             await Promise.all(refreshes);
+            syncSelectedPalLocalization();
+            syncLastErrorLocalization();
         } else if (response.status == 2) {
             alert("Unauthorized Access, Please Login. ");
             IS_LOCKED.value = true;
@@ -965,16 +1187,32 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
+    function clearEditorSelection() {
+        BASE_PAL_BTN_CLK_FLAG.value = false;
+        SHOW_PLAYER_EDIT_FLAG.value = false;
+        SELECTED_PLAYER_ID.value = null;
+        SELECTED_PLAYER_DATA.value = null;
+        SELECTED_BASE_KEY.value = null;
+        SELECTED_BASE_DATA.value = null;
+        SELECTED_PAL_ID.value = null;
+        SELECTED_PAL_DATA.value = null;
+        PAL_MAP.value = new Map();
+        PLAYER_MISSIONS.value = {
+            missions: [],
+            summary: null,
+            warnings: [],
+            writable: false,
+            source: null,
+        };
+    }
+
     function reset() {
         LOADING_FLAG.value = false;
         HAS_WORKING_PAL_FLAG.value = false;
         SAVE_LOADED_FLAG.value = false;
-        BASE_PAL_BTN_CLK_FLAG.value = false;
-        SELECTED_PAL_ID.value = null;
-        SELECTED_PLAYER_ID.value = null;
+        clearEditorSelection();
         BULK_PLAYER_IDS.value = [];
         BULK_PAL_IDS.value = [];
-        SELECTED_PLAYER_DATA.value = null;
         SESSION_ID.value = null;
         SESSION_REVISION.value = 0;
         PENDING_CHANGE_COUNT.value = 0;
@@ -1005,6 +1243,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
         BASE_PAL_MAP.value = new Map();
         PLAYER_MAP.value = new Map();
+        GUILD_TREE.value = [];
         PAL_PASSIVE_SELECTED_ITEM.value = "";
         PAL_ACTIVE_SELECTED_ITEM.value = "";
 
@@ -1013,12 +1252,6 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_QUERY_ACTIVE.value = false;
         SHOW_UNREF_PAL_FLAG.value = false;
         SHOW_OOB_PAL_FLAG.value = true;
-        SHOW_PLAYER_EDIT_FLAG.value = false;
-
-        // display data
-        SELECTED_PAL_DATA.value = new Map();
-        PAL_MAP.value = new Map();
-
         PLAYER_MAP.value.clear();
     }
 
@@ -1079,11 +1312,62 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return getTranslation(I18nKey, translationKey, args);
     }
 
+    function getNpcWeaponDisplayName(weapon) {
+        const internalName = String(weapon || "-");
+        const translationKey = NPC_WEAPON_TRANSLATION_KEYS[internalName];
+        if (!translationKey) return internalName;
+        const localizedName = getTranslatedText(translationKey);
+        if (localizedName === internalName) return internalName;
+        return getTranslatedText(
+            "PalEditor_NpcWeapon_LocalizedOption",
+            [localizedName, internalName]
+        );
+    }
+
     function getMappedTranslation(value, translationKeys, unknownKey) {
         const translationKey = translationKeys[value];
         return translationKey
             ? getTranslatedText(translationKey)
             : getTranslatedText(unknownKey, [value]);
+    }
+
+    function syncSelectedPalLocalization() {
+        const selected = SELECTED_PAL_DATA.value;
+        if (!selected || !SELECTED_PAL_ID.value) return;
+
+        const refreshed = PAL_MAP.value.get(SELECTED_PAL_ID.value);
+        const previousI18nName = selected.I18nName;
+        if (
+            refreshed
+            && (!selected.NickName || selected.NickName === previousI18nName)
+        ) {
+            selected.NickName = refreshed.NickName;
+        }
+
+        const localizedName = PAL_STATIC_DATA.value[selected.DataAccessKey]?.I18n
+            || refreshed?.I18nName;
+        if (!localizedName) return;
+
+        selected.I18nName = localizedName;
+        if (
+            refreshed
+            && refreshed.DataAccessKey === selected.DataAccessKey
+            && refreshed.NickName === selected.NickName
+        ) {
+            selected.DisplayName = refreshed.DisplayName;
+            return;
+        }
+
+        const variantPrefix = `${selected.IsRarePal ? "✨" : ""}${selected.IsBOSS ? "👑" : ""}${selected.IsTower ? "🗼" : ""}`;
+        const nicknameSuffix = selected.NickName ? ` (${selected.NickName})` : "";
+        selected.DisplayName = `${variantPrefix}${localizedName}${nicknameSuffix}`;
+    }
+
+    function syncLastErrorLocalization() {
+        const messageKey = LAST_ERROR.value?.messageKey;
+        if (messageKey) {
+            LAST_ERROR.value.message = getTranslatedText(messageKey);
+        }
     }
 
     async function updatePlayer(e) {
@@ -1143,7 +1427,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             `/api/player/${encodeURIComponent(SELECTED_PLAYER_ID.value)}/commands`,
             payload
         );
-        if (response === false) return;
+        if (response === false) return false;
 
         if (acceptResponse(response, "update-player", { command: true })) {
             await loadPlayer(SELECTED_PLAYER_ID.value);
@@ -1155,6 +1439,41 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             alert(`- updatePlayer - Error occured: ${response.msg}`);
         }
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
+        return response.status == 0;
+    }
+
+    async function updatePlayerAttributes(attribute = null) {
+        if (!SELECTED_PLAYER_ID.value || !SELECTED_PLAYER_DATA.value) return false;
+        const attributes = attribute?.key
+            ? [attribute]
+            : (SELECTED_PLAYER_DATA.value.PlayerAttributes || []);
+        const values = Object.fromEntries(
+            attributes.map(item => [
+                item.key,
+                Number(item.rank),
+            ])
+        );
+        if (!Object.keys(values).length) return false;
+        const noSetLoadingFlag = LOADING_FLAG.value;
+        if (!noSetLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(SELECTED_PLAYER_ID.value)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_player_attributes",
+                    values,
+                }
+            );
+            if (!acceptResponse(response, "update-player-attributes", { command: true })) {
+                return false;
+            }
+            await loadPlayer(SELECTED_PLAYER_ID.value);
+            return true;
+        } finally {
+            if (!noSetLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function discoverXgpSources(path = XGP_WGS_PATH.value) {
@@ -1168,6 +1487,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     context: "discover-xgp-sources",
                     code: "WGS_NOT_FOUND",
                     message: getTranslatedText("Entry_Xgp_PathRequired"),
+                    messageKey: "Entry_Xgp_PathRequired",
                     details: {},
                     retryable: true,
                 };
@@ -1182,6 +1502,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     context: "discover-xgp-sources",
                     code: "WGS_NOT_FOUND",
                     message: getTranslatedText("WGS_NOT_FOUND"),
+                    messageKey: "WGS_NOT_FOUND",
                     details: {},
                     retryable: true,
                 };
@@ -1307,7 +1628,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 ...command,
             }
         );
-        if (response === false) return;
+        if (response === false) return false;
         if (acceptResponse(response, "inventory-command", { command: true })) {
             await loadInventory();
         } else if (response.status == 2) {
@@ -1492,13 +1813,42 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return true;
     }
 
+    async function maxSelectedPal() {
+        if (!SELECTED_PAL_ID.value || !SELECTED_PAL_DATA.value) return false;
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const palId = SELECTED_PAL_ID.value;
+            const response = await POST(
+                `/api/pal/${encodeURIComponent(palId)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "max_pal",
+                    unrestricted: !HIDE_INVALID_OPTIONS.value,
+                },
+            );
+            if (!acceptResponse(response, "max-pal", { command: true })) return false;
+            await selectPal(palId, true);
+            UPDATE_PAL_RESELECT_CTR.value++;
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
     async function executeBatchOperations(
         operations,
-        { confirmBeforePreview = false, trackLoading = false } = {}
+        {
+            confirmBeforePreview = false,
+            trackLoading = false,
+            confirmationKey = "Confirm_ApplyAtomicBatch",
+            confirmationArgs = null,
+        } = {}
     ) {
         if (confirmBeforePreview && !window.confirm(getTranslatedText(
-            "Confirm_ApplyAtomicBatch",
-            [operations.length]
+            confirmationKey,
+            confirmationArgs || [operations.length]
         ))) return false;
 
         const ownsLoadingFlag = trackLoading && !LOADING_FLAG.value;
@@ -1513,8 +1863,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             const preview = await POST("/api/batch/preview", payload);
             if (!acceptResponse(preview, "preview-batch")) return false;
             if (!confirmBeforePreview && !window.confirm(getTranslatedText(
-                "Confirm_ApplyAtomicBatch",
-                [preview.data.impact.operation_count]
+                confirmationKey,
+                confirmationArgs || [preview.data.impact.operation_count]
             ))) return false;
             const response = await POST("/api/batch/commands", {
                 ...payload,
@@ -1553,11 +1903,106 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             pal_id: palId,
         }));
         if (!operations.length) return false;
-        const succeeded = await executeBatchOperations(operations);
+        const statusCounts = { valid: 0, invalid: 0, unknown: 0 };
+        for (const [, pal] of lockedPals) {
+            const status = pal.ExpeditionAssignmentStatus;
+            statusCounts[statusCounts[status] === undefined ? "unknown" : status] += 1;
+        }
+        const succeeded = await executeBatchOperations(operations, {
+            confirmBeforePreview: true,
+            trackLoading: true,
+            confirmationKey: "Confirm_UnlockExpeditionPals",
+            confirmationArgs: [
+                lockedPals.length,
+                statusCounts.valid,
+                statusCounts.invalid,
+                statusCounts.unknown,
+            ],
+        });
         if (succeeded) {
-            for (const [, pal] of lockedPals) pal.IsExpeditionPal = false;
+            for (const [, pal] of lockedPals) {
+                pal.IsExpeditionPal = false;
+                pal.ExpeditionInstanceId = null;
+                pal.ExpeditionAssignmentStatus = null;
+            }
         }
         return succeeded;
+    }
+
+    async function completeActiveExpeditions() {
+        if (!COMPLETABLE_EXPEDITION_COUNT.value || !SESSION_ID.value) return false;
+        if (!window.confirm(getTranslatedText("Confirm_CompleteActiveExpeditions"))) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/expeditions/commands", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command: "complete_active_expeditions",
+            });
+            if (!acceptResponse(response, "complete-active-expeditions", { command: true })) {
+                return false;
+            }
+            const completedIds = new Set(
+                (response.data.value?.expedition_ids || [])
+                    .map(value => String(value).toLowerCase())
+            );
+            for (const pal of PAL_MAP.value.values()) {
+                if (completedIds.has(String(pal.ExpeditionInstanceId || "").toLowerCase())) {
+                    pal.ExpeditionCanComplete = false;
+                }
+            }
+            if (
+                SELECTED_PAL_DATA.value?.ExpeditionInstanceId
+                && completedIds.has(
+                    String(SELECTED_PAL_DATA.value.ExpeditionInstanceId).toLowerCase()
+                )
+            ) {
+                SELECTED_PAL_DATA.value.ExpeditionCanComplete = false;
+            }
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function cancelSelectedPalExpedition() {
+        const pal = SELECTED_PAL_DATA.value;
+        if (!SELECTED_PAL_ID.value || !pal?.IsExpeditionPal) return false;
+
+        const confirmationKey = {
+            valid: "Confirm_CancelValidExpedition",
+            invalid: "Confirm_CancelInvalidExpedition",
+            unknown: "Confirm_CancelUnknownExpedition",
+        }[pal.ExpeditionAssignmentStatus] || "Confirm_CancelUnknownExpedition";
+        if (!window.confirm(getTranslatedText(
+            confirmationKey,
+            [pal.ExpeditionInstanceId || "-"]
+        ))) return false;
+
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/pal/${encodeURIComponent(SELECTED_PAL_ID.value)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "unlock_pal_expedition",
+                }
+            );
+            if (!acceptResponse(response, "unlock-pal-expedition", { command: true })) {
+                return false;
+            }
+            pal.IsExpeditionPal = false;
+            pal.ExpeditionInstanceId = null;
+            pal.ExpeditionAssignmentStatus = null;
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function loadPlayer(playerUId, updatePal = false) {
@@ -1611,11 +2056,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
         if (response.status == 0) {
             HAS_WORKING_PAL_FLAG.value = Boolean(response.data.has_working_pal);
+            const next = new Map();
             for (let player of response.data.players || []) {
                 let p = new Player(player);
-                PLAYER_MAP.value.set(p.InstanceId, p);
+                next.set(p.InstanceId, p);
                 // console.log(`Found player: ${p.NickName} - ${p.InstanceId}`);
             }
+            PLAYER_MAP.value = next;
+            GUILD_TREE.value = response.data.guilds || [];
 
             if (PLAYER_MAP.value.size <= 0 && !HAS_WORKING_PAL_FLAG) {
                 alert("No Player Found in the Gamesave");
@@ -1653,6 +2101,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
         }
         PLAYER_MAP.value = next;
+        GUILD_TREE.value = response.data.guilds || [];
         if (
             SELECTED_PLAYER_ID.value &&
             !PLAYER_MAP.value.has(SELECTED_PLAYER_ID.value)
@@ -1665,6 +2114,35 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SHOW_PLAYER_EDIT_FLAG.value = false;
         }
         return true;
+    }
+
+    async function updateGuildName(guildId, name) {
+        if (!SESSION_ID.value || !guildId) return false;
+        const normalizedName = typeof name === "string" ? name.trim() : "";
+        if (!normalizedName || normalizedName.length > 24) return false;
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/save/guilds/${encodeURIComponent(guildId)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_guild_name",
+                    name: normalizedName,
+                }
+            );
+            if (!acceptResponse(response, "update-guild-name", { command: true })) {
+                return false;
+            }
+            const updated = GUILD_TREE.value.find(
+                guild => String(guild.guild_id) === String(guildId)
+            );
+            if (updated) updated.name = response.data.value?.name ?? normalizedName;
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
     }
 
     async function queryPals(filters = {}) {
@@ -1700,6 +2178,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 context: "load-save",
                 code: "WGS_WORLD_AMBIGUOUS",
                 message: getTranslatedText("Entry_Xgp_SelectRequired"),
+                messageKey: "Entry_Xgp_SelectRequired",
                 details: {},
                 retryable: true,
             };
@@ -1712,31 +2191,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 ? { sourceId: requestedSourceId }
                 : { ReadPath: PAL_GAME_SAVE_PATH.value }
         );
-        if (response === false) return;
+        if (response === false) {
+            if (!no_set_loading_flag) LOADING_FLAG.value = false;
+            return false;
+        }
 
+        let succeeded = false;
         if (response.status == 0) {
-            SESSION_ID.value = response.data.session.session_id;
-            SESSION_REVISION.value = response.data.session.revision;
-            PENDING_CHANGE_COUNT.value = response.data.session.pending_change_count;
-            SAVE_COMPATIBILITY.value = response.data.compatibility;
-            SAVE_PLATFORM.value = response.data.session.platform || "steam";
-            SOURCE_ID.value = response.data.session.sourceId || null;
-            SOURCE_DISPLAY_NAME.value = response.data.session.sourceDisplayName || "";
-            SAVE_CAPABILITIES.value = response.data.session.saveCapabilities || {};
-            LAST_ERROR.value = null;
-            await loadPlayers();
-            await fetchStaticData();
-
-            SAVE_LOADED_FLAG.value = true;
-            if (SAVE_PLATFORM.value === "steam") {
-                localStorage.setItem(
-                    "PAL_GAME_SAVE_PATH",
-                    PAL_GAME_SAVE_PATH.value
-                );
-                PAL_WRITE_BACK_PATH.value = PAL_GAME_SAVE_PATH.value;
-            } else {
-                PAL_WRITE_BACK_PATH.value = SOURCE_DISPLAY_NAME.value;
-            }
+            succeeded = await loadSessionState(response.data);
         } else if (response.status == 2) {
             alert("Unauthorized Access, Please Login. ");
             IS_LOCKED.value = true;
@@ -1745,6 +2207,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             alert(`- loadSave - Error occured: ${response.msg}`);
         }
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
+        return succeeded;
     }
 
     async function writeSave() {
@@ -1816,12 +2279,19 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
     }
 
-    async function fetchPlayerPal(playerUId) {
+    async function fetchPlayerPal(playerUId, baseScope = null) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
-        const response = await POST("/api/player/player_pals", {
+        const payload = {
             PlayerUId: playerUId,
-        });
+        };
+        if (playerUId == PAL_BASE_WORKER_BTN.value && baseScope) {
+            if (baseScope.base_id) payload.BaseId = baseScope.base_id;
+            if (baseScope.guild_id) payload.GuildId = baseScope.guild_id;
+            if (baseScope.guild_kind == "no_guild") payload.NoGuild = true;
+            if (baseScope.kind == "unmatched") payload.UnmatchedBase = true;
+        }
+        const response = await POST("/api/player/player_pals", payload);
         if (response === false) return;
 
         if (response.status == 0) {
@@ -1882,13 +2352,19 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
-    async function selectPlayer(playerUId, manual = false) {
+    async function selectPlayer(
+        playerUId,
+        manual = false,
+        selectDefaultPal = false,
+    ) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
         // clear selected playerId
         SELECTED_PLAYER_ID.value = null;
         SELECTED_PLAYER_DATA.value = null;
+        SELECTED_BASE_KEY.value = null;
+        SELECTED_BASE_DATA.value = null;
         BASE_PAL_BTN_CLK_FLAG.value = false;
         SHOW_PLAYER_EDIT_FLAG.value = false;
 
@@ -1924,6 +2400,41 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             SHOW_PLAYER_EDIT_FLAG.value = true;
             SELECTED_PLAYER_DATA.value = PLAYER_MAP.value.get(playerUId);
             await loadPlayerMissions(playerUId);
+        }
+
+        if (selectDefaultPal) {
+            const firstPalId = getDefaultPalId();
+            if (firstPalId) await selectPal(firstPalId);
+        }
+
+        if (!no_set_loading_flag) LOADING_FLAG.value = false;
+    }
+
+    async function selectBase(guild, base, selectDefaultPal = true) {
+        let no_set_loading_flag = LOADING_FLAG.value;
+        if (!no_set_loading_flag) LOADING_FLAG.value = true;
+
+        SELECTED_PLAYER_ID.value = null;
+        SELECTED_PLAYER_DATA.value = null;
+        SHOW_PLAYER_EDIT_FLAG.value = false;
+        SELECTED_PAL_ID.value = null;
+        SELECTED_PAL_DATA.value = null;
+        BASE_PAL_BTN_CLK_FLAG.value = true;
+
+        const scope = {
+            ...base,
+            guild_id: guild.guild_id,
+            guild_kind: guild.kind,
+        };
+        SELECTED_BASE_KEY.value = base.node_id;
+        SELECTED_BASE_DATA.value = scope;
+        BASE_PAL_MAP.value.clear();
+        await fetchPlayerPal(PAL_BASE_WORKER_BTN.value, scope);
+        PAL_MAP.value = BASE_PAL_MAP.value;
+
+        if (selectDefaultPal) {
+            const firstPalId = getDefaultPalId();
+            if (firstPalId) await selectPal(firstPalId);
         }
 
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
@@ -2069,9 +2580,21 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 command: "update_pal_progression",
                 values: { heal: true },
             };
+        } else if (key === "set_AllEnhancements") {
+            payload = {
+                ...base,
+                command: "update_pal_enhancement",
+                values: Object.fromEntries(
+                    Object.entries(value.values || {}).map(([name, level]) => [
+                        name,
+                        Number(level),
+                    ]),
+                ),
+            };
         } else if ([
             "Talent_HP", "Talent_Melee", "Talent_Shot", "Talent_Defense",
             "Rank_HP", "Rank_Attack", "Rank_Defence", "Rank_CraftSpeed", "Rank",
+            "IsAwakened",
         ].includes(key)) {
             const field = {
                 Talent_HP: "iv_hp",
@@ -2083,20 +2606,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 Rank_Defence: "soul_defense",
                 Rank_CraftSpeed: "soul_craft_speed",
                 Rank: "condensation",
+                IsAwakened: "awakening",
             }[key];
             payload = {
                 ...base,
                 command: "update_pal_enhancement",
-                values: { [field]: Number(value) },
+                values: { [field]: key === "IsAwakened" ? Boolean(value) : Number(value) },
             };
-        } else if (key === "set_Suitability") {
+        } else if (["set_Suitability", "set_AllSuitabilities"].includes(key)) {
             payload = {
                 ...base,
                 command: "update_pal_enhancement",
-                work_suitability: { [value.name]: Number(value.level) },
+                work_suitability: key === "set_Suitability"
+                    ? { [value.name]: Number(value.level) }
+                    : Object.fromEntries(
+                        Object.entries(value).map(([name, level]) => [name, Number(level)]),
+                    ),
             };
         } else if ([
-            "add_PassiveSkillList", "pop_PassiveSkillList", "add_EquipWaza",
+            "add_PassiveSkillList", "pop_PassiveSkillList", "replace_PassiveSkillList", "add_EquipWaza",
             "pop_EquipWaza", "add_MasteredWaza", "pop_MasteredWaza",
         ].includes(key)) {
             const active = [...(SELECTED_PAL_DATA.value.EquipWaza || [])];
@@ -2107,6 +2635,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 const index = passive.indexOf(value);
                 if (index >= 0) passive.splice(index, 1);
             }
+            if (key === "replace_PassiveSkillList") passive.splice(0, passive.length, ...value);
             if (key === "add_EquipWaza") {
                 if (!active.includes(value)) active.push(value);
                 if (!mastered.includes(value)) mastered.push(value);
@@ -2265,6 +2794,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return false;
     }
 
+    function getDefaultPalId() {
+        const visiblePals = Array.from(PAL_MAP.value.values()).filter(
+            (pal) => !isFilteredPal(pal)
+        );
+        return sortPalList(visiblePals, PAL_LIST_SORT_MODES.CONTAINER)[0]?.InstanceId;
+    }
+
     function getNextElement(map, currKey) {
         let found = false;
         let firstElement = null;
@@ -2348,7 +2884,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return response.status === 0;
     }
 
-    async function addPal(speciesId = "SheepBall", containerType = "AUTO") {
+    async function addPal(speciesId = "SheepBall", containerType = "AUTO", options = {}) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
         const PlayerUId = GET_PAL_OWNER_API_ID();
@@ -2363,6 +2899,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             player_id: PlayerUId,
             species_id: speciesId,
             container_type: containerType,
+            passive: Array.isArray(options.passive) ? [...options.passive] : null,
+            max_pal: Boolean(options.maxPal),
+            max_work: Boolean(options.maxWork),
+            unrestricted: !HIDE_INVALID_OPTIONS.value,
         });
 
         if (response === false) return;
@@ -2491,10 +3031,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_ACTIVE_SELECTED_ITEM,
         PAL_BASE_WORKER_BTN,
         PLAYER_MAP,
+        GUILD_TREE,
         PAL_MAP,
         EXPEDITION_PAL_COUNT,
+        COMPLETABLE_EXPEDITION_COUNT,
         SELECTED_PLAYER_ID,
         SELECTED_PLAYER_DATA,
+        SELECTED_BASE_KEY,
+        SELECTED_BASE_DATA,
         SELECTED_PAL_ID,
         SELECTED_PAL_DATA,
         BULK_PLAYER_IDS,
@@ -2557,6 +3101,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         TECH_LV_DICT,
 
         getTranslatedText,
+        getNpcWeaponDisplayName,
 
         isElementInViewport,
         isFilteredPal,
@@ -2567,16 +3112,21 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         displayRating,
 
         reset,
+        clearEditorSelection,
         returnToMain,
         updateI18n,
         loadSave,
+        resumeCurrentSession,
         queryPlayers,
+        updateGuildName,
         queryPals,
         clearPalQuery,
         selectPlayer,
+        selectBase,
         selectPal,
         updatePal,
         updatePlayer,
+        updatePlayerAttributes,
         updateInventoryItem,
         putInventoryItem,
         clearInventoryItem,
@@ -2593,9 +3143,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         updateDynamicItemAttributes,
         exportPreset,
         applyPreset,
+        maxSelectedPal,
         executeBatchOperations,
         healAllPals,
+        completeActiveExpeditions,
         unlockExpeditionPals,
+        cancelSelectedPalExpedition,
         refreshSessionMetadata,
         writeSave,
         exportSteamCopy,

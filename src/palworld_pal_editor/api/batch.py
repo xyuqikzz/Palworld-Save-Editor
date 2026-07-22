@@ -173,7 +173,10 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
             elif resource == "structural_pal":
                 common = {"resource", "command"}
                 fields = {
-                    "add_pal": {"player_id", "species_id", "container_type", "target_slot"},
+                    "add_pal": {
+                        "player_id", "species_id", "container_type", "target_slot",
+                        "passive", "max_pal", "max_work", "unrestricted",
+                    },
                     "clone_pal": {"source_pal_id", "target_player_id", "container_type", "target_slot"},
                     "move_pal": {"pal_id", "target_player_id", "container_type", "target_slot"},
                     "delete_pal": {"pal_id", "delete_impact_token"},
@@ -186,6 +189,10 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                         **base, player_id=raw.get("player_id"),
                         species_id=raw.get("species_id"), container_type=container_type,
                         target_slot=raw.get("target_slot"),
+                        passive=raw.get("passive"),
+                        max_pal=raw.get("max_pal", False),
+                        max_work=raw.get("max_work", False),
+                        unrestricted=raw.get("unrestricted", False),
                     )
                 elif command == "clone_pal":
                     value = ClonePal(

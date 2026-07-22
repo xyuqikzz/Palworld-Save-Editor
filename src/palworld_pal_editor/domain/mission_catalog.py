@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
-from pathlib import Path
 from typing import Any
+
+from palworld_pal_editor.config import ASSETS_PATH
 
 
 class MissionCatalog:
@@ -21,12 +22,7 @@ class MissionCatalog:
     @classmethod
     def load_default(cls) -> "MissionCatalog":
         if cls._default is None:
-            path = (
-                Path(__file__).resolve().parents[1]
-                / "assets"
-                / "data"
-                / "mission_data.json"
-            )
+            path = ASSETS_PATH / "assets" / "data" / "mission_data.json"
             cls._default = cls(json.loads(path.read_text(encoding="utf-8")))
         return cls._default
 

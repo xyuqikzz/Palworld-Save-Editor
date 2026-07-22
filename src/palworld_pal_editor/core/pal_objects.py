@@ -96,6 +96,18 @@ class StatusName():
     CarryWeight = "所持重量"
     CaptureRate = "捕獲率"
     WorkSpeed = "作業速度"
+    HungerReduction = "空腹率低減"
+    SwimSpeed = "泳ぎ速度"
+    FoodDecayReduction = "食料腐敗低減"
+    JumpPower = "ジャンプ力"
+    GliderSpeed = "滑空速度"
+    ClimbSpeed = "崖登り速度"
+    StatusAilmentResist = "状態異常耐性"
+    ExperienceBonus = "経験値ボーナス"
+    RainbowPassiveRate = "虹パッシブ率"
+    MoveSpeed = "移動速度アップ"
+    SphereHoming = "パルスフィアホーミング"
+    StaminaReduction = "スタミナ消費軽減"
 
 class PalObjects:
     EMPTY_UUID = toUUID("00000000-0000-0000-0000-000000000000")

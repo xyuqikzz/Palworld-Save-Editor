@@ -2,6 +2,8 @@
 import { usePalEditorStore } from '@/stores/paleditor'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
+import PassivePresetDialog from '@/components/modules/PassivePresetDialog.vue'
+import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
 import PalSkillPicker from '@/components/modules/PalSkillPicker.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
 import VariantBadge from '@/components/modules/VariantBadge.vue'
@@ -9,13 +11,8 @@ import { computed, ref } from 'vue'
 const palStore = usePalEditorStore()
 const cloneContainer = ref('AUTO')
 const presetInput = ref(null)
-
-const passiveRankLevel = rating => Math.min(Math.max(Math.abs(Number(rating) || 1), 1), 5)
-const passiveRankSrc = rating => `/images/Pal/Texture/UI/Main_Menu/T_icon_skillstatus_rank_arrow_0${passiveRankLevel(rating)}.webp`
-const passiveRatingClass = rating => {
-  const value = Number(rating) || 0
-  return value < 0 ? 'is-negative' : `is-rank-${passiveRankLevel(value)}`
-}
+const passivePresetDialog = ref(null)
+const passivePresets = ref([])
 
 function saveJson(preset) {
   const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' })
@@ -80,6 +77,38 @@ const isMinSuit = key => {
   return baseLevel === palStore.SELECTED_PAL_DATA.Suitabilities[key] - condensationBonus
 };
 
+const areAllEnhancementsMax = computed(() => (
+  palStore.SELECTED_PAL_DATA?.areAllEnhancementsMax?.() ?? true
+))
+
+const maxableSuitabilityKeys = computed(() => {
+  const suitabilities = palStore.SELECTED_PAL_DATA?.Suitabilities || {}
+  const baseSuitabilities = palStore.PAL_STATIC_DATA[palStore.SELECTED_PAL_DATA?.DataAccessKey]?.Suitabilities || {}
+  return Object.keys(suitabilities).filter(key => (
+    !palStore.HIDE_INVALID_OPTIONS || Number(baseSuitabilities[key] || 0) > 0
+  ))
+})
+
+const areAllSuitabilitiesMax = computed(() => (
+  maxableSuitabilityKeys.value.length === 0
+  || maxableSuitabilityKeys.value.every(key => isMaxSuit(key))
+))
+
+const applyPassivePreset = skills => {
+  palStore.SELECTED_PAL_DATA.replacePassiveSkills(skills)
+}
+
+const pinnedPassivePresets = computed(() => passivePresets.value.filter(preset => preset.pinned))
+const updatePassivePresets = presets => {
+  passivePresets.value = presets
+}
+const passivePresetIsAvailable = preset => preset.skills.every(skill => palStore.PASSIVE_SKILLS[skill])
+const passivePresetIsActive = preset => {
+  const equipped = palStore.SELECTED_PAL_DATA?.PassiveSkillList || []
+  return equipped.length === preset.skills.length
+    && equipped.every((skill, index) => skill === preset.skills[index])
+}
+
 const isMaxLv = () => {
   return palStore.SELECTED_PAL_DATA.Level >= (palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_LEVEL : palStore.MAX_INVALID_LEVEL);
 };
@@ -119,6 +148,10 @@ const suitabilityIconSrc = key => {
           </div>
         </div>
         <div class="editor-card-actions">
+          <button type="button" class="max-pal-button" @click="palStore.maxSelectedPal"
+            :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_MaxPal_Tooltip')">
+            {{ palStore.getTranslatedText("PalEditor_MaxPal") }}
+          </button>
           <button id="dump_btn" @click="palStore.dumpPalData" :disabled="palStore.LOADING_FLAG">
             {{ palStore.getTranslatedText("Editor_Btn_Export_Data") }}
           </button>
@@ -136,6 +169,11 @@ const suitabilityIconSrc = key => {
             {{ palStore.getTranslatedText("Editor_Btn_Dupe_Pal") }}
           </button>
           <span class="action-separator" aria-hidden="true"></span>
+          <button v-if="palStore.SELECTED_PAL_DATA.IsExpeditionPal" class="cancel-expedition"
+            @click="palStore.cancelSelectedPalExpedition" :disabled="palStore.LOADING_FLAG"
+            :title="palStore.getTranslatedText('PalEditor_CancelExpedition_Tooltip')">
+            {{ palStore.getTranslatedText("PalEditor_CancelExpedition") }}
+          </button>
           <button id="del_btn" @click="palStore.delPal" :disabled="palStore.LOADING_FLAG">
             {{ palStore.getTranslatedText("Editor_Btn_Delete_Pal") }}
           </button>
@@ -177,9 +215,19 @@ const suitabilityIconSrc = key => {
           <button class="edit" @click="palStore.updatePal" name="NickName" :value="palStore.SELECTED_PAL_DATA.NickName"
             :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('TopBar_Btn_Save')"><AppIcon name="check" /></button>
         </div>
+        <div v-if="palStore.SELECTED_PAL_DATA.IsHuman" class="editField identity-field npc-weapon-field">
+          <p class="const">
+            {{ palStore.getTranslatedText("PalEditor_NpcWeapon") }}
+          </p>
+          <p class="const npc-weapon-value">
+            {{ palStore.getNpcWeaponDisplayName(palStore.SELECTED_PAL_DATA.NpcDefaultWeapon) }}
+          </p>
+        </div>
         <div class="flex-h attribute-row">
           <div class="editField">
-            <p class="const">{{ palStore.getTranslatedText("Editor_Friendship_Level") }} {{ palStore.SELECTED_PAL_DATA.FriendshipLevel }}</p>
+            <p class="const" :title="palStore.getTranslatedText('PalEditor_TrustBonus_Tooltip')">
+              {{ palStore.getTranslatedText("Editor_Friendship_Level") }} {{ palStore.SELECTED_PAL_DATA.FriendshipLevel }}
+            </p>
             <button class="edit" @click="palStore.SELECTED_PAL_DATA.friendshipLevelDown" name="FriendshipLevel"
               :disabled="palStore.LOADING_FLAG || isMinFriendshipLv()" :title="palStore.getTranslatedText('Common_Decrease')"><AppIcon name="chevron-down" /></button>
             <button class="edit" @click="palStore.SELECTED_PAL_DATA.friendshipLevelUp" name="FriendshipLevel"
@@ -223,6 +271,25 @@ const suitabilityIconSrc = key => {
               v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_RareVariant')">{{ palStore.getTranslatedText('Variant_Rare') }}</button>
           </div>
         </div>
+        <div class="flex-h attribute-row" v-if="!palStore.SELECTED_PAL_DATA.IsHuman">
+          <div class="editField awakening-field">
+            <p class="const">
+              {{ palStore.getTranslatedText("Editor_Awakening") }}:
+              {{ palStore.getTranslatedText(palStore.SELECTED_PAL_DATA.IsAwakened
+                ? "Editor_Awakening_Awakened"
+                : "Editor_Awakening_NotAwakened") }}
+            </p>
+            <button class="edit awakening-toggle"
+            :aria-pressed="palStore.SELECTED_PAL_DATA.IsAwakened"
+            @click="palStore.SELECTED_PAL_DATA.swapAwakening" name="IsAwakened"
+            :disabled="palStore.LOADING_FLAG"
+            :title="palStore.getTranslatedText(palStore.SELECTED_PAL_DATA.IsAwakened
+              ? 'Editor_Awakening_Disable'
+              : 'Editor_Awakening_Enable')">
+              <AppIcon name="refresh" />
+            </button>
+          </div>
+        </div>
         <div class="metadata-grid">
           <p class="const meta-field">
             <span>{{ palStore.getTranslatedText("Editor_Pal_CharacterID") }}</span>
@@ -252,13 +319,14 @@ const suitabilityIconSrc = key => {
             <strong>{{ palStore.SELECTED_PAL_DATA.OwnerName || palStore.getTranslatedText("Editor_Pal_No_Owner") }}</strong>
           </p>
         </div>
-        <div class="palInfo">
-          <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_HP") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedMaxHP / 1000 }}</strong></div>
-          <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_ATK") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedAttack }}</strong></div>
-          <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_DEF") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedDefense }}</strong></div>
-          <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_WorkSpeed") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedCraftSpeed }}</strong></div>
-        </div>
-
+        <section class="estimated-group">
+          <div class="palInfo">
+            <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_HP") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedMaxHP / 1000 }}</strong></div>
+            <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_ATK") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedAttack }}</strong></div>
+            <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_DEF") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedDefense }}</strong></div>
+            <div class="metric"><span>{{ palStore.getTranslatedText("Editor_Estimated_WorkSpeed") }}</span><strong>{{ palStore.SELECTED_PAL_DATA.ComputedCraftSpeed }}</strong></div>
+          </div>
+        </section>
         <div class="editField" v-if="palStore.SELECTED_PAL_DATA.HasWorkerSick">
           <button class="edit text" @click="palStore.updatePal" name="HasWorkerSick" :disabled="palStore.LOADING_FLAG">
             {{ palStore.getTranslatedText("Editor_Btn_Heal_Pal") }}
@@ -272,7 +340,13 @@ const suitabilityIconSrc = key => {
       </div>
     </div>
     <div class="EditorItem flex-v item left statsPanel">
-      <section class="stat-group">
+      <button type="button" class="edit stats-max-all"
+        :disabled="palStore.LOADING_FLAG || areAllEnhancementsMax"
+        :title="palStore.getTranslatedText('PalEditor_MaxAllEnhancements')"
+        @click="palStore.SELECTED_PAL_DATA.maxAllEnhancements">
+        {{ palStore.getTranslatedText('Common_Max') }}
+      </button>
+      <section class="stat-group stat-group--iv">
         <p class="cat">
           {{ palStore.getTranslatedText("Editor_IV") }}
         </p>
@@ -314,7 +388,7 @@ const suitabilityIconSrc = key => {
           @mouseup="palStore.updatePal" @touchend="palStore.updatePal">
       </div>
       </section>
-      <section class="stat-group">
+      <section class="stat-group stat-group--souls">
         <p class="cat">
           {{ palStore.getTranslatedText("Editor_Souls_Upgrade") }}
         </p>
@@ -371,13 +445,17 @@ const suitabilityIconSrc = key => {
           @touchend="palStore.updatePal">
       </div>
       </section>
-    </div>
-    <div class="EditorItem flex-v item left skillPanel suitabilityPanel"
-      v-if="palStore.PAL_STATIC_DATA[palStore.SELECTED_PAL_DATA.DataAccessKey]?.Suitabilities">
-      <p class="cat">
-        {{ palStore.getTranslatedText("Editor_Suitabilities") }}
-      </p>
-      <div class="flex-h">
+      <section class="stat-group stat-group--suitabilities suitabilityPanel"
+        v-if="palStore.PAL_STATIC_DATA[palStore.SELECTED_PAL_DATA.DataAccessKey]?.Suitabilities">
+        <header class="stat-group-header">
+          <p class="cat">{{ palStore.getTranslatedText("Editor_Suitabilities") }}</p>
+          <button type="button" class="edit suitability-max-all"
+            :disabled="palStore.LOADING_FLAG || areAllSuitabilitiesMax"
+            :title="palStore.getTranslatedText('PalEditor_MaxAllSuitabilities')"
+            @click="palStore.SELECTED_PAL_DATA.maxAllSuitabilities">
+            {{ palStore.getTranslatedText('Common_Max') }}
+          </button>
+        </header>
         <div class="editField skillList">
           <div v-for="(value, key) in palStore.SELECTED_PAL_DATA.Suitabilities"
             v-show="palStore.HIDE_INVALID_OPTIONS || value != 'EPalWorkSuitability::OilExtraction'">
@@ -389,32 +467,72 @@ const suitabilityIconSrc = key => {
               :disabled="palStore.LOADING_FLAG || isMinSuit(key)" :title="palStore.getTranslatedText('PalEditor_DecreaseSuitability')"><AppIcon name="chevron-down" /></button>
             <button class="edit" @click="palStore.SELECTED_PAL_DATA.suitUp" :name="key"
               :disabled="palStore.LOADING_FLAG || isMaxSuit(key)" :title="palStore.getTranslatedText('PalEditor_IncreaseSuitability')"><AppIcon name="chevron-up" /></button>
+            <button class="edit" @click="palStore.SELECTED_PAL_DATA.suitMax" :name="key"
+              :disabled="palStore.LOADING_FLAG || isMaxSuit(key)" :title="palStore.getTranslatedText('Common_SetMaximum')"><AppIcon name="chevrons-up" /></button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
     <div class="EditorItem item flex-v left skillPanel skillsPanel">
       <section class="skill-section passive-skill-section">
         <header class="skill-section-header">
           <h3>{{ palStore.getTranslatedText("Editor_Passive_Skills") }}</h3>
-          <PalSkillPicker
-            v-model="palStore.PAL_PASSIVE_SELECTED_ITEM"
-            kind="passive"
-            icon-only
-            :options="palStore.PASSIVE_SKILLS_LIST"
-            :selected-option="palStore.PASSIVE_SKILLS[palStore.PAL_PASSIVE_SELECTED_ITEM]"
-            :disabled="palStore.LOADING_FLAG || (palStore.HIDE_INVALID_OPTIONS && palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4)"
-            :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
-            :placeholder="palStore.getTranslatedText('Editor_Select_Passive')"
-            :title="palStore.getTranslatedText('Editor_Passive_Picker_Title')"
-            :search-placeholder="palStore.getTranslatedText('Editor_Passive_Search_Placeholder')"
-            :results-label="palStore.getTranslatedText('Editor_Passive_Results_Label')"
-            :empty-text="palStore.getTranslatedText('Editor_Passive_Empty')"
-            :close-label="palStore.getTranslatedText('Common_Close')"
-            :rating-label="palStore.getTranslatedText('Editor_Skill_Rating')"
-            @select="palStore.SELECTED_PAL_DATA.add_PassiveSkillList($event.InternalName)"
-          />
+          <div class="skill-section-actions">
+            <button type="button" class="passive-preset-trigger"
+              :disabled="palStore.LOADING_FLAG"
+              @click="passivePresetDialog?.open()">
+              {{ palStore.getTranslatedText('PalEditor_PassivePresets') }}
+            </button>
+            <PalSkillPicker
+              v-model="palStore.PAL_PASSIVE_SELECTED_ITEM"
+              kind="passive"
+              icon-only
+              :options="palStore.PASSIVE_SKILLS_LIST"
+              :selected-option="palStore.PASSIVE_SKILLS[palStore.PAL_PASSIVE_SELECTED_ITEM]"
+              :disabled="palStore.LOADING_FLAG || (palStore.HIDE_INVALID_OPTIONS && palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4)"
+              :show-internal-name="!palStore.HIDE_INVALID_OPTIONS"
+              :placeholder="palStore.getTranslatedText('Editor_Select_Passive')"
+              :title="palStore.getTranslatedText('Editor_Passive_Picker_Title')"
+              :search-placeholder="palStore.getTranslatedText('Editor_Passive_Search_Placeholder')"
+              :results-label="palStore.getTranslatedText('Editor_Passive_Results_Label')"
+              :empty-text="palStore.getTranslatedText('Editor_Passive_Empty')"
+              :close-label="palStore.getTranslatedText('Common_Close')"
+              :rating-label="palStore.getTranslatedText('Editor_Skill_Rating')"
+              @select="palStore.SELECTED_PAL_DATA.add_PassiveSkillList($event.InternalName)"
+            />
+          </div>
         </header>
+        <nav
+          v-if="pinnedPassivePresets.length"
+          class="passive-preset-quickbar"
+          :aria-label="palStore.getTranslatedText('PalEditor_PassivePreset_QuickBar')"
+        >
+          <span class="passive-preset-quickbar__label">
+            <AppIcon name="pin" :size="13" />
+            {{ palStore.getTranslatedText('PalEditor_PassivePreset_QuickBar') }}
+          </span>
+          <button
+            v-for="preset in pinnedPassivePresets"
+            :key="preset.id"
+            type="button"
+            :class="['passive-preset-quick-action', { 'is-active': passivePresetIsActive(preset) }]"
+            :disabled="palStore.LOADING_FLAG || !passivePresetIsAvailable(preset)"
+            :aria-pressed="passivePresetIsActive(preset)"
+            :title="passivePresetIsAvailable(preset)
+              ? palStore.getTranslatedText('PalEditor_PassivePreset_QuickApplyNamed', [preset.name])
+              : palStore.getTranslatedText('PalEditor_PassivePreset_Unavailable')"
+            @click="applyPassivePreset(preset.skills)"
+          >
+            <span class="passive-preset-quick-action__label">{{ preset.name }}</span>
+          </button>
+        </nav>
+        <PassivePresetDialog
+          ref="passivePresetDialog"
+          :options="palStore.PASSIVE_SKILLS_LIST"
+          :disabled="palStore.LOADING_FLAG"
+          @apply="applyPassivePreset"
+          @change="updatePassivePresets"
+        />
         <div class="skill-item-grid passive-skill-grid">
           <div
             v-for="(skill, index) in palStore.SELECTED_PAL_DATA.PassiveSkillList"
@@ -422,17 +540,10 @@ const suitabilityIconSrc = key => {
             class="skill-item passive-skill-item"
           >
             <div class="skill-item-row passive-skill-row">
-              <div
-                class="passive-skill-card tooltip-container"
-                :class="passiveRatingClass(palStore.PASSIVE_SKILLS[skill]?.Rating)"
-                :aria-label="palStore.PASSIVE_SKILLS[skill]?.I18n[0] || skill"
-              >
-                <div class="passive-skill-banner">
-                  <span class="passive-skill-name">{{ palStore.PASSIVE_SKILLS[skill]?.I18n[0] || skill }}</span>
-                  <img class="passive-rank-icon" :src="passiveRankSrc(palStore.PASSIVE_SKILLS[skill]?.Rating)" alt="">
-                </div>
-                <span class="tooltip-text">{{ palStore.PASSIVE_SKILLS[skill]?.I18n[1] || skill }}</span>
-              </div>
+              <PassiveSkillCard
+                :skill="palStore.PASSIVE_SKILLS[skill]"
+                :internal-name="skill"
+              />
 
               <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList" :name="skill"
               :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
@@ -471,7 +582,7 @@ const suitabilityIconSrc = key => {
             class="skill-item active-skill-item"
           >
             <div class="skill-item-row">
-              <div class="active-skill-card tooltip-container" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
+              <div class="active-skill-card tooltip-container" tabindex="0">
                 <div class="active-skill-card__label">
                   <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
                     :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
@@ -486,15 +597,15 @@ const suitabilityIconSrc = key => {
                     {{ palStore.getTranslatedText("Editor_Skill_CD") }}
                     {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
                   </p>
-                  <p>
-                    {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+                  <p class="active-skill-element">
+                    <strong>{{ palStore.getTranslatedText("Editor_Skill_EL").trim() }}</strong>
                     <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
                       :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
-                    {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
                   </p>
-                  <p>
-                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
-                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
+                  <p v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill || palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit"
+                    class="active-skill-tags">
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill" class="active-skill-tag">{{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit" class="active-skill-tag">{{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
                   </p>
                 </article>
               </div>
@@ -535,7 +646,7 @@ const suitabilityIconSrc = key => {
             class="skill-item active-skill-item"
           >
             <div class="skill-item-row">
-              <div class="active-skill-card tooltip-container" :title="palStore.ACTIVE_SKILLS[skill]?.I18n[1] || skill">
+              <div class="active-skill-card tooltip-container" tabindex="0">
                 <div class="active-skill-card__label">
                   <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
                     :element="palStore.ACTIVE_SKILLS[skill].Element" :size="16" />
@@ -550,15 +661,15 @@ const suitabilityIconSrc = key => {
                     {{ palStore.getTranslatedText("Editor_Skill_CD") }}
                     {{ palStore.ACTIVE_SKILLS[skill]?.CT }}
                   </p>
-                  <p>
-                    {{ palStore.getTranslatedText("Editor_Skill_EL") }}
+                  <p class="active-skill-element">
+                    <strong>{{ palStore.getTranslatedText("Editor_Skill_EL").trim() }}</strong>
                     <ElementIcon v-if="palStore.ACTIVE_SKILLS[skill]?.Element"
                       :element="palStore.ACTIVE_SKILLS[skill].Element" :size="15" />
-                    {{ palStore.ACTIVE_SKILLS[skill]?.Element }}
                   </p>
-                  <p>
-                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill">✨ {{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
-                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit">🍐 {{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
+                  <p v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill || palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit"
+                    class="active-skill-tags">
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.IsUniqueSkill" class="active-skill-tag">{{ palStore.getTranslatedText('Editor_Skill_Unique') }}</span>
+                    <span v-if="palStore.ACTIVE_SKILLS[skill]?.HasSkillFruit" class="active-skill-tag">{{ palStore.getTranslatedText('Editor_Skill_Fruit') }}</span>
                   </p>
                 </article>
               </div>
@@ -576,6 +687,8 @@ const suitabilityIconSrc = key => {
 .PalEditor {
   display: grid;
   grid-template-columns: minmax(0, 1.22fr) minmax(340px, 0.78fr);
+  grid-template-rows: max-content minmax(min-content, 1fr);
+  min-height: var(--sub-height);
   height: auto;
   overflow: visible;
   align-items: flex-start;
@@ -668,9 +781,6 @@ div.palInfo {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   gap: 6px;
-  padding-top: 10px;
-  margin-top: 4px;
-  border-top: 1px solid var(--ui-border);
 }
 
 .metric {
@@ -699,7 +809,9 @@ div.palInfo {
 div.skillPanel {
   grid-column: 1 / -1;
   width: 100%;
+  min-height: 100%;
   max-width: none;
+  align-self: stretch;
   flex-wrap: wrap;
 }
 
@@ -789,9 +901,11 @@ p.out_of_container {
 }
 
 img.suitIcon {
-  width: 32px;
-  height: 32px;
-  margin: -4px 0 -4px -4px;
+  display: block;
+  width: 24px;
+  height: 24px;
+  align-self: center;
+  margin: 0;
   padding: 0;
   object-fit: contain;
 }
@@ -1084,6 +1198,11 @@ select.selector {
   border-color: var(--ui-border-strong);
 }
 
+.editor-card-actions > button.cancel-expedition {
+  color: var(--ui-danger);
+  border-color: color-mix(in srgb, var(--ui-danger) 35%, var(--ui-border));
+}
+
 .editor-card-actions .action-separator {
   width: 1px;
   height: 22px;
@@ -1150,6 +1269,29 @@ div.basic-fields {
 .basic-fields > .editField > p.const { margin-left: 0; }
 .basic-fields > .editField > input,
 .basic-fields > .editField > select { width: 100%; margin: 0; }
+
+:global(#EditorMain .npc-weapon-field) {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+}
+
+:global(#EditorMain .npc-weapon-field > p.const) {
+  min-height: 34px;
+  height: 34px;
+  margin: 0;
+}
+
+:global(#EditorMain .npc-weapon-value) {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .attribute-row {
   width: 100%;
@@ -1226,37 +1368,71 @@ div.basic-fields {
 .metadata-slot .meta-field { flex: 1 1 auto; }
 
 .statsPanel {
+  position: relative;
   display: grid;
+  grid-template-areas:
+    "iv souls"
+    "condenser condenser"
+    "suitabilities suitabilities";
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
   gap: 0 18px;
+}
+
+:global(#EditorMain .PalEditor > .EditorItem.basicInfo),
+:global(#EditorMain .PalEditor > .EditorItem.statsPanel) {
+  align-self: stretch;
 }
 
 .stat-group {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 4px;
 }
 
-.stat-group:nth-child(2) {
-  grid-row: span 2;
+.stat-group--iv {
+  grid-area: iv;
+}
+
+.stat-group--souls {
+  grid-area: souls;
   padding-left: 18px;
   border-left: 1px solid var(--ui-border);
 }
 
 .stat-group--condenser {
+  grid-area: condenser;
+  width: 100%;
   padding-top: 14px;
-  margin-top: 8px;
+  margin-top: 12px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.stat-group--condenser > p.cat { margin: 0; }
+
+.stat-group--suitabilities {
+  grid-area: suitabilities;
+  padding-top: 14px;
+  margin-top: 12px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.estimated-group {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  padding-top: 14px;
+  margin-top: 12px;
   border-top: 1px solid var(--ui-border);
 }
 
 .statsPanel .spaceBetween {
-  min-height: 38px;
-  padding-block: 3px;
-  border-bottom: 1px solid var(--ui-border);
+  min-height: 36px;
+  padding-block: 0;
 }
 
-.statsPanel .spaceBetween:last-child { border-bottom: 0; }
 .statsPanel .spaceBetween > p.const { padding-left: 0; background: transparent; }
 
 .statsPanel input[type="range"] {
@@ -1264,27 +1440,60 @@ div.basic-fields {
   min-width: 120px;
 }
 
-.suitabilityPanel .skillList { gap: 6px; }
-
 .suitabilityPanel .skillList {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 8px;
-  row-gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  align-items: center;
+  gap: 8px 12px;
 }
 
 .suitabilityPanel {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  align-items: start;
+  container-type: inline-size;
+  gap: 10px;
+}
+
+.stat-group-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.suitabilityPanel > p.cat { margin-block: 7px 0; }
-.suitabilityPanel > .flex-h { width: 100%; }
+.stat-group-header > p.cat { margin: 0; }
+
 .suitabilityPanel .skillList > div {
-  width: auto;
+  display: grid;
+  grid-template-columns: minmax(44px, 1fr) repeat(3, 32px);
+  width: 100%;
+  min-width: 0;
+  align-items: center;
   gap: 4px;
+}
+
+.suitabilityPanel .skillList p.const {
+  width: 100%;
+  margin: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+:global(#EditorMain button.edit.stats-max-all),
+:global(#EditorMain button.edit.suitability-max-all) {
+  width: auto;
+  min-width: 54px;
+  min-height: 32px;
+  padding-inline: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+:global(#EditorMain button.edit.stats-max-all) {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  right: 18px;
 }
 
 .skill-section {
@@ -1294,9 +1503,16 @@ div.basic-fields {
   flex-direction: column;
 }
 
-.suitabilityPanel .skillList > div {
-  display: inline-flex;
-  min-width: 0;
+@container (max-width: 620px) {
+  .suitabilityPanel .skillList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 420px) {
+  .suitabilityPanel .skillList {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .skill-section-header {
@@ -1317,6 +1533,88 @@ div.basic-fields {
   line-height: 1.35;
   text-wrap: balance;
 }
+
+.skill-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.passive-preset-trigger {
+  min-height: 32px;
+  margin: 0;
+  padding: 0 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.passive-preset-trigger:hover:not(:disabled) {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+}
+
+.passive-preset-trigger:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+.passive-preset-trigger:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.passive-preset-quickbar {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 8px;
+  margin: -1px 0 9px;
+  padding: 7px 8px;
+  background: color-mix(in srgb, var(--ui-accent-soft) 42%, var(--ui-surface-raised));
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 24%, var(--ui-border));
+  border-radius: 8px;
+}
+
+.passive-preset-quickbar__label {
+  display: inline-flex;
+  flex: 0 0 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 0 3px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.passive-preset-quick-action {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  align-items: center;
+  margin: 0;
+  padding: 5px 10px;
+  overflow: hidden;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  text-align: left;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.passive-preset-quick-action:hover:not(:disabled) { color: var(--ui-text); background: var(--ui-surface-hover); border-color: var(--ui-border-strong); }
+.passive-preset-quick-action:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+.passive-preset-quick-action:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.passive-preset-quick-action:disabled { cursor: not-allowed; opacity: 0.48; }
+.passive-preset-quick-action.is-active { color: var(--ui-accent); background: var(--ui-accent-soft); border-color: var(--ui-accent); }
+
+.passive-preset-quick-action__label { min-width: 0; overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 
 .skill-item-grid {
   display: grid;
@@ -1357,9 +1655,10 @@ div.basic-fields {
 }
 
 .active-skill-card:hover,
-.active-skill-card:focus-within {
+.active-skill-card:focus-visible {
+  color: var(--ui-text);
   background: var(--ui-surface-hover);
-  border-color: var(--ui-border-strong);
+  border-color: var(--ui-accent);
 }
 
 .active-skill-card__label {
@@ -1379,114 +1678,10 @@ div.basic-fields {
   white-space: nowrap;
 }
 
-.passive-skill-card {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 40px;
-  overflow: visible;
-  border-radius: 0;
-  transition: filter 160ms ease;
-}
-
-.passive-skill-card:hover,
-.passive-skill-card:focus-within {
-  filter: brightness(1.12);
-}
-
-.passive-skill-banner {
-  display: flex;
-  width: 100%;
-  min-height: 40px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 10px;
-  overflow: hidden;
-  background-color: rgb(0 0 0 / 0.2);
-  border: 1px solid #495057;
-}
-
-.passive-skill-name {
-  min-width: 0;
-  overflow: hidden;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.passive-rank-icon {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-
 .skill-item-remove {
   align-self: center;
 }
 
-.passive-skill-card.is-rank-5 .passive-skill-banner {
-  color: #e0b0ff;
-  background-image: linear-gradient(to right, rgb(89 187 101 / 24%), rgb(77 9 203 / 48%)), linear-gradient(rgb(17 17 17 / 53.3%), #111), url('/images/Pal/Texture/UI/Main_Menu/T_prt_pal_skill_base_02.webp');
-  background-size: cover;
-  background-position: center;
-  border-color: #c084fc;
-}
-
-.passive-skill-card.is-rank-5 .passive-skill-name { color: #e0b0ff; }
-
-.passive-skill-card.is-rank-4 .passive-skill-banner {
-  background-image: linear-gradient(to right, rgb(89 187 101 / 24%), rgb(69 67 209 / 48%)), linear-gradient(rgb(17 17 17 / 53.3%), #111), url('/images/Pal/Texture/UI/Main_Menu/T_prt_pal_skill_base_02.webp');
-  background-size: cover;
-  background-position: center;
-  border-color: #68ffd8;
-}
-
-.passive-skill-card.is-rank-4 .passive-skill-name { color: #68ffd8; }
-.passive-skill-card.is-rank-4 .passive-rank-icon { filter: sepia(1) saturate(100) hue-rotate(75deg); }
-
-.passive-skill-card.is-rank-3 .passive-skill-banner {
-  background-image: linear-gradient(rgb(255 221 0 / 12.5%), rgb(255 221 0 / 12.5%)), linear-gradient(rgb(17 17 17 / 53.3%), #111), url('/images/Pal/Texture/UI/Main_Menu/T_prt_pal_skill_base_02.webp');
-  background-size: cover;
-  background-position: center;
-  border-color: #ffdd00;
-}
-
-.passive-skill-card.is-rank-3 .passive-skill-name { color: #d1d560; }
-.passive-skill-card.is-rank-3 .passive-rank-icon { filter: sepia(1) saturate(100) hue-rotate(0deg); }
-
-.passive-skill-card.is-rank-2 .passive-skill-name,
-.passive-skill-card.is-rank-1 .passive-skill-name { color: #fff; }
-
-.passive-skill-card.is-negative .passive-skill-banner {
-  border-color: #495057;
-}
-
-.passive-skill-card.is-negative .passive-skill-name,
-.passive-skill-card.is-negative .tooltip-text {
-  color: #ff4646;
-}
-
-.passive-skill-card.is-negative .passive-rank-icon {
-  transform: scaleY(-1);
-  filter: invert(0.8) sepia(0.9) saturate(74.56) hue-rotate(359deg) brightness(0.95) contrast(1.15);
-}
-
-.passive-rating-5 { --passive-color: #ff80e9; }
-.passive-rating-4 { --passive-color: #35e7c1; }
-.passive-rating-3 { --passive-color: #b9c7ff; }
-.passive-rating-2 { --passive-color: #f4d36b; }
-.passive-rating-1 { --passive-color: #a9b8c3; }
-.passive-rating-0 { --passive-color: #96a0aa; }
-.passive-rating--1,
-.passive-rating--2,
-.passive-rating--3 { --passive-color: #ef7777; }
-
-.skillsPanel .passive-skill-card .tooltip-text,
 .skillsPanel .active-skill-card .tooltip-text {
   bottom: calc(100% + 8px);
   left: 0;
@@ -1498,17 +1693,16 @@ div.basic-fields {
   white-space: pre-line;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transform: translateY(6px) scale(0.985);
+  transform-origin: bottom left;
+  transition: opacity 160ms cubic-bezier(0.25, 1, 0.5, 1), transform 160ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.skillsPanel .passive-skill-card:hover .tooltip-text,
-.skillsPanel .passive-skill-card:focus-within .tooltip-text,
 .skillsPanel .active-skill-card:hover .tooltip-text,
-.skillsPanel .active-skill-card:focus-within .tooltip-text {
+.skillsPanel .active-skill-card:focus-visible .tooltip-text {
   visibility: visible;
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .skillsPanel .active-skill-card .tooltip-text h3,
@@ -1521,8 +1715,33 @@ div.basic-fields {
   gap: 6px;
 }
 
+.active-skill-element,
+.active-skill-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.active-skill-element strong {
+  font-weight: 650;
+}
+
+.active-skill-tag {
+  padding: 1px 6px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 @media (max-width: 1380px) {
-  .PalEditor { grid-template-columns: minmax(520px, 1fr); }
+  .PalEditor {
+    grid-template-columns: minmax(520px, 1fr);
+    grid-template-rows: max-content max-content minmax(min-content, 1fr);
+  }
   div.basicInfo,
   div.statsPanel,
   div.skillPanel { grid-column: 1; }
@@ -1533,11 +1752,17 @@ div.basic-fields {
   .editor-card-actions { justify-content: flex-start; }
   .metadata-grid,
   div.palInfo { grid-template-columns: minmax(0, 1fr); }
-  .statsPanel,
+  .statsPanel {
+    grid-template-areas:
+      "iv"
+      "souls"
+      "condenser"
+      "suitabilities";
+    grid-template-columns: minmax(0, 1fr);
+  }
   .suitabilityPanel { grid-template-columns: minmax(0, 1fr); }
   .skill-item-grid { grid-template-columns: minmax(0, 1fr); }
-  .stat-group:nth-child(2) {
-    grid-row: auto;
+  .stat-group--souls {
     padding: 14px 0 0;
     margin-top: 8px;
     border-top: 1px solid var(--ui-border);

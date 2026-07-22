@@ -773,28 +773,28 @@
     "I18n": {
       "en": {
         "Name": "Idiosyncratic",
-        "Description": "Pal and Player Auto Health Regeneration Rate +50%\nDefense +{EffectValue4}%\nImmune to Poison Damage\nImmune to Burn Damage"
+        "Description": "Pal and Player Auto Health Regeneration Rate +50%\nDefense +25%\nImmune to Poison Damage\nImmune to Burn Damage"
       },
       "fr": {
         "Name": "Anomalie",
-        "Description": "Restauration automatique des PV des Pals et du joueur +50 %\nDéfense +{EffectValue4} %\nImmunité aux dégâts de Poison\nImmunité aux dégâts de Brûlure"
+        "Description": "Restauration automatique des PV des Pals et du joueur +50 %\nDéfense +25 %\nImmunité aux dégâts de Poison\nImmunité aux dégâts de Brûlure"
       },
       "ja": {
         "Name": "特異体質",
-        "Description": "パルとプレイヤーのHP自然回復量+50%\n防御+{EffectValue4}%\n毒状態異常ダメージ無効\n炎上状態異常ダメージ無効"
+        "Description": "パルとプレイヤーのHP自然回復量+50%\n防御+25%\n毒状態異常ダメージ無効\n炎上状態異常ダメージ無効"
       },
       "ko": {
         "Name": "특이 체질",
-        "Description": "팰과 플레이어의 HP 자연 회복량 +50%\n방어력 +{EffectValue4}%\n독 상태 이상 피해 무효\n화상 상태 이상 피해 무효"
+        "Description": "팰과 플레이어의 HP 자연 회복량 +50%\n방어력 +25%\n독 상태 이상 피해 무효\n화상 상태 이상 피해 무효"
       },
       "zh-CN": {
         "Name": "特殊体质",
-        "Description": "帕鲁和玩家的生命值自然恢复量+50%\n防御力+{EffectValue4}%\n免疫中毒伤害\n免疫灼烧伤害"
+        "Description": "帕鲁和玩家的生命值自然恢复量+50%\n防御力+25%\n免疫中毒伤害\n免疫灼烧伤害"
       }
     },
     "Buff": {
       "b_Attack": 0.0,
-      "b_Defense": 0.0,
+      "b_Defense": 0.25,
       "b_CraftSpeed": 0.0,
       "b_MoveSpeed": 0.0
     }

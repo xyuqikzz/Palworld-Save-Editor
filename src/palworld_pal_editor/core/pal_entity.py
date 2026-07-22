@@ -21,6 +21,7 @@ from palworld_pal_editor.utils.util import type_guard
 class PalEntity:
     MAX_LEVEL = 60
     MAX_INVALID_LEVEL = 100
+    AWAKENING_STATUS_MULTIPLIER = 1.5
 
     def __init__(self, pal_obj: dict) -> None:
         self._pal_obj: dict = pal_obj
@@ -323,11 +324,17 @@ class PalEntity:
         return False
 
     @property
-    def IsExpeditionPal(self) -> bool:
+    def ExpeditionInstanceId(self):
         value = PalObjects.get_BaseType(
             self._pal_param.get("MapObjectConcreteInstanceIdAssignedToExpedition")
         )
-        return value is not None and str(value) != str(PalObjects.EMPTY_UUID)
+        if value is None or str(value) == str(PalObjects.EMPTY_UUID):
+            return None
+        return value
+
+    @property
+    def IsExpeditionPal(self) -> bool:
+        return self.ExpeditionInstanceId is not None
 
     def unlock_expedition(self) -> None:
         self._pal_param.pop(
@@ -588,6 +595,39 @@ class PalEntity:
             self._IsBOSS = False
 
     @property
+    def IsAwakened(self) -> bool:
+        awakening = self._pal_param.get("bIsAwakening")
+        return bool(
+            isinstance(awakening, dict)
+            and awakening.get("type") == "BoolProperty"
+            and awakening.get("value") is True
+        )
+
+    @IsAwakened.setter
+    @LOGGER.change_logger("IsAwakened")
+    @type_guard
+    def IsAwakened(self, value: bool) -> None:
+        awakening = self._pal_param.get("bIsAwakening")
+        if awakening is not None and (
+            not isinstance(awakening, dict)
+            or awakening.get("type") != "BoolProperty"
+            or not isinstance(awakening.get("value"), bool)
+        ):
+            raise ValueError("bIsAwakening is not a supported BoolProperty")
+        if value:
+            if awakening is None:
+                self._pal_param["bIsAwakening"] = PalObjects.BoolProperty(True)
+            else:
+                PalObjects.set_BaseType(awakening, True)
+        else:
+            # Current game saves represent the non-awakened state by omitting
+            # the property rather than serializing BoolProperty(false).
+            self._pal_param.pop("bIsAwakening", None)
+
+        if maxHP := self.ComputedMaxHP:
+            self.Hp = maxHP
+
+    @property
     def FilteredNickName(self) -> Optional[str]:
         return PalObjects.get_BaseType(self._pal_param.get("FilteredNickName"))
     
@@ -612,6 +652,13 @@ class PalEntity:
     def NickName(self, value: str) -> None:
         self._NickName = value
         self.FilteredNickName = value
+
+    @property
+    def CustomNickName(self) -> Optional[str]:
+        nickname = self.NickName
+        if DataProvider.is_pal_i18n_name(self.DataAccessKey, nickname):
+            return None
+        return nickname
 
     @property
     def _NickName(self) -> Optional[str]:
@@ -759,7 +806,12 @@ class PalEntity:
         HP_Stat = DataProvider.get_pal_stats(self.DataAccessKey, "HP")
         if HP_Stat is None:
             return None
-        HP_IV = (self.Talent_HP or 0) * 0.3 / 100  # 30% of Talent
+        awakening_multiplier = (
+            self.AWAKENING_STATUS_MULTIPLIER if self.IsAwakened else 1.0
+        )
+        HP_IV = (
+            (self.Talent_HP or 0) * 0.3 / 100 * awakening_multiplier
+        )  # Awakening multiplies the Talent contribution, not final HP.
         HP_Bonus = self._get_passive_buff("b_HP")  # 0
         HP_SoulBonus = (self.Rank_HP or 0) * 0.03  # 3% per incr Rank_HP
         CondenserBonus = ((self.Rank or 1) - 1) * 0.05  # 5% per incr Rank
@@ -785,7 +837,12 @@ class PalEntity:
         Attack_Stat = DataProvider.get_pal_stats(self.DataAccessKey, "ATK")
         if Attack_Stat is None:
             return None
-        Attack_IV = (self.Talent_Shot or 0) * 0.3 / 100  # 30% of Talent
+        awakening_multiplier = (
+            self.AWAKENING_STATUS_MULTIPLIER if self.IsAwakened else 1.0
+        )
+        Attack_IV = (
+            (self.Talent_Shot or 0) * 0.3 / 100 * awakening_multiplier
+        )
         Attack_Bonus = self._get_passive_buff("b_Attack")
         Attack_SoulBonus = (self.Rank_Attack or 0) * 0.03  # 3% per incr Rank_HP
         CondenserBonus = ((self.Rank or 1) - 1) * 0.05  # 5% per incr Rank
@@ -806,7 +863,12 @@ class PalEntity:
         Defense_Stat = DataProvider.get_pal_stats(self.DataAccessKey, "DEF")
         if Defense_Stat is None:
             return None
-        Defense_IV = (self.Talent_Defense or 0) * 0.3 / 100  # 30% of Talent
+        awakening_multiplier = (
+            self.AWAKENING_STATUS_MULTIPLIER if self.IsAwakened else 1.0
+        )
+        Defense_IV = (
+            (self.Talent_Defense or 0) * 0.3 / 100 * awakening_multiplier
+        )
         Defense_Bonus = self._get_passive_buff("b_Defense")
         Defense_SoulBonus = (self.Rank_Defence or 0) * 0.03  # 3% per incr Rank_HP
         CondenserBonus = ((self.Rank or 1) - 1) * 0.05  # 5% per incr Rank
@@ -1365,10 +1427,11 @@ class PalEntity:
             PalObjects.set_ByteProperty(self._pal_param[property_name], iv)
 
     def _get_display_name(self) -> str:
+        custom_nickname = self.CustomNickName
         cache_key = (
             Config.i18n,
             self.DataAccessKey,
-            self.NickName,
+            custom_nickname,
             self.IsRarePal,
             self.IsBOSS,
             self.IsTower,
@@ -1381,7 +1444,7 @@ class PalEntity:
             rare_prefix = "✨" if self.IsRarePal else ""
             boss_prefix = '👑'if self.IsBOSS else ""
             tower_prefix = "🗼" if self.IsTower else ""
-            nickname_suffix = f" ({self.NickName})" if self.NickName else ""
+            nickname_suffix = f" ({custom_nickname})" if custom_nickname else ""
 
             # gender_suffix = ""
             # if self.Gender == PalGender.FEMALE:

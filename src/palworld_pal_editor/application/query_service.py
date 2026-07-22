@@ -50,12 +50,18 @@ class SaveQueryService:
         rows: list[dict[str, Any]] = []
         for player in (self._session.manager.player_mapping or {}).values():
             level = player.Level if player.Level is not None else 1
+            tree_group_id = player.group_id or getattr(
+                player, "_unresolved_group_id", None
+            )
             row = {
                 "player_id": str(player.PlayerUId),
                 "instance_id": str(player.InstanceId),
                 "name": str(player.NickName or ""),
                 "level": level,
                 "pal_count": len(player._palbox),
+                "guild_id": (
+                    None if tree_group_id is None else str(tree_group_id)
+                ),
                 "details_loaded": bool(getattr(player, "is_loaded", True)),
             }
             if needle and not self._matches(
@@ -68,6 +74,144 @@ class SaveQueryService:
                 continue
             rows.append(row)
         return self._sort(rows, sort_by, descending)
+
+    def guild_tree(
+        self, *, player_ids: set[str] | None = None
+    ) -> list[dict[str, Any]]:
+        manager = self._session.manager
+        group_data = getattr(manager, "group_data", None)
+        camp_data = getattr(manager, "camp_data", None)
+        known_groups = {
+            str(group.group_id): group
+            for group in (group_data.get_groups() if group_data else [])
+        }
+        nodes: dict[str, dict[str, Any]] = {}
+
+        def normalized_group_id(value) -> str | None:
+            return None if value is None else str(value)
+
+        def ensure_node(group_id: str | None) -> dict[str, Any]:
+            key = "no-guild" if group_id is None else f"guild:{group_id}"
+            if key in nodes:
+                return nodes[key]
+            group = known_groups.get(group_id) if group_id is not None else None
+            if group is None:
+                kind = "no_guild" if group_id is None else "unknown"
+                name = ""
+                base_order: list[str] = []
+            else:
+                kind = (
+                    "independent"
+                    if group.group_type == "EPalGroupType::IndependentGuild"
+                    else "guild"
+                )
+                name = str(group.guild_name or "")
+                base_order = [str(base_id) for base_id in group.base_ids or []]
+            node = {
+                "node_id": key,
+                "guild_id": group_id,
+                "kind": kind,
+                "name": name,
+                "members": [],
+                "bases": [],
+                "_base_order": base_order,
+            }
+            nodes[key] = node
+            return node
+
+        for group_id in known_groups:
+            ensure_node(group_id)
+
+        for player in (manager.player_mapping or {}).values():
+            player_id = str(player.PlayerUId)
+            if player_ids is not None and player_id not in player_ids:
+                continue
+            tree_group_id = player.group_id or getattr(
+                player, "_unresolved_group_id", None
+            )
+            ensure_node(normalized_group_id(tree_group_id))["members"].append(
+                {
+                    "player_id": player_id,
+                    "name": str(player.NickName or ""),
+                    "level": player.Level if player.Level is not None else 1,
+                    "pal_count": len(player._palbox),
+                }
+            )
+
+        camps = list(camp_data.get_camps()) if camp_data else []
+        workers = list((getattr(manager, "baseworker_mapping", None) or {}).values())
+        workers_by_container: dict[str, list[Any]] = {}
+        for worker in workers:
+            workers_by_container.setdefault(str(worker.ContainerId), []).append(worker)
+
+        matched_worker_ids: set[str] = set()
+        for camp in camps:
+            group_id = normalized_group_id(camp.owner_group_id)
+            container_id = (
+                None if camp.container_id is None else str(camp.container_id)
+            )
+            base_workers = workers_by_container.get(container_id, [])
+            matched_worker_ids.update(str(worker.InstanceId) for worker in base_workers)
+            ensure_node(group_id)["bases"].append(
+                {
+                    "node_id": f"base:{camp.id}",
+                    "base_id": str(camp.id),
+                    "kind": "base",
+                    "name": str(camp.name or ""),
+                    "worker_count": len(base_workers),
+                }
+            )
+
+        unmatched_counts: dict[str | None, int] = {}
+        for worker in workers:
+            if str(worker.InstanceId) in matched_worker_ids:
+                continue
+            group_id = normalized_group_id(worker.group_id)
+            unmatched_counts[group_id] = unmatched_counts.get(group_id, 0) + 1
+        for group_id, count in unmatched_counts.items():
+            node = ensure_node(group_id)
+            node["bases"].append(
+                {
+                    "node_id": f"unmatched-base:{node['node_id']}",
+                    "base_id": None,
+                    "kind": "unmatched",
+                    "name": "",
+                    "worker_count": count,
+                }
+            )
+
+        kind_order = {"guild": 0, "independent": 1, "unknown": 2, "no_guild": 3}
+        result = []
+        for node in nodes.values():
+            if not node["members"] and not node["bases"]:
+                continue
+            node["members"].sort(
+                key=lambda member: (member["name"].casefold(), member["player_id"])
+            )
+            base_order = {
+                base_id: index for index, base_id in enumerate(node.pop("_base_order"))
+            }
+            node["bases"].sort(
+                key=lambda base: (
+                    base["kind"] == "unmatched",
+                    base_order.get(base["base_id"], len(base_order)),
+                    base["name"].casefold(),
+                    base["base_id"] or "",
+                )
+            )
+            node["member_count"] = len(node["members"])
+            node["base_count"] = sum(
+                base["kind"] == "base" for base in node["bases"]
+            )
+            result.append(node)
+        return sorted(
+            result,
+            key=lambda node: (
+                kind_order[node["kind"]],
+                node["name"].casefold(),
+                node["guild_id"] or "",
+            ),
+        )
 
     def pals(
         self,

@@ -93,6 +93,46 @@ const toggleInvalidOptions = () => {
     <div class="topbar__right">
       <div v-if="palStore.SAVE_LOADED_FLAG" class="action-group action-group--tools">
         <button
+          class="op op--compact"
+          :title="palStore.getTranslatedText(
+            palStore.COMPLETABLE_EXPEDITION_COUNT === 0
+              ? 'TopBar_Btn_CompleteExpeditions_Disabled'
+              : 'TopBar_Btn_CompleteExpeditions_Tooltips'
+          )"
+          :disabled="palStore.LOADING_FLAG || palStore.COMPLETABLE_EXPEDITION_COUNT === 0"
+          @click="palStore.completeActiveExpeditions"
+        >
+          {{ palStore.getTranslatedText(
+            palStore.COMPLETABLE_EXPEDITION_COUNT === 0
+              ? 'TopBar_Btn_CompleteExpeditions_Disabled'
+              : 'TopBar_Btn_CompleteExpeditions'
+          ) }}
+        </button>
+        <button
+          class="op op--compact"
+          :title="palStore.getTranslatedText(
+            palStore.EXPEDITION_PAL_COUNT === 0
+              ? 'TopBar_Btn_UnlockExpeditionPals_Disabled'
+              : 'TopBar_Btn_UnlockExpeditionPals_Tooltips'
+          )"
+          :disabled="palStore.LOADING_FLAG || palStore.EXPEDITION_PAL_COUNT === 0"
+          @click="palStore.unlockExpeditionPals"
+        >
+          {{ palStore.getTranslatedText(
+            palStore.EXPEDITION_PAL_COUNT === 0
+              ? 'TopBar_Btn_UnlockExpeditionPals_Disabled'
+              : 'TopBar_Btn_UnlockExpeditionPals'
+          ) }}
+        </button>
+        <button
+          class="op op--compact"
+          :title="palStore.getTranslatedText('TopBar_Btn_HealAllPals_Tooltips')"
+          :disabled="palStore.LOADING_FLAG || palStore.PAL_MAP.size === 0"
+          @click="palStore.healAllPals"
+        >
+          {{ palStore.getTranslatedText('TopBar_Btn_HealAllPals') }}
+        </button>
+        <button
           :class="['op', 'op--compact', { 'op--active': palStore.SHOW_OOB_PAL_FLAG }]"
           @click="palStore.SHOW_OOB_PAL_FLAG = !palStore.SHOW_OOB_PAL_FLAG"
           :disabled="palStore.LOADING_FLAG"

@@ -27,7 +27,7 @@ else:
 
 CONFIG_PATH = PROGRAM_PATH / 'config.json'
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 RELEASE_TYPE = "RELEASE"
 BUILD_TIME = "0000000001"
 GIT_HASH = "0000000"
@@ -89,6 +89,7 @@ class Config:
     password: str = None
     nocli: bool = False
     max_souls_level: int = 60
+    max_suitability_level: int = 10
     _password_hash: str = None
     JWT_SECRET_KEY: str = "X2Nvbm5sb3N0"
 
@@ -139,6 +140,7 @@ class Config:
             'path': Config.path,
             'password': Config.password,
             'max_souls_level': Config.max_souls_level,
+            'max_suitability_level': Config.max_suitability_level,
             'JWT_SECRET_KEY': Config.JWT_SECRET_KEY
         }
 
