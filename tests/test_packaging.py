@@ -2,11 +2,21 @@ from pathlib import Path
 import tomllib
 import unittest
 
+from scripts.verify_bridge_prebuilt import normalize_source_bytes
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingTests(unittest.TestCase):
+    def test_bridge_source_hash_is_independent_of_checkout_line_endings(
+        self,
+    ) -> None:
+        self.assertEqual(
+            normalize_source_bytes(b"first\r\nsecond\rthird\n"),
+            normalize_source_bytes(b"first\nsecond\nthird\n"),
+        )
+
     def test_windows_bundle_collects_ooz_extension(self) -> None:
         build_script = (PROJECT_ROOT / "build_executable.ps1").read_text(
             encoding="utf-8"
@@ -97,6 +107,7 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("sourceSha256", prebuilt_verifier)
         self.assertIn("dllSha256", prebuilt_verifier)
         self.assertIn("ue4ssRevision", prebuilt_verifier)
+        self.assertIn("normalize_source_bytes", prebuilt_verifier)
 
     def test_release_workflow_rebuilds_and_verifies_the_mod_before_publish(
         self,

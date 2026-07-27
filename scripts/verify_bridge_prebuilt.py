@@ -34,13 +34,17 @@ def source_files() -> list[Path]:
     return files
 
 
+def normalize_source_bytes(source_bytes: bytes) -> bytes:
+    return source_bytes.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def source_sha256() -> str:
     digest = hashlib.sha256()
     for path in source_files():
         relative = path.relative_to(PROJECT_ROOT).as_posix().encode("utf-8")
         digest.update(relative)
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        digest.update(normalize_source_bytes(path.read_bytes()))
         digest.update(b"\0")
     return digest.hexdigest()
 

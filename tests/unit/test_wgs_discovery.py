@@ -93,7 +93,10 @@ def test_selected_wgs_folder_limits_discovery_to_the_user_chosen_scope() -> None
         catalog = XgpSourceCatalog(roots=())
         selected_user_sources = catalog.discover_selected(first_user)
         assert [source.world_id for source in selected_user_sources] == ["D" * 32]
-        assert catalog.resolve(selected_user_sources[0].source_id).canonical_path == first_user
+        assert (
+            catalog.resolve(selected_user_sources[0].source_id).canonical_path
+            == first_user.resolve()
+        )
 
         selected_root_sources = catalog.discover_selected(root)
         assert [source.world_id for source in selected_root_sources] == [

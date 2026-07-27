@@ -477,7 +477,7 @@ class NativeDialogTests(unittest.TestCase):
 
             self.assertEqual("completed", result["status"])
             downloaded = Path(result["path"])
-            self.assertEqual(download_root, downloaded.parent)
+            self.assertEqual(download_root.resolve(), downloaded.parent)
             self.assertEqual(package.name, downloaded.name)
             self.assertEqual(package.read_bytes(), downloaded.read_bytes())
             self.assertEqual(64, len(result["sha256"]))

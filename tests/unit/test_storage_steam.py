@@ -56,9 +56,10 @@ def test_steam_adapter_ignores_backup_saves_and_hashes_active_saves_once(
         )
         hashed_paths: list[str] = []
         original_sha256_file = steam.sha256_file
+        resolved_root = root.resolve()
 
         def record_sha256(path: Path) -> str:
-            hashed_paths.append(path.relative_to(root).as_posix())
+            hashed_paths.append(path.relative_to(resolved_root).as_posix())
             return original_sha256_file(path)
 
         monkeypatch.setattr(steam, "sha256_file", record_sha256)
