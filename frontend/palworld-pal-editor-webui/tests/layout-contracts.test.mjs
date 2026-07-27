@@ -6,6 +6,12 @@ import { fileURLToPath } from 'node:url'
 const mainCssPath = fileURLToPath(
   new URL('../src/assets/main.css', import.meta.url),
 )
+const baseCssPath = fileURLToPath(
+  new URL('../src/assets/base.css', import.meta.url),
+)
+const topBarPath = fileURLToPath(
+  new URL('../src/components/TopBar.vue', import.meta.url),
+)
 const entryViewPath = fileURLToPath(
   new URL('../src/views/EntryView.vue', import.meta.url),
 )
@@ -56,8 +62,8 @@ test('entry save-source modes share stable workspace dimensions and internal scr
   assert.ok(panelRule, 'entry panel layout rule must exist')
   assert.match(
     panelRule[1],
-    /display:\s*flex[\s\S]*?width:\s*100%[\s\S]*?min-height:\s*0/,
-    'Steam and Game Pass modes must occupy the same flexible panel geometry',
+    /display:\s*flex[\s\S]*?width:\s*100%[\s\S]*?min-height:\s*0[\s\S]*?overflow-y:\s*auto/,
+    'all source modes must stay inside the fixed workspace and scroll instead of overlapping the footer',
   )
   assert.ok(sourceListRule, 'Game Pass source list layout rule must exist')
   assert.match(
@@ -68,6 +74,21 @@ test('entry save-source modes share stable workspace dimensions and internal scr
   assert.match(source, /@\/assets\/steam\.svg/, 'Steam navigation must use the Steam brand mark')
   assert.match(source, /@\/assets\/xbox\.svg/, 'Game Pass navigation must use the Xbox brand mark')
   assert.match(source, /Entry_Source_Beta/, 'Game Pass navigation must include the BETA badge')
+  assert.match(
+    source,
+    /class="remote-mod-notice" role="note"[\s\S]*?Remote_ModRequiredTitle[\s\S]*?Remote_ModRequiredHint/,
+    'live management must warn that PalEditorBridge is installed separately',
+  )
+  assert.match(source, /Remote_WindowsOnlyTitle/)
+  assert.match(source, /class="[^"]*remote-mod-download/)
+  assert.match(source, /@click="downloadBridgeMod"/)
+  assert.match(source, /window\.pywebview\?\.api\?\.download_bridge_mod/)
+  assert.match(source, /modInstallDialog\.value\?\.showModal\(\)/)
+  assert.match(source, /class="mod-install-dialog"/)
+  assert.match(source, /Remote_ModInstallClientPath/)
+  assert.match(source, /Remote_ModInstallServerPath/)
+  assert.match(source, /Remote_ModInstallModsPath/)
+  assert.doesNotMatch(source, /alert\([^)]*Remote_Mod/)
   assert.match(
     source,
     /\.source-switch\s*\{[^}]*gap:\s*8px/,
@@ -152,6 +173,61 @@ test('editor workspace contains its top offset instead of collapsing it onto the
   )
 })
 
+test('loaded editor toolbar keeps save actions and page navigation in stable rows', () => {
+  const source = readFileSync(topBarPath, 'utf8')
+  const baseSource = readFileSync(baseCssPath, 'utf8')
+  const viewSource = readFileSync(editorViewPath, 'utf8')
+
+  assert.match(source, /'topbar--loaded': palStore\.SAVE_LOADED_FLAG/)
+  assert.match(
+    source,
+    /\.op\s*\{[^}]*white-space:\s*nowrap/,
+    'toolbar button labels must never collapse into vertical text',
+  )
+  assert.match(
+    source,
+    /#topbar\.topbar--loaded\s*\{[^}]*height:\s*112px/,
+    'loaded sessions must reserve a fixed primary row and navigation row',
+  )
+  assert.match(
+    source,
+    /\.topbar__nav\s*\{[^}]*height:\s*48px[^}]*overflow-x:\s*auto[^}]*overflow-y:\s*hidden/,
+    'page navigation must scroll horizontally instead of compressing labels',
+  )
+  assert.match(
+    source,
+    /class="nav-item nav-item--return"[\s\S]*?@click="returnToSaveSelection"[\s\S]*?TopBar_Page_Return/,
+    'loaded sessions must expose an explicit return action in page navigation',
+  )
+  assert.match(
+    source,
+    /async function returnToSaveSelection\(\)[\s\S]*?palStore\.returnToMain\(\)[\s\S]*?router\.push\(\{ name: 'Entry' \}\)/,
+    'the return action must close the current session before returning to save selection',
+  )
+  assert.match(
+    source,
+    /@media \(max-width:\s*760px\)[\s\S]*?#topbar\.topbar--loaded\s*\{[^}]*height:\s*132px[\s\S]*?\.topbar__primary\s*\{[^}]*grid-template-rows:\s*40px 36px/,
+    'narrow windows must give save actions their own compact row',
+  )
+  assert.match(
+    source,
+    /settings-drawer[\s\S]*?Settings_SkipUpdateCheck/,
+    'secondary preferences must live in the settings drawer',
+  )
+  assert.match(baseSource, /--editor-top-offset:\s*124px/)
+  assert.match(baseSource, /@media \(max-width:\s*760px\)[\s\S]*?--editor-top-offset:\s*140px/)
+  assert.match(
+    viewSource,
+    /@media \(max-width:\s*1120px\)[\s\S]*?div#EditorMain\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*width:\s*100%[^}]*min-width:\s*0/,
+    'narrow editor windows must use one fluid column instead of a fixed horizontal canvas',
+  )
+  assert.match(
+    viewSource,
+    /\.selection-column\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+    'player and Pal lists must share the available row before stacking on small screens',
+  )
+})
+
 test('Pal editor lets the skills background fill the remaining viewport without clipping content', () => {
   const source = readFileSync(palEditorPath, 'utf8')
   const editorRule = source.match(/\.PalEditor\s*\{([^}]*)\}/)
@@ -176,7 +252,7 @@ test('Pal editor lets the skills background fill the remaining viewport without 
   )
   assert.match(
     source,
-    /@media \(max-width:\s*1380px\)\s*\{[\s\S]*?\.PalEditor\s*\{[^}]*grid-template-rows:\s*max-content max-content minmax\(min-content,\s*1fr\)/,
+    /@media \(max-width:\s*1500px\)\s*\{[\s\S]*?\.PalEditor\s*\{[^}]*grid-template-rows:\s*max-content max-content minmax\(min-content,\s*1fr\)/,
     'the stacked layout must reserve its final flexible row for the skills card',
   )
 })
@@ -304,46 +380,35 @@ test('player summary uses content height and keeps its information aligned at th
   )
 })
 
-test('occupied inventory slots give item details and quantity controls separate rows', () => {
+test('occupied inventory slots restore item details and quantity controls to card rows', () => {
   const source = readFileSync(inventoryEditorPath, 'utf8')
 
-  assert.match(
-    source,
-    /<div class="slot-main">[\s\S]*?<ItemIcon[\s\S]*?<div class="slot-copy">[\s\S]*?<\/div>[\s\S]*?<\/div>[\s\S]*?<div class="slot-controls">[\s\S]*?<input[\s\S]*?class="slot-count"[\s\S]*?<div class="slot-actions">/,
-    'the item identity row must stay separate from the quantity and action controls',
-  )
-  assert.match(
-    source,
-    /\.slot-main\s*\{[^}]*flex:\s*1 0 100%/,
-    'the primary item row must occupy the full slot width',
-  )
-  assert.match(
-    source,
-    /\.slot-controls\s*\{[^}]*flex:\s*1 0 100%[^}]*flex-wrap:\s*wrap/,
-    'quantity controls must occupy the full row and wrap on narrow cards',
-  )
-  assert.match(
-    source,
-    /\.slot-count\s*\{[^}]*flex:\s*1 1 120px[^}]*max-width:\s*160px/,
-    'the quantity input must grow beyond the old fixed-width control',
-  )
+  for (const marker of [
+    '<div class="slot-main">',
+    '<div class="slot-copy">',
+    '<div class="slot-controls">',
+    'class="slot-count"',
+    '<div class="slot-actions">',
+    '.slot-main { display: flex; align-items: center; flex: 1 0 100%;',
+    '.slot-controls { display: flex; align-items: center; flex: 1 0 100%; flex-wrap: wrap;',
+    '.slot-count { flex: 1 1 120px;',
+    'max-width: 160px;',
+    '.slot-card.is-drop-target { border-color: var(--ui-accent);',
+  ]) {
+    assert.ok(source.includes(marker), 'missing restored card-layout marker: ' + marker)
+  }
+  assert.doesNotMatch(source, /inventory-game-layout|equipment-stage|slot-inspector/)
 })
 
 test('inventory omits its redundant inner title and keeps occupied item names legible', () => {
   const source = readFileSync(inventoryEditorPath, 'utf8')
 
-  assert.doesNotMatch(
-    source,
-    /<h2[^>]*>[\s\S]*?Editor_Inventory[\s\S]*?<\/h2>/,
-    'the selected player tab already names the inventory section',
-  )
-  assert.match(
-    source,
-    /\.slot-copy strong\s*\{[^}]*color:\s*var\(--ui-text\)/,
+  assert.doesNotMatch(source, /Editor_Inventory/)
+  assert.ok(
+    source.includes('.slot-copy strong { color: var(--ui-text); }'),
     'occupied item names must explicitly use the primary theme text color',
   )
 })
-
 test('skill sections use consistent item sizing and title-row add actions', () => {
   const source = readFileSync(palEditorPath, 'utf8')
   const pickerSource = readFileSync(palSkillPickerPath, 'utf8')
@@ -364,6 +429,16 @@ test('skill sections use consistent item sizing and title-row add actions', () =
     source,
     /\.skill-item-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
     'every skill group must render in at most two columns',
+  )
+  assert.match(
+    source,
+    /\.skill-section\s*\{[^}]*container-name:\s*skill-section[^}]*container-type:\s*inline-size/,
+    'each skill section must expose its own width to responsive item layouts',
+  )
+  assert.match(
+    source,
+    /@container\s+skill-section\s*\(max-width:\s*460px\)\s*\{\s*\.skill-item-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    'passive and active skill items must occupy a full row when their section is too narrow',
   )
   assert.match(
     mainSource,
@@ -452,8 +527,18 @@ test('estimated stats finish the left panel while work suitability remains in th
   )
   assert.match(
     source,
-    /\.statsPanel\s*\{(?=[^}]*position:\s*relative)[^}]*grid-template-areas:\s*"iv souls"\s*"condenser condenser"\s*"suitabilities suitabilities"/,
-    'the stats card must reserve full-width rows for the condenser and work suitability without a MAX layout row',
+    /\.statsPanel\s*\{(?=[^}]*position:\s*relative)(?=[^}]*container-name:\s*stats-panel)(?=[^}]*container-type:\s*inline-size)(?=[^}]*flex-direction:\s*column)[^}]*\}/,
+    'the stats card must expose its actual inline size to responsive descendants',
+  )
+  assert.match(
+    source,
+    /\.stat-primary-grid\s*\{(?=[^}]*width:\s*100%)[^}]*grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*260px\),\s*1fr\)\)/,
+    'individual values and soul enhancements must wrap when either column would become unreadable',
+  )
+  assert.match(
+    source,
+    /@container stats-panel \(max-width:\s*537px\)[\s\S]*?\.stat-group--souls\s*\{(?=[^}]*border-top:\s*1px solid var\(--ui-border\))(?=[^}]*border-left:\s*0)[^}]*\}/,
+    'stacked enhancement groups must switch their separator from vertical to horizontal',
   )
   assert.match(
     statsPanelSource,
@@ -481,7 +566,14 @@ test('estimated stats finish the left panel while work suitability remains in th
     'work suitability must expose its own MAX action in the section heading',
   )
   const statRowRule = source.match(/\.statsPanel \.spaceBetween\s*\{([^}]*)\}/)?.[1] || ''
+  assert.match(statRowRule, /display:\s*grid/)
+  assert.match(statRowRule, /grid-template-columns:\s*minmax\(0,\s*1fr\) minmax\(120px,\s*46%\)/)
   assert.doesNotMatch(statRowRule, /border/, 'stat rows must use spacing instead of repeated dividers')
+  assert.match(
+    source,
+    /\.stat-group--suitabilities\s*\{[^}]*width:\s*100%/,
+    'work suitability must not shrink its localized heading to its min-content width',
+  )
 })
 
 test('equipped skill picker only offers mastered skills that are not already equipped', () => {

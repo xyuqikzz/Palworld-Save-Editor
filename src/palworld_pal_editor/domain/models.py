@@ -165,7 +165,8 @@ class SessionSummary:
     platform: SavePlatform = SavePlatform.STEAM
     source_id: str | None = None
     source_display_name: str | None = None
-    save_capabilities: Mapping[str, bool] = field(default_factory=dict)
+    save_capabilities: Mapping[str, Any] = field(default_factory=dict)
+    raw_json_pending: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         opened_at = self.opened_at
@@ -182,6 +183,7 @@ class SessionSummary:
             "sourceId": self.source_id,
             "sourceDisplayName": self.source_display_name,
             "saveCapabilities": dict(self.save_capabilities),
+            "raw_json_pending": self.raw_json_pending,
         }
 
 

@@ -12,7 +12,9 @@ from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 from palworld_pal_editor.core.save_manager import SaveManager
 from palworld_pal_editor.domain.commands import (
+    HealAllPals,
     MaxPal,
+    UnlockAllExpeditionPals,
     UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
@@ -146,9 +148,12 @@ class _Player:
                 values.append(tech)
 
 
-def make_pal() -> PalEntity:
-    instance_id = toUUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-    owner_id = toUUID("11111111-2222-3333-4444-555555555555")
+def make_pal(
+    instance_id: str = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    owner_id: str = "11111111-2222-3333-4444-555555555555",
+) -> PalEntity:
+    instance_id = toUUID(instance_id)
+    owner_id = toUUID(owner_id)
     container_id = toUUID("22222222-3333-4444-5555-666666666666")
     group_id = toUUID("33333333-4444-5555-6666-777777777777")
     pal = PalEntity(
@@ -223,6 +228,109 @@ class CharacterEditorTests(unittest.TestCase):
             result["value"],
         )
         self.assertEqual(1, self.session.revision)
+
+    def test_unlock_valid_pal_removes_reverse_expedition_membership(self) -> None:
+        expedition_id = "44444444-5555-6666-7777-888888888888"
+        pal_id = str(self.pal.InstanceId)
+        field = "MapObjectConcreteInstanceIdAssignedToExpedition"
+        self.pal._pal_param[field] = PalObjects.Guid(expedition_id)
+        reverse_members = {pal_id.lower()}
+        manager = self.session.manager
+        manager.expedition_has_member = lambda candidate_expedition_id, candidate_pal_id: (
+            str(candidate_expedition_id).lower() == expedition_id
+            and str(candidate_pal_id).lower() in reverse_members
+        )
+        manager.snapshot_expedition_data = lambda: set(reverse_members)
+
+        def restore_expedition_data(snapshot) -> None:
+            reverse_members.clear()
+            reverse_members.update(snapshot)
+
+        def remove_expedition_members(pal_ids) -> dict[str, list[str]]:
+            removed = sorted(
+                str(candidate).lower()
+                for candidate in pal_ids
+                if str(candidate).lower() in reverse_members
+            )
+            reverse_members.difference_update(removed)
+            return {expedition_id: removed} if removed else {}
+
+        manager.restore_expedition_data = restore_expedition_data
+        manager.remove_expedition_members = remove_expedition_members
+
+        result = self.editor.execute(
+            UnlockPalExpedition(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=pal_id,
+            )
+        )
+
+        self.assertEqual(set(), reverse_members)
+        self.assertFalse(self.pal.IsExpeditionPal)
+        self.assertIn(
+            "level:MapObjectSaveData",
+            self.session.changes()[0]["affected_records"],
+        )
+
+    def test_unlock_all_expedition_pals_removes_reverse_members_once(self) -> None:
+        expedition_id = "44444444-5555-6666-7777-888888888888"
+        second_pal = make_pal("bbbbbbbb-cccc-dddd-eeee-ffffffffffff")
+        pals = (self.pal, second_pal)
+        for pal in pals:
+            pal._pal_param[
+                "MapObjectConcreteInstanceIdAssignedToExpedition"
+            ] = PalObjects.Guid(expedition_id)
+        manager = self.session.manager
+        manager.player_mapping = {
+            "owner": SimpleNamespace(
+                _palbox={str(pal.InstanceId): pal for pal in pals}
+            )
+        }
+        manager.baseworker_mapping = {}
+        manager._dangling_pals = {}
+        reverse_members = {str(pal.InstanceId).lower() for pal in pals}
+        manager.expedition_has_member = lambda candidate_expedition_id, candidate_pal_id: (
+            str(candidate_expedition_id).lower() == expedition_id
+            and str(candidate_pal_id).lower() in reverse_members
+        )
+        manager.snapshot_expedition_data = lambda: set(reverse_members)
+
+        def restore_expedition_data(snapshot) -> None:
+            reverse_members.clear()
+            reverse_members.update(snapshot)
+
+        remove_calls = []
+
+        def remove_expedition_members(pal_ids) -> dict[str, list[str]]:
+            remove_calls.append(sorted(str(value).lower() for value in pal_ids))
+            removed = sorted(reverse_members.intersection(remove_calls[-1]))
+            reverse_members.difference_update(removed)
+            return {expedition_id: removed}
+
+        manager.restore_expedition_data = restore_expedition_data
+        manager.remove_expedition_members = remove_expedition_members
+
+        result = self.editor.execute(
+            UnlockAllExpeditionPals(
+                session_id=self.session.session_id,
+                expected_revision=0,
+            )
+        )
+
+        self.assertEqual(2, result["value"]["unlocked_count"])
+        self.assertEqual(2, result["value"]["reverse_member_count"])
+        self.assertEqual(1, len(remove_calls))
+        self.assertEqual(set(), reverse_members)
+        self.assertEqual(1, self.session.revision)
+        self.assertTrue(all(not pal.IsExpeditionPal for pal in pals))
+        self.assertEqual(
+            [
+                "level:CharacterSaveParameterMap",
+                "level:MapObjectSaveData",
+            ],
+            self.session.changes()[0]["affected_records"],
+        )
 
     def test_unlock_pal_expedition_rejects_an_unassigned_pal(self) -> None:
         with self.assertRaises(DomainError) as raised:
@@ -493,6 +601,164 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertEqual(["UnknownPassive"], result["value"]["passive"])
         self.assertEqual(["EPalWazaID::WaterGun"], result["value"]["active"])
 
+    def test_unrelated_pal_edit_preserves_existing_unknown_passive(self) -> None:
+        unknown = "OtherMod_ExistingPassive_Exact"
+        self.pal._pal_param["PassiveSkillList"] = PalObjects.ArrayProperty(
+            "NameProperty", {"values": [unknown, "Rare"]}
+        )
+
+        self.editor.execute(
+            UpdatePalProgression(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"level": 11},
+            )
+        )
+
+        self.assertEqual([unknown, "Rare"], self.pal.PassiveSkillList)
+
+    def test_existing_unknown_passive_can_be_deleted_without_custom_flag(
+        self,
+    ) -> None:
+        unknown = "OtherMod_ExistingPassive_Exact"
+        self.pal._pal_param["PassiveSkillList"] = PalObjects.ArrayProperty(
+            "NameProperty", {"values": [unknown, "Rare"]}
+        )
+
+        result = self.editor.execute(
+            UpdatePalSkills(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                passive=("Rare",),
+            )
+        )
+
+        self.assertEqual(["Rare"], result["value"]["passive"])
+        self.assertEqual(["Rare"], self.pal.PassiveSkillList)
+
+    def test_unknown_passive_requires_explicit_custom_flag(self) -> None:
+        custom = "OtherMod_NewPassive_Exact"
+
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePalSkills(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    passive=(custom,),
+                )
+            )
+
+        self.assertEqual("UNKNOWN_SKILL", raised.exception.code)
+        self.assertEqual(0, self.session.revision)
+        self.assertNotIn(custom, self.pal.PassiveSkillList or [])
+
+        result = self.editor.execute(
+            UpdatePalSkills(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                passive=(custom,),
+                allow_custom_passive=True,
+            )
+        )
+
+        self.assertEqual([custom], result["value"]["passive"])
+        self.assertEqual([custom], self.pal.PassiveSkillList)
+        self.assertEqual(
+            "NameProperty",
+            self.pal._pal_param["PassiveSkillList"]["array_type"],
+        )
+
+    def test_custom_passive_validation_rejects_unsafe_values_atomically(
+        self,
+    ) -> None:
+        before = deepcopy(self.pal._pal_param)
+        invalid = (
+            ((123,), "INVALID_FIELD_TYPE"),
+            (("",), "INVALID_CUSTOM_PASSIVE_ID"),
+            (("x" * 129,), "INVALID_CUSTOM_PASSIVE_ID"),
+            (("OtherMod_\nPassive",), "INVALID_CUSTOM_PASSIVE_ID"),
+            (
+                ("OtherMod_Duplicate", "OtherMod_Duplicate"),
+                "DUPLICATE_SKILL",
+            ),
+            (
+                (
+                    "OtherMod_One",
+                    "OtherMod_Two",
+                    "OtherMod_Three",
+                    "OtherMod_Four",
+                    "OtherMod_Five",
+                ),
+                "SKILL_SLOT_LIMIT_EXCEEDED",
+            ),
+        )
+
+        for passive, expected_code in invalid:
+            with self.subTest(expected_code=expected_code, passive=passive):
+                with self.assertRaises(DomainError) as raised:
+                    self.editor.execute(
+                        UpdatePalSkills(
+                            session_id=self.session.session_id,
+                            expected_revision=0,
+                            pal_id=str(self.pal.InstanceId),
+                            passive=passive,
+                            allow_custom_passive=True,
+                        )
+                    )
+                self.assertEqual(expected_code, raised.exception.code)
+                self.assertEqual(before, self.pal._pal_param)
+                self.assertEqual(0, self.session.revision)
+
+    def test_custom_passive_flag_must_be_boolean_and_apply_to_passives(
+        self,
+    ) -> None:
+        with self.assertRaises(DomainError) as invalid_type:
+            self.editor.execute(
+                UpdatePalSkills(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    passive=("OtherMod_NewPassive_Exact",),
+                    allow_custom_passive="true",
+                )
+            )
+        self.assertEqual("INVALID_FIELD_TYPE", invalid_type.exception.code)
+
+        with self.assertRaises(DomainError) as missing_passive:
+            self.editor.execute(
+                UpdatePalSkills(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    active=(),
+                    mastered=(),
+                    allow_custom_passive=True,
+                )
+            )
+        self.assertEqual(
+            "INVALID_CUSTOM_PASSIVE_REQUEST",
+            missing_passive.exception.code,
+        )
+
+        with self.assertRaises(DomainError) as active_skill:
+            self.editor.execute(
+                UpdatePalSkills(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    active=("OtherMod_ActiveSkill",),
+                    mastered=("OtherMod_ActiveSkill",),
+                    passive=("OtherMod_NewPassive_Exact",),
+                    allow_custom_passive=True,
+                )
+            )
+        self.assertEqual("UNKNOWN_SKILL", active_skill.exception.code)
+        self.assertEqual(0, self.session.revision)
+
     def test_pal_enhancement_updates_derived_fields_atomically(self) -> None:
         work_type = "EPalWorkSuitability::Handcraft"
         result = self.editor.execute(
@@ -732,6 +998,137 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertFalse(result["value"]["worker_sick"])
         self.assertFalse(result["value"]["fainted"])
         self.assertIsNone(result["value"]["hunger_status"])
+
+    def test_pal_progression_heal_restores_supported_status_maximums(self) -> None:
+        self.pal.Hp = 1
+        self.pal.FullStomach = 1.0
+        self.pal.SanityValue = 1.0
+        expected_health = self.pal.ComputedMaxHP
+        expected_satiety = DataProvider.get_pal_stats(
+            self.pal.DataAccessKey, "FOOD"
+        )
+
+        result = self.editor.execute(
+            UpdatePalProgression(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"heal": True},
+            )
+        )
+
+        self.assertIsNotNone(expected_health)
+        self.assertIsNotNone(expected_satiety)
+        self.assertEqual(expected_health, result["value"]["health"])
+        self.assertEqual(expected_satiety, result["value"]["satiety"])
+        self.assertEqual(100.0, result["value"]["sanity"])
+
+    def test_pal_progression_heal_preserves_values_above_supported_maximums(self) -> None:
+        maximum_health = self.pal.ComputedMaxHP
+        maximum_satiety = DataProvider.get_pal_stats(
+            self.pal.DataAccessKey, "FOOD"
+        )
+        self.pal.Hp = maximum_health + 1
+        self.pal.FullStomach = maximum_satiety + 1.0
+
+        result = self.editor.execute(
+            UpdatePalProgression(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"heal": True},
+            )
+        )
+
+        self.assertEqual(maximum_health + 1, result["value"]["health"])
+        self.assertEqual(maximum_satiety + 1.0, result["value"]["satiety"])
+        self.assertEqual(100.0, result["value"]["sanity"])
+
+    def test_heal_all_pals_covers_player_base_and_detached_records_atomically(self) -> None:
+        base_pal = make_pal("bbbbbbbb-cccc-dddd-eeee-ffffffffffff")
+        detached_pal = make_pal("cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa")
+        pals = (self.pal, base_pal, detached_pal)
+        for pal in pals:
+            pal.Hp = 1
+            pal.FullStomach = 1.0
+            pal.SanityValue = 1.0
+            pal._pal_param["WorkerSick"] = PalObjects.EnumProperty(
+                "EPalBaseCampWorkerSickType",
+                "EPalBaseCampWorkerSickType::DepressionSprain",
+            )
+            pal._pal_param["PalReviveTimer"] = PalObjects.FloatProperty(10.0)
+
+        manager = self.session.manager
+        manager.player_mapping = {
+            "owner": SimpleNamespace(
+                _palbox={str(self.pal.InstanceId): self.pal}
+            )
+        }
+        manager.baseworker_mapping = {
+            str(base_pal.InstanceId): base_pal
+        }
+        manager._dangling_pals = {
+            str(detached_pal.InstanceId): detached_pal
+        }
+
+        result = self.editor.execute(
+            HealAllPals(
+                session_id=self.session.session_id,
+                expected_revision=0,
+            )
+        )
+
+        self.assertEqual(3, result["value"]["healed_count"])
+        self.assertEqual(3, result["value"]["condition"]["fully_healed"])
+        self.assertEqual(1, self.session.revision)
+        for pal in pals:
+            self.assertEqual(pal.ComputedMaxHP, pal.Hp)
+            self.assertEqual(
+                DataProvider.get_pal_stats(pal.DataAccessKey, "FOOD"),
+                pal.FullStomach,
+            )
+            self.assertEqual(100.0, pal.SanityValue)
+            self.assertFalse(pal.HasWorkerSick)
+            self.assertFalse(pal.IsFaintedPal)
+
+    def test_heal_all_pals_rolls_back_every_record_on_failure(self) -> None:
+        failing_pal = make_pal("dddddddd-eeee-ffff-aaaa-bbbbbbbbbbbb")
+        self.pal.Hp = 1
+        failing_pal.Hp = 2
+        before = {
+            str(self.pal.InstanceId): deepcopy(self.pal._pal_param),
+            str(failing_pal.InstanceId): deepcopy(failing_pal._pal_param),
+        }
+        manager = self.session.manager
+        manager.player_mapping = {
+            "owner": SimpleNamespace(
+                _palbox={str(self.pal.InstanceId): self.pal}
+            )
+        }
+        manager.baseworker_mapping = {
+            str(failing_pal.InstanceId): failing_pal
+        }
+        manager._dangling_pals = {}
+
+        def fail_heal() -> None:
+            raise RuntimeError("synthetic heal failure")
+
+        failing_pal.heal_pal = fail_heal
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                HealAllPals(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                )
+            )
+
+        self.assertEqual("COMMAND_EXECUTION_FAILED", raised.exception.code)
+        self.assertEqual(0, self.session.revision)
+        self.assertEqual(before[str(self.pal.InstanceId)], self.pal._pal_param)
+        self.assertEqual(
+            before[str(failing_pal.InstanceId)],
+            failing_pal._pal_param,
+        )
 
     def test_pal_progression_rejects_negative_friendship_level(self) -> None:
         before = deepcopy(self.pal._pal_param)

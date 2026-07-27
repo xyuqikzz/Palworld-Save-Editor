@@ -1,4 +1,15 @@
-import ooz
+try:
+    import ooz
+except ModuleNotFoundError as exc:
+    if exc.name != "ooz":
+        raise
+    import palooz as ooz
+else:
+    if not all(
+        callable(getattr(ooz, operation, None))
+        for operation in ("compress", "decompress")
+    ):
+        import palooz as ooz
 
 from palworld_save_tools.compressor import (
     Compressor,

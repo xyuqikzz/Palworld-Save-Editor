@@ -11,20 +11,19 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  release-checks:
+    runs-on: windows-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout release source
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -41,145 +40,219 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
+        cache: npm
+        cache-dependency-path: frontend/palworld-pal-editor-webui/package-lock.json
 
-    - name: Extract Project Name
-      shell: bash
-      id: extract_project_name
+    - name: Install backend test dependencies
+      shell: pwsh
       run: |
-        PROJECT_NAME=$(cat pyproject.toml | grep "^name" | awk -F'"' '{print $2}')
+        python -m pip install --upgrade pip
+        python -m pip install -e ".[dev]"
+
+    - name: Run backend tests
+      shell: pwsh
+      run: python -m pytest -q
+
+    - name: Install frontend dependencies
+      working-directory: frontend/palworld-pal-editor-webui
+      run: npm ci
+
+    - name: Run frontend tests
+      working-directory: frontend/palworld-pal-editor-webui
+      run: npm test
+
+  release-build:
+    needs: release-checks
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout release source
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+        ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.2
+        architecture: x64
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: frontend/palworld-pal-editor-webui/package-lock.json
+
+    - name: Extract project name
+      shell: bash
+      run: |
+        PROJECT_NAME=$(grep '^name' pyproject.toml | awk -F'"' '{print $2}')
         if [[ -z "$PROJECT_NAME" ]]; then
-          echo "Error: Could not extract project name from pyproject.toml"
+          echo "Could not extract project name from pyproject.toml"
           exit 1
         fi
-        echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+        echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
 
-    - name: Set Build Metadata
+    - name: Set build metadata
       shell: bash
       run: |
         CONFIG_FILE="src/palworld_pal_editor/config.py"
-        PYPROJECT_FILE="./pyproject.toml"
+        PYPROJECT_FILE="pyproject.toml"
 
         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           VERSION_TAG="${{ inputs.tag }}"
         else
-          VERSION_TAG=$(git describe --tags --abbrev=0)
+          VERSION_TAG="${GITHUB_REF_NAME}"
         fi
-        RELEASE_TYPE="RELEASE"
+        if ! [[ "$VERSION_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Release tag must use x.y.z format: $VERSION_TAG"
+          exit 1
+        fi
+
+        SOURCE_VERSION=$(grep '^version = ' "$PYPROJECT_FILE" | awk -F'"' '{print $2}')
+        CONFIG_VERSION=$(grep '^VERSION = ' "$CONFIG_FILE" | awk -F'"' '{print $2}')
+        if [[ "$SOURCE_VERSION" != "$VERSION_TAG" || "$CONFIG_VERSION" != "$VERSION_TAG" ]]; then
+          echo "Release tag, pyproject.toml, and config.py versions must match."
+          exit 1
+        fi
+
         GIT_HASH=$(git rev-parse --short HEAD)
         BUILD_TIME=$(date +%s)
+        REPO="${{ github.repository }}@${VERSION_TAG}"
 
-        REPO_OWNER="${{ github.repository_owner }}"
-        REPO_NAME="${{ github.event.repository.name }}"
-        BRANCH_NAME="${VERSION_TAG}"
-        REPO="${REPO_OWNER}/${REPO_NAME}@${BRANCH_NAME}"
-
-        echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-        echo "GIT_HASH=$GIT_HASH" >> $GITHUB_ENV
+        echo "VERSION_TAG=$VERSION_TAG" >> "$GITHUB_ENV"
+        echo "GIT_HASH=$GIT_HASH" >> "$GITHUB_ENV"
 
         if [[ "$RUNNER_OS" == "macOS" ]]; then
-          sed -i '' "s|^VERSION = .*|VERSION = \"${VERSION_TAG}\"|" $CONFIG_FILE
-          sed -i '' "s|^RELEASE_TYPE = .*|RELEASE_TYPE = \"${RELEASE_TYPE}\"|" $CONFIG_FILE
-          sed -i '' "s|^BUILD_TIME = .*|BUILD_TIME = \"${BUILD_TIME}\"|" $CONFIG_FILE
-          sed -i '' "s|^GIT_HASH = .*|GIT_HASH = \"${GIT_HASH}\"|" $CONFIG_FILE
-          sed -i '' "s|^REPO = .*|REPO = \"${REPO}\"|" $CONFIG_FILE
-          sed -i '' "s|^version = .*|version = \"${VERSION_TAG}\"|" $PYPROJECT_FILE
+          sed -i '' 's|^RELEASE_TYPE = .*|RELEASE_TYPE = "RELEASE"|' "$CONFIG_FILE"
+          sed -i '' "s|^BUILD_TIME = .*|BUILD_TIME = \"${BUILD_TIME}\"|" "$CONFIG_FILE"
+          sed -i '' "s|^GIT_HASH = .*|GIT_HASH = \"${GIT_HASH}\"|" "$CONFIG_FILE"
+          sed -i '' "s|^REPO = .*|REPO = \"${REPO}\"|" "$CONFIG_FILE"
         else
-          sed -i "s|^VERSION = .*|VERSION = \"${VERSION_TAG}\"|" $CONFIG_FILE
-          sed -i "s|^RELEASE_TYPE = .*|RELEASE_TYPE = \"${RELEASE_TYPE}\"|" $CONFIG_FILE
-          sed -i "s|^BUILD_TIME = .*|BUILD_TIME = \"${BUILD_TIME}\"|" $CONFIG_FILE
-          sed -i "s|^GIT_HASH = .*|GIT_HASH = \"${GIT_HASH}\"|" $CONFIG_FILE
-          sed -i "s|^REPO = .*|REPO = \"${REPO}\"|" $CONFIG_FILE
-          sed -i "s|^version = .*|version = \"${VERSION_TAG}\"|" $PYPROJECT_FILE
+          sed -i 's|^RELEASE_TYPE = .*|RELEASE_TYPE = "RELEASE"|' "$CONFIG_FILE"
+          sed -i "s|^BUILD_TIME = .*|BUILD_TIME = \"${BUILD_TIME}\"|" "$CONFIG_FILE"
+          sed -i "s|^GIT_HASH = .*|GIT_HASH = \"${GIT_HASH}\"|" "$CONFIG_FILE"
+          sed -i "s|^REPO = .*|REPO = \"${REPO}\"|" "$CONFIG_FILE"
         fi
 
-        cat $CONFIG_FILE
-        cat $PYPROJECT_FILE
+    - name: Build and test PalEditorBridge
+      if: runner.os == 'Windows'
+      id: bridge
+      shell: pwsh
+      run: |
+        $output = ./build_pal_editor_bridge.ps1 `
+          -UE4SSRoot (Join-Path $env:RUNNER_TEMP "RE-UE4SS")
+        $output | Write-Host
+        $packageLine = $output |
+          Where-Object { $_ -is [string] -and $_.StartsWith("PACKAGE_ZIP=") } |
+          Select-Object -Last 1
+        if (-not $packageLine) {
+          throw "PalEditorBridge packaging did not return PACKAGE_ZIP."
+        }
+        $package = $packageLine.Substring("PACKAGE_ZIP=".Length)
+        "package=$package" >> $env:GITHUB_OUTPUT
 
-    - name: Windows Build
+    - name: Build Windows EXE
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: ./build_executable.ps1 -BridgeModPackage "${{ steps.bridge.outputs.package }}"
+
+    - name: Verify Windows release artifacts
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        ./build_executable.ps1
+        $dll = Join-Path $PWD `
+          "build\pal_editor_bridge_ue4ss\ue4ss\Game__Shipping__Win64\PalEditorBridge.dll"
+        ./build/venv/Scripts/python.exe scripts/verify_release_artifacts.py `
+          --exe dist/palworld-save-editor.exe `
+          --mod "${{ steps.bridge.outputs.package }}" `
+          --dll $dll `
+          --version-file native/pal_editor_bridge/VERSION
+        Copy-Item -LiteralPath "${{ steps.bridge.outputs.package }}" -Destination dist
 
-    - name: macOS Build
+    - name: Build macOS application
       if: runner.os == 'macOS'
       shell: bash
-      run: |
-        ./build_executable.sh
+      run: ./build_executable.sh
 
-    # - name: Linux AppImage Build
-    #   if: runner.os == 'Linux'
-    #   shell: bash
-    #   run: |
-    #     docker run --rm --privileged \
-    #       -v ${{ github.workspace }}:/app \
-    #       -w /app \
-    #       ubuntu:20.04 bash -c '
-    #         set -e
-
-    #         apt update
-    #         apt install -y software-properties-common curl gnupg2 ca-certificates
-
-    #         # Python 3.11
-    #         add-apt-repository -y ppa:deadsnakes/ppa
-    #         apt update
-    #         DEBIAN_FRONTEND=noninteractive apt install -y \
-    #           python3.11 python3.11-venv python3.11-dev \
-    #           build-essential git libgl1 libglib2.0-0 libfuse2 fuse \
-    #           libx11-dev libxrandr-dev libxi-dev libxinerama-dev libxcursor-dev
-
-    #         ln -sf /usr/bin/python3.11 /usr/bin/python3
-
-    #         # Node.js 20
-    #         curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    #         apt install -y nodejs
-
-    #         # Required by AppImageKit
-    #         mkdir -p /dev
-    #         mknod -m 666 /dev/fuse c 10 229 || true
-    #         chmod 666 /dev/fuse || true
-
-    #         bash ./build_appimage.sh
-    #       '
-
-    - name: Fix dist file permissions after Docker build
-      if: runner.os == 'Linux'
-      run: |
-        sudo chmod -R a+rw ./dist
-
-    - name: Rename Built File
+    - name: Rename built application
       shell: bash
       run: |
         FILE_EXT=""
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
           FILE_EXT=".exe"
-        elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          FILE_EXT="-x86_64.AppImage"
         fi
 
-        FILE_PATH="./dist/${{ env.PROJECT_NAME }}${FILE_EXT}"
+        FILE_PATH="./dist/${PROJECT_NAME}${FILE_EXT}"
         if [[ ! -f "$FILE_PATH" ]]; then
-          echo "Error: Built file not found: $FILE_PATH"
+          echo "Built file not found: $FILE_PATH"
           exit 1
         fi
 
-        NEW_NAME="Palworld-Save-Editor_${{ runner.os }}_${{ env.VERSION_TAG }}_${{ env.GIT_HASH }}${FILE_EXT}"
+        NEW_NAME="Palworld-Save-Editor_${RUNNER_OS}_${VERSION_TAG}_${GIT_HASH}${FILE_EXT}"
         mv "$FILE_PATH" "./dist/$NEW_NAME"
-
         echo "Renamed file to: $NEW_NAME"
 
-    - name: Upload artifacts
+    - name: Upload verified build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: "Palworld-Save-Editor_${{ runner.os }}_${{ env.VERSION_TAG }}"
         path: ./dist/
+        if-no-files-found: error
 
-    - name: Create and Upload Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+  publish-release:
+    needs: release-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Check out release tag
+      uses: actions/checkout@v4
       with:
-        tag_name: ${{ env.VERSION_TAG }}
-        files: dist/*
-        generate_release_notes: true
+        ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        fetch-depth: 0
+
+    - name: Prepare categorized release notes
+      shell: bash
+      env:
+        RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      run: |
+        git for-each-ref --format='%(contents)' "refs/tags/${RELEASE_TAG}" > tag-message.txt
+        sed '1,/^$/d' tag-message.txt > release-notes.md
+        test -s release-notes.md
+        grep -Fxq "## New Features" release-notes.md
+        grep -Fxq "## Bug Fixes" release-notes.md
+        grep -Fxq "## Other Changes" release-notes.md
+
+    - name: Download verified build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: release-assets
+        merge-multiple: true
+
+    - name: Create SHA-256 checksums
+      working-directory: release-assets
+      shell: bash
+      run: |
+        find . -maxdepth 1 -type f ! -name SHA256SUMS.txt -printf '%f\0' |
+          sort -z |
+          xargs -0 sha256sum > SHA256SUMS.txt
+        cat SHA256SUMS.txt
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        files: release-assets/*
+        body_path: release-notes.md
+        fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

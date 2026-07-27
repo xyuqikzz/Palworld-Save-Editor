@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 import hashlib
 from datetime import datetime, timezone
 import json
@@ -18,6 +19,19 @@ from palworld_pal_editor.domain.models import (
     StorageCommitResult,
     StorageFileSnapshot,
     StorageSnapshot,
+)
+from palworld_pal_editor.storage.backup_diagnostics import (
+    BackupVerificationError,
+    backup_failure,
+    source_changed,
+)
+
+_STEAM_BACKUP_DIRECTORY_NAMES = frozenset(
+    {
+        "backup",
+        "palworld-pal-editor-backup",
+        ".palworld-pal-editor-backup",
+    }
 )
 
 
@@ -64,6 +78,78 @@ def make_steam_source(path: str | Path) -> SaveSource:
     )
 
 
+def _iter_steam_source_files(root: Path) -> Iterator[Path]:
+    for directory, subdirectories, filenames in os.walk(root, topdown=True):
+        subdirectories[:] = sorted(
+            name
+            for name in subdirectories
+            if name.casefold() not in _STEAM_BACKUP_DIRECTORY_NAMES
+        )
+        for filename in sorted(filenames):
+            path = Path(directory) / filename
+            if path.is_file():
+                yield path
+
+
+def _snapshot_steam_source(root: Path) -> StorageSnapshot:
+    files: list[StorageFileSnapshot] = []
+    if root.is_dir():
+        for path in _iter_steam_source_files(root):
+            stat = path.stat()
+            files.append(
+                StorageFileSnapshot(
+                    relative_path=PurePosixPath(
+                        path.relative_to(root).as_posix()
+                    ),
+                    size=stat.st_size,
+                    mtime_ns=stat.st_mtime_ns,
+                    sha256=sha256_file(path),
+                )
+            )
+    return StorageSnapshot(files=tuple(files))
+
+
+def _first_snapshot_difference(
+    expected: StorageSnapshot,
+    actual: StorageSnapshot,
+) -> str | None:
+    expected_files = expected.by_path()
+    actual_files = actual.by_path()
+    for relative in sorted(set(expected_files) | set(actual_files)):
+        if expected_files.get(relative) != actual_files.get(relative):
+            return relative
+    return None
+
+
+def _verify_steam_source_unchanged(
+    source: Path,
+    expected: StorageSnapshot,
+    *,
+    backup_path: Path | None,
+    phase: str,
+) -> None:
+    try:
+        actual = _snapshot_steam_source(source)
+    except OSError as error:
+        raise source_changed(
+            code="SAVE_TARGET_CHANGED",
+            message="The Steam save source changed during backup.",
+            backup_path=backup_path,
+            phase=phase,
+            failed_file=None,
+            error=error,
+        ) from error
+    failed_file = _first_snapshot_difference(expected, actual)
+    if failed_file is not None:
+        raise source_changed(
+            code="SAVE_TARGET_CHANGED",
+            message="The Steam save source changed during backup.",
+            backup_path=backup_path,
+            phase=phase,
+            failed_file=failed_file,
+        )
+
+
 class SteamDirectoryAdapter:
     """Steam directory Adapter at the SaveStorage seam."""
 
@@ -76,24 +162,82 @@ class SteamDirectoryAdapter:
             )
         root = source.canonical_path.resolve()
         logical_files: dict[str, LogicalSaveFile] = {}
-        if root.is_dir():
-            for path in sorted(root.rglob("*.sav")):
-                if not path.is_file():
-                    continue
-                relative = PurePosixPath(path.relative_to(root).as_posix())
+        snapshot = _snapshot_steam_source(root)
+        for item in snapshot.files:
+            relative = item.relative_path
+            if Path(relative.as_posix()).suffix.casefold() == ".sav":
                 logical_files[relative.as_posix()] = LogicalSaveFile(
                     relative_path=relative,
                     physical_identity=relative.as_posix(),
-                    size=path.stat().st_size,
-                    sha256=sha256_file(path),
+                    size=item.size,
+                    sha256=item.sha256,
                 )
         return OpenedSave(
             source=source,
             workspace=root,
             logical_files=logical_files,
-            snapshot=snapshot_tree(root),
+            snapshot=snapshot,
             cleanup_required=False,
         )
+
+    def bind_logical_file(
+        self,
+        opened: OpenedSave,
+        relative_path: str,
+        physical_path: str | Path,
+    ) -> None:
+        if opened.source.platform is not SavePlatform.STEAM:
+            raise DomainError(
+                code="INVALID_SAVE_SOURCE",
+                message="Only Steam sessions can bind an external logical file.",
+                http_status=400,
+            )
+        relative = PurePosixPath(str(relative_path).replace("\\", "/"))
+        physical = Path(physical_path).resolve()
+        if not physical.is_file():
+            raise DomainError(
+                code="LOCAL_DATA_MISSING",
+                message="The selected logical save file does not exist.",
+                details={"path": str(physical)},
+                http_status=404,
+            )
+        stat = physical.stat()
+        opened.logical_files[relative.as_posix()] = LogicalSaveFile(
+            relative_path=relative,
+            physical_identity=str(physical),
+            size=stat.st_size,
+            sha256=sha256_file(physical),
+        )
+        external = opened.storage_metadata.setdefault(
+            "external_logical_files", {}
+        )
+        default_path = (
+            opened.source.canonical_path.resolve() / Path(relative.as_posix())
+        )
+        if physical == default_path:
+            external.pop(relative.as_posix(), None)
+        else:
+            external[relative.as_posix()] = str(physical)
+
+    @staticmethod
+    def logical_source_path(opened: OpenedSave, relative_path: str) -> Path:
+        external = opened.storage_metadata.get("external_logical_files", {})
+        bound = external.get(relative_path) if isinstance(external, dict) else None
+        if bound:
+            return Path(bound).resolve()
+        return opened.source.canonical_path.resolve() / Path(relative_path)
+
+    @classmethod
+    def _backup_file_path(
+        cls,
+        opened: OpenedSave,
+        backup_path: Path,
+        relative_path: str,
+    ) -> Path:
+        external = opened.storage_metadata.get("external_logical_files", {})
+        if isinstance(external, dict) and relative_path in external:
+            return backup_path / "files" / "__external__" / Path(relative_path)
+        return backup_path / "files" / Path(relative_path)
 
     def commit(self, request: StorageCommitRequest) -> StorageCommitResult:
         opened = request.opened
@@ -110,9 +254,30 @@ class SteamDirectoryAdapter:
                 manifest_path=None,
                 source_reloaded=True,
             )
+        _verify_steam_source_unchanged(
+            source,
+            opened.snapshot,
+            backup_path=None,
+            phase="verify_source_before_backup",
+        )
+        external = opened.storage_metadata.get("external_logical_files", {})
+        if (
+            target != source
+            and isinstance(external, dict)
+            and any(relative in external for relative in changed)
+        ):
+            raise DomainError(
+                code="EXTERNAL_LOCAL_DATA_TARGET_UNSUPPORTED",
+                message=(
+                    "A selected external LocalData.sav can only be written "
+                    "back to its original file."
+                ),
+                field="target",
+                http_status=409,
+            )
         for relative in changed:
             expected = opened.logical_files.get(relative)
-            path = source / Path(relative)
+            path = self.logical_source_path(opened, relative)
             if expected is None or not path.is_file() or sha256_file(path) != expected.sha256:
                 raise DomainError(
                     code="SAVE_TARGET_CHANGED",
@@ -151,9 +316,59 @@ class SteamDirectoryAdapter:
         progress: list[str] = []
         manifest: tuple[dict[str, object], ...] = ()
         try:
-            manifest = self._backup(source, backup_path, changed, opened.source.source_id)
+            manifest = self._backup(
+                source,
+                backup_path,
+                opened.snapshot,
+                opened.source.source_id,
+                request,
+                opened,
+            )
             self._fail(request, "after_backup", {"backup_path": str(backup_path)})
+            _verify_steam_source_unchanged(
+                source,
+                opened.snapshot,
+                backup_path=backup_path,
+                phase="verify_source_after_backup",
+            )
+        except DomainError:
+            raise
+        except Exception as error:
+            raise backup_failure(
+                code="BACKUP_FAILED",
+                message="A complete, verified backup could not be created.",
+                backup_path=backup_path,
+                phase="verify_source_after_backup",
+                failed_file=None,
+                error=error,
+            ) from error
+
+        try:
             self._fail(request, "before_replace", {"staging_path": str(request.staged_workspace)})
+            _verify_steam_source_unchanged(
+                source,
+                opened.snapshot,
+                backup_path=backup_path,
+                phase="verify_source_before_write",
+            )
+            for relative in changed:
+                expected = opened.logical_files.get(relative)
+                current = self.logical_source_path(opened, relative)
+                if (
+                    expected is None
+                    or not current.is_file()
+                    or sha256_file(current) != expected.sha256
+                ):
+                    raise source_changed(
+                        code="SAVE_TARGET_CHANGED",
+                        message=(
+                            "A save file changed on disk after the verified "
+                            "backup was created."
+                        ),
+                        backup_path=backup_path,
+                        phase="verify_source_before_write",
+                        failed_file=relative,
+                    )
             if target != source:
                 os.replace(request.staged_workspace, target)
                 progress.append(".")
@@ -161,7 +376,7 @@ class SteamDirectoryAdapter:
             else:
                 for relative in changed:
                     staged = request.staged_workspace / Path(relative)
-                    destination = target / Path(relative)
+                    destination = self.logical_source_path(opened, relative)
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     os.replace(staged, destination)
                     progress.append(relative)
@@ -171,7 +386,11 @@ class SteamDirectoryAdapter:
                         {"path": relative, "progress": list(progress)},
                     )
             for relative in changed:
-                final = target / Path(relative)
+                final = (
+                    self.logical_source_path(opened, relative)
+                    if target == source
+                    else target / Path(relative)
+                )
                 if sha256_file(final) != staged_hashes[relative]:
                     raise OSError("Steam target hash mismatch")
                 if request.verify_file is not None:
@@ -185,6 +404,7 @@ class SteamDirectoryAdapter:
                 backup_path=backup_path,
                 progress=progress,
                 request=request,
+                opened=opened,
             )
             raise DomainError(
                 code="WRITE_FAILED" if recovered else "RECOVERY_FAILED",
@@ -210,6 +430,7 @@ class SteamDirectoryAdapter:
                 backup_path=backup_path,
                 progress=progress,
                 request=request,
+                opened=opened,
             )
             code = "WRITE_FAILED" if recovered else "RECOVERY_FAILED"
             raise DomainError(
@@ -231,9 +452,15 @@ class SteamDirectoryAdapter:
             ) from error
 
         if target == source:
+            external_bindings = dict(
+                opened.storage_metadata.get("external_logical_files", {})
+            )
             refreshed = self.open(opened.source)
             opened.logical_files = refreshed.logical_files
             opened.snapshot = refreshed.snapshot
+            opened.storage_metadata = refreshed.storage_metadata
+            for relative, physical_path in external_bindings.items():
+                self.bind_logical_file(opened, relative, physical_path)
         return StorageCommitResult(
             platform=SavePlatform.STEAM,
             written_files=tuple(PurePosixPath(path) for path in changed),
@@ -250,51 +477,213 @@ class SteamDirectoryAdapter:
         self,
         source: Path,
         backup_path: Path,
-        changed: tuple[str, ...],
+        snapshot: StorageSnapshot,
         source_id: str,
+        request: StorageCommitRequest,
+        opened: OpenedSave,
     ) -> tuple[dict[str, object], ...]:
+        phase = "create_backup_directory"
+        failed_file: str | None = None
         try:
             files_root = backup_path / "files"
             files_root.mkdir(parents=True, exist_ok=False)
             manifest: list[dict[str, object]] = []
-            for relative in changed:
+            for item in snapshot.files:
+                relative = item.relative_path.as_posix()
+                failed_file = relative
                 source_file = source / Path(relative)
                 backup_file = files_root / Path(relative)
+                phase = "create_backup_directory"
                 backup_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_file, backup_file)
-                source_hash = sha256_file(source_file)
-                if sha256_file(backup_file) != source_hash:
-                    raise OSError("Steam backup hash mismatch")
+                phase = "copy_file"
+                self._fail(request, "before_backup_copy", {"path": relative})
+                try:
+                    shutil.copy2(source_file, backup_file)
+                except FileNotFoundError as error:
+                    if not source_file.is_file():
+                        raise source_changed(
+                            code="SAVE_TARGET_CHANGED",
+                            message=(
+                                "The Steam save source changed during "
+                                "backup."
+                            ),
+                            backup_path=backup_path,
+                            phase="verify_source_after_backup",
+                            failed_file=relative,
+                            error=error,
+                        ) from error
+                    raise
+                try:
+                    source_stat = source_file.stat()
+                    source_hash = sha256_file(source_file)
+                except OSError as error:
+                    raise source_changed(
+                        code="SAVE_TARGET_CHANGED",
+                        message="The Steam save source changed during backup.",
+                        backup_path=backup_path,
+                        phase="verify_source_after_backup",
+                        failed_file=relative,
+                        error=error,
+                    ) from error
+                if (
+                    source_stat.st_size != item.size
+                    or source_hash != item.sha256
+                ):
+                    raise source_changed(
+                        code="SAVE_TARGET_CHANGED",
+                        message="The Steam save source changed during backup.",
+                        backup_path=backup_path,
+                        phase="verify_source_after_backup",
+                        failed_file=relative,
+                    )
+                phase = "verify_copy"
+                copied = backup_file.stat()
+                if (
+                    copied.st_size != item.size
+                    or sha256_file(backup_file) != item.sha256
+                ):
+                    raise BackupVerificationError(
+                        "Steam backup file verification failed"
+                    )
+                self._fail(request, "after_backup_copy", {"path": relative})
                 manifest.append(
                     {
                         "path": relative,
-                        "size": source_file.stat().st_size,
-                        "sha256": source_hash,
+                        "size": item.size,
+                        "mtime_ns": item.mtime_ns,
+                        "sha256": item.sha256,
                     }
                 )
-            with (backup_path / "manifest.json").open(
-                "w", encoding="utf-8", newline="\n"
-            ) as stream:
-                json.dump(
-                    {
-                        "schema_version": 1,
-                        "source_id": source_id,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
-                        "files": manifest,
-                    },
-                    stream,
-                    ensure_ascii=False,
-                    indent=2,
+            external = opened.storage_metadata.get(
+                "external_logical_files", {}
+            )
+            if isinstance(external, dict):
+                for relative, physical_path in sorted(external.items()):
+                    logical = opened.logical_files.get(relative)
+                    if logical is None:
+                        raise BackupVerificationError(
+                            "External logical file metadata is missing"
+                        )
+                    failed_file = relative
+                    source_file = Path(physical_path).resolve()
+                    backup_file = self._backup_file_path(
+                        opened, backup_path, relative
+                    )
+                    phase = "create_backup_directory"
+                    backup_file.parent.mkdir(parents=True, exist_ok=True)
+                    phase = "copy_file"
+                    self._fail(
+                        request,
+                        "before_backup_copy",
+                        {"path": relative, "external": True},
+                    )
+                    shutil.copy2(source_file, backup_file)
+                    source_stat = source_file.stat()
+                    source_hash = sha256_file(source_file)
+                    if (
+                        source_stat.st_size != logical.size
+                        or source_hash != logical.sha256
+                    ):
+                        raise source_changed(
+                            code="SAVE_TARGET_CHANGED",
+                            message=(
+                                "The selected external save file changed "
+                                "during backup."
+                            ),
+                            backup_path=backup_path,
+                            phase="verify_source_after_backup",
+                            failed_file=relative,
+                        )
+                    phase = "verify_copy"
+                    if (
+                        backup_file.stat().st_size != logical.size
+                        or sha256_file(backup_file) != logical.sha256
+                    ):
+                        raise BackupVerificationError(
+                            "External Steam backup verification failed"
+                        )
+                    self._fail(
+                        request,
+                        "after_backup_copy",
+                        {"path": relative, "external": True},
+                    )
+                    manifest.append(
+                        {
+                            "path": relative,
+                            "backup_path": (
+                                PurePosixPath("__external__")
+                                / PurePosixPath(relative)
+                            ).as_posix(),
+                            "source_path": str(source_file),
+                            "external": True,
+                            "size": logical.size,
+                            "mtime_ns": source_stat.st_mtime_ns,
+                            "sha256": logical.sha256,
+                        }
+                    )
+            failed_file = "manifest.json"
+            manifest_path = backup_path / failed_file
+            document = {
+                "schema_version": 1,
+                "source_id": source_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "files": manifest,
+            }
+            phase = "write_manifest"
+            self._write_json_durable(manifest_path, document)
+            phase = "read_manifest"
+            manifest_text = manifest_path.read_text(encoding="utf-8")
+            phase = "verify_manifest"
+            try:
+                loaded = json.loads(manifest_text)
+            except (json.JSONDecodeError, TypeError) as error:
+                raise BackupVerificationError(
+                    "Steam backup manifest could not be parsed"
+                ) from error
+            if loaded != document:
+                raise BackupVerificationError(
+                    "Steam backup manifest verification failed"
                 )
-                stream.write("\n")
             return tuple(manifest)
+        except DomainError:
+            raise
         except Exception as error:
-            raise DomainError(
+            raise backup_failure(
                 code="BACKUP_FAILED",
                 message="A complete, verified backup could not be created.",
-                details={"backup_path": str(backup_path)},
-                http_status=500,
+                backup_path=backup_path,
+                phase=phase,
+                failed_file=failed_file,
+                error=error,
             ) from error
+
+    def _write_json_durable(
+        self,
+        path: Path,
+        document: dict[str, object],
+    ) -> None:
+        temporary = path.with_name(
+            f".{path.name}.{uuid.uuid4()}.tmp"
+        )
+        with temporary.open("w", encoding="utf-8", newline="\n") as stream:
+            json.dump(document, stream, ensure_ascii=False, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        self._fsync_directory(path.parent)
+
+    def _fsync_directory(self, path: Path) -> None:
+        try:
+            descriptor = os.open(path, os.O_RDONLY)
+        except OSError:
+            return
+        try:
+            os.fsync(descriptor)
+        except OSError:
+            pass
+        finally:
+            os.close(descriptor)
 
     def _recover(
         self,
@@ -304,6 +693,7 @@ class SteamDirectoryAdapter:
         backup_path: Path,
         progress: list[str],
         request: StorageCommitRequest,
+        opened: OpenedSave,
     ) -> bool:
         try:
             self._fail(request, "before_recovery", {"progress": list(progress)})
@@ -312,8 +702,10 @@ class SteamDirectoryAdapter:
                     return False
                 return True
             for relative in reversed(progress):
-                backup_file = backup_path / "files" / Path(relative)
-                destination = target / Path(relative)
+                backup_file = self._backup_file_path(
+                    opened, backup_path, relative
+                )
+                destination = self.logical_source_path(opened, relative)
                 temporary = destination.with_name(
                     f".{destination.name}.restore-{uuid.uuid4()}"
                 )
@@ -322,8 +714,10 @@ class SteamDirectoryAdapter:
                     raise OSError("Steam restore hash mismatch")
                 os.replace(temporary, destination)
             return all(
-                sha256_file(target / Path(relative))
-                == sha256_file(backup_path / "files" / Path(relative))
+                sha256_file(self.logical_source_path(opened, relative))
+                == sha256_file(
+                    self._backup_file_path(opened, backup_path, relative)
+                )
                 for relative in progress
             )
         except Exception:

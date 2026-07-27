@@ -482,11 +482,23 @@ class FArchiveReader:
         elif type_name == "SetProperty":
             set_type = self.fstring()
             _id = self.optional_guid()
-            self.i32()
+            payload_start = self.data.tell()
+            removed_count = self.u32()
+            if removed_count != 0:
+                raise Exception(
+                    f"Unsupported removed SetProperty elements: {removed_count} ({path})"
+                )
+            set_value, set_struct_type = self.set_property(set_type, path)
+            consumed = self.data.tell() - payload_start
+            if consumed != size:
+                raise Exception(
+                    f"SetProperty size mismatch: expected {size}, read {consumed} ({path})"
+                )
             value = {
                 "set_type": set_type,
+                "set_struct_type": set_struct_type,
                 "id": _id,
-                "value": self.set_property(),
+                "value": set_value,
             }
         elif type_name == "MapProperty":
             key_type = self.fstring()
@@ -606,10 +618,22 @@ class FArchiveReader:
             }
         return value
 
-    def set_property(self):
+    def set_property(self, set_type: str, path: str):
         count = self.u32()
-        value = {"values": [self.properties_until_end() for _ in range(count)]}
-        return value
+        value_path = path + ".Value"
+        if set_type == "StructProperty":
+            set_struct_type = self.type_hints.get(value_path)
+            if count > 0 and set_struct_type is None:
+                raise Exception(f"Struct type for {value_path} not found")
+        else:
+            set_struct_type = None
+        value = {
+            "values": [
+                self.prop_value(set_type, set_struct_type, value_path)
+                for _ in range(count)
+            ]
+        }
+        return value, set_struct_type
 
     def array_value(self, array_type: str, count: int, size: int, path: str):
         values = []
@@ -939,7 +963,11 @@ class FArchiveWriter:
             self.optional_guid(property.get("id", None))
             set_writer = self.copy()
             set_writer.u32(0)
-            set_writer.set_property(property["value"])
+            set_writer.set_property(
+                property["set_type"],
+                property.get("set_struct_type"),
+                property["value"],
+            )
             set_buf = set_writer.bytes()
             size = len(set_buf)
             self.write(set_buf)
@@ -1031,11 +1059,16 @@ class FArchiveWriter:
         else:
             self.array_value(array_type, count, value["values"])
 
-    def set_property(self, value: dict[str, list[Any]]):
+    def set_property(
+        self,
+        set_type: str,
+        set_struct_type: Optional[str],
+        value: dict[str, list[Any]],
+    ):
         count = len(value["values"])
         self.u32(count)
         for value in value["values"]:
-            self.properties(value)
+            self.prop_value(set_type, set_struct_type, value)
 
     def array_value(self, array_type: str, count: int, values: list[Any]):
         for i in range(count):

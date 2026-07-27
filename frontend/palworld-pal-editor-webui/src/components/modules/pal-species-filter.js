@@ -37,6 +37,21 @@ const formatPalNumber = value => {
 
 export const characterCategory = option => option?.IsHuman ? 'npc' : 'pal'
 
+export const palSpeciesIconKey = pal => {
+  if (pal?.IsHuman) return pal.HasIcon ? pal.InternalName : 'Human'
+
+  let key = pal?.InternalName || ''
+  if (/^(?:BOSS|Boss)_/.test(key)) key = key.replace(/^(?:BOSS|Boss)_/, '')
+  if (key.endsWith('_otomo')) return key.replace(/_otomo$/, '')
+  if (key.endsWith('_Oilrig')) return key.replace(/_Oilrig$/, '')
+
+  const specialVariant = key.match(/^(?:RAID|PREDATOR|SUMMON)_(.+?)(?:_\d+.*)?$/)
+  if (specialVariant) return specialVariant[1]
+
+  const tower = key.match(/^(GYM_[^_]+)/)
+  return tower?.[1] || key
+}
+
 export const elementTranslationKey = element => (
   ELEMENT_TRANSLATION_KEYS[element] || 'Element_Unknown'
 )

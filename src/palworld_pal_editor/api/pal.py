@@ -304,7 +304,12 @@ def execute_pal_command(pal_id: str):
     command_fields = {
         "update_pal_identity": {"name", "gender", "variant", "boss", "tower", "rare"},
         "update_pal_progression": {"values"},
-        "update_pal_skills": {"active", "mastered", "passive"},
+        "update_pal_skills": {
+            "active",
+            "mastered",
+            "passive",
+            "allow_custom_passive",
+        },
         "update_pal_enhancement": {"values", "work_suitability"},
         "max_pal": {"unrestricted"},
         "unlock_pal_expedition": set(),
@@ -356,6 +361,9 @@ def execute_pal_command(pal_id: str):
                 active=payload.get("active"),
                 mastered=payload.get("mastered"),
                 passive=payload.get("passive"),
+                allow_custom_passive=payload.get(
+                    "allow_custom_passive", False
+                ),
             )
         elif command_name == "unlock_pal_expedition":
             command = UnlockPalExpedition(**base)

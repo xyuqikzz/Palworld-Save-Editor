@@ -1,14 +1,96 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePalEditorStore } from '@/stores/paleditor';
+import { useRouter } from 'vue-router';
 import AppIcon from '@/components/modules/AppIcon.vue';
-import PathPicker from '@/components/PathPicker.vue';
 
 const palStore = usePalEditorStore();
+const router = useRouter();
+const remoteAdminPassword = ref('');
+const modInstallDialog = ref(null);
+const bridgeModDownloadAvailable = ref(false);
+const bridgeModDownloadState = ref('idle');
+const bridgeModDownloadResult = ref(null);
+const ue4ssReleasesUrl = 'https://github.com/UE4SS-RE/RE-UE4SS/releases';
+const windowsClientUe4ssPath = String.raw`…\steamapps\common\Palworld\Pal\Binaries\Win64`;
+const windowsServerUe4ssPath = String.raw`…\steamapps\common\PalServer\Pal\Binaries\Win64`;
+const bridgeModPrimaryPath = String.raw`Pal\Binaries\Win64\ue4ss\Mods\PalEditorBridge`;
+const bridgeModFallbackPath = String.raw`Pal\Binaries\Win64\Mods\PalEditorBridge`;
+const serverRestConfiguration = 'RESTAPIEnabled=True · RESTAPIPort=8212 · AdminPassword=…';
+
+function refreshBridgeModDownloadAvailability() {
+  bridgeModDownloadAvailable.value = Boolean(
+    window.pywebview?.api?.download_bridge_mod,
+  );
+}
+
+async function downloadBridgeMod() {
+  const nativeDownload = window.pywebview?.api?.download_bridge_mod;
+  if (!nativeDownload) {
+    bridgeModDownloadState.value = 'unavailable';
+    return;
+  }
+
+  bridgeModDownloadState.value = 'loading';
+  bridgeModDownloadResult.value = null;
+  try {
+    const result = await nativeDownload();
+    if (!result || result.status === 'cancelled') {
+      bridgeModDownloadState.value = 'idle';
+      return;
+    }
+    if (result.status !== 'completed') {
+      bridgeModDownloadState.value = result.status === 'unsupported'
+        ? 'unavailable'
+        : 'failed';
+      return;
+    }
+    bridgeModDownloadResult.value = result;
+    bridgeModDownloadState.value = 'completed';
+    modInstallDialog.value?.showModal();
+  } catch {
+    bridgeModDownloadState.value = 'failed';
+  }
+}
+
+function closeModInstallDialog() {
+  modInstallDialog.value?.close();
+}
+
+async function connectRemote() {
+  const connected = await palStore.connectRemote({
+    adminPassword: remoteAdminPassword.value,
+  });
+  if (connected) {
+    remoteAdminPassword.value = '';
+    await router.push({ name: 'RemoteServer' });
+  }
+}
+
+async function connectLocalGame() {
+  if (await palStore.connectLocalGame()) {
+    await router.push({ name: 'RemoteServer' });
+  }
+}
+
+onMounted(() => {
+  refreshBridgeModDownloadAvailability();
+  window.addEventListener(
+    'pywebviewready',
+    refreshBridgeModDownloadAvailability,
+  );
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener(
+    'pywebviewready',
+    refreshBridgeModDownloadAvailability,
+  );
+});
 </script>
 
 <template>
   <main id="entryDiv">
-    <PathPicker />
     <section class="entry-shell">
       <header class="entry-intro" aria-labelledby="entry-title">
         <img :alt="palStore.getTranslatedText('Common_AppName')" class="logo" src="@/assets/logo.ico" width="60" height="60" />
@@ -43,12 +125,32 @@ const palStore = usePalEditorStore();
               <span class="beta-badge">{{ palStore.getTranslatedText('Entry_Source_Beta') }}</span>
             </span>
           </label>
+          <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'remote' }">
+            <input type="radio" v-model="palStore.SAVE_SOURCE_MODE" value="remote" />
+            <span class="source-icon source-icon--remote" aria-hidden="true">
+              <AppIcon name="building" :size="26" />
+            </span>
+            <span class="source-label-text">
+              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Remote') }}</span>
+              <span class="beta-badge">{{ palStore.getTranslatedText('Entry_Source_Beta') }}</span>
+            </span>
+          </label>
         </div>
 
         <section class="entry-panel" aria-labelledby="save-path-heading">
           <div class="panel-heading">
-            <h2 id="save-path-heading">{{ palStore.getTranslatedText('EntryView_Save_Path') }}</h2>
-            <p>{{ palStore.getTranslatedText(palStore.SAVE_SOURCE_MODE === 'xgp' ? 'Entry_Xgp_Hint' : 'EntryView_Path_Hint') }}</p>
+            <h2 id="save-path-heading">
+              {{ palStore.getTranslatedText(palStore.SAVE_SOURCE_MODE === 'remote' ? 'Remote_Title' : 'EntryView_Save_Path') }}
+            </h2>
+            <p>
+              {{ palStore.getTranslatedText(
+                palStore.SAVE_SOURCE_MODE === 'xgp'
+                  ? 'Entry_Xgp_Hint'
+                  : palStore.SAVE_SOURCE_MODE === 'remote'
+                    ? 'Remote_Hint'
+                    : 'EntryView_Path_Hint'
+              ) }}
+            </p>
           </div>
 
           <template v-if="palStore.SAVE_SOURCE_MODE === 'steam'">
@@ -73,7 +175,7 @@ const palStore = usePalEditorStore();
             </div>
           </template>
 
-          <template v-else>
+          <template v-else-if="palStore.SAVE_SOURCE_MODE === 'xgp'">
             <div class="save-path-row">
               <label class="path-field">
                 <span class="sr-only">{{ palStore.getTranslatedText('Entry_Xgp_Folder') }}</span>
@@ -115,6 +217,115 @@ const palStore = usePalEditorStore();
               {{ palStore.getTranslatedText('EntryView_BTN_Load') }}
             </button>
           </template>
+
+          <template v-else>
+            <aside class="remote-platform-notice" role="note">
+              <span><AppIcon name="building" :size="16" /></span>
+              <div>
+                <strong>{{ palStore.getTranslatedText('Remote_WindowsOnlyTitle') }}</strong>
+                <p>{{ palStore.getTranslatedText('Remote_WindowsOnlyHint') }}</p>
+              </div>
+            </aside>
+            <div v-if="!palStore.REMOTE_CONNECTED" class="remote-connect-form">
+              <aside class="remote-mod-notice" role="note">
+                <span class="remote-mod-notice__icon">
+                  <AppIcon name="folder" :size="19" />
+                </span>
+                <div>
+                  <strong>{{ palStore.getTranslatedText('Remote_ModRequiredTitle') }}</strong>
+                  <p>{{ palStore.getTranslatedText('Remote_ModRequiredHint') }}</p>
+                  <small v-if="!bridgeModDownloadAvailable">
+                    {{ palStore.getTranslatedText('Remote_ModDesktopOnly') }}
+                  </small>
+                  <small v-else-if="bridgeModDownloadState === 'failed'" class="remote-mod-download-error" role="alert">
+                    {{ palStore.getTranslatedText('Remote_ModDownloadFailed') }}
+                  </small>
+                </div>
+                <button
+                  class="button button--quiet remote-mod-download"
+                  type="button"
+                  @click="downloadBridgeMod"
+                  :disabled="!bridgeModDownloadAvailable || bridgeModDownloadState === 'loading'"
+                >
+                  <AppIcon name="folder" :size="15" />
+                  {{ palStore.getTranslatedText(
+                    bridgeModDownloadState === 'loading'
+                      ? 'Remote_ModDownloading'
+                      : 'Remote_ModDownloadButton'
+                  ) }}
+                </button>
+              </aside>
+              <section class="local-connect-card">
+                <div>
+                  <strong>{{ palStore.getTranslatedText('Remote_LocalConnect') }}</strong>
+                  <p>{{ palStore.getTranslatedText('Remote_LocalConnectHint') }}</p>
+                </div>
+                <button
+                  class="button button--primary"
+                  @click="connectLocalGame"
+                  :disabled="palStore.REMOTE_LOADING"
+                >
+                  {{ palStore.getTranslatedText('Remote_LocalConnect') }}
+                </button>
+              </section>
+              <p
+                v-if="palStore.LAST_ERROR?.context === 'local-connect'"
+                class="entry-error"
+                role="alert"
+              >
+                {{ palStore.LAST_ERROR.message }}
+              </p>
+              <div class="remote-divider">
+                <span>{{ palStore.getTranslatedText('Remote_ManualConnection') }}</span>
+              </div>
+              <label class="remote-field">
+                <span>{{ palStore.getTranslatedText('Remote_Address') }}</span>
+                <input
+                  type="text"
+                  v-model.trim="palStore.REMOTE_SERVER_ADDRESS"
+                  :placeholder="palStore.getTranslatedText('Remote_AddressPlaceholder')"
+                  :disabled="palStore.REMOTE_LOADING"
+                  autocomplete="url"
+                />
+              </label>
+              <label class="remote-field">
+                <span>{{ palStore.getTranslatedText('Remote_AdminPassword') }}</span>
+                <input
+                  type="password"
+                  v-model="remoteAdminPassword"
+                  :disabled="palStore.REMOTE_LOADING"
+                  :placeholder="palStore.REMOTE_CREDENTIAL_SAVED ? palStore.getTranslatedText('Remote_SavedCredentialPlaceholder') : ''"
+                  autocomplete="current-password"
+                />
+              </label>
+
+              <p
+                v-if="palStore.LAST_ERROR?.context === 'remote-connect'"
+                class="entry-error"
+                role="alert"
+              >
+                {{ palStore.LAST_ERROR.message }}
+              </p>
+              <div class="entry-primary-row">
+                <button
+                  class="button button--primary"
+                  @click="connectRemote"
+                  :disabled="palStore.REMOTE_LOADING || !palStore.REMOTE_SERVER_ADDRESS || (!remoteAdminPassword && !palStore.REMOTE_CREDENTIAL_SAVED)"
+                >
+                  {{ palStore.getTranslatedText('Remote_Connect') }}
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="remote-connect-form">
+              <p class="path-current">{{ palStore.getTranslatedText('Remote_AlreadyConnected') }}</p>
+              <div class="entry-primary-row">
+                <button class="button button--primary" @click="router.push({ name: 'RemoteServer' })">
+                  {{ palStore.getTranslatedText('Remote_OpenManagement') }}
+                </button>
+              </div>
+            </div>
+          </template>
         </section>
       </div>
 
@@ -124,6 +335,93 @@ const palStore = usePalEditorStore();
       </footer>
     </section>
 
+    <dialog
+      ref="modInstallDialog"
+      class="mod-install-dialog"
+      aria-labelledby="mod-install-title"
+      @click.self="closeModInstallDialog"
+    >
+      <article>
+        <header class="mod-install-dialog__header">
+          <span><AppIcon name="check" :size="20" /></span>
+          <div>
+            <small>{{ palStore.getTranslatedText('Remote_ModDownloadComplete') }}</small>
+            <h2 id="mod-install-title">{{ palStore.getTranslatedText('Remote_ModInstallDialogTitle') }}</h2>
+          </div>
+          <button
+            type="button"
+            :aria-label="palStore.getTranslatedText('Remote_ModInstallClose')"
+            @click="closeModInstallDialog"
+          >
+            <AppIcon name="x" :size="17" />
+          </button>
+        </header>
+
+        <section class="mod-download-result">
+          <AppIcon name="folder" :size="17" />
+          <div>
+            <span>{{ palStore.getTranslatedText('Remote_ModDownloadSavedAt') }}</span>
+            <code>{{ bridgeModDownloadResult?.path }}</code>
+          </div>
+        </section>
+
+        <ol class="mod-install-steps">
+          <li>
+            <span>1</span>
+            <div>
+              <strong>{{ palStore.getTranslatedText('Remote_ModInstallPrerequisiteTitle') }}</strong>
+              <p>{{ palStore.getTranslatedText('Remote_ModInstallPrerequisiteHint') }}</p>
+              <dl class="mod-path-list">
+                <div>
+                  <dt>{{ palStore.getTranslatedText('Remote_ModInstallClientPath') }}</dt>
+                  <dd><code>{{ windowsClientUe4ssPath }}</code></dd>
+                </div>
+                <div>
+                  <dt>{{ palStore.getTranslatedText('Remote_ModInstallServerPath') }}</dt>
+                  <dd><code>{{ windowsServerUe4ssPath }}</code></dd>
+                </div>
+              </dl>
+            </div>
+          </li>
+          <li>
+            <span>2</span>
+            <div>
+              <strong>{{ palStore.getTranslatedText('Remote_ModInstallBridgeTitle') }}</strong>
+              <p>{{ palStore.getTranslatedText('Remote_ModInstallBridgeHint') }}</p>
+              <dl class="mod-path-list">
+                <div>
+                  <dt>{{ palStore.getTranslatedText('Remote_ModInstallModsPath') }}</dt>
+                  <dd><code>{{ bridgeModPrimaryPath }}</code></dd>
+                </div>
+                <div>
+                  <dt>{{ palStore.getTranslatedText('Remote_ModInstallModsPathFallback') }}</dt>
+                  <dd><code>{{ bridgeModFallbackPath }}</code></dd>
+                </div>
+              </dl>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="mod-server-note" role="note">
+          <AppIcon name="warning" :size="16" />
+          <div>
+            <strong>{{ palStore.getTranslatedText('Remote_ModInstallServerConfigTitle') }}</strong>
+            <p>{{ palStore.getTranslatedText('Remote_ModInstallServerConfigHint') }}</p>
+            <code>{{ serverRestConfiguration }}</code>
+          </div>
+        </aside>
+
+        <p class="mod-install-restart">{{ palStore.getTranslatedText('Remote_ModInstallRestart') }}</p>
+        <footer>
+          <a :href="ue4ssReleasesUrl" target="_blank" rel="noreferrer">
+            {{ palStore.getTranslatedText('Remote_ModOpenUe4ssReleases') }}
+          </a>
+          <button class="button button--primary" type="button" @click="closeModInstallDialog">
+            {{ palStore.getTranslatedText('Remote_ModInstallClose') }}
+          </button>
+        </footer>
+      </article>
+    </dialog>
     <p class="version-info">{{ palStore.VERSION }}</p>
   </main>
 </template>
@@ -269,6 +567,7 @@ h1 {
   border-radius: 50%;
 }
 .source-icon img { display: block; opacity: .88; }
+.source-icon--remote { color: var(--ui-accent-strong); }
 .source-label-text { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .source-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 620; }
 .beta-badge {
@@ -287,6 +586,7 @@ h1 {
   flex-direction: column;
   width: 100%;
   min-height: 0;
+  overflow-y: auto;
   padding: 28px 28px 26px;
 }
 
@@ -326,6 +626,218 @@ h1 {
   font: inherit;
   font-size: 13px;
 }
+
+.remote-connect-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.remote-platform-notice {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  padding: 9px 11px;
+  color: oklch(0.79 0.12 78);
+  background: color-mix(in srgb, oklch(0.72 0.13 78) 9%, var(--ui-surface-raised));
+  border-left: 3px solid oklch(0.72 0.13 78);
+}
+
+.remote-platform-notice > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  background: color-mix(in srgb, oklch(0.72 0.13 78) 14%, transparent);
+  border-radius: 6px;
+}
+
+.remote-platform-notice > div { display: grid; gap: 2px; min-width: 0; }
+.remote-platform-notice strong { color: var(--ui-text); font-size: 11px; }
+.remote-platform-notice p { color: var(--ui-text-secondary); font-size: 10px; line-height: 1.45; }
+
+.remote-mod-notice {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 12px;
+  padding: 12px;
+  color: var(--ui-accent-strong);
+  background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface-raised));
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
+  border-radius: var(--ui-radius-sm);
+}
+
+.remote-mod-notice__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  background: var(--ui-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 35%, var(--ui-border));
+  border-radius: 8px;
+}
+
+.remote-mod-notice > div { display: grid; gap: 3px; min-width: 0; }
+.remote-mod-notice strong { color: var(--ui-text); font-size: 12px; }
+.remote-mod-notice p { color: var(--ui-text-secondary); font-size: 11px; line-height: 1.5; }
+.remote-mod-notice small { color: var(--ui-text-muted); font-size: 9px; line-height: 1.45; }
+.remote-mod-download-error { color: var(--ui-danger, #ff8d8d) !important; }
+.remote-mod-download { display: inline-flex; min-width: 112px; align-items: center; justify-content: center; gap: 7px; }
+.local-connect-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.local-connect-card strong {
+  color: var(--ui-text);
+  font-size: 13px;
+}
+
+.local-connect-card p {
+  max-width: 570px;
+  margin: 4px 0 0;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.local-connect-card .button {
+  flex: 0 0 auto;
+}
+
+.remote-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+}
+
+.remote-divider::before,
+.remote-divider::after {
+  flex: 1;
+  height: 1px;
+  background: var(--ui-border);
+  content: "";
+}
+
+.remote-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+}
+
+.remote-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 13px;
+  color: var(--ui-text);
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  font: inherit;
+}
+
+.remote-field input:focus {
+  outline: 0;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.16);
+}
+
+
+.remote-dashboard {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  margin-top: 18px;
+}
+
+.remote-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px;
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.remote-summary > div { display: grid; gap: 3px; min-width: 0; }
+.remote-summary span,
+.remote-section > span,
+.remote-metrics span {
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.remote-summary strong { overflow: hidden; color: var(--ui-text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.remote-summary small { color: var(--ui-text-muted); font-size: 10px; }
+.remote-state {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  color: var(--ui-danger, #ff8d8d);
+  background: color-mix(in srgb, var(--ui-danger, #ef4444) 10%, transparent);
+  border-radius: 999px;
+  font-size: 10px;
+}
+.remote-state.ready { color: var(--ui-success); background: color-mix(in srgb, var(--ui-success) 12%, transparent); }
+
+.remote-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.remote-metrics > div {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+.remote-metrics strong { color: var(--ui-text); font-size: 14px; }
+.remote-section { display: grid; gap: 7px; min-height: 0; }
+.capability-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.capability-list code {
+  padding: 4px 7px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: 5px;
+  font-size: 10px;
+}
+.remote-player-section { overflow: hidden; }
+.remote-player-list { display: grid; gap: 5px; overflow-y: auto; }
+.remote-player-list > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 9px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border-radius: 5px;
+  font-size: 11px;
+}
+.remote-player-list small { color: var(--ui-text-muted); }
+.remote-development-note { color: var(--ui-text-muted); font-size: 10px; line-height: 1.5; }
+.remote-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; }
 
 .path-field input:hover:not(:disabled) { border-color: var(--ui-border-strong); }
 .path-field input:focus { outline: 0; border-color: var(--ui-accent); box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.16); }
@@ -399,6 +911,63 @@ h1 {
 .entry-safety p { display: inline-flex; align-items: center; gap: 7px; }
 .version-info { color: var(--ui-text-muted); font-size: 11px; letter-spacing: 0.025em; }
 
+.button:focus-visible,
+.mod-install-dialog button:focus-visible,
+.mod-install-dialog a:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+.mod-install-dialog {
+  width: min(720px, calc(100vw - 40px));
+  max-height: min(820px, calc(100dvh - 40px));
+  padding: 0;
+  overflow: auto;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.mod-install-dialog::backdrop { background: oklch(0.08 0.02 252 / .78); backdrop-filter: blur(5px); }
+.mod-install-dialog > article { display: grid; gap: 16px; padding: 20px; }
+.mod-install-dialog__header { display: grid; grid-template-columns: 42px minmax(0, 1fr) 34px; align-items: center; gap: 11px; padding-bottom: 14px; border-bottom: 1px solid var(--ui-border); }
+.mod-install-dialog__header > span { display: grid; width: 42px; height: 42px; place-items: center; color: var(--ui-success); background: color-mix(in srgb, var(--ui-success) 12%, var(--ui-surface-raised)); border-radius: 9px; }
+.mod-install-dialog__header > div { display: grid; gap: 3px; min-width: 0; }
+.mod-install-dialog__header small { color: var(--ui-success); font-size: 9px; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
+.mod-install-dialog__header h2 { font-size: 18px; }
+.mod-install-dialog__header > button { display: grid; width: 34px; height: 34px; padding: 0; place-items: center; color: var(--ui-text-muted); background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer; }
+.mod-install-dialog__header > button:hover { color: var(--ui-text); background: var(--ui-surface-hover); border-color: var(--ui-border); }
+
+.mod-download-result { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; padding: 10px 12px; color: var(--ui-accent); background: var(--ui-accent-soft); border-left: 3px solid var(--ui-accent); }
+.mod-download-result > div { display: grid; gap: 4px; min-width: 0; }
+.mod-download-result span { color: var(--ui-text-secondary); font-size: 10px; }
+.mod-download-result code,
+.mod-path-list code,
+.mod-server-note code { overflow-wrap: anywhere; color: var(--ui-text); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; }
+
+.mod-install-steps { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.mod-install-steps > li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; }
+.mod-install-steps > li > span { display: grid; width: 30px; height: 30px; place-items: center; color: var(--ui-accent); background: var(--ui-accent-soft); border: 1px solid color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border)); border-radius: 7px; font-size: 11px; font-weight: 760; font-variant-numeric: tabular-nums; }
+.mod-install-steps > li > div { display: grid; gap: 6px; min-width: 0; }
+.mod-install-steps strong { color: var(--ui-text); font-size: 12px; }
+.mod-install-steps p { color: var(--ui-text-secondary); font-size: 10px; line-height: 1.55; }
+.mod-path-list { display: grid; gap: 6px; margin: 2px 0 0; }
+.mod-path-list > div { display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 9px; padding: 7px 9px; background: var(--ui-canvas); border: 1px solid var(--ui-border); }
+.mod-path-list dt { color: var(--ui-text-muted); font-size: 9px; }
+.mod-path-list dd { min-width: 0; margin: 0; }
+
+.mod-server-note { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; padding: 10px 12px; color: oklch(0.79 0.12 78); background: color-mix(in srgb, oklch(0.72 0.13 78) 9%, var(--ui-canvas)); border: 1px solid color-mix(in srgb, oklch(0.72 0.13 78) 28%, var(--ui-border)); }
+.mod-server-note > div { display: grid; gap: 3px; min-width: 0; }
+.mod-server-note strong { color: var(--ui-text); font-size: 10px; }
+.mod-server-note p { color: var(--ui-text-secondary); font-size: 9px; line-height: 1.5; }
+.mod-server-note code { color: oklch(0.86 0.08 78); }
+.mod-install-restart { color: var(--ui-text-muted); font-size: 10px; line-height: 1.55; }
+.mod-install-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 2px; }
+.mod-install-dialog footer a { color: var(--ui-accent-strong); font-size: 10px; text-decoration: none; }
+.mod-install-dialog footer a:hover { text-decoration: underline; }
+.mod-install-dialog footer .button { min-width: 112px; }
 @media (max-width: 920px) {
   .entry-workspace { grid-template-columns: 250px minmax(0, 1fr); }
   .source-switch { padding-inline: 12px; }
@@ -413,7 +982,7 @@ h1 {
   .entry-workspace { grid-template-columns: 1fr; }
   .source-switch {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     padding: 12px;
     border-right: 0;
     border-bottom: 1px solid var(--ui-border);
@@ -423,6 +992,11 @@ h1 {
   .source-switch label { grid-template-columns: minmax(0, 1fr); gap: 7px; }
   .entry-panel { min-height: 360px; padding: 22px 20px; }
   .save-path-row { grid-template-columns: 1fr; }
+  .remote-mod-notice { grid-template-columns: 38px minmax(0, 1fr); }
+  .remote-mod-download { grid-column: 1 / -1; width: 100%; }
+  .mod-path-list > div { grid-template-columns: 1fr; gap: 4px; }
+  .mod-install-dialog footer { align-items: stretch; flex-direction: column; }
+  .mod-install-dialog footer .button { width: 100%; }
   .entry-primary-row .button, .xgp-load { width: 100%; }
   .entry-safety { align-items: flex-start; flex-direction: column; gap: 7px; padding: 12px 20px; }
   h1 { max-width: 22ch; }

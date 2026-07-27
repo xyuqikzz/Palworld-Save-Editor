@@ -1,9 +1,31 @@
+import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 
 from aiohttp import web
 
 from palworld_pal_editor import config
+
+
+class ConfigImportTests(unittest.TestCase):
+    def test_config_import_does_not_eagerly_load_aiohttp(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "import palworld_pal_editor.config; "
+                    "raise SystemExit('aiohttp' in sys.modules)"
+                ),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
 
 
 class UpdateCheckTests(unittest.IsolatedAsyncioTestCase):

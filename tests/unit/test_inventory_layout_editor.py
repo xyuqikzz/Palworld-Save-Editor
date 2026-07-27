@@ -15,6 +15,7 @@ from palworld_pal_editor.domain.commands import (
     PasteItemSlot,
     PutItem,
     SortItemContainer,
+    SwapItemSlots,
     UpdateItemCount,
 )
 from palworld_pal_editor.domain.errors import DomainError
@@ -339,6 +340,114 @@ class InventoryLayoutEditorTests(unittest.TestCase):
             self.assertEqual(expected["permission"], raw["permission"])
             self.assertEqual(expected["trailing_bytes"], raw["trailing_bytes"])
 
+    def test_move_to_empty_and_occupied_swap_preserve_slot_payloads(self) -> None:
+        inventory, ids, manager = (
+            inventory_fixtures.InventoryReadTests().make_editor()
+        )
+        session = inventory._session
+        catalog = inventory_fixtures.catalog()
+        container = manager.item_container_data.get(ids["CommonContainerId"])
+        original = deepcopy(container.get_occupied(1)._raw_data)
+        InventoryEditor(session, catalog).execute(
+            PutItem(
+                session_id=session.session_id,
+                expected_revision=0,
+                player_id="player-a",
+                container_type=ItemContainerType.COMMON,
+                slot_index=2,
+                static_id="Stone",
+                count=2,
+            )
+        )
+        layout = InventoryLayoutEditor(session, catalog)
+
+        moved = layout.execute(
+            SwapItemSlots(
+                session_id=session.session_id,
+                expected_revision=1,
+                player_id="player-a",
+                container_type=ItemContainerType.COMMON,
+                source_slot_index=1,
+                target_slot_index=0,
+            )
+        )
+
+        expected_at_zero = deepcopy(original)
+        expected_at_zero["slot_index"] = 0
+        self.assertTrue(container.is_empty(1))
+        self.assertEqual(expected_at_zero, container.get_occupied(0)._raw_data)
+        self.assertEqual(2, moved["revision"])
+
+        layout.execute(
+            SwapItemSlots(
+                session_id=session.session_id,
+                expected_revision=2,
+                player_id="player-a",
+                container_type=ItemContainerType.COMMON,
+                source_slot_index=0,
+                target_slot_index=2,
+            )
+        )
+        expected_at_two = deepcopy(original)
+        expected_at_two["slot_index"] = 2
+        self.assertEqual(2, container.get_occupied(0).count)
+        self.assertEqual(expected_at_two, container.get_occupied(2)._raw_data)
+        self.assertEqual(
+            ["level:ItemContainerSaveData"],
+            session.changes()[-1]["affected_records"],
+        )
+
+    def test_dynamic_move_keeps_record_identity_and_reference_consistency(self) -> None:
+        inventory, session, manager, container_id = make_dynamic_editor()
+        container = manager.item_container_data.get(container_id)
+        source = container.get_occupied(0)
+        local_id = source.dynamic_local_id
+        record_count = len(manager.dynamic_item_data.records)
+
+        InventoryLayoutEditor(session, inventory._catalog).execute(
+            SwapItemSlots(
+                session_id=session.session_id,
+                expected_revision=0,
+                player_id="player-dynamic",
+                container_type=ItemContainerType.COMMON,
+                source_slot_index=0,
+                target_slot_index=1,
+            )
+        )
+
+        self.assertTrue(container.is_empty(0))
+        self.assertEqual(local_id, container.get_occupied(1).dynamic_local_id)
+        self.assertEqual(record_count, len(manager.dynamic_item_data.records))
+        manager.dynamic_item_data.assert_consistent()
+
+    def test_swap_rejects_same_or_empty_source_without_mutation(self) -> None:
+        inventory, ids, manager = (
+            inventory_fixtures.InventoryReadTests().make_editor()
+        )
+        session = inventory._session
+        container = manager.item_container_data.get(ids["CommonContainerId"])
+        before = container.snapshot_all()
+        layout = InventoryLayoutEditor(session, inventory_fixtures.catalog())
+
+        for source, target, code in (
+            (1, 1, "NO_LAYOUT_CHANGE"),
+            (0, 2, "ITEM_SLOT_EMPTY"),
+        ):
+            with self.assertRaises(DomainError) as raised:
+                layout.execute(
+                    SwapItemSlots(
+                        session_id=session.session_id,
+                        expected_revision=0,
+                        player_id="player-a",
+                        container_type=ItemContainerType.COMMON,
+                        source_slot_index=source,
+                        target_slot_index=target,
+                    )
+                )
+            self.assertEqual(code, raised.exception.code)
+
+        self.assertEqual(0, session.revision)
+        self.assertEqual(before, container.snapshot_all())
     def test_clipboard_is_revision_bound(self) -> None:
         inventory, _ids, _manager = (
             inventory_fixtures.InventoryReadTests().make_editor()

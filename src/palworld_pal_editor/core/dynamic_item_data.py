@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field
+import json
 import math
 from typing import Any, Callable, Iterator, Optional
 import uuid
@@ -235,13 +237,43 @@ class DynamicItemData:
         self.rebuild_references()
         issues = self.issues()
         if issues:
-            issue = issues[0]
-            raise DomainError(
-                code=issue.code,
-                message=issue.message,
-                details=issue.details,
-                http_status=409,
-            )
+            self._raise_issue(issues[0])
+
+    def issue_fingerprints(self) -> tuple[str, ...]:
+        self._rebuild_records()
+        self.rebuild_references()
+        return tuple(self._issue_fingerprint(issue) for issue in self.issues())
+
+    def assert_no_new_issues(
+        self, allowed_issue_fingerprints: tuple[str, ...]
+    ) -> None:
+        self._rebuild_records()
+        self.rebuild_references()
+        allowed = Counter(allowed_issue_fingerprints)
+        for issue in self.issues():
+            fingerprint = self._issue_fingerprint(issue)
+            if allowed[fingerprint]:
+                allowed[fingerprint] -= 1
+                continue
+            self._raise_issue(issue)
+
+    @staticmethod
+    def _issue_fingerprint(issue: DynamicItemIssue) -> str:
+        return json.dumps(
+            {"code": issue.code, "details": issue.details},
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+
+    @staticmethod
+    def _raise_issue(issue: DynamicItemIssue) -> None:
+        raise DomainError(
+            code=issue.code,
+            message=issue.message,
+            details=issue.details,
+            http_status=409,
+        )
 
     def snapshot_values(self) -> list[dict[str, Any]]:
         if self._values is None:

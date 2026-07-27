@@ -91,6 +91,13 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Keep test documentation and README screenshots; ignore other local documentation.
+docs/*
+!docs/images/
+!docs/images/**
+!docs/testing/
+!docs/testing/**
+
 # PyBuilder
 .pybuilder/
 target/
@@ -186,3 +193,4 @@ config.json
 tests/fixtures/real_saves/manifest.local.json
 tests/fixtures/real_saves/**/*.sav
 tests/fixtures/real_saves/**/*.gvas
+/mod

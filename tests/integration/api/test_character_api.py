@@ -97,6 +97,47 @@ class CharacterApiTests(unittest.TestCase):
         self.assertEqual(["Rare"], payload["data"]["value"]["passive"])
         self.assertEqual(2, self.session.revision)
 
+    def test_custom_passive_api_requires_explicit_allow_flag(self) -> None:
+        custom = "OtherMod_ApiPassive_Exact"
+        endpoint = f"/api/pal/{self.pal.InstanceId}/commands"
+        base = {
+            "session_id": self.session.session_id,
+            "expected_revision": 0,
+            "command": "update_pal_skills",
+            "active": None,
+            "mastered": None,
+            "passive": [custom],
+        }
+
+        rejected = self.client.post(
+            endpoint,
+            headers=self.headers,
+            json=base,
+        )
+
+        self.assertEqual(422, rejected.status_code)
+        self.assertEqual(
+            "UNKNOWN_SKILL",
+            rejected.get_json()["error"]["code"],
+        )
+        self.assertEqual(0, self.session.revision)
+
+        accepted = self.client.post(
+            endpoint,
+            headers=self.headers,
+            json={**base, "allow_custom_passive": True},
+        )
+
+        self.assertEqual(200, accepted.status_code, accepted.get_json())
+        payload = accepted.get_json()["data"]
+        self.assertEqual([custom], payload["value"]["passive"])
+        self.assertEqual(1, payload["revision"])
+        self.assertEqual([custom], self.pal.PassiveSkillList)
+        self.assertEqual(
+            "NameProperty",
+            self.pal._pal_param["PassiveSkillList"]["array_type"],
+        )
+
     def test_explicit_player_attribute_command_updates_read_model(self) -> None:
         response = self.client.post(
             f"/api/player/{self.player.PlayerUId}/commands",

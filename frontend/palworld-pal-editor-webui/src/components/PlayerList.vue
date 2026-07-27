@@ -5,10 +5,15 @@ import AppIcon from '@/components/modules/AppIcon.vue'
 import { ref, onMounted, nextTick, watch } from "vue";
 const palStore = usePalEditorStore()
 const route = useRoute()
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'player',
+    validator: value => ['pal', 'player'].includes(value),
+  },
+})
 const playerListContainer = ref(null);
 const expandedGuilds = ref(new Set());
-const editingGuildId = ref(null);
-const guildNameDraft = ref('');
 
 function toggleGuild(nodeId) {
   const next = new Set(expandedGuilds.value);
@@ -42,47 +47,14 @@ function baseName(base, index) {
   return palStore.getTranslatedText('PlayerTree_BaseNumber', [index + 1]);
 }
 
-function canEditGuild(guild) {
-  return Boolean(guild.guild_id) && ['guild', 'independent'].includes(guild.kind);
-}
-
-function validGuildNameDraft() {
-  const name = guildNameDraft.value.trim();
-  return name.length > 0 && name.length <= 24;
-}
-
-async function startGuildEdit(guild, event) {
-  if (!canEditGuild(guild) || palStore.LOADING_FLAG) return;
-  editingGuildId.value = guild.guild_id;
-  guildNameDraft.value = guild.name || '';
-  await nextTick();
-  const input = event.currentTarget.closest('.guild-toggle')?.querySelector('.guild-name-input');
-  input?.focus();
-  input?.select();
-}
-
-function cancelGuildEdit() {
-  editingGuildId.value = null;
-  guildNameDraft.value = '';
-}
-
-async function saveGuildName(guild) {
-  if (!validGuildNameDraft() || palStore.LOADING_FLAG) return;
-  if (await palStore.updateGuildName(guild.guild_id, guildNameDraft.value)) {
-    cancelGuildEdit();
-  }
+async function selectMember(playerId) {
+  await palStore.selectPlayer(playerId, false, props.mode === 'pal');
 }
 
 watch(
   () => palStore.GUILD_TREE.map(guild => guild.node_id).join('|'),
   () => {
     const validIds = new Set(palStore.GUILD_TREE.map(guild => guild.node_id));
-    if (
-      editingGuildId.value != null &&
-      !palStore.GUILD_TREE.some(guild => guild.guild_id === editingGuildId.value)
-    ) {
-      cancelGuildEdit();
-    }
     const next = new Set(
       Array.from(expandedGuilds.value).filter(nodeId => validIds.has(nodeId))
     );
@@ -95,10 +67,13 @@ watch(
 );
 
 onMounted(async () => {
-  if (route.meta.requiresSession && route.name !== 'Editor') return;
+  if (!['Editor', 'Players'].includes(route.name)) return;
   await nextTick();
-  const firstTarget = playerListContainer.value?.querySelector('button.base-item[data-has-workers="true"]:not(:disabled)')
-    || playerListContainer.value?.querySelector('button.member-item:not(:disabled)');
+  const firstMember = playerListContainer.value?.querySelector('button.member-item:not(:disabled)');
+  const firstTarget = props.mode === 'pal'
+    ? playerListContainer.value?.querySelector('button.base-item[data-has-workers="true"]:not(:disabled)')
+      || firstMember
+    : firstMember;
   if (firstTarget) firstTarget.click();
 });
 </script>
@@ -121,39 +96,29 @@ onMounted(async () => {
     </div>
     <div class="overflow-list guild-tree" ref="playerListContainer">
       <section class="guild-group" v-for="guild in palStore.GUILD_TREE" :key="guild.node_id">
-        <div :class="['guild-toggle', { 'is-editing': editingGuildId === guild.guild_id }]">
+        <div class="guild-toggle">
           <button class="guild-expand" type="button" @click="toggleGuild(guild.node_id)"
             :aria-expanded="isExpanded(guild.node_id)"
             :title="guildName(guild)">
             <AppIcon :class="['guild-chevron', { expanded: isExpanded(guild.node_id) }]"
               name="chevron-down" :size="15" />
-            <template v-if="editingGuildId !== guild.guild_id">
-              <span class="guild-name">{{ guildName(guild) }}</span>
-              <span v-if="guild.kind === 'independent'" class="guild-kind">
-                {{ palStore.getTranslatedText('PlayerTree_Independent') }}
-              </span>
-              <span class="guild-summary">
+            <span class="guild-name">{{ guildName(guild) }}</span>
+            <span v-if="guild.kind === 'independent'" class="guild-kind">
+              {{ palStore.getTranslatedText('PlayerTree_Independent') }}
+            </span>
+            <span class="guild-summary">
+              <template v-if="props.mode === 'player'">
+                {{ guild.member_count }} {{ palStore.getTranslatedText('PlayerTree_Members') }}
+              </template>
+              <template v-else>
                 {{ palStore.getTranslatedText('PlayerTree_Summary', [guild.member_count, guild.base_count]) }}
-              </span>
-            </template>
-          </button>
-          <input v-if="editingGuildId === guild.guild_id" class="guild-name-input"
-            v-model="guildNameDraft" type="text" maxlength="24"
-            :aria-label="palStore.getTranslatedText('Common_Edit')"
-            :disabled="palStore.LOADING_FLAG"
-            @keydown.enter.prevent="saveGuildName(guild)"
-            @keydown.esc.prevent="cancelGuildEdit" />
-          <button v-if="canEditGuild(guild)" class="guild-edit-action" type="button"
-            :title="palStore.getTranslatedText(editingGuildId === guild.guild_id ? 'Common_Save' : 'Common_Edit')"
-            :aria-label="palStore.getTranslatedText(editingGuildId === guild.guild_id ? 'Common_Save' : 'Common_Edit')"
-            :disabled="palStore.LOADING_FLAG || (editingGuildId === guild.guild_id && !validGuildNameDraft())"
-            @click="editingGuildId === guild.guild_id ? saveGuildName(guild) : startGuildEdit(guild, $event)">
-            <AppIcon :name="editingGuildId === guild.guild_id ? 'check' : 'edit'" :size="15" />
+              </template>
+            </span>
           </button>
         </div>
 
         <div class="guild-children" v-if="isExpanded(guild.node_id)">
-          <template v-if="guild.bases.length">
+          <template v-if="props.mode === 'pal' && guild.bases.length">
             <p class="tree-section-label">{{ palStore.getTranslatedText('PlayerTree_Bases') }}</p>
             <button class="tree-item base-item" type="button" data-selectable
               v-for="(base, index) in guild.bases" :key="base.node_id"
@@ -173,8 +138,8 @@ onMounted(async () => {
             <p class="tree-section-label">{{ palStore.getTranslatedText('PlayerTree_Members') }}</p>
             <button class="tree-item member-item" type="button" data-selectable
               v-for="member in guild.members" :key="member.player_id"
-              @click="palStore.selectPlayer(member.player_id)" :title="member.player_id"
-              :disabled="(member.player_id === palStore.SELECTED_PLAYER_ID && palStore.SHOW_PLAYER_EDIT_FLAG) || palStore.LOADING_FLAG"
+              @click="selectMember(member.player_id)" :title="member.player_id"
+              :disabled="member.player_id === palStore.SELECTED_PLAYER_ID || palStore.LOADING_FLAG"
               :selected="member.player_id === palStore.SELECTED_PLAYER_ID"
               :aria-current="member.player_id === palStore.SELECTED_PLAYER_ID ? 'true' : undefined">
               <AppIcon name="user" :size="15" />
@@ -268,52 +233,6 @@ onMounted(async () => {
   padding: 0;
   color: inherit;
   background: transparent;
-}
-
-.guild-toggle.is-editing .guild-expand {
-  width: 15px;
-  flex: 0 0 15px;
-}
-
-.guild-edit-action {
-  display: inline-grid;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-  padding: 0;
-  place-content: center;
-  color: var(--ui-text-muted);
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-}
-
-.guild-edit-action:hover:not(:disabled),
-.guild-edit-action:focus-visible {
-  color: var(--ui-accent);
-  background: var(--ui-accent-soft);
-}
-
-.guild-edit-action:disabled {
-  opacity: .55;
-}
-
-.guild-name-input {
-  min-width: 0;
-  height: 26px;
-  flex: 1 1 auto;
-  padding: 0 7px;
-  color: var(--ui-text);
-  background: var(--ui-canvas);
-  border: 1px solid var(--ui-accent);
-  border-radius: 5px;
-  font: inherit;
-  font-weight: 700;
-  outline: 0;
-}
-
-.guild-name-input:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 22%, transparent);
 }
 
 .guild-chevron {

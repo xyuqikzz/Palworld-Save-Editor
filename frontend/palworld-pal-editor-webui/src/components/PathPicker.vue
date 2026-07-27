@@ -21,7 +21,42 @@ const sortedPathChildren = computed(() => {
     })
 })
 
+const isLocalDataPicker = computed(
+    () => palStore.FILE_PICKER_PURPOSE === 'local-data',
+)
+
+const isLocalDataFile = (entry) => (
+    !entry.isDir && entry.filename.toLowerCase() === 'localdata.sav'
+)
+
+const isSelectedLocalDataFile = (path) => (
+    isLocalDataPicker.value && palStore.PAL_FILE_PICKER_SELECTION === path
+)
+
+const pickerConfirmationDisabled = computed(() => {
+    if (palStore.FILE_PICKER_PURPOSE === 'steam') {
+        return !palStore.IS_PAL_SAVE_PATH
+    }
+    if (isLocalDataPicker.value) {
+        return !palStore.PAL_FILE_PICKER_SELECTION
+    }
+    return false
+})
+
+const selectPathEntry = (path, entry) => {
+    if (entry.isDir) palStore.update_picker_result(path)
+    else if (isLocalDataPicker.value && isLocalDataFile(entry)) {
+        palStore.PAL_FILE_PICKER_SELECTION = path
+    }
+}
+
 const savePickerResult = async () => {
+    if (isLocalDataPicker.value) {
+        await palStore.confirmLocalDataFileSelection(
+            palStore.PAL_FILE_PICKER_SELECTION,
+        )
+        return
+    }
     palStore.SHOW_FILE_PICKER = false
     if (palStore.FILE_PICKER_PURPOSE === 'xgp') {
         palStore.XGP_WGS_PATH = palStore.PAL_FILE_PICKER_PATH
@@ -51,12 +86,18 @@ const savePickerResult = async () => {
 // });
 const abort = () => {
     palStore.SHOW_FILE_PICKER = false
+    palStore.PAL_FILE_PICKER_SELECTION = null
 }
 </script>
 
 <template>
     <div class="modal-overlay" v-if="palStore.SHOW_FILE_PICKER" @click.self="abort">
-        <div class="popup">
+        <div
+            class="popup"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="palStore.getTranslatedText(isLocalDataPicker ? 'PlayerMap_LocalData_Select' : 'EntryView_BTN_Path_Picker')"
+        >
             <div class="currentPath">
                 <IconButton icon="back" :title="palStore.getTranslatedText('PathPicker_ParentDirectory')" @click="palStore.path_back" />
                 <InputArea v-model="palStore.PAL_FILE_PICKER_PATH" />
@@ -65,8 +106,22 @@ const abort = () => {
             </div>
 
             <ul ref="scrollElement">
-                <li v-for="([key, value], index) of sortedPathChildren" :key="index" :isdir="value.isDir"
-                    @click="() => { if (value.isDir) palStore.update_picker_result(key) }" :fullpath="key">
+                <li
+                    v-for="([key, value]) of sortedPathChildren"
+                    :key="key"
+                    :isdir="value.isDir"
+                    :class="{
+                        'path-entry--selectable': value.isDir || (isLocalDataPicker && isLocalDataFile(value)),
+                        'path-entry--selected': isSelectedLocalDataFile(key),
+                        'path-entry--disabled': isLocalDataPicker && !value.isDir && !isLocalDataFile(value),
+                    }"
+                    :tabindex="value.isDir || (isLocalDataPicker && isLocalDataFile(value)) ? 0 : undefined"
+                    :aria-selected="isLocalDataPicker && !value.isDir ? isSelectedLocalDataFile(key) : undefined"
+                    @click="selectPathEntry(key, value)"
+                    @keydown.enter.prevent="selectPathEntry(key, value)"
+                    @keydown.space.prevent="selectPathEntry(key, value)"
+                    :fullpath="key"
+                >
                     <AppIcon :name="value.isDir ? 'folder' : 'file'" :size="17" />
                     <span class="path-entry-name">{{ value.filename }}</span>
                 </li>
@@ -74,7 +129,7 @@ const abort = () => {
             <BarButton
                 @click="savePickerResult"
                 :content="palStore.getTranslatedText('Common_Confirm')"
-                :disabled="palStore.FILE_PICKER_PURPOSE === 'steam' && !palStore.IS_PAL_SAVE_PATH"
+                :disabled="pickerConfirmationDisabled"
             />
         </div>
     </div>
@@ -128,7 +183,7 @@ const abort = () => {
     flex: 1;
 }
 
-.popup li[isdir=true] {
+.popup li.path-entry--selectable {
     cursor: pointer;
 }
 
@@ -148,10 +203,21 @@ const abort = () => {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+
     white-space: nowrap;
 }
 
-.popup li:hover[isdir=true] {
+.popup li.path-entry--selected {
+    color: var(--ui-text);
+    background: var(--ui-accent-soft);
+    border-color: var(--ui-accent);
+}
+
+.popup li.path-entry--disabled {
+    opacity: 0.42;
+}
+
+.popup li.path-entry--selectable:hover {
     color: var(--ui-text);
     background: var(--ui-surface-raised);
     border-color: var(--ui-border);

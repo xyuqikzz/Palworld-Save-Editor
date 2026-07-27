@@ -15,6 +15,10 @@ const topbar = readFileSync(
   fileURLToPath(new URL('../src/components/TopBar.vue', import.meta.url)),
   'utf8',
 )
+const editor = readFileSync(
+  fileURLToPath(new URL('../src/views/EditorView.vue', import.meta.url)),
+  'utf8',
+)
 
 test('Game Pass discovery requires an explicit slot selection', () => {
   assert.match(store, /async function discoverXgpSources/)
@@ -43,6 +47,16 @@ test('Game Pass save confirmation and recovery evidence are surfaced', () => {
   assert.match(store, /Confirm_Xgp_Save/)
   assert.match(topbar, /backup_path/)
   assert.match(topbar, /recovery_status/)
+})
+
+test('save errors surface actionable backup diagnostics without conflating network errors', () => {
+  assert.match(store, /NETWORK_NO_RESPONSE/)
+  assert.match(store, /Save_Backup_Failure_Action/)
+  assert.match(editor, /LAST_ERROR\.action/)
+  assert.match(editor, /details\?\.backup_path/)
+  assert.match(editor, /details\?\.phase/)
+  assert.match(editor, /details\?\.failed_file/)
+  assert.match(editor, /details\?\.os_error_category/)
 })
 
 function installBrowserStubs() {

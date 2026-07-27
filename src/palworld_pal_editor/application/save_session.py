@@ -23,6 +23,8 @@ from palworld_pal_editor.domain.models import (
 from palworld_pal_editor.storage.base import SaveStorage
 from palworld_pal_editor.storage.steam import SteamDirectoryAdapter, make_steam_source
 
+from .local_data import LOCAL_DATA_RELATIVE_PATH, LocalDataDocument
+
 
 class SaveSession:
     """Authority boundary for one loaded save and its in-memory changes."""
@@ -50,8 +52,15 @@ class SaveSession:
         self._revision = 0
         self._changes = ChangeSet()
         self._active_batch: dict[str, Any] | None = None
+        self._raw_json_pending = False
         self._operation_seconds: dict[str, list[float]] = {}
+        self._local_data = LocalDataDocument.open(self._workspace)
+        self._local_data_selected = False
+        self._local_data_source: Path | None = None
         self._compatibility = self._inspect_compatibility()
+        self._dynamic_item_issue_baseline = (
+            self._snapshot_dynamic_item_issue_fingerprints()
+        )
         self._file_baseline = self._snapshot_file_metadata()
 
     @classmethod
@@ -133,9 +142,17 @@ class SaveSession:
         return self._revision
 
     @property
+    def dynamic_item_issue_baseline(self) -> tuple[str, ...]:
+        return self._dynamic_item_issue_baseline
+
+    @property
     def batch_active(self) -> bool:
         """Whether an already-previewed outer batch owns the current mutation."""
         return self._active_batch is not None
+
+    @property
+    def raw_json_pending(self) -> bool:
+        return self._raw_json_pending
 
     @property
     def source(self) -> Path:
@@ -166,13 +183,175 @@ class SaveSession:
         return self._opened
 
     @property
-    def save_capabilities(self) -> dict[str, bool]:
+    def local_data(self) -> LocalDataDocument:
+        return self._local_data
+
+    @property
+    def local_data_selected(self) -> bool:
+        return self._local_data_selected
+
+    @property
+    def local_data_selection(self) -> dict[str, Any]:
+        selected_path = self._local_data_source
+        return {
+            "required": True,
+            "selected": self._local_data_selected,
+            "platform": self.platform.value,
+            "canSelectFile": self.platform is SavePlatform.STEAM,
+            "source": (
+                str(selected_path)
+                if selected_path is not None
+                and self.platform is SavePlatform.STEAM
+                else (
+                    self.source_display_name
+                    if self._local_data_selected
+                    else None
+                )
+            ),
+            "reason": (
+                None if self._local_data_selected else "LOCAL_DATA_NOT_SELECTED"
+            ),
+        }
+
+    @property
+    def save_capabilities(self) -> dict[str, Any]:
+        fog_capability = (
+            self._local_data.capability.to_dict()
+            if self._local_data_selected
+            else {
+                "available": False,
+                "reason": "LOCAL_DATA_NOT_SELECTED",
+                "format": None,
+                "maps": [],
+            }
+        )
         return {
             "commitOriginal": True,
             "exportSteamCopy": True,
             "targetPathEditable": self.platform is SavePlatform.STEAM,
             "cloudSyncVerified": False,
+            "localDataSelection": self.local_data_selection,
+            "fogOfWarClear": dict(fog_capability),
+            "fogOfWarReset": dict(fog_capability),
         }
+
+    def select_local_data(
+        self,
+        *,
+        session_id: str,
+        expected_revision: int,
+        path: str | Path | None = None,
+    ) -> dict[str, Any]:
+        self.require_command(session_id, expected_revision)
+        if self.changes():
+            raise DomainError(
+                code="LOCAL_DATA_SELECTION_REQUIRES_CLEAN_SESSION",
+                message=(
+                    "Save or discard pending changes before selecting "
+                    "LocalData.sav."
+                ),
+                http_status=409,
+            )
+
+        if self.platform is SavePlatform.STEAM:
+            if not isinstance(path, (str, Path)) or not str(path).strip():
+                raise DomainError(
+                    code="LOCAL_DATA_PATH_REQUIRED",
+                    message="Select the LocalData.sav file to edit.",
+                    field="path",
+                    http_status=400,
+                )
+            candidate = Path(path)
+            if not candidate.is_absolute():
+                raise DomainError(
+                    code="LOCAL_DATA_PATH_NOT_ABSOLUTE",
+                    message="The LocalData.sav path must be absolute.",
+                    field="path",
+                    http_status=400,
+                )
+            candidate = candidate.resolve()
+            if candidate.name.casefold() != LOCAL_DATA_RELATIVE_PATH.casefold():
+                raise DomainError(
+                    code="LOCAL_DATA_FILE_REQUIRED",
+                    message="The selected file must be named LocalData.sav.",
+                    field="path",
+                    details={"path": str(candidate)},
+                    http_status=400,
+                )
+            if not candidate.is_file():
+                raise DomainError(
+                    code="LOCAL_DATA_MISSING",
+                    message="The selected LocalData.sav file does not exist.",
+                    field="path",
+                    details={"path": str(candidate)},
+                    http_status=404,
+                )
+            if not isinstance(self._storage, SteamDirectoryAdapter):
+                raise DomainError(
+                    code="LOCAL_DATA_STORAGE_UNSUPPORTED",
+                    message="This Steam storage adapter cannot bind LocalData.sav.",
+                    http_status=409,
+                )
+            document = LocalDataDocument.open_file(candidate)
+            self._storage.bind_logical_file(
+                self._opened,
+                LOCAL_DATA_RELATIVE_PATH,
+                candidate,
+            )
+            selected_source = candidate
+        else:
+            if path not in (None, ""):
+                raise DomainError(
+                    code="WGS_LOCAL_DATA_EXTERNAL_UNSUPPORTED",
+                    message=(
+                        "Game Pass can only use LocalData.sav from the WGS slot "
+                        "that was opened."
+                    ),
+                    field="path",
+                    http_status=400,
+                )
+            if LOCAL_DATA_RELATIVE_PATH not in self._opened.logical_files:
+                raise DomainError(
+                    code="LOCAL_DATA_WGS_SLOT_MISSING",
+                    message=(
+                        "The opened Game Pass slot does not contain a mapped "
+                        "LocalData.sav payload."
+                    ),
+                    http_status=409,
+                )
+            selected_source = self._workspace / LOCAL_DATA_RELATIVE_PATH
+            if not selected_source.is_file():
+                raise DomainError(
+                    code="LOCAL_DATA_WGS_SLOT_MISSING",
+                    message=(
+                        "The opened Game Pass slot did not normalize "
+                        "LocalData.sav into the private workspace."
+                    ),
+                    http_status=409,
+                )
+            document = LocalDataDocument.open_file(selected_source)
+
+        self._local_data = document
+        self._local_data_selected = True
+        self._local_data_source = selected_source
+        self._revision += 1
+        self._changes.mark_saved(self._revision)
+        self._file_baseline = self._snapshot_file_metadata()
+        return {
+            "revision": self._revision,
+            "selection": self.local_data_selection,
+            "saveCapabilities": self.save_capabilities,
+        }
+
+    def require_local_data_selected(self) -> None:
+        if self._local_data_selected:
+            return
+        raise DomainError(
+            code="LOCAL_DATA_NOT_SELECTED",
+            message="Select LocalData.sav before changing fog-of-war masks.",
+            details={"capability": self.local_data_selection},
+            http_status=409,
+        )
 
     def summary(self) -> SessionSummary:
         players = getattr(self._manager, "player_mapping", None) or {}
@@ -191,6 +370,7 @@ class SaveSession:
             source_id=self.source_id,
             source_display_name=self.source_display_name,
             save_capabilities=self.save_capabilities,
+            raw_json_pending=self.raw_json_pending,
         )
 
     def close(self) -> None:
@@ -295,7 +475,13 @@ class SaveSession:
             return
         self._operation_seconds.setdefault(name, []).append(float(seconds))
 
-    def require_command(self, session_id: str, expected_revision: int) -> None:
+    def require_command(
+        self,
+        session_id: str,
+        expected_revision: int,
+        *,
+        allow_raw_json: bool = False,
+    ) -> None:
         if session_id != self._session_id:
             raise DomainError(
                 code="SESSION_NOT_FOUND",
@@ -312,6 +498,15 @@ class SaveSession:
             )
         if expected_revision != self._revision:
             raise stale_revision(expected_revision, self._revision)
+        if self._raw_json_pending and not allow_raw_json:
+            raise DomainError(
+                code="RAW_JSON_SAVE_REQUIRED",
+                message=(
+                    "Save or discard the pending JSON changes before using "
+                    "another editor."
+                ),
+                http_status=409,
+            )
 
     def apply_atomic(
         self,
@@ -327,8 +522,13 @@ class SaveSession:
         validate: Callable[[], None],
         after: Callable[[], dict[str, Any]],
         affected_records: Iterable[str],
+        allow_raw_json: bool = False,
     ) -> ChangeEntry:
-        self.require_command(session_id, expected_revision)
+        self.require_command(
+            session_id,
+            expected_revision,
+            allow_raw_json=allow_raw_json,
+        )
         state = snapshot()
         before_summary = deepcopy(before())
         try:
@@ -352,6 +552,9 @@ class SaveSession:
         except Exception:
             restore(state)
             raise
+
+    def mark_raw_json_pending(self) -> None:
+        self._raw_json_pending = True
 
     def run_batch(
         self,
@@ -431,9 +634,24 @@ class SaveSession:
         if expected_revision != self._revision:
             raise stale_revision(expected_revision, self._revision)
         self._changes.mark_saved(expected_revision)
+        self._dynamic_item_issue_baseline = (
+            self._snapshot_dynamic_item_issue_fingerprints()
+        )
         self._file_baseline = self._snapshot_file_metadata()
 
     def file_unchanged_since_open(self, relative_path: str) -> bool:
+        resolver = getattr(self._storage, "logical_source_path", None)
+        if callable(resolver):
+            logical = self._opened.logical_files.get(relative_path)
+            if logical is None:
+                return False
+            try:
+                path = resolver(self._opened, relative_path)
+                from palworld_pal_editor.storage.steam import sha256_file
+
+                return path.is_file() and sha256_file(path) == logical.sha256
+            except OSError:
+                return False
         expected = self._file_baseline.get(relative_path)
         path = self._workspace / Path(relative_path)
         if expected is None:
@@ -460,6 +678,13 @@ class SaveSession:
                 stat.st_mtime_ns,
             )
         return result
+
+    def _snapshot_dynamic_item_issue_fingerprints(self) -> tuple[str, ...]:
+        dynamic_items = getattr(self._manager, "dynamic_item_data", None)
+        snapshot = getattr(dynamic_items, "issue_fingerprints", None)
+        if snapshot is None:
+            return ()
+        return tuple(snapshot())
 
     def _inspect_compatibility(self) -> SaveCompatibility:
         gvas = getattr(self._manager, "gvas_file", None)

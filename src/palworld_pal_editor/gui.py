@@ -1,3 +1,7 @@
+import hashlib
+import os
+import re
+import shutil
 import sys
 import threading
 import time
@@ -18,10 +22,16 @@ class NativeDialogApi:
         window_provider=None,
         modern_folder_picker=choose_folder,
         platform_name: str | None = None,
+        bridge_mod_package: str | Path | None = None,
     ):
         self._window_provider = window_provider or (lambda: webview.windows)
         self._modern_folder_picker = modern_folder_picker
         self._platform_name = platform_name or sys.platform
+        self._bridge_mod_package = (
+            Path(bridge_mod_package).resolve()
+            if bridge_mod_package is not None
+            else None
+        )
 
     def select_save_directory(self, requested_directory=None):
         initial_directory = ""
@@ -37,6 +47,144 @@ class NativeDialogApi:
         if not windows:
             return None
         selected = windows[0].create_file_dialog(webview.FOLDER_DIALOG, directory=initial_directory)
+        if not selected:
+            return None
+        return str(selected[0])
+
+    @staticmethod
+    def _bridge_mod_version(path: Path) -> tuple[int, int, int]:
+        match = re.fullmatch(
+            r"PalEditorBridge-UE4SS-Mod-(\d+)\.(\d+)\.(\d+)\.zip",
+            path.name,
+        )
+        if not match:
+            return (0, 0, 0)
+        return tuple(int(part) for part in match.groups())
+
+    def _resolve_bridge_mod_package(self) -> Path:
+        if self._bridge_mod_package is not None:
+            if not self._bridge_mod_package.is_file():
+                raise FileNotFoundError("The bundled PalEditorBridge package is missing.")
+            return self._bridge_mod_package
+
+        roots = []
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            roots.append(Path(sys._MEIPASS) / "mod")
+        roots.append(Path(__file__).resolve().parents[2] / "mod")
+        candidates = [
+            package
+            for root in roots
+            if root.is_dir()
+            for package in root.glob("PalEditorBridge-UE4SS-Mod-*.zip")
+            if self._bridge_mod_version(package) != (0, 0, 0)
+        ]
+        if not candidates:
+            raise FileNotFoundError("The bundled PalEditorBridge package is missing.")
+        return max(candidates, key=self._bridge_mod_version)
+
+    @staticmethod
+    def _available_download_path(directory: Path, filename: str) -> Path:
+        target = directory / filename
+        if not target.exists():
+            return target
+        stem = Path(filename).stem
+        suffix = Path(filename).suffix
+        counter = 1
+        while True:
+            candidate = directory / f"{stem} ({counter}){suffix}"
+            if not candidate.exists():
+                return candidate
+            counter += 1
+
+    @staticmethod
+    def _file_sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as package_file:
+            for chunk in iter(lambda: package_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def download_bridge_mod(self, requested_directory=None):
+        if self._platform_name != "win32":
+            return {
+                "status": "unsupported",
+                "reason": "WINDOWS_DESKTOP_REQUIRED",
+            }
+
+        initial_directory = ""
+        if requested_directory and Path(requested_directory).is_dir():
+            initial_directory = str(Path(requested_directory).resolve())
+        else:
+            downloads = Path.home() / "Downloads"
+            if downloads.is_dir():
+                initial_directory = str(downloads.resolve())
+
+        selected = self._modern_folder_picker(initial_directory)
+        if not selected:
+            return {"status": "cancelled"}
+
+        temporary = None
+        try:
+            destination = Path(selected).resolve()
+            if not destination.is_dir():
+                return {
+                    "status": "failed",
+                    "reason": "DOWNLOAD_DIRECTORY_INVALID",
+                }
+            package = self._resolve_bridge_mod_package()
+            target = self._available_download_path(destination, package.name)
+            temporary = destination / f".{target.name}.{os.getpid()}.part"
+            shutil.copy2(package, temporary)
+            expected_hash = self._file_sha256(package)
+            if self._file_sha256(temporary) != expected_hash:
+                raise OSError("The copied PalEditorBridge package failed verification.")
+            os.replace(temporary, target)
+            temporary = None
+            return {
+                "status": "completed",
+                "path": str(target),
+                "filename": target.name,
+                "sha256": expected_hash,
+            }
+        except Exception:
+            LOGGER.warning(
+                f"Failed to save the bundled PalEditorBridge package: {traceback.format_exc()}"
+            )
+            return {
+                "status": "failed",
+                "reason": "BRIDGE_MOD_DOWNLOAD_FAILED",
+            }
+        finally:
+            if temporary is not None:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    LOGGER.warning(
+                        "Failed to remove an incomplete PalEditorBridge download."
+                    )
+
+    def select_local_data_file(self, requested_path=None):
+        initial_directory = ""
+        if requested_path:
+            requested = Path(requested_path)
+            if requested.is_file():
+                initial_directory = str(requested.resolve().parent)
+            elif requested.is_dir():
+                initial_directory = str(requested.resolve())
+        if not initial_directory and Config.path:
+            configured = Path(Config.path)
+            if configured.is_dir():
+                initial_directory = str(configured.resolve())
+
+        windows = self._window_provider()
+        if not windows:
+            return None
+        selected = windows[0].create_file_dialog(
+            webview.OPEN_DIALOG,
+            directory=initial_directory,
+            allow_multiple=False,
+            file_types=("Palworld LocalData (*.sav)",),
+        )
         if not selected:
             return None
         return str(selected[0])

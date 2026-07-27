@@ -30,6 +30,7 @@ defineProps({
     <template v-else-if="name === 'trash'"><path d="M4 7h16M10 11v6M14 11v6M9 7l1-3h4l1 3M6 7l1 13h10l1-13" /></template>
     <template v-else-if="name === 'edit'"><path d="M4 20h4l11-11-4-4L4 16v4ZM13.5 6.5l4 4" /></template>
     <template v-else-if="name === 'pin'"><path d="m14 4 6 6-3 1-4 4 1 3-1 1-4-4-4 4-1-1 4-4-4-4 1-1 3 1 4-4 1-3Z" /></template>
+    <template v-else-if="name === 'map'"><path d="m3 6 5-2 8 3 5-2v13l-5 2-8-3-5 2V6Z" /><path d="M8 4v13M16 7v13" /></template>
     <template v-else-if="name === 'copy'"><rect x="9" y="9" width="10" height="10" rx="2" /><path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /></template>
     <template v-else-if="name === 'duplicate'"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></template>
     <template v-else-if="name === 'refresh'"><path d="M20 11a8 8 0 1 0 1.3 4.4M20 5v6h-6" /></template>
@@ -53,7 +54,10 @@ defineProps({
     <template v-else-if="name === 'snowflake'"><path d="m12 2 1.5 3-1.5 2-1.5-2L12 2Zm0 20-1.5-3 1.5-2 1.5 2-1.5 3ZM3.3 7l3.3.3 1 2.3-2.7.8L3.3 7Zm17.4 10-3.3-.3-1-2.3 2.7-.8 1.6 3.4ZM3.3 17l1.6-3.4 2.7.8-1 2.3-3.3.3Zm17.4-10-1.6 3.4-2.7-.8 1-2.3 3.3-.3Z" /><path d="M12 7v10M7.7 9.6l8.6 4.8M7.7 14.4l8.6-4.8" /></template>
     <template v-else-if="name === 'clock'"><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /></template>
     <template v-else-if="name === 'search'"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></template>
-    <template v-else-if="name === 'settings'"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" /></template>
+    <template v-else-if="name === 'settings'"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4A2 2 0 0 0 4 9.9l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.8l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.8v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></template>
+    <template v-else-if="name === 'overview'"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="4" rx="1" /><rect x="14" y="11" width="7" height="10" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></template>
+    <template v-else-if="name === 'paw'"><circle cx="7.2" cy="8" r="2" /><circle cx="16.8" cy="8" r="2" /><circle cx="4.8" cy="13" r="1.7" /><circle cx="19.2" cy="13" r="1.7" /><path d="M8 18.2c0-2.5 1.8-4.2 4-4.2s4 1.7 4 4.2c0 1.8-1.6 2.8-4 2.8s-4-1-4-2.8Z" /></template>
+    <template v-else-if="name === 'activity'"><path d="M3 12h4l2.2-5 4.2 10 2.2-5H21" /></template>
     <template v-else><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" /></template>
   </svg>
 </template>

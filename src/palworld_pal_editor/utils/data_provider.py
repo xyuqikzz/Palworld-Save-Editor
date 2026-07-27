@@ -32,6 +32,11 @@ def load_json(filename: str) -> Any:
 
 PAL_ATTACKS: dict[str, dict] = load_json("pal_attacks.json")
 PAL_DATA: dict[str, dict] = load_json("pal_data.json") | load_json("human_data.json")
+PAL_CONSTRUCTION_ALIASES = {
+    # The Paldeck record is not the usable quest companion. Creating it yields
+    # a Panthalus without its rideable partner-skill implementation.
+    "KingWhale": "BOSS_KingWhale_otomo",
+}
 PAL_PASSIVES: dict[str, dict] = load_json("pal_passives.json")
 PAL_EXP_TABLE: list[int] = load_json("pal_exp_table.json")
 PAL_FRIENDSHIP: dict[str, dict] = load_json("pal_friendship.json")
@@ -109,6 +114,24 @@ class DataProvider:
         Checks if the key exists in the PAL_DATA dictionary.
         """
         return key in PAL_DATA
+
+    @staticmethod
+    def get_constructible_pal_id(key: str) -> str:
+        if not isinstance(key, str):
+            return key
+        return PAL_CONSTRUCTION_ALIASES.get(key, key)
+
+    @staticmethod
+    def get_constructible_pal_sorting_key(key: str) -> Optional[str]:
+        source_id = next(
+            (
+                source_id
+                for source_id, target_id in PAL_CONSTRUCTION_ALIASES.items()
+                if target_id == key
+            ),
+            key,
+        )
+        return DataProvider.get_pal_sorting_key(source_id)
 
     @none_guard(data_source=PAL_DATA, subkey="I18n")
     @staticmethod

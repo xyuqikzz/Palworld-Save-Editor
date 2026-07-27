@@ -22,7 +22,7 @@ const createStorage = (initial = {}) => {
     };
 };
 
-test("passive presets include localized work and combat starters", () => {
+test("passive presets include all localized starters", () => {
     const available = [
         "WorldTree_CraftSpeed",
         "CraftSpeed_up3",
@@ -32,12 +32,27 @@ test("passive presets include localized work and combat starters", () => {
         "WorldTree_ATK_DEF",
         "MutationPal_Immortal",
         "CoolTimeReduction_Up_1",
+        "WorldTree_MoveSpeed",
+        "Stamina_Up_3",
+        "MoveSpeed_up_3",
+        "MoveSpeed_up_2",
+        "MutationPal_Mutant",
+        "TrainerATK_UP_1",
+        "TrainerDEF_UP_1",
+        "ReloadSpeedUp_Passive",
     ];
     const presets = createDefaultPassivePresets((key) => `translated:${key}`, available);
 
-    assert.deepEqual(presets.map((preset) => preset.id), ["starter-work", "starter-combat"]);
+    assert.deepEqual(presets.map((preset) => preset.id), [
+        "starter-work",
+        "starter-combat",
+        "starter-mount",
+        "starter-support",
+    ]);
     assert.equal(presets[0].name, "translated:PalEditor_PassivePreset_Work");
     assert.equal(presets[1].name, "translated:PalEditor_PassivePreset_Combat");
+    assert.equal(presets[2].name, "translated:PalEditor_PassivePreset_Mount");
+    assert.equal(presets[3].name, "translated:PalEditor_PassivePreset_Support");
     assert.equal(presets[0].pinned, false);
     assert.deepEqual(presets[0].skills, [
         "WorldTree_CraftSpeed",
@@ -50,6 +65,18 @@ test("passive presets include localized work and combat starters", () => {
         "WorldTree_ATK_DEF",
         "MutationPal_Immortal",
         "CoolTimeReduction_Up_1",
+    ]);
+    assert.deepEqual(presets[2].skills, [
+        "WorldTree_MoveSpeed",
+        "Stamina_Up_3",
+        "MoveSpeed_up_3",
+        "MoveSpeed_up_2",
+    ]);
+    assert.deepEqual(presets[3].skills, [
+        "MutationPal_Mutant",
+        "TrainerATK_UP_1",
+        "TrainerDEF_UP_1",
+        "ReloadSpeedUp_Passive",
     ]);
 });
 
@@ -76,6 +103,8 @@ test("version 2 starter presets migrate to the current general defaults", () => 
     const fallback = createDefaultPassivePresets((key) => ({
         PalEditor_PassivePreset_Work: "通用工作",
         PalEditor_PassivePreset_Combat: "通用战斗",
+        PalEditor_PassivePreset_Mount: "通用坐骑",
+        PalEditor_PassivePreset_Support: "通用辅助",
     })[key]);
 
     const loaded = loadPassivePresets(storage, fallback);
@@ -88,6 +117,44 @@ test("version 2 starter presets migrate to the current general defaults", () => 
         skills: ["Legend"],
         pinned: false,
     });
+    assert.deepEqual(loaded.presets.slice(3), fallback.slice(2));
+});
+
+test("version 3 presets gain new mount and support defaults without replacing user data", () => {
+    const storage = createStorage({
+        [PASSIVE_PRESET_STORAGE_KEY]: JSON.stringify({
+            version: 3,
+            presets: [
+                {
+                    id: "starter-work",
+                    name: "My work preset",
+                    skills: ["CraftSpeed_up3"],
+                    pinned: true,
+                },
+                { id: "custom", name: "Custom", skills: ["Legend"] },
+            ],
+        }),
+    });
+    const fallback = createDefaultPassivePresets((key) => ({
+        PalEditor_PassivePreset_Work: "General work",
+        PalEditor_PassivePreset_Combat: "General combat",
+        PalEditor_PassivePreset_Mount: "General mount",
+        PalEditor_PassivePreset_Support: "General support",
+    })[key]);
+
+    const loaded = loadPassivePresets(storage, fallback);
+
+    assert.deepEqual(loaded.presets, [
+        {
+            id: "starter-work",
+            name: "My work preset",
+            skills: ["CraftSpeed_up3"],
+            pinned: true,
+        },
+        { id: "custom", name: "Custom", skills: ["Legend"], pinned: false },
+        fallback[2],
+        fallback[3],
+    ]);
 });
 
 test("passive preset create, edit, delete, and storage roundtrip are versioned", () => {

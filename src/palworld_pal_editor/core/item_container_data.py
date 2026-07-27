@@ -133,6 +133,46 @@ class ItemContainer:
     def id(self) -> Optional[UUID]:
         return PalObjects.get_BaseType(self._container_obj["key"]["ID"])
 
+    def snapshot_capacity(self) -> int:
+        return self.capacity
+
+    def expand_capacity(self, capacity: int) -> None:
+        if capacity < self.capacity:
+            raise ValueError("Item container capacity cannot be shrunk")
+        self._set_capacity(capacity)
+
+    def restore_capacity(self, capacity: int) -> None:
+        self._set_capacity(capacity)
+
+    def capacity_matches_declared(self, expected_capacity: int) -> bool:
+        slot_num = self._container_obj.get("value", {}).get("SlotNum")
+        return (
+            self.capacity == expected_capacity
+            and isinstance(slot_num, dict)
+            and slot_num.get("type") == "IntProperty"
+            and slot_num.get("value") == expected_capacity
+        )
+
+    def _set_capacity(self, capacity: int) -> None:
+        if (
+            isinstance(capacity, bool)
+            or not isinstance(capacity, int)
+            or capacity < 0
+        ):
+            raise ValueError("Invalid item container capacity")
+        if self._all_slots and max(self._all_slots) >= capacity:
+            raise ValueError("Item slot index would exceed the new capacity")
+        slot_num = self._container_obj.get("value", {}).get("SlotNum")
+        if (
+            not isinstance(slot_num, dict)
+            or slot_num.get("type") != "IntProperty"
+            or isinstance(slot_num.get("value"), bool)
+            or not isinstance(slot_num.get("value"), int)
+        ):
+            raise ValueError("Unsupported item container SlotNum encoding")
+        slot_num["value"] = capacity
+        self.capacity = capacity
+
     @property
     def dynamic_reference_layout_complete(self) -> bool:
         raw = self._container_raw_data

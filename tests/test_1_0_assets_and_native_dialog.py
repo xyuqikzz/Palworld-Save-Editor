@@ -457,6 +457,66 @@ class ItemAssetAndInventoryTests(unittest.TestCase):
 
 
 class NativeDialogTests(unittest.TestCase):
+    def test_windows_bridge_mod_download_uses_selected_folder(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / "PalEditorBridge-UE4SS-Mod-0.6.0.zip"
+            package.write_bytes(b"bridge-package")
+            download_root = root / "downloads"
+            download_root.mkdir()
+            api = NativeDialogApi(
+                modern_folder_picker=lambda _initial: str(download_root),
+                platform_name="win32",
+                bridge_mod_package=package,
+            )
+
+            result = api.download_bridge_mod()
+
+            self.assertEqual("completed", result["status"])
+            downloaded = Path(result["path"])
+            self.assertEqual(download_root, downloaded.parent)
+            self.assertEqual(package.name, downloaded.name)
+            self.assertEqual(package.read_bytes(), downloaded.read_bytes())
+            self.assertEqual(64, len(result["sha256"]))
+
+    def test_bridge_mod_download_does_not_overwrite_an_existing_file(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / "PalEditorBridge-UE4SS-Mod-0.6.0.zip"
+            package.write_bytes(b"new-package")
+            download_root = root / "downloads"
+            download_root.mkdir()
+            existing = download_root / package.name
+            existing.write_bytes(b"existing-package")
+            api = NativeDialogApi(
+                modern_folder_picker=lambda _initial: str(download_root),
+                platform_name="win32",
+                bridge_mod_package=package,
+            )
+
+            result = api.download_bridge_mod()
+
+            self.assertEqual("completed", result["status"])
+            self.assertEqual(b"existing-package", existing.read_bytes())
+            self.assertNotEqual(existing, Path(result["path"]))
+            self.assertEqual(b"new-package", Path(result["path"]).read_bytes())
+
+    def test_bridge_mod_download_is_windows_desktop_only(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        api = NativeDialogApi(platform_name="linux")
+
+        self.assertEqual(
+            {"status": "unsupported", "reason": "WINDOWS_DESKTOP_REQUIRED"},
+            api.download_bridge_mod(),
+        )
+
     def test_windows_uses_modern_folder_picker(self) -> None:
         from palworld_pal_editor.gui import NativeDialogApi
 
@@ -499,6 +559,34 @@ class NativeDialogTests(unittest.TestCase):
         self.assertEqual(r"D:\PalSave", api.select_save_directory())
         self.assertEqual(webview.FOLDER_DIALOG, window.calls[0][0])
 
+    def test_local_data_picker_selects_one_sav_file(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+        from tempfile import TemporaryDirectory
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (r"D:\Profile\LocalData.sav",)
+
+        with TemporaryDirectory() as initial_directory:
+            window = FakeWindow()
+            api = NativeDialogApi(window_provider=lambda: [window])
+
+            self.assertEqual(
+                r"D:\Profile\LocalData.sav",
+                api.select_local_data_file(initial_directory),
+            )
+            self.assertEqual(webview.OPEN_DIALOG, window.calls[0][0])
+            self.assertEqual(
+                str(Path(initial_directory).resolve()),
+                window.calls[1]["directory"],
+            )
+            self.assertFalse(window.calls[1]["allow_multiple"])
+            self.assertEqual(
+                ("Palworld LocalData (*.sav)",),
+                window.calls[1]["file_types"],
+            )
+
     def test_frontend_uses_native_picker_when_available(self) -> None:
         source = (
             PROJECT_ROOT
@@ -510,6 +598,17 @@ class NativeDialogTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("const MAX_LEVEL = 80;", source)
         self.assertIn("window.pywebview?.api?.select_save_directory", source)
+        self.assertIn("window.pywebview?.api?.select_local_data_file", source)
+        entry_source = (
+            PROJECT_ROOT
+            / "frontend"
+            / "palworld-pal-editor-webui"
+            / "src"
+            / "views"
+            / "EntryView.vue"
+        ).read_text(encoding="utf-8")
+        self.assertIn("window.pywebview?.api?.download_bridge_mod", entry_source)
+        self.assertIn("Remote_ModInstallDialogTitle", entry_source)
         self.assertNotIn("SHOW_DONATE_FLAG", source)
         self.assertNotIn("sorryandfuckyou", source)
         self.assertFalse(

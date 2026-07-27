@@ -14,6 +14,7 @@ import mimetypes
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('text/css', '.css')
 mimetypes.add_type('image/png', '.png')
+mimetypes.add_type('image/webp', '.webp')
 mimetypes.add_type('text/html', '.html')
 
 app = Flask(__name__, static_folder=ASSETS_PATH / "webui", static_url_path='/')
@@ -23,8 +24,17 @@ app.register_blueprint(save_blueprint, url_prefix='/api/save')
 app.register_blueprint(auth_blueprint, url_prefix='/api/auth')
 app.register_blueprint(batch_blueprint, url_prefix='/api/batch')
 app.register_blueprint(preset_blueprint, url_prefix='/api/preset')
+app.register_blueprint(arena_blueprint, url_prefix='/api/arena')
+app.register_blueprint(remote_blueprint, url_prefix='/api/remote')
+app.register_blueprint(json_editor_blueprint, url_prefix='/api/json-editor')
 
-app.config['JWT_SECRET_KEY'] = Config.JWT_SECRET_KEY
+
+def configure_runtime_security():
+    Config.ensure_secure_jwt_secret()
+    app.config['JWT_SECRET_KEY'] = Config.JWT_SECRET_KEY
+
+
+configure_runtime_security()
 jwt = JWTManager(app)
 
 
@@ -75,6 +85,7 @@ def missing_token_callback(error_string):
 
 
 def main():
+    configure_runtime_security()
     Config._password_hash = generate_password_hash(Config.password or "")
     if Config.mode == "web" and not Config.debug:
         try:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 import hashlib
 import json
 import re
@@ -135,6 +136,10 @@ class StructuralPalEditor:
         )
 
     def _add(self, command: AddPal) -> dict[str, Any]:
+        command = replace(
+            command,
+            species_id=DataProvider.get_constructible_pal_id(command.species_id),
+        )
         self._session.require_command(command.session_id, command.expected_revision)
         index = CharacterIndex(self._session.manager)
         self._assert_no_hard_issues(index)

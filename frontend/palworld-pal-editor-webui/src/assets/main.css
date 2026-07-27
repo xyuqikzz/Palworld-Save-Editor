@@ -495,7 +495,7 @@ button:disabled { cursor: default; }
 
 #EditorMain .PalEditor {
   display: grid;
-  grid-template-columns: minmax(0, 1.22fr) minmax(340px, 0.78fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(500px, 0.9fr);
   align-items: start;
   align-content: start;
   gap: 10px;
@@ -573,8 +573,8 @@ button:disabled { cursor: default; }
 
 #EditorMain .suitabilityPanel .skillList > div { align-items: center; gap: 4px; }
 
-@media (max-width: 1380px) {
-  #EditorMain .PalEditor.pal-editor-layout { grid-template-columns: minmax(520px, 1fr); }
+@media (max-width: 1500px) {
+  #EditorMain .PalEditor.pal-editor-layout { grid-template-columns: minmax(0, 1fr); }
   #EditorMain .EditorItem.basicInfo,
   #EditorMain .EditorItem.statsPanel,
   #EditorMain .EditorItem.skillsPanel { grid-column: 1; }

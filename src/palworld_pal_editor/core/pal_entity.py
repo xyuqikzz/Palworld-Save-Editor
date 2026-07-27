@@ -1317,11 +1317,11 @@ class PalEntity:
         self._pal_param.pop("HungerType", None)
 
         if maxFullStomach := DataProvider.get_pal_stats(self.DataAccessKey, "FOOD"):
-            self.FullStomach = maxFullStomach
+            self.FullStomach = max(maxFullStomach, self.FullStomach or 0)
 
         self.SanityValue = 100.0
         if maxHP := self.ComputedMaxHP:
-            self.Hp = maxHP
+            self.Hp = max(maxHP, self.Hp or 0)
 
     @property
     def FoodWithStatusEffect(self) -> Optional[str]:

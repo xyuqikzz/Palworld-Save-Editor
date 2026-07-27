@@ -12,8 +12,6 @@ class PalGroup:
         self._group_obj: dict = group_obj
         self._group_param: dict = group_obj["value"]["RawData"]["value"]
         self._group_type = group_type
-        if (not self.players) and (not self.base_ids):
-            raise Exception("Empty Guild")
 
         self.instance_map = {}
         self.player_map = {}
@@ -115,6 +113,17 @@ class PalGroup:
     @property
     def guild_format(self) -> Optional[str]:
         return self._group_param.get("guild_format")
+
+    @property
+    def base_camp_level(self) -> Optional[int]:
+        value = self._group_param.get("base_camp_level")
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+    def set_base_camp_level(self, level: int) -> None:
+        current = self._group_param.get("base_camp_level")
+        if isinstance(current, bool) or not isinstance(current, int):
+            raise ValueError("Base camp level field is unavailable")
+        self._group_param["base_camp_level"] = level
 
     @property
     def players(self) -> Optional[list[tuple[UUID, str]]]:

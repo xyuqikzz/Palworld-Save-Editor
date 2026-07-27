@@ -5,6 +5,7 @@ from palworld_save_tools.gvas import GvasFile
 from palworld_pal_editor.utils import LOGGER, alphanumeric_key
 from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects, StatusName
+from palworld_pal_editor.core.location_data import read_transform_translation
 from palworld_pal_editor.utils.data_provider import DataProvider
 from palworld_pal_editor.utils.util import clamp, type_guard
 
@@ -243,7 +244,11 @@ class PlayerEntity:
         PalObjects.set_ByteProperty(self._player_param["Level"], value)
         self.Exp = DataProvider.get_player_level_xp(self.Level)
         self.UnusedStatusPoint = new_unused_status_point
-    
+
+    @property
+    def LastLocation(self) -> Optional[dict[str, float]]:
+        return read_transform_translation(self._player_save_data.get("LastTransform"))
+
     @property
     def Exp(self) -> Optional[int]:
         return PalObjects.get_BaseType(self._player_param.get("Exp"))

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import axios from 'axios'
@@ -40,6 +41,103 @@ test('later launches restore the previously selected source', async () => {
   store.SAVE_SOURCE_MODE = 'steam'
   await nextTick()
   assert.equal(values.get('PAL_SAVE_SOURCE_MODE'), 'steam')
+})
+
+test('later launches can restore the remote server source', () => {
+  installStorage({ PAL_SAVE_SOURCE_MODE: 'remote' })
+  setActivePinia(createPinia())
+
+  const store = usePalEditorStore()
+
+  assert.equal(store.SAVE_SOURCE_MODE, 'remote')
+})
+
+test('remote login saves the password by default without exposing it to local storage', async () => {
+  const values = installStorage()
+  setActivePinia(createPinia())
+  axios.post = async (url, payload) => {
+    assert.equal(url, '/api/remote/connect')
+    assert.equal(payload.admin_password, 'server-secret')
+    assert.equal(payload.remember_credential, true)
+    assert.equal('certificate_fingerprint' in payload, false)
+    assert.equal('allow_insecure_local' in payload, false)
+    return { data: { status: 0, data: {
+      ready: true,
+      gameReady: true,
+      runtimeCommandsReady: false,
+      session: {
+        session_id: 'remote-session',
+        revision: 0,
+        server: { name: 'Test server', game_version: 'test' },
+        capabilities: ['server.status'],
+      },
+    } } }
+  }
+
+  const store = usePalEditorStore()
+  store.REMOTE_SERVER_ADDRESS = 'http://127.0.0.1:8213'
+  const connected = await store.connectRemote({
+    adminPassword: 'server-secret',
+  })
+
+  assert.equal(connected, true)
+  assert.equal(store.REMOTE_CONNECTED, true)
+  assert.equal(store.REMOTE_SERVER.name, 'Test server')
+  assert.equal(values.get('PAL_REMOTE_SERVER_ADDRESS'), 'http://127.0.0.1:8213')
+  assert.equal([...values.values()].includes('server-secret'), false)
+})
+
+test('local game connection uses automatic discovery without a password', async () => {
+  const values = installStorage()
+  setActivePinia(createPinia())
+  axios.post = async (url, payload) => {
+    assert.equal(url, '/api/remote/connect-local')
+    assert.deepEqual(payload, {})
+    return { data: { status: 0, data: {
+      ready: true,
+      authoritative: true,
+      instanceMode: 'listen_server',
+      session: {
+        session_id: 'local-session',
+        revision: 0,
+        server: { name: 'Palworld Local Game', instance_kind: 'local_game' },
+        capabilities: ['server.status', 'player.list'],
+      },
+    } } }
+  }
+  axios.get = async url => {
+    assert.match(url, /^\/api\/remote\/players\?session_id=/)
+    return { data: { status: 0, data: {
+      revision: 0,
+      players: [],
+    } } }
+  }
+
+  const store = usePalEditorStore()
+  const connected = await store.connectLocalGame()
+
+  assert.equal(connected, true)
+  assert.equal(store.REMOTE_CONNECTED, true)
+  assert.equal(store.REMOTE_STATUS.instanceMode, 'listen_server')
+  assert.equal([...values.values()].includes('local-secret'), false)
+})
+
+test('successful remote connection leaves the entry page for the remote workspace', async () => {
+  const [entrySource, routerSource, remoteSource] = await Promise.all([
+    readFile(new URL('../src/views/EntryView.vue', import.meta.url), 'utf8'),
+    readFile(new URL('../src/router/index.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/views/RemoteServerView.vue', import.meta.url), 'utf8'),
+  ])
+
+  assert.match(entrySource, /await router\.push\(\{ name: 'RemoteServer' \}\)/)
+  assert.doesNotMatch(
+    entrySource,
+    /Remote_CertificateFingerprint|Remote_AllowInsecureLocal|Remote_RememberCredential/,
+  )
+  assert.match(routerSource, /path: '\/remote'/)
+  assert.match(routerSource, /requiresRemoteSession: true/)
+  assert.match(remoteSource, /executeRemoteCommand/)
+  assert.match(remoteSource, /disconnectRemote/)
 })
 
 test('first launch fills the Steam world detected by the backend', async () => {

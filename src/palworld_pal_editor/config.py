@@ -2,10 +2,10 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import sys
 from typing import Optional
 from urllib.parse import unquote, urlparse
-import aiohttp
 
 def get_program_path():
     # If running in AppImage, use the real file path
@@ -26,8 +26,9 @@ else:
     ASSETS_PATH = get_program_path()
 
 CONFIG_PATH = PROGRAM_PATH / 'config.json'
+MIN_JWT_SECRET_BYTES = 32
 
-VERSION = "1.0.2"
+VERSION = "1.1.0"
 RELEASE_TYPE = "RELEASE"
 BUILD_TIME = "0000000001"
 GIT_HASH = "0000000"
@@ -48,6 +49,8 @@ def is_gh_build() -> bool:
 async def get_new_version() -> Optional[tuple[str, str]]:
     if not is_gh_build():
         return None
+
+    import aiohttp
 
     def parse_version(value: str) -> Optional[tuple[int, int, int]]:
         match = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", value)
@@ -91,7 +94,7 @@ class Config:
     max_souls_level: int = 60
     max_suitability_level: int = 10
     _password_hash: str = None
-    JWT_SECRET_KEY: str = "X2Nvbm5sb3N0"
+    JWT_SECRET_KEY: str = secrets.token_urlsafe(MIN_JWT_SECRET_BYTES)
 
     @classmethod
     def load_from_file(cls, file_path: str=CONFIG_PATH):
@@ -103,6 +106,25 @@ class Config:
                 for key, value in data.items():
                     if hasattr(cls, key):
                         setattr(cls, key, value)
+            if cls.ensure_secure_jwt_secret():
+                data["JWT_SECRET_KEY"] = cls.JWT_SECRET_KEY
+                temporary = path.with_suffix(f"{path.suffix}.tmp")
+                temporary.write_text(
+                    json.dumps(data, ensure_ascii=False, indent=4),
+                    encoding="utf-8",
+                )
+                os.replace(temporary, path)
+
+    @classmethod
+    def ensure_secure_jwt_secret(cls) -> bool:
+        secret = cls.JWT_SECRET_KEY
+        if (
+            isinstance(secret, str)
+            and len(secret.encode("utf-8")) >= MIN_JWT_SECRET_BYTES
+        ):
+            return False
+        cls.JWT_SECRET_KEY = secrets.token_urlsafe(MIN_JWT_SECRET_BYTES)
+        return True
 
     @classmethod
     def set_configs(cls, attrs: dict):
@@ -128,6 +150,9 @@ class Config:
     @classmethod
     def __str__(cls):
         dic = cls.to_dict()
+        for key in ("password", "JWT_SECRET_KEY"):
+            if dic.get(key) is not None:
+                dic[key] = "<redacted>"
         attrs = [f"{key}: {dic[key]}" for key in dic]
         return ", ".join(attrs)
 

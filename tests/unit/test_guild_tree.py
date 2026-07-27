@@ -61,8 +61,25 @@ def worker(worker_id: str, group_id, container_id):
         InstanceId=worker_id,
         group_id=group_id,
         ContainerId=container_id,
+        SlotIndex=0,
+        CharacterID="SheepBall",
+        DataAccessKey="SheepBall",
+        DisplayName="Lamball",
+        CustomNickName="",
+        IconAccessKey="SheepBall",
         PalDeckID="001",
         Level=1,
+        Gender=SimpleNamespace(value="EPalGenderType::Female"),
+        IsBOSS=False,
+        IsRarePal=False,
+        IsTower=False,
+        HasWorkerSick=False,
+        IsFaintedPal=False,
+        PassiveSkillList=[],
+        WorkSuitabilities={
+            "EPalWorkSuitability::Handcraft": 1,
+            "EPalWorkSuitability::Transport": 1,
+        },
     )
 
 
@@ -99,6 +116,40 @@ class GuildTreeTests(unittest.TestCase):
         group = groups.get_group(INDEPENDENT_ID)
         self.assertEqual("EPalGroupType::IndependentGuild", group.group_type)
         self.assertEqual([("solo-player", "Solo")], group.players)
+
+    def test_empty_guild_is_preserved_for_guild_management(self) -> None:
+        empty_guild = {
+            "key": GUILD_ID,
+            "value": {
+                "GroupType": PalObjects.EnumProperty(
+                    "EPalGroupType", "EPalGroupType::Guild"
+                ),
+                "RawData": PalObjects.ArrayProperty(
+                    "ByteProperty",
+                    {
+                        "group_id": GUILD_ID,
+                        "guild_name": "Empty Guild",
+                        "players": [],
+                        "base_ids": [],
+                        "individual_character_handle_ids": [],
+                    },
+                ),
+            },
+        }
+        gvas = SimpleNamespace(
+            properties={
+                "worldSaveData": {
+                    "value": {"GroupSaveDataMap": {"value": [empty_guild]}}
+                }
+            }
+        )
+
+        groups = GroupData(gvas)
+
+        group = groups.get_group(GUILD_ID)
+        self.assertEqual("Empty Guild", group.guild_name)
+        self.assertEqual([], group.players)
+        self.assertEqual([], group.base_ids)
 
     def test_base_camp_reads_worker_container_from_worker_director(self) -> None:
         camp = {
@@ -253,6 +304,21 @@ class GuildTreeTests(unittest.TestCase):
             baseworker_mapping=workers,
             group_data=StubGroupData([guild, independent]),
             camp_data=StubCampData(camps),
+            guild_item_storage_data=SimpleNamespace(
+                get=lambda group_id: (
+                    SimpleNamespace(container_id="guild-chest-container")
+                    if str(group_id) == str(GUILD_ID)
+                    else None
+                )
+            ),
+            guild_item_storage_error=None,
+            item_container_data=SimpleNamespace(
+                get=lambda container_id: (
+                    SimpleNamespace(capacity=90)
+                    if container_id == "guild-chest-container"
+                    else None
+                )
+            ),
         )
         session = SaveSession.from_loaded_manager(manager, Path("synthetic-save"))
 
@@ -266,7 +332,11 @@ class GuildTreeTests(unittest.TestCase):
             base["worker_count"] for base in builders["bases"]
         ])
         self.assertEqual("unmatched", builders["bases"][-1]["kind"])
+        self.assertEqual("available", builders["guild_chest_status"])
+        self.assertEqual(90, builders["guild_chest_capacity"])
         self.assertEqual("independent", tree[1]["kind"])
+        self.assertEqual("missing", tree[1]["guild_chest_status"])
+        self.assertIsNone(tree[1]["guild_chest_capacity"])
         self.assertEqual("unknown", tree[2]["kind"])
         self.assertEqual("no_guild", tree[3]["kind"])
 
@@ -288,6 +358,87 @@ class GuildTreeTests(unittest.TestCase):
                     group_id=GUILD_ID, unmatched_base=True
                 )
             ],
+        )
+
+    def test_guild_query_keeps_saved_members_and_missing_base_references(self) -> None:
+        missing_base_id = toUUID(
+            "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+        )
+        guild = SimpleNamespace(
+            group_id=GUILD_ID,
+            group_type="EPalGroupType::Guild",
+            guild_name="Builders",
+            base_ids=[BASE_ONE_ID, missing_base_id],
+            base_camp_level=14,
+            players=[
+                (toUUID("abababab-abab-abab-abab-abababababab"), "Offline"),
+            ],
+            _group_param={"guild_name": "Builders"},
+        )
+        camp = SimpleNamespace(
+            id=BASE_ONE_ID,
+            name="Snow Base",
+            owner_group_id=GUILD_ID,
+            container_id=CONTAINER_ONE_ID,
+        )
+        worker_container = SimpleNamespace(size=30, slots=[object(), object()])
+        manager = SimpleNamespace(
+            gvas_file=SimpleNamespace(properties={}),
+            player_mapping={},
+            baseworker_mapping={
+                "worker-one": worker(
+                    "worker-one", GUILD_ID, CONTAINER_ONE_ID
+                ),
+                "worker-two": worker(
+                    "worker-two", GUILD_ID, CONTAINER_ONE_ID
+                ),
+            },
+            group_data=StubGroupData([guild]),
+            camp_data=StubCampData([camp]),
+            container_data=SimpleNamespace(
+                get_container=lambda container_id: (
+                    worker_container
+                    if str(container_id) == str(CONTAINER_ONE_ID)
+                    else None
+                )
+            ),
+            guild_item_storage_data=None,
+            guild_item_storage_error=None,
+            item_container_data=None,
+        )
+        session = SaveSession.from_loaded_manager(manager, Path("synthetic-save"))
+
+        rows = SaveQueryService(session).guilds()
+
+        self.assertEqual(1, len(rows))
+        self.assertEqual(14, rows[0]["base_camp_level"])
+        self.assertEqual("available", rows[0]["base_camp_level_status"])
+        self.assertEqual("Offline", rows[0]["members"][0]["name"])
+        self.assertIsNone(rows[0]["members"][0]["level"])
+        self.assertEqual(2, rows[0]["base_count"])
+        self.assertEqual(30, rows[0]["bases"][0]["worker_capacity"])
+        self.assertEqual(2, rows[0]["bases"][0]["worker_count"])
+        self.assertEqual(
+            ["worker-one", "worker-two"],
+            [
+                worker["pal_id"]
+                for worker in rows[0]["bases"][0]["workers"]
+            ],
+        )
+        worker_row = rows[0]["bases"][0]["workers"][0]
+        self.assertEqual("Lamball", worker_row["name"])
+        self.assertEqual("SheepBall", worker_row["icon_access_key"])
+        self.assertEqual("EPalGenderType::Female", worker_row["gender"])
+        self.assertEqual(
+            {"EPalWorkSuitability::Handcraft": 1,
+             "EPalWorkSuitability::Transport": 1},
+            worker_row["work_suitabilities"],
+        )
+        self.assertEqual("missing", rows[0]["bases"][1]["kind"])
+        self.assertEqual([], rows[0]["bases"][1]["workers"])
+        self.assertEqual(
+            "base_missing",
+            rows[0]["bases"][1]["worker_capacity_status"],
         )
 
 

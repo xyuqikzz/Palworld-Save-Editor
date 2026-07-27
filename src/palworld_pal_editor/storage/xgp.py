@@ -24,6 +24,11 @@ from palworld_pal_editor.domain.models import (
     StorageFileSnapshot,
     StorageSnapshot,
 )
+from palworld_pal_editor.storage.backup_diagnostics import (
+    BackupVerificationError,
+    backup_failure,
+    source_changed,
+)
 
 from .discovery import XgpSourceCatalog, world_bindings
 from .steam import sha256_file, snapshot_tree
@@ -305,22 +310,65 @@ class XgpWgsAdapter:
                 opened.source, current_snapshot, backup_path, request
             )
             self._fail(request, "after_backup", {"backup_path": str(backup_path)})
-            stable = self._read_world(opened.source)
-            if stable[2].files != current_snapshot.files or stable[3] != current_bindings:
-                raise DomainError(
+            try:
+                stable = self._read_world(opened.source)
+            except DomainError as error:
+                raise source_changed(
                     code="WGS_SOURCE_CHANGED",
-                    message="The Game Pass source changed while its backup was created.",
-                    retryable=True,
-                    http_status=409,
+                    message=(
+                        "The Game Pass source changed while its backup "
+                        "was created."
+                    ),
+                    backup_path=backup_path,
+                    phase="verify_source_after_backup",
+                    failed_file=error.details.get("path"),
+                ) from error
+            except Exception as error:
+                raise source_changed(
+                    code="WGS_SOURCE_CHANGED",
+                    message=(
+                        "The Game Pass source changed while its backup "
+                        "was created."
+                    ),
+                    backup_path=backup_path,
+                    phase="verify_source_after_backup",
+                    failed_file=None,
+                    error=error,
+                ) from error
+            if stable[2].files != current_snapshot.files or stable[3] != current_bindings:
+                before_files = current_snapshot.by_path()
+                after_files = stable[2].by_path()
+                failed_file = next(
+                    (
+                        relative
+                        for relative in sorted(
+                            set(before_files) | set(after_files)
+                        )
+                        if before_files.get(relative)
+                        != after_files.get(relative)
+                    ),
+                    None,
+                )
+                raise source_changed(
+                    code="WGS_SOURCE_CHANGED",
+                    message=(
+                        "The Game Pass source changed while its backup "
+                        "was created."
+                    ),
+                    backup_path=backup_path,
+                    phase="verify_source_after_backup",
+                    failed_file=failed_file,
                 )
         except DomainError:
             raise
         except Exception as error:
-            raise DomainError(
+            raise backup_failure(
                 code="WGS_BACKUP_FAILED",
                 message="A complete verified WGS backup could not be created.",
-                details={"backup_path": str(backup_path)},
-                http_status=500,
+                backup_path=backup_path,
+                phase="verify_source_after_backup",
+                failed_file=None,
+                error=error,
             ) from error
 
         candidate_dir = request.staged_workspace / ".wgs-candidates"
@@ -458,14 +506,32 @@ class XgpWgsAdapter:
                 },
             )
             if request.verify_file is not None:
-                verify_paths = {path for path in changed if path.startswith("Players/")}
+                verify_paths = set(changed)
                 if "Level.sav" in final_logical:
                     verify_paths.add("Level.sav")
-                for relative_path in sorted(verify_paths):
-                    payload = opened.source.canonical_path / Path(
-                        str(final_metadata[relative_path]["payload_relative"])
-                    )
-                    request.verify_file(payload, relative_path)
+                with tempfile.TemporaryDirectory(
+                    prefix="palworld-wgs-target-verify-"
+                ) as verification_temp:
+                    verification_root = Path(verification_temp)
+                    for relative_path in sorted(verify_paths):
+                        payload = opened.source.canonical_path / Path(
+                            str(final_metadata[relative_path]["payload_relative"])
+                        )
+                        normalized = normalize_palworld_payload(
+                            payload.read_bytes()
+                        )
+                        verification_path = (
+                            verification_root / Path(relative_path)
+                        )
+                        verification_path.parent.mkdir(
+                            parents=True,
+                            exist_ok=True,
+                        )
+                        verification_path.write_bytes(normalized.data)
+                        request.verify_file(
+                            verification_path,
+                            relative_path,
+                        )
             for relative_path in changed:
                 workspace_file = opened.workspace / Path(relative_path)
                 workspace_file.parent.mkdir(parents=True, exist_ok=True)
@@ -592,13 +658,22 @@ class XgpWgsAdapter:
             raise DomainError(
                 code="WGS_BACKUP_FAILED",
                 message="The WGS backup directory must be outside WGS.",
+                details={
+                    "backup_path": str(root / source.source_id),
+                    "phase": "validate_backup_location",
+                    "failed_file": None,
+                    "os_error_code": None,
+                    "os_error_category": "unsafe_location",
+                    "retryable": False,
+                },
                 http_status=500,
             )
         return root / source.source_id
 
     def _new_backup_path(self, source: SaveSource) -> Path:
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-        return self._backup_source_root(source) / f"{timestamp}-{uuid.uuid4()}"
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        transaction_id = uuid.uuid4().hex[:16]
+        return self._backup_source_root(source) / f"{timestamp}-{transaction_id}"
 
     def _recover_incomplete_journals(self, source: SaveSource) -> None:
         source_backups = self._backup_source_root(source)
@@ -748,21 +823,73 @@ class XgpWgsAdapter:
         return result
 
     def _create_verified_backup(self, source, snapshot, backup_path, request):
+        phase = "create_backup_directory"
+        failed_file: str | None = None
         try:
             files_root = backup_path / "files"
             files_root.mkdir(parents=True, exist_ok=False)
             manifest: list[dict[str, object]] = []
             for item in snapshot.files:
                 relative = item.relative_path.as_posix()
+                failed_file = relative
                 source_file = source.canonical_path / Path(relative)
                 backup_file = files_root / Path(relative)
+                phase = "create_backup_directory"
                 backup_file.parent.mkdir(parents=True, exist_ok=True)
+                phase = "copy_file"
                 self._fail(request, "before_backup_copy", {"path": relative})
-                shutil.copy2(source_file, backup_file)
+                try:
+                    shutil.copy2(source_file, backup_file)
+                except FileNotFoundError as error:
+                    if not source_file.is_file():
+                        raise source_changed(
+                            code="WGS_SOURCE_CHANGED",
+                            message=(
+                                "The Game Pass source changed while its "
+                                "backup was created."
+                            ),
+                            backup_path=backup_path,
+                            phase="verify_source_after_backup",
+                            failed_file=relative,
+                            error=error,
+                        ) from error
+                    raise
+                try:
+                    source_stat = source_file.stat()
+                    source_hash = sha256_file(source_file)
+                except OSError as error:
+                    raise source_changed(
+                        code="WGS_SOURCE_CHANGED",
+                        message=(
+                            "The Game Pass source changed while its backup "
+                            "was created."
+                        ),
+                        backup_path=backup_path,
+                        phase="verify_source_after_backup",
+                        failed_file=relative,
+                        error=error,
+                    ) from error
+                if (
+                    source_stat.st_size != item.size
+                    or source_hash != item.sha256
+                ):
+                    raise source_changed(
+                        code="WGS_SOURCE_CHANGED",
+                        message=(
+                            "The Game Pass source changed while its backup "
+                            "was created."
+                        ),
+                        backup_path=backup_path,
+                        phase="verify_source_after_backup",
+                        failed_file=relative,
+                    )
+                phase = "verify_copy"
                 copied = backup_file.stat()
                 copied_hash = sha256_file(backup_file)
                 if copied.st_size != item.size or copied_hash != item.sha256:
-                    raise OSError("WGS backup verification failed")
+                    raise BackupVerificationError(
+                        "WGS backup file verification failed"
+                    )
                 self._fail(request, "after_backup_copy", {"path": relative})
                 manifest.append(
                     {
@@ -779,6 +906,7 @@ class XgpWgsAdapter:
             except Exception:
                 app_version = "unknown"
             manifest_path = backup_path / "manifest.json"
+            failed_file = "manifest.json"
             document = {
                 "schema_version": 1,
                 "format_version": "wgs-v14-container-v4",
@@ -788,19 +916,32 @@ class XgpWgsAdapter:
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "files": manifest,
             }
+            phase = "write_manifest"
             self._write_json_durable(manifest_path, document)
-            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
-            if loaded.get("files") != manifest:
-                raise OSError("WGS backup manifest verification failed")
+            phase = "read_manifest"
+            manifest_text = manifest_path.read_text(encoding="utf-8")
+            phase = "verify_manifest"
+            try:
+                loaded = json.loads(manifest_text)
+            except (json.JSONDecodeError, TypeError) as error:
+                raise BackupVerificationError(
+                    "WGS backup manifest could not be parsed"
+                ) from error
+            if loaded != document:
+                raise BackupVerificationError(
+                    "WGS backup manifest verification failed"
+                )
             return manifest_path, tuple(manifest)
         except DomainError:
             raise
         except Exception as error:
-            raise DomainError(
+            raise backup_failure(
                 code="WGS_BACKUP_FAILED",
                 message="A complete verified WGS backup could not be created.",
-                details={"backup_path": str(backup_path)},
-                http_status=500,
+                backup_path=backup_path,
+                phase=phase,
+                failed_file=failed_file,
+                error=error,
             ) from error
 
     def _recover(

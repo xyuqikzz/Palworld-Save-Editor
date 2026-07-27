@@ -118,6 +118,10 @@ test('Korean translations are complete translations rather than English placehol
     'Editor_Souls_HP',
     'Common_AppName',
     'Entry_Source_Beta',
+    'TopBar_Page_Json',
+    'PlayerMap_FogSaveFile',
+    'PlayerMap_FastTravelSaveFile',
+    'PlayerInventoryCapacity_SaveFile',
   ])
   assert.deepEqual(
     Object.keys(en).filter(key => en[key] === ko[key] && !intentionallyShared.has(key)),
@@ -164,4 +168,21 @@ test('translation lookup is synchronous for every supported locale', async () =>
 test('the document language follows the selected locale', () => {
   const source = readFileSync(topBarPath, 'utf8')
   assert.match(source, /document\.documentElement\.lang = locale \|\| 'en'/)
+})
+
+test('the save button has the exact disabled states and explains each one accessibly', () => {
+  const source = readFileSync(topBarPath, 'utf8')
+  const saveButton = source.match(
+    /<button\s+class="op op--primary"[\s\S]*?<\/button>/,
+  )?.[0]
+
+  assert.ok(saveButton, 'save button must exist')
+  assert.match(
+    saveButton,
+    /:disabled="palStore\.LOADING_FLAG \|\| !palStore\.PENDING_CHANGE_COUNT"/,
+  )
+  assert.match(saveButton, /:title="saveButtonHint"/)
+  assert.match(saveButton, /:aria-label="saveButtonHint"/)
+  assert.match(source, /TopBar_Save_Disabled_Loading/)
+  assert.match(source, /TopBar_Save_Disabled_NoChanges/)
 })

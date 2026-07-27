@@ -80,10 +80,40 @@ jobs:
         cat $CONFIG_FILE
         cat $PYPROJECT_FILE
 
+    - name: Build and test PalEditorBridge
+      if: runner.os == 'Windows'
+      id: bridge
+      shell: pwsh
+      run: |
+        $output = ./build_pal_editor_bridge.ps1 `
+          -UE4SSRoot (Join-Path $env:RUNNER_TEMP "RE-UE4SS")
+        $output | Write-Host
+        $packageLine = $output |
+          Where-Object { $_ -is [string] -and $_.StartsWith("PACKAGE_ZIP=") } |
+          Select-Object -Last 1
+        if (-not $packageLine) {
+          throw "PalEditorBridge packaging did not return PACKAGE_ZIP."
+        }
+        $package = $packageLine.Substring("PACKAGE_ZIP=".Length)
+        "package=$package" >> $env:GITHUB_OUTPUT
+
     - name: Windows Build
       if: runner.os == 'Windows'
       shell: pwsh
-      run: ./build_executable.ps1
+      run: ./build_executable.ps1 -BridgeModPackage "${{ steps.bridge.outputs.package }}"
+
+    - name: Verify Windows build artifacts
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $dll = Join-Path $PWD `
+          "build\pal_editor_bridge_ue4ss\ue4ss\Game__Shipping__Win64\PalEditorBridge.dll"
+        ./build/venv/Scripts/python.exe scripts/verify_release_artifacts.py `
+          --exe dist/palworld-save-editor.exe `
+          --mod "${{ steps.bridge.outputs.package }}" `
+          --dll $dll `
+          --version-file native/pal_editor_bridge/VERSION
+        Copy-Item -LiteralPath "${{ steps.bridge.outputs.package }}" -Destination dist
 
     - name: macOS Build
       if: runner.os == 'macOS'

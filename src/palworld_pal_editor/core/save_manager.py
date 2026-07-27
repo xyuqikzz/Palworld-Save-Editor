@@ -21,6 +21,7 @@ from palworld_pal_editor.core.container_data import ContainerData
 from palworld_pal_editor.core.character_index import CharacterIndex
 from palworld_pal_editor.core.item_container_data import ItemContainerData
 from palworld_pal_editor.core.dynamic_item_data import DynamicItemData
+from palworld_pal_editor.core.guild_item_storage_data import GuildItemStorageData
 
 from palworld_pal_editor.core.pal_objects import PalObjects, UUID2HexStr, toUUID
 from palworld_pal_editor.core.player_entity import PlayerEntity
@@ -149,6 +150,8 @@ class SaveManager:
     container_data: Optional[ContainerData]
     item_container_data: Optional[ItemContainerData]
     dynamic_item_data: Optional[DynamicItemData]
+    guild_item_storage_data: Optional[GuildItemStorageData]
+    guild_item_storage_error: Optional[str]
     group_data: Optional[GroupData]
     camp_data: Optional[BaseCampData]
 
@@ -174,6 +177,50 @@ class SaveManager:
         self._expedition_records: Optional[dict[str, dict[str, Any]]] = None
         self._expedition_index_attempted = False
 
+    def _decode_map_object_property(self) -> dict[str, Any]:
+        prop = self.gvas_file.properties["worldSaveData"]["value"][
+            "MapObjectSaveData"
+        ]
+        writer = FArchiveWriter()
+        writer.fstring(prop["array_type"])
+        writer.optional_guid(prop.get("id"))
+        writer.write(prop["value"])
+        reader = FArchiveReader(
+            writer.bytes(),
+            type_hints=PALWORLD_TYPE_HINTS,
+            custom_properties={
+                ".worldSaveData.MapObjectSaveData": (
+                    map_object.decode,
+                    map_object.encode,
+                )
+            },
+        )
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            return map_object.decode(
+                reader,
+                "ArrayProperty",
+                len(prop["value"]),
+                ".worldSaveData.MapObjectSaveData",
+            )
+
+    @staticmethod
+    def _encode_map_object_raw_data_field(
+        payload: bytes, array_type: str, property_id: Optional[UUID]
+    ) -> bytes:
+        if not isinstance(array_type, str) or not array_type:
+            raise ValueError("map object RawData array type is unavailable")
+        writer = FArchiveWriter()
+        writer.fstring("RawData")
+        writer.fstring("ArrayProperty")
+        writer.u64(len(payload) + 4)
+        writer.fstring(array_type)
+        writer.optional_guid(property_id)
+        writer.u32(len(payload))
+        writer.write(payload)
+        return writer.bytes()
+
     def _load_expedition_records(self) -> Optional[dict[str, dict[str, Any]]]:
         if self._expedition_index_attempted:
             return self._expedition_records
@@ -183,69 +230,82 @@ class SaveManager:
             prop = self.gvas_file.properties["worldSaveData"]["value"][
                 "MapObjectSaveData"
             ]
-            writer = FArchiveWriter()
-            writer.fstring(prop["array_type"])
-            writer.optional_guid(prop.get("id"))
-            writer.write(prop["value"])
-            reader = FArchiveReader(
-                writer.bytes(),
-                type_hints=PALWORLD_TYPE_HINTS,
-                custom_properties={
-                    ".worldSaveData.MapObjectSaveData": (
-                        map_object.decode,
-                        map_object.encode,
-                    )
-                },
-            )
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
-                io.StringIO()
-            ):
-                decoded = map_object.decode(
-                    reader,
-                    "ArrayProperty",
-                    len(prop["value"]),
-                    ".worldSaveData.MapObjectSaveData",
-                )
-
+            decoded = self._decode_map_object_property()
             raw_map_objects = bytes(prop["value"])
             records: dict[str, dict[str, Any]] = {}
             for entry in decoded["value"]["values"]:
                 if entry.get("MapObjectId", {}).get("value") != "Expedition":
                     continue
-                raw_data = (
-                    entry.get("ConcreteModel", {})
+                model_data = (
+                    entry.get("Model", {})
                     .get("value", {})
                     .get("RawData", {})
                     .get("value", {})
                 )
+                raw_property = (
+                    entry.get("ConcreteModel", {})
+                    .get("value", {})
+                    .get("RawData", {})
+                )
+                raw_data = raw_property.get("value", {})
                 instance_id = raw_data.get("instance_id")
                 if instance_id is not None:
                     key = str(instance_id).lower()
-                    member_ids = frozenset(
-                        str(member.get("instance_id")).lower()
+                    members = tuple(
+                        {
+                            "owner_player_uid": (
+                                str(member["owner_player_uid"]).lower()
+                                if member.get("owner_player_uid") is not None
+                                else None
+                            ),
+                            "pal_id": str(member.get("instance_id")).lower(),
+                        }
                         for member in raw_data.get("members", ())
                         if member.get("instance_id") is not None
                     )
+                    member_ids = frozenset(
+                        member["pal_id"] for member in members
+                    )
                     original_payload = None
                     offset = None
+                    original_field = None
+                    field_offset = None
                     try:
                         original_payload = map_concrete_model.encode_bytes(
                             copy.deepcopy(raw_data)
                         )
                         if raw_map_objects.count(original_payload) == 1:
                             offset = raw_map_objects.find(original_payload)
+                        original_field = self._encode_map_object_raw_data_field(
+                            original_payload,
+                            raw_property.get("array_type"),
+                            raw_property.get("id"),
+                        )
+                        if raw_map_objects.count(original_field) == 1:
+                            field_offset = raw_map_objects.find(original_field)
                     except Exception:
                         pass
                     records[key] = {
                         "instance_id": key,
                         "layout": raw_data.get("expedition_layout"),
                         "mission_id": raw_data.get("mission_id"),
+                        "base_id": self._optional_expedition_uuid(
+                            model_data.get("base_camp_id_belong_to")
+                        ),
+                        "guild_id": self._optional_expedition_uuid(
+                            model_data.get("group_id_belong_to")
+                        ),
+                        "members": members,
                         "member_ids": member_ids,
                         "state": raw_data.get("state"),
                         "start_time": raw_data.get("start_time"),
                         "raw_data": raw_data,
                         "original_payload": original_payload,
                         "offset": offset,
+                        "raw_array_type": raw_property.get("array_type"),
+                        "raw_property_id": raw_property.get("id"),
+                        "original_field": original_field,
+                        "field_offset": field_offset,
                     }
             self._expedition_records = records
             self._expedition_instance_ids = frozenset(records)
@@ -261,6 +321,17 @@ class SaveManager:
         return self._expedition_instance_ids
 
     @staticmethod
+    def _optional_expedition_uuid(value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = str(value).lower()
+        return (
+            None
+            if normalized == str(PalObjects.EMPTY_UUID).lower()
+            else normalized
+        )
+
+    @staticmethod
     def _is_active_expedition(record: dict[str, Any]) -> bool:
         mission_id = str(record.get("mission_id") or "")
         return (
@@ -270,10 +341,46 @@ class SaveManager:
             and bool(record.get("member_ids"))
         )
 
-    def completable_expeditions(self) -> list[dict[str, Any]]:
+    def expedition_records(self) -> Optional[list[dict[str, Any]]]:
+        records = self._load_expedition_records()
+        if records is None:
+            return None
+        return [
+            {
+                "expedition_id": record["instance_id"],
+                "mission_id": record["mission_id"],
+                "base_id": record.get("base_id"),
+                "guild_id": record.get("guild_id"),
+                "members": [dict(member) for member in record["members"]],
+                "state": record["state"],
+                "start_time": record["start_time"],
+                "active": self._is_active_expedition(record),
+                "can_complete": self._record_can_complete(record),
+            }
+            for record in records.values()
+        ]
+
+    @classmethod
+    def _record_can_complete(cls, record: dict[str, Any]) -> bool:
+        return bool(
+            cls._is_active_expedition(record)
+            and isinstance(record.get("start_time"), int)
+            and record["start_time"] > 1
+            and record.get("offset") is not None
+            and record.get("original_payload") is not None
+        )
+
+    def completable_expeditions(
+        self, expedition_ids: tuple[str, ...] | list[str] | None = None
+    ) -> list[dict[str, Any]]:
         records = self._load_expedition_records()
         if records is None:
             return []
+        wanted = (
+            None
+            if expedition_ids is None
+            else {str(value).lower() for value in expedition_ids}
+        )
         return [
             {
                 "expedition_id": record["instance_id"],
@@ -283,11 +390,8 @@ class SaveManager:
                 "start_time": record["start_time"],
             }
             for record in records.values()
-            if self._is_active_expedition(record)
-            and isinstance(record.get("start_time"), int)
-            and record["start_time"] > 1
-            and record.get("offset") is not None
-            and record.get("original_payload") is not None
+            if (wanted is None or record["instance_id"] in wanted)
+            and self._record_can_complete(record)
         ]
 
     def expedition_can_complete(self, pal: PalEntity) -> bool:
@@ -300,12 +404,20 @@ class SaveManager:
         record = records.get(str(instance_id).lower())
         return bool(
             record
-            and self._is_active_expedition(record)
+            and self._record_can_complete(record)
             and str(pal.InstanceId).lower() in record["member_ids"]
-            and isinstance(record.get("start_time"), int)
-            and record["start_time"] > 1
-            and record.get("offset") is not None
         )
+
+    def expedition_has_member(
+        self, expedition_id: UUID | str, pal_id: UUID | str
+    ) -> Optional[bool]:
+        records = self._load_expedition_records()
+        if records is None:
+            return None
+        record = records.get(str(expedition_id).lower())
+        if record is None:
+            return False
+        return str(pal_id).lower() in record["member_ids"]
 
     def expedition_completion_state(
         self, expedition_ids: tuple[str, ...] | list[str] | None = None
@@ -323,12 +435,7 @@ class SaveManager:
                 "member_count": len(record["member_ids"]),
                 "state": record["state"],
                 "start_time": record["start_time"],
-                "can_complete": (
-                    self._is_active_expedition(record)
-                    and isinstance(record.get("start_time"), int)
-                    and record["start_time"] > 1
-                    and record.get("offset") is not None
-                ),
+                "can_complete": self._record_can_complete(record),
             }
             for record in records.values()
             if wanted is None or record["instance_id"] in wanted
@@ -347,20 +454,116 @@ class SaveManager:
         ] = bytes(snapshot)
         self.reset_expedition_index()
 
-    def complete_active_expeditions(self) -> list[str]:
+    def remove_expedition_members(
+        self, pal_ids: tuple[str, ...] | list[str] | set[str]
+    ) -> dict[str, list[str]]:
+        targets = {str(value).lower() for value in pal_ids}
+        if not targets:
+            return {}
         records = self._load_expedition_records()
         if records is None:
             raise ValueError("expedition map objects are unavailable")
+        removable = {
+            pal_id
+            for record in records.values()
+            for pal_id in record["member_ids"]
+            if pal_id in targets
+        }
+        if not removable:
+            return {}
+
+        original = self.snapshot_expedition_data()
+        removed_by_expedition: dict[str, list[str]] = {}
+        replacements = []
+        for record in records.values():
+            record_targets = removable.intersection(record["member_ids"])
+            if not record_targets:
+                continue
+            raw_data = copy.deepcopy(record.get("raw_data"))
+            members = raw_data.get("members") if isinstance(raw_data, dict) else None
+            if not isinstance(members, list):
+                raise ValueError("expedition member layout is unsupported")
+            kept_members = []
+            removed_members = []
+            for member in members:
+                member_id = (
+                    member.get("instance_id") if isinstance(member, dict) else None
+                )
+                normalized = str(member_id).lower() if member_id is not None else None
+                if normalized in record_targets:
+                    removed_members.append(normalized)
+                else:
+                    kept_members.append(member)
+            if removed_members:
+                raw_data["members"] = kept_members
+                encoded_payload = map_concrete_model.encode_bytes(raw_data)
+                encoded_field = self._encode_map_object_raw_data_field(
+                    encoded_payload,
+                    record.get("raw_array_type"),
+                    record.get("raw_property_id"),
+                )
+                original_field = record.get("original_field")
+                field_offset = record.get("field_offset")
+                if original_field is None or field_offset is None:
+                    raise ValueError("expedition RawData field is not uniquely writable")
+                if (
+                    original[field_offset : field_offset + len(original_field)]
+                    != original_field
+                ):
+                    raise ValueError(
+                        "expedition RawData field no longer matches the index"
+                    )
+                replacements.append(
+                    (field_offset, original_field, encoded_field)
+                )
+                removed_by_expedition[record["instance_id"]] = sorted(removed_members)
+
+        actually_removed = {
+            pal_id
+            for values in removed_by_expedition.values()
+            for pal_id in values
+        }
+        if actually_removed != removable:
+            raise ValueError("expedition member records changed during update")
+
+        updated = original
+        for field_offset, original_field, encoded_field in sorted(
+            replacements, reverse=True
+        ):
+            updated = (
+                updated[:field_offset]
+                + encoded_field
+                + updated[field_offset + len(original_field) :]
+            )
+        self.restore_expedition_data(updated)
+        reloaded = self._load_expedition_records()
+        if reloaded is None or any(
+            pal_id in record["member_ids"]
+            for record in reloaded.values()
+            for pal_id in actually_removed
+        ):
+            self.restore_expedition_data(original)
+            raise ValueError("expedition members were not removed safely")
+        return removed_by_expedition
+
+    def complete_active_expeditions(
+        self, expedition_ids: tuple[str, ...] | list[str] | None = None
+    ) -> list[str]:
+        records = self._load_expedition_records()
+        if records is None:
+            raise ValueError("expedition map objects are unavailable")
+        wanted = (
+            None
+            if expedition_ids is None
+            else {str(value).lower() for value in expedition_ids}
+        )
         raw_map_objects = self.snapshot_expedition_data()
         replacements = []
         completed_ids = []
         for record in records.values():
             if not (
-                self._is_active_expedition(record)
-                and isinstance(record.get("start_time"), int)
-                and record["start_time"] > 1
-                and record.get("offset") is not None
-                and record.get("original_payload") is not None
+                (wanted is None or record["instance_id"] in wanted)
+                and self._record_can_complete(record)
             ):
                 continue
             updated = copy.deepcopy(record["raw_data"])
@@ -408,6 +611,8 @@ class SaveManager:
     def open(self, file_path: str, *, lazy_players: bool = False) -> Optional[GvasFile]:
         self._file_path = Path(file_path).resolve()
         self.reset_expedition_index()
+        self.guild_item_storage_data = None
+        self.guild_item_storage_error = None
         self.player_file_load_count = 0
         self.player_file_load_seconds = {}
         self._lazy_players = lazy_players
@@ -473,6 +678,14 @@ class SaveManager:
             except Exception as e:
                 LOGGER.error(f"Error parsing item container data: {e}")
                 return None
+
+            try:
+                self.guild_item_storage_data = GuildItemStorageData(
+                    self.gvas_file
+                )
+            except Exception as e:
+                self.guild_item_storage_error = type(e).__name__
+                LOGGER.warning(f"Unable to index guild item storage: {e}")
 
             try:
                 self.dynamic_item_data = DynamicItemData(

@@ -5,6 +5,10 @@ from palworld_pal_editor.application.inventory_editor import InventoryEditor
 from palworld_pal_editor.application.character_editor import CharacterEditor
 from palworld_pal_editor.application.inventory_layout_editor import InventoryLayoutEditor
 from palworld_pal_editor.application.dynamic_attribute_editor import DynamicAttributeEditor
+from palworld_pal_editor.application.fast_travel_editor import FastTravelEditor
+from palworld_pal_editor.application.player_inventory_capacity_editor import (
+    PlayerInventoryCapacityEditor,
+)
 from palworld_pal_editor.application.mission_editor import MissionEditor
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.config import Config
@@ -17,13 +21,16 @@ from palworld_pal_editor.domain.commands import (
     PasteItemSlot,
     PutItem,
     SortItemContainer,
+    SwapItemSlots,
     UpdateItemCount,
     UpdateDynamicItemAttributes,
     UpdatePlayerAttributes,
     UpdatePlayerIdentity,
+    UpdatePlayerInventoryCapacity,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
     UpdatePlayerMissions,
+    UnlockAllFastTravelPoints,
 )
 from palworld_pal_editor.domain.player_attributes import player_attribute_view
 from palworld_pal_editor.utils.util import reply
@@ -159,6 +166,8 @@ def execute_player_command(player_id: str):
         },
         "update_player_attributes": {"values"},
         "update_player_technology": {"recipe_id", "unlocked", "unlock_all"},
+        "unlock_all_fast_travel_points": {"confirmation"},
+        "update_player_inventory_capacity": {"capacity"},
     }
     command_name = payload.get("command")
     if command_name not in command_fields:
@@ -201,6 +210,21 @@ def execute_player_command(player_id: str):
             command = UpdatePlayerAttributes(
                 **base,
                 values=payload.get("values"),
+            )
+        elif command_name == "unlock_all_fast_travel_points":
+            command = UnlockAllFastTravelPoints(
+                **base,
+                confirmation=payload.get("confirmation"),
+            )
+            return reply(0, FastTravelEditor(session).execute(command))
+        elif command_name == "update_player_inventory_capacity":
+            command = UpdatePlayerInventoryCapacity(
+                **base,
+                capacity=payload.get("capacity"),
+            )
+            return reply(
+                0,
+                PlayerInventoryCapacityEditor(session).execute(command),
             )
         else:
             command = UpdatePlayerTechnology(
@@ -425,6 +449,7 @@ def execute_inventory_layout_command(player_id: str):
     common = {"session_id", "expected_revision", "command", "container_type"}
     fields = {
         "paste_item_slot": {"slot_index", "clipboard_token"},
+        "swap_item_slots": {"source_slot_index", "target_slot_index"},
         "sort_item_container": {"sort_by", "descending"},
         "fill_item_slots": {"slot_indices", "static_id", "count"},
     }
@@ -460,6 +485,12 @@ def execute_inventory_layout_command(player_id: str):
                 **base,
                 slot_index=payload.get("slot_index"),
                 clipboard_token=payload.get("clipboard_token"),
+            )
+        elif command_name == "swap_item_slots":
+            command = SwapItemSlots(
+                **base,
+                source_slot_index=payload.get("source_slot_index"),
+                target_slot_index=payload.get("target_slot_index"),
             )
         elif command_name == "sort_item_container":
             command = SortItemContainer(
@@ -653,7 +684,8 @@ def get_player_data():
         return reply(1, None, f"PAL_BASE_WORKER_BTN is not a real player")
 
     try:
-        player_entity = SESSION_RUNTIME.get().load_player(PlayerUId)
+        session = SESSION_RUNTIME.get()
+        player_entity = session.load_player(PlayerUId)
     except DomainError as error:
         return _domain_error(error)
     if not player_entity:
@@ -661,6 +693,12 @@ def get_player_data():
         return reply(1, None, f"Player {PlayerUId} not exist")
 
     player_dict = player_to_dict(player_entity)
+    player_dict["FastTravelUnlockCapability"] = FastTravelEditor(
+        session
+    ).capability(PlayerUId).to_dict()
+    player_dict["InventoryCapacityCapability"] = (
+        PlayerInventoryCapacityEditor(session).capability(PlayerUId)
+    )
     player_dict["UnlockedRecipeTechnologyNames"] = (
         player_entity.UnlockedRecipeTechnologyNames or []
     )

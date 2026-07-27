@@ -6,6 +6,7 @@ from threading import RLock
 
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.domain.errors import DomainError
+from palworld_pal_editor.domain.models import SavePlatform
 from palworld_pal_editor.storage.discovery import SOURCE_CATALOG, XgpSourceCatalog
 from palworld_pal_editor.storage.xgp import XgpWgsAdapter
 
@@ -103,7 +104,11 @@ class SessionRuntime:
                     http_status=400,
                 )
 
-            session.require_command(session_id, expected_revision)
+            session.require_command(
+                session_id,
+                expected_revision,
+                allow_raw_json=True,
+            )
             pending_change_count = len(session.changes())
             if pending_change_count and not discard_changes:
                 raise DomainError(
@@ -126,6 +131,87 @@ class SessionRuntime:
         if close_session is not None:
             close_session()
         return result
+
+    def reload(
+        self,
+        session_id: str,
+        expected_revision: int,
+        *,
+        discard_changes: bool = False,
+    ) -> tuple[SaveSession, int]:
+        """Reload the active session from its original Steam or WGS source."""
+        with self._lock:
+            session = self._sessions.get(session_id)
+            if session is None or session is not self._current:
+                raise DomainError(
+                    code="SESSION_NOT_FOUND",
+                    message="No matching save session is open.",
+                    field="session_id",
+                    http_status=404,
+                )
+            if not isinstance(discard_changes, bool):
+                raise DomainError(
+                    code="INVALID_REQUEST",
+                    message="discard_changes must be a boolean.",
+                    field="discard_changes",
+                    http_status=400,
+                )
+
+            session.require_command(
+                session_id,
+                expected_revision,
+                allow_raw_json=True,
+            )
+            pending_change_count = len(session.changes())
+            if pending_change_count and not discard_changes:
+                raise DomainError(
+                    code="UNSAVED_CHANGES_PRESENT",
+                    message=(
+                        "Confirm that the current changes should be discarded "
+                        "before refreshing the save."
+                    ),
+                    details={"pending_change_count": pending_change_count},
+                    http_status=409,
+                )
+            platform = session.platform
+            source = session.source
+            source_id = session.source_id
+
+        if platform is SavePlatform.XGP:
+            storage_source = self._source_catalog.resolve(source_id)
+            candidate = SaveSession.open_storage(
+                storage_source,
+                XgpWgsAdapter(catalog=self._source_catalog),
+            )
+        else:
+            candidate = SaveSession.open(source)
+
+        try:
+            with self._lock:
+                if (
+                    self._current is not session
+                    or self._sessions.get(session_id) is not session
+                ):
+                    raise DomainError(
+                        code="SESSION_NOT_FOUND",
+                        message="The save session changed while it was refreshing.",
+                        field="session_id",
+                        http_status=409,
+                    )
+                session.require_command(
+                    session_id,
+                    expected_revision,
+                    allow_raw_json=True,
+                )
+                self._sessions.pop(session_id, None)
+                self._current = candidate
+                self._sessions[candidate.session_id] = candidate
+        except Exception:
+            candidate.close()
+            raise
+
+        session.close()
+        return candidate, pending_change_count
 
     def shutdown(self) -> None:
         with self._lock:

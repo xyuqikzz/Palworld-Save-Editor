@@ -1,8 +1,10 @@
+import math
 from typing import Optional
 from palworld_save_tools.gvas import GvasFile
 from palworld_save_tools.archive import UUID
 
 from palworld_pal_editor.core.pal_objects import PalObjects
+from palworld_pal_editor.core.location_data import read_transform_translation
 from palworld_pal_editor.utils import LOGGER
 
 
@@ -40,6 +42,18 @@ class PalBaseCamp:
     @property
     def container_id(self) -> Optional[UUID]:
         return self._worker_director_param.get('container_id')
+
+    @property
+    def location(self) -> Optional[dict[str, float]]:
+        return read_transform_translation(self._camp_param.get("transform"))
+
+    @property
+    def area_range(self) -> Optional[float]:
+        value = self._camp_param.get("area_range")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        number = float(value)
+        return number if math.isfinite(number) and number >= 0 else None
 
 class BaseCampData:
     def __init__(self, gvas_file: GvasFile) -> None:

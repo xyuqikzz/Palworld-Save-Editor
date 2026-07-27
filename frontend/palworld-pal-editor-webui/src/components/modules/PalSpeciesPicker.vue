@@ -7,6 +7,7 @@ import {
   availablePalElements,
   elementTranslationKey,
   filterSpeciesOptions,
+  palSpeciesIconKey,
 } from '@/components/modules/pal-species-filter'
 
 const palStore = usePalEditorStore()
@@ -41,20 +42,6 @@ const formatPalNumber = value => {
   const match = String(value).match(/^(\d+)([A-Za-z]*)$/)
   if (!match) return String(value)
   return `${match[1].padStart(3, '0')}${match[2]}`
-}
-
-const iconKey = pal => {
-  if (pal?.IsHuman) return pal.HasIcon ? pal.InternalName : 'Human'
-
-  let key = pal?.InternalName || ''
-  if (/^(?:BOSS|Boss)_/.test(key)) return key.replace(/^(?:BOSS|Boss)_/, '')
-  if (key.endsWith('_Oilrig')) return key.replace(/_Oilrig$/, '')
-
-  const specialVariant = key.match(/^(?:RAID|PREDATOR|SUMMON)_(.+?)(?:_\d+.*)?$/)
-  if (specialVariant) return specialVariant[1]
-
-  const tower = key.match(/^(GYM_[^_]+)/)
-  return tower?.[1] || key
 }
 
 const selectedPal = computed(() => (
@@ -133,7 +120,7 @@ const focusOption = index => {
     <img
       v-if="showSelectedIcon && selectedPal"
       class="pal-species-trigger__portrait"
-      :src="`/image/pals/${iconKey(selectedPal)}`"
+      :src="`/image/pals/${palSpeciesIconKey(selectedPal)}`"
       alt=""
       draggable="false"
     >
@@ -257,7 +244,7 @@ const focusOption = index => {
           >
             <img
               class="pal-species-option__portrait"
-              :src="`/image/pals/${iconKey(pal)}`"
+              :src="`/image/pals/${palSpeciesIconKey(pal)}`"
               alt=""
               loading="lazy"
               draggable="false"

@@ -6,13 +6,17 @@ const props = defineProps({
   internalName: { type: String, default: '' },
   fallbackDescription: { type: String, default: '' },
   focusable: { type: Boolean, default: true },
+  unknownLabel: { type: String, default: 'Mod/Unknown' },
 })
 
 const rating = computed(() => Number(props.skill?.Rating) || 0)
 const rankLevel = computed(() => Math.min(Math.max(Math.abs(rating.value) || 1, 1), 5))
-const ratingClass = computed(() => rating.value < 0 ? 'is-negative' : `is-rank-${rankLevel.value}`)
+const ratingClass = computed(() => {
+  if (!props.skill) return null
+  return rating.value < 0 ? 'is-negative' : `is-rank-${rankLevel.value}`
+})
 const name = computed(() => props.skill?.I18n?.[0] || props.internalName)
-const description = computed(() => props.skill?.I18n?.[1] || props.fallbackDescription || props.internalName)
+const description = computed(() => props.skill?.I18n?.[1] || props.fallbackDescription)
 const rankSrc = computed(() => `/images/Pal/Texture/UI/Main_Menu/T_icon_skillstatus_rank_arrow_0${rankLevel.value}.webp`)
 const card = ref(null)
 const tooltip = ref(null)
@@ -74,7 +78,8 @@ onBeforeUnmount(hideTooltip)
   >
     <div class="passive-skill-banner">
       <span class="passive-skill-name">{{ name }}</span>
-      <img class="passive-rank-icon" :src="rankSrc" alt="">
+      <span v-if="!skill" class="passive-skill-unknown">{{ unknownLabel }}</span>
+      <img v-else class="passive-rank-icon" :src="rankSrc" alt="">
     </div>
     <span ref="tooltip" class="passive-skill-tooltip" popover="manual">{{ description }}</span>
   </div>
@@ -165,6 +170,19 @@ onBeforeUnmount(hideTooltip)
 
 .passive-skill-card.is-unknown .passive-skill-banner { border-color: var(--ui-danger); }
 .passive-skill-card.is-unknown .passive-skill-name { color: var(--ui-danger); }
+
+.passive-skill-unknown {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  color: var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 48%, transparent);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
 
 .passive-skill-tooltip {
   position: fixed;

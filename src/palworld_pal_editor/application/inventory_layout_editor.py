@@ -8,6 +8,7 @@ from palworld_pal_editor.domain.commands import (
     FillItemSlots,
     PasteItemSlot,
     SortItemContainer,
+    SwapItemSlots,
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.item_catalog import (
@@ -96,13 +97,16 @@ class InventoryLayoutEditor:
         }
 
     def execute(
-        self, command: PasteItemSlot | SortItemContainer | FillItemSlots
+        self,
+        command: PasteItemSlot | SortItemContainer | FillItemSlots | SwapItemSlots,
     ) -> dict:
         self._session.require_command(
             command.session_id, command.expected_revision
         )
         if isinstance(command, PasteItemSlot):
             return self._paste(command)
+        if isinstance(command, SwapItemSlots):
+            return self._swap(command)
         if isinstance(command, SortItemContainer):
             return self._sort(command)
         if isinstance(command, FillItemSlots):
@@ -242,6 +246,161 @@ class InventoryLayoutEditor:
             "slot": container.slot_summary(command.slot_index),
         }
 
+    def _swap(self, command: SwapItemSlots) -> dict:
+        player, container = InventoryEditor(
+            self._session, self._catalog
+        )._resolve_owned_container(command.player_id, command.container_type)
+        indices = (
+            ("source_slot_index", command.source_slot_index),
+            ("target_slot_index", command.target_slot_index),
+        )
+        for field, index in indices:
+            if isinstance(index, bool) or not isinstance(index, int):
+                raise DomainError(
+                    code="INVALID_SLOT_INDEX",
+                    message="Item slot indices must be integers.",
+                    field=field,
+                    http_status=400,
+                )
+            if index < 0 or index >= container.capacity:
+                raise DomainError(
+                    code="INVALID_SLOT_INDEX",
+                    message="The item slot index is outside the container capacity.",
+                    field=field,
+                    details={"capacity": container.capacity, "slot_index": index},
+                    http_status=400,
+                )
+        if command.source_slot_index == command.target_slot_index:
+            raise DomainError(
+                code="NO_LAYOUT_CHANGE",
+                message="The source and target item slots are the same.",
+                field="target_slot_index",
+                http_status=409,
+            )
+        try:
+            source_slot = container.get_occupied(command.source_slot_index)
+        except KeyError as error:
+            raise DomainError(
+                code="ITEM_SLOT_EMPTY",
+                message="The source item slot is empty.",
+                field="source_slot_index",
+                http_status=404,
+            ) from error
+
+        source_expected = container.slot_summary(command.source_slot_index)
+        target_expected = (
+            None
+            if container.is_empty(command.target_slot_index)
+            else container.slot_summary(command.target_slot_index)
+        )
+        self._catalog.validate_placement(
+            source_slot.static_id,
+            command.container_type,
+            command.target_slot_index,
+            source_slot.count,
+        )
+        if target_expected is not None:
+            target_slot = container.get_occupied(command.target_slot_index)
+            self._catalog.validate_placement(
+                target_slot.static_id,
+                command.container_type,
+                command.source_slot_index,
+                target_slot.count,
+            )
+
+        source_indices = list(range(container.capacity))
+        source_indices[command.source_slot_index] = command.target_slot_index
+        source_indices[command.target_slot_index] = command.source_slot_index
+        target_metadata = (
+            {
+                index: new_item_slot_metadata(command.container_type, index)
+                for index in range(container.capacity)
+            }
+            if command.container_type == ItemContainerType.PLAYER_EQUIP_ARMOR
+            else None
+        )
+        dynamic_items = getattr(self._session.manager, "dynamic_item_data", None)
+
+        def summary(slot_index: int) -> dict[str, Any]:
+            if container.is_empty(slot_index):
+                return {"slot_index": slot_index, "state": "empty"}
+            return {"state": "occupied", **container.slot_summary(slot_index)}
+
+        def restore(state) -> None:
+            container.restore_all(state)
+            if dynamic_items is not None:
+                dynamic_items.rebuild_references()
+
+        def matches(slot_index: int, expected: dict[str, Any]) -> bool:
+            actual = container.slot_summary(slot_index)
+            return all(
+                actual[key] == expected[key]
+                for key in ("static_id", "count", "dynamic_id")
+            )
+
+        def validate() -> None:
+            if len(container.dense_slots()) != container.capacity:
+                raise DomainError(
+                    code="INVARIANT_VIOLATION",
+                    message="Moving an item changed the item container capacity.",
+                    http_status=409,
+                )
+            if not matches(command.target_slot_index, source_expected):
+                raise DomainError(
+                    code="INVARIANT_VIOLATION",
+                    message="The source item was not moved to the target slot.",
+                    http_status=409,
+                )
+            if target_expected is None:
+                if not container.is_empty(command.source_slot_index):
+                    raise DomainError(
+                        code="INVARIANT_VIOLATION",
+                        message="The source slot was not emptied after the move.",
+                        http_status=409,
+                    )
+            elif not matches(command.source_slot_index, target_expected):
+                raise DomainError(
+                    code="INVARIANT_VIOLATION",
+                    message="The target item was not moved to the source slot.",
+                    http_status=409,
+                )
+            if dynamic_items is not None:
+                dynamic_items.assert_consistent()
+
+        entry = self._session.apply_atomic(
+            session_id=command.session_id,
+            expected_revision=command.expected_revision,
+            command="SwapItemSlots",
+            target={
+                "player_id": str(player.PlayerUId),
+                "container_type": command.container_type.value,
+                "source_slot_index": command.source_slot_index,
+                "target_slot_index": command.target_slot_index,
+            },
+            snapshot=container.snapshot_all,
+            restore=restore,
+            before=lambda: {
+                "source": summary(command.source_slot_index),
+                "target": summary(command.target_slot_index),
+            },
+            mutate=lambda: container.reorder_payloads(
+                source_indices,
+                target_slot_metadata=target_metadata,
+            ),
+            validate=validate,
+            after=lambda: {
+                "source": summary(command.source_slot_index),
+                "target": summary(command.target_slot_index),
+            },
+            affected_records=("level:ItemContainerSaveData",),
+        )
+        return {
+            "revision": self._session.revision,
+            "change_id": entry.change_id,
+            "container_type": command.container_type.value,
+            "source_slot_index": command.source_slot_index,
+            "target_slot_index": command.target_slot_index,
+        }
     def _sort(self, command: SortItemContainer) -> dict:
         supported = {"name", "internal_id", "category", "rarity", "count"}
         if command.sort_by not in supported:

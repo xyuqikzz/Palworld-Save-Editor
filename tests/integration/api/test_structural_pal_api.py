@@ -75,6 +75,19 @@ class StructuralPalApiTests(unittest.TestCase):
             },
         )
 
+    def test_pal_catalog_exposes_only_the_rideable_king_whale_record(self) -> None:
+        response = self.client.get("/api/save/pal_data", headers=self.headers)
+
+        self.assertEqual(200, response.status_code)
+        catalog = {
+            item["InternalName"]: item for item in response.get_json()["data"]["arr"]
+        }
+        self.assertNotIn("KingWhale", catalog)
+        self.assertEqual(
+            "203",
+            catalog["BOSS_KingWhale_otomo"]["SortingKey"],
+        )
+
     def tearDown(self) -> None:
         SESSION_RUNTIME.replace_for_tests(None)
         singleton = SaveManager()

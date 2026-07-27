@@ -1,5 +1,5 @@
 export const PASSIVE_PRESET_STORAGE_KEY = "PAL_PASSIVE_PRESETS_V1";
-export const PASSIVE_PRESET_VERSION = 3;
+export const PASSIVE_PRESET_VERSION = 4;
 export const MAX_PASSIVE_PRESET_SKILLS = 4;
 export const MAX_PASSIVE_PRESET_NAME_LENGTH = 40;
 
@@ -24,7 +24,29 @@ const DEFAULT_PRESET_DEFINITIONS = [
             "CoolTimeReduction_Up_1",
         ],
     },
+    {
+        id: "starter-mount",
+        nameKey: "PalEditor_PassivePreset_Mount",
+        skills: [
+            "WorldTree_MoveSpeed",
+            "Stamina_Up_3",
+            "MoveSpeed_up_3",
+            "MoveSpeed_up_2",
+        ],
+    },
+    {
+        id: "starter-support",
+        nameKey: "PalEditor_PassivePreset_Support",
+        skills: [
+            "MutationPal_Mutant",
+            "TrainerATK_UP_1",
+            "TrainerDEF_UP_1",
+            "ReloadSpeedUp_Passive",
+        ],
+    },
 ];
+
+const VERSION_4_DEFAULT_PRESET_IDS = new Set(["starter-mount", "starter-support"]);
 
 const LEGACY_DEFAULT_PRESETS = {
     "starter-work": {
@@ -86,14 +108,14 @@ export function loadPassivePresets(storage, fallbackPresets) {
         const payload = JSON.parse(raw);
         if (
             !payload
-            || ![1, 2, PASSIVE_PRESET_VERSION].includes(payload.version)
+            || ![1, 2, 3, PASSIVE_PRESET_VERSION].includes(payload.version)
             || !Array.isArray(payload.presets)
         ) {
             throw new TypeError("INVALID_PRESET_STORAGE");
         }
         const fallbackById = new Map(fallback.map((preset) => [preset.id, preset]));
         const presets = payload.presets.map(normalizePreset).map((preset) => {
-            if (payload.version >= PASSIVE_PRESET_VERSION) return preset;
+            if (payload.version >= 3) return preset;
             const legacy = LEGACY_DEFAULT_PRESETS[preset.id];
             const current = fallbackById.get(preset.id);
             if (!legacy || !current) return preset;
@@ -109,6 +131,15 @@ export function loadPassivePresets(storage, fallbackPresets) {
             }
             return preset;
         });
+        if (payload.version < PASSIVE_PRESET_VERSION) {
+            const existingIds = new Set(presets.map((preset) => preset.id));
+            fallback
+                .filter((preset) => (
+                    VERSION_4_DEFAULT_PRESET_IDS.has(preset.id)
+                    && !existingIds.has(preset.id)
+                ))
+                .forEach((preset) => presets.push(clonePreset(preset)));
+        }
         if (new Set(presets.map((preset) => preset.id)).size !== presets.length) {
             throw new TypeError("DUPLICATE_PRESET_ID");
         }

@@ -193,3 +193,68 @@ test('language switching refreshes a visible localized error message', async () 
   assert.notEqual(store.LAST_ERROR.message, englishError)
   assert.equal(store.LAST_ERROR.message, store.getTranslatedText('WGS_NOT_FOUND'))
 })
+
+test('loading a save fetches localized static data only once', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  store.IS_LOCKED = false
+  store.I18n = 'en'
+  store.PAL_GAME_SAVE_PATH = 'C:/Pal/Saved/SaveGames/world'
+
+  const staticDataRequests = []
+  axios.patch = async url => {
+    assert.equal(url, '/api/save/i18n')
+    return { data: { status: 0 } }
+  }
+  axios.post = async (url, data) => {
+    assert.equal(url, '/api/save/load')
+    assert.deepEqual(data, { ReadPath: 'C:/Pal/Saved/SaveGames/world' })
+    return {
+      data: {
+        status: 0,
+        data: {
+          session: {
+            session_id: 'session-1',
+            revision: 0,
+            pending_change_count: 0,
+            platform: 'steam',
+            source: 'C:/Pal/Saved/SaveGames/world',
+            sourceId: 'steam-test',
+            sourceDisplayName: 'world',
+            saveCapabilities: {},
+          },
+          compatibility: {},
+        },
+      },
+    }
+  }
+  axios.get = async url => {
+    if (url.startsWith('/api/save/query/players?')) {
+      return {
+        data: {
+          status: 0,
+          data: { players: [], guilds: [], has_working_pal: false },
+        },
+      }
+    }
+    staticDataRequests.push(url)
+    if (url === '/api/save/passive_skills' || url === '/api/save/active_skills') {
+      return { data: { status: 0, data: { dict: {}, arr: [] } } }
+    }
+    if (url === '/api/save/pal_data') {
+      return { data: { status: 0, data: { dict: {}, arr: [] } } }
+    }
+    if (url === '/api/save/tech_data') {
+      return { data: { status: 0, data: { techLvDict: {} } } }
+    }
+    throw new Error(`unexpected GET ${url}`)
+  }
+
+  assert.equal(await store.loadSave(), true)
+  assert.deepEqual(staticDataRequests, [
+    '/api/save/passive_skills',
+    '/api/save/active_skills',
+    '/api/save/pal_data',
+    '/api/save/tech_data',
+  ])
+})

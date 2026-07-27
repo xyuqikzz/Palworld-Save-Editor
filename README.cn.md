@@ -8,22 +8,48 @@
   <strong>简体中文</strong> · <a href="README.md">English</a>
 </p>
 
-面向《幻兽帕鲁》Steam 与 Xbox Game Pass/WGS 存档的本地编辑器，提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
+<p align="center">
+  <a href="https://github.com/xyuqikzz/Palworld-Save-Editor/releases/latest"><strong>下载</strong></a>
+  · <a href="#主要功能">主要功能</a>
+  · <a href="#安装与运行">安装与运行</a>
+  · <a href="https://github.com/xyuqikzz/Palworld-Save-Editor/issues">反馈问题</a>
+</p>
+
+面向《幻兽帕鲁》的本地工具：离线编辑 Steam 与 Xbox Game Pass/WGS 存档，并为受支持的 Windows Steam 游戏和专用服务器提供独立、按能力门控的实时管理入口。程序提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
+
+## 界面预览
+
+<p align="center">
+  <img src="docs/images/world-overview.png" alt="Windows 桌面程序中的只读世界存档总览" width="900">
+</p>
+
+| 存档来源选择 | 帕鲁编辑 |
+| --- | --- |
+| ![选择 Steam、Game Pass 或实时管理来源](docs/images/save-source-selection.png) | ![编辑帕鲁属性、强化、工作适应性和技能](docs/images/pal-editor.png) |
+
+| 玩家与背包编辑 | 交互式世界地图 |
+| --- | --- |
+| ![编辑玩家资料和背包格子](docs/images/player-inventory-editor.png) | ![显示存档标记的幻兽帕鲁交互地图](docs/images/world-map.png) |
+
+| 高级存档 JSON | 实时管理总览 |
+| --- | --- |
+| ![带风险提示的 Level 与玩家存档原始 JSON 编辑器](docs/images/raw-json-editor.png) | ![已连接本地游戏的运行时总览](docs/images/live-management-overview.png) |
+
+| 实时背包 | 按能力门控的实时操作 |
+| --- | --- |
+| ![实时查看玩家背包与装备](docs/images/live-management-inventory.png) | ![实时物品、经验和帕鲁操作控件](docs/images/live-management-operations.png) |
+
+截图来自 Windows 打包 EXE、本地测试存档和本地单人游戏桥接会话。界面中可见的操作仍受能力门控，不能据此认定所有命令都已验证游戏内效果、客户端同步或重启后持久化。
 
 > [!WARNING]
 > 修改前请退出游戏或停止服务器，并手动备份整个世界存档目录。程序会在写入时创建备份，但自动备份不能代替你自己的离线副本。
 
-## 1.0.1 更新要点
-
-- 新增 Xbox Game Pass/WGS 槽位发现、直接编辑、WGS 外已验证备份和事务式写入。
-- 新增任务编辑器，支持预览批量操作，并补充 Palworld 1.0 任务数据。
-- 改进帕鲁新增与种类筛选、特殊形态控制、背包编辑和存档来源选择界面。
-- 新增韩语界面和应用内更新提醒，刷新 Palworld 1.0 数据资源，并修复多项存档完整性问题。
-
 ## 支持范围
 
 - 直接支持 Steam 格式目录和用户选择的 Xbox Game Pass WGS 文件夹。Game Pass 保存目标锁定为打开时的原槽位，并会先在 WGS 外创建已验证备份。
+- 离线存档编辑与实时管理是两个独立流程。实时管理目前属于 Windows Beta，需要通过 UE4SS 在 Steam 客户端或 Windows 专用服务器安装 PalEditorBridge；单人游戏或联机合作只能由主机运行，加入其他主机的客户端会被拒绝。
 - synthetic fixture 与一份经用户授权后复制到临时目录的真实 WGS 样本已完成打开、编辑、提交和重新打开测试；真实游戏加载与 Xbox 云同步尚未验证。
+- 打包 EXE 已连接并显示本地 Windows Steam 单人游戏的运行时数据。每条实时命令仍需分别验证游戏内效果、客户端同步、保存、重启和重新加载；仅收到成功协议响应并不足以证明功能有效。
 - 当前数据与兼容性基线面向 Palworld 1.0 / Steam build 24088745。
 - 未知版本或未验证的数据布局会按能力门控处理；请勿强行写入不受支持的字段。
 - 本项目与 Pocketpair 无隶属或官方合作关系。
@@ -40,14 +66,20 @@ Game Pass 使用前请完全退出 Palworld 并等待本地同步，再选择 WG
 
 ## 主要功能
 
-- 浏览玩家、帕鲁、世界容器和物品目录。
-- 修改玩家名称、等级、科技和玩家背包。
-- 修改帕鲁种类、特殊形态、昵称、性别、等级、个体值、浓缩、魂强化、工作适应性、主动技能和被动技能。
+- 打开只读世界总览，查看玩家、帕鲁、种类、据点、公会、远征、竞技场、健康状态和结构引用诊断。
+- 浏览玩家、帕鲁、公会、据点、世界容器、物品和最后保存的地图位置。
+- 修改玩家名称、等级、科技点、属性、任务和受支持的背包。
+- 修改物品数量和受支持的动态属性；复制、移动、替换或清空格子；只扩容已验证的普通背包和公会仓库，不支持缩容。
+- 按游戏 build 24088745 的 NPC 基线查看世界内竞技场排行榜，可修改玩家 RP、为缺失玩家明确创建已验证的 `ArenaRankPoint` 字段，或重置已有且受支持的玩家记录。
+- 修改帕鲁种类、特殊形态、昵称、性别、信赖度、等级、个体值、浓缩、魂强化、工作适应性、主动技能、被动技能、自定义/模组被动条目和可复用预设。
 - 新增、复制、删除和跨容器整理帕鲁；危险操作提供预览和引用检查。
-- 预览并应用已支持的任务进度变更。
-- 编辑物品数量、物品栏布局和已支持的动态物品属性。
-- 提供批量编辑、预设预览/应用、待保存变更统计和显式保存。
-- 写入采用临时文件、验证、备份和替换流程，失败时保留恢复信息。
+- 修改受支持的公会名称，只增加已验证的帕鲁终端等级与公会仓库容量，并查看据点、成员、工作帕鲁、技能和健康状态。
+- 使用内置大世界与世界树地图查看玩家、公会据点和已验证传送点；解锁受支持的玩家传送点，或明确清除、恢复 `LocalData.sav` 的战争迷雾遮罩。
+- 查看远征分配，快速完成受支持的远征并交由游戏正常结算奖励，释放被无效远征锁定的帕鲁，以及执行原子化帕鲁维护操作。
+- 通过预览令牌和明确的待保存变更编辑受支持的任务进度。
+- 使用 Monaco 高级 JSON 编辑器修改 `Level.sav` 与 `Players/*.sav`；程序只检查 JSON 语法和受支持的文档结构，错误字段值仍可能损坏存档。
+- 通过 PalEditorBridge 查看桥接能力声明的在线玩家、公会、背包、帕鲁和地图数据，并且只显示当前桥接明确支持的操作。
+- 查看绑定会话修订的待保存变更，并通过临时文件、验证、已验证备份、冲突检测、替换和重新打开检查进行显式保存；失败时保留恢复信息。
 - 界面支持 English、Français、日本語、한국어 和简体中文。
 
 ## 安装与运行
@@ -55,6 +87,19 @@ Game Pass 使用前请完全退出 Palworld 并等待本地同步，再选择 WG
 ### 使用发布版本
 
 从 [GitHub Releases](https://github.com/xyuqikzz/Palworld-Save-Editor/releases) 下载对应平台的压缩包或可执行文件，解压后直接运行。
+
+每个版本的新增功能、问题修复和其他变更仅在 GitHub Releases 中记录，不在 README 中重复维护。
+
+### Windows 实时管理
+
+实时管理与离线存档编辑互相独立，并且必须使用 Windows 桌面 EXE：
+
+1. 在 Steam 客户端或 Windows 专用服务器的 `Win64` 目录安装与当前 Palworld 版本兼容的 UE4SS。
+2. 在来源选择页打开“实时管理”，下载程序内置的 PalEditorBridge 压缩包，并将其中完整目录复制到 UE4SS 的 `Mods` 目录。
+3. 单人游戏或联机合作应在主机安装；专用服务器还需在 `PalWorldSettings.ini` 中启用管理员 REST API 并配置管理员密码。
+4. 完全重启游戏或服务器，从编辑器连接，并且只使用桥接明确声明的能力。
+
+不要把 Palworld 或桥接端口直接暴露到公网。非 TLS 连接应仅绑定本机回环地址，远程访问应放在 HTTPS 反向代理之后。任何会改变状态的命令都应先在游戏内独立验证，再用于实际管理。
 
 ### 从源码运行
 

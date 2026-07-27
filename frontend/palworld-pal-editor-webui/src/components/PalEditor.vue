@@ -1,6 +1,7 @@
 <script setup>
 import { usePalEditorStore } from '@/stores/paleditor'
 import AppIcon from '@/components/modules/AppIcon.vue'
+import CustomPassiveDialog from '@/components/modules/CustomPassiveDialog.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
 import PassivePresetDialog from '@/components/modules/PassivePresetDialog.vue'
 import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
@@ -12,6 +13,7 @@ const palStore = usePalEditorStore()
 const cloneContainer = ref('AUTO')
 const presetInput = ref(null)
 const passivePresetDialog = ref(null)
+const customPassiveDialog = ref(null)
 const passivePresets = ref([])
 
 function saveJson(preset) {
@@ -107,6 +109,12 @@ const passivePresetIsActive = preset => {
   const equipped = palStore.SELECTED_PAL_DATA?.PassiveSkillList || []
   return equipped.length === preset.skills.length
     && equipped.every((skill, index) => skill === preset.skills[index])
+}
+
+const addCustomPassive = async internalName => {
+  if (await palStore.addCustomPassive(internalName)) {
+    customPassiveDialog.value?.close()
+  }
 }
 
 const isMaxLv = () => {
@@ -346,7 +354,8 @@ const suitabilityIconSrc = key => {
         @click="palStore.SELECTED_PAL_DATA.maxAllEnhancements">
         {{ palStore.getTranslatedText('Common_Max') }}
       </button>
-      <section class="stat-group stat-group--iv">
+      <div class="stat-primary-grid">
+        <section class="stat-group stat-group--iv">
         <p class="cat">
           {{ palStore.getTranslatedText("Editor_IV") }}
         </p>
@@ -387,8 +396,8 @@ const suitabilityIconSrc = key => {
           :disabled="palStore.LOADING_FLAG" v-model="palStore.SELECTED_PAL_DATA.Talent_Melee"
           @mouseup="palStore.updatePal" @touchend="palStore.updatePal">
       </div>
-      </section>
-      <section class="stat-group stat-group--souls">
+        </section>
+        <section class="stat-group stat-group--souls">
         <p class="cat">
           {{ palStore.getTranslatedText("Editor_Souls_Upgrade") }}
         </p>
@@ -430,7 +439,8 @@ const suitabilityIconSrc = key => {
           v-model="palStore.SELECTED_PAL_DATA.Rank_CraftSpeed" @mouseup="palStore.updatePal"
           @touchend="palStore.updatePal">
       </div>
-      </section>
+        </section>
+      </div>
       <section class="stat-group stat-group--condenser">
         <p class="cat">
           {{ palStore.getTranslatedText("Editor_Condenser") }}
@@ -478,6 +488,11 @@ const suitabilityIconSrc = key => {
         <header class="skill-section-header">
           <h3>{{ palStore.getTranslatedText("Editor_Passive_Skills") }}</h3>
           <div class="skill-section-actions">
+            <button type="button" class="custom-passive-trigger"
+              :disabled="palStore.LOADING_FLAG || palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4"
+              @click="customPassiveDialog?.open()">
+              {{ palStore.getTranslatedText('PalEditor_AddCustomPassive') }}
+            </button>
             <button type="button" class="passive-preset-trigger"
               :disabled="palStore.LOADING_FLAG"
               @click="passivePresetDialog?.open()">
@@ -502,6 +517,11 @@ const suitabilityIconSrc = key => {
             />
           </div>
         </header>
+        <CustomPassiveDialog
+          ref="customPassiveDialog"
+          :disabled="palStore.LOADING_FLAG"
+          @add="addCustomPassive"
+        />
         <nav
           v-if="pinnedPassivePresets.length"
           class="passive-preset-quickbar"
@@ -543,6 +563,7 @@ const suitabilityIconSrc = key => {
               <PassiveSkillCard
                 :skill="palStore.PASSIVE_SKILLS[skill]"
                 :internal-name="skill"
+                :unknown-label="palStore.getTranslatedText('PalEditor_CustomPassive_UnknownBadge')"
               />
 
               <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList" :name="skill"
@@ -686,7 +707,7 @@ const suitabilityIconSrc = key => {
 <style scoped>
 .PalEditor {
   display: grid;
-  grid-template-columns: minmax(0, 1.22fr) minmax(340px, 0.78fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(500px, 0.9fr);
   grid-template-rows: max-content minmax(min-content, 1fr);
   min-height: var(--sub-height);
   height: auto;
@@ -1369,13 +1390,18 @@ div.basic-fields {
 
 .statsPanel {
   position: relative;
-  display: grid;
-  grid-template-areas:
-    "iv souls"
-    "condenser condenser"
-    "suitabilities suitabilities";
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  container-name: stats-panel;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
   align-content: start;
+}
+
+.stat-primary-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  align-items: start;
   gap: 0 18px;
 }
 
@@ -1391,18 +1417,15 @@ div.basic-fields {
   gap: 4px;
 }
 
-.stat-group--iv {
-  grid-area: iv;
-}
+.stat-group--iv > p.cat,
+.stat-group--souls > p.cat { padding-right: 68px; }
 
 .stat-group--souls {
-  grid-area: souls;
   padding-left: 18px;
   border-left: 1px solid var(--ui-border);
 }
 
 .stat-group--condenser {
-  grid-area: condenser;
   width: 100%;
   padding-top: 14px;
   margin-top: 12px;
@@ -1412,7 +1435,7 @@ div.basic-fields {
 .stat-group--condenser > p.cat { margin: 0; }
 
 .stat-group--suitabilities {
-  grid-area: suitabilities;
+  width: 100%;
   padding-top: 14px;
   margin-top: 12px;
   border-top: 1px solid var(--ui-border);
@@ -1429,15 +1452,33 @@ div.basic-fields {
 }
 
 .statsPanel .spaceBetween {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 46%);
+  align-items: center;
+  gap: 12px;
   min-height: 36px;
   padding-block: 0;
 }
 
-.statsPanel .spaceBetween > p.const { padding-left: 0; background: transparent; }
+.statsPanel .spaceBetween > p.const {
+  min-width: 0;
+  padding-left: 0;
+  background: transparent;
+  white-space: normal;
+}
 
 .statsPanel input[type="range"] {
-  width: min(46%, 190px);
-  min-width: 120px;
+  width: 100%;
+  min-width: 0;
+}
+
+@container stats-panel (max-width: 537px) {
+  .stat-group--souls {
+    padding: 14px 0 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--ui-border);
+    border-left: 0;
+  }
 }
 
 .suitabilityPanel .skillList {
@@ -1497,6 +1538,8 @@ div.basic-fields {
 }
 
 .skill-section {
+  container-name: skill-section;
+  container-type: inline-size;
   display: flex;
   min-width: 0;
   height: 100%;
@@ -1540,7 +1583,8 @@ div.basic-fields {
   gap: 6px;
 }
 
-.passive-preset-trigger {
+.passive-preset-trigger,
+.custom-passive-trigger {
   min-height: 32px;
   margin: 0;
   padding: 0 10px;
@@ -1552,18 +1596,26 @@ div.basic-fields {
   font-weight: 650;
 }
 
-.passive-preset-trigger:hover:not(:disabled) {
+.passive-preset-trigger:hover:not(:disabled),
+.custom-passive-trigger:hover:not(:disabled) {
   color: var(--ui-accent);
   background: var(--ui-accent-soft);
   border-color: var(--ui-accent);
 }
 
-.passive-preset-trigger:focus-visible {
+.passive-preset-trigger:focus-visible,
+.custom-passive-trigger:focus-visible {
   outline: 2px solid var(--ui-accent);
   outline-offset: 2px;
 }
 
-.passive-preset-trigger:disabled { cursor: not-allowed; opacity: 0.5; }
+.passive-preset-trigger:disabled,
+.custom-passive-trigger:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.custom-passive-trigger {
+  color: var(--ui-danger);
+  border-color: color-mix(in srgb, var(--ui-danger) 45%, var(--ui-border));
+}
 
 .passive-preset-quickbar {
   display: flex;
@@ -1623,6 +1675,12 @@ div.basic-fields {
   grid-auto-rows: 40px;
   align-content: start;
   gap: 6px 8px;
+}
+
+@container skill-section (max-width: 460px) {
+  .skill-item-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .skill-item {
@@ -1737,9 +1795,9 @@ div.basic-fields {
   line-height: 1.4;
 }
 
-@media (max-width: 1380px) {
+@media (max-width: 1500px) {
   .PalEditor {
-    grid-template-columns: minmax(520px, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: max-content max-content minmax(min-content, 1fr);
   }
   div.basicInfo,
@@ -1752,21 +1810,6 @@ div.basic-fields {
   .editor-card-actions { justify-content: flex-start; }
   .metadata-grid,
   div.palInfo { grid-template-columns: minmax(0, 1fr); }
-  .statsPanel {
-    grid-template-areas:
-      "iv"
-      "souls"
-      "condenser"
-      "suitabilities";
-    grid-template-columns: minmax(0, 1fr);
-  }
   .suitabilityPanel { grid-template-columns: minmax(0, 1fr); }
-  .skill-item-grid { grid-template-columns: minmax(0, 1fr); }
-  .stat-group--souls {
-    padding: 14px 0 0;
-    margin-top: 8px;
-    border-top: 1px solid var(--ui-border);
-    border-left: 0;
-  }
 }
 </style>

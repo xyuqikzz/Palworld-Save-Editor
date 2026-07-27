@@ -332,6 +332,22 @@ class StructuralPalEditorTests(unittest.TestCase):
             [row["key"] for row in self.player.PalCaptureCount],
         )
 
+    def test_add_king_whale_uses_the_rideable_otomo_record(self) -> None:
+        added = self.editor().execute(
+            AddPal(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=str(PLAYER_ID),
+                species_id="KingWhale",
+                container_type=CharacterContainerType.PAL_STORAGE,
+            )
+        )["pal"]
+
+        pal = CharacterIndex(self.manager).pals[added["pal_id"]]
+
+        self.assertEqual("BOSS_KingWhale_otomo", pal.CharacterID)
+        self.assertEqual("BOSS_KingWhale_otomo", pal.DataAccessKey)
+
     def test_add_pal_applies_passive_preset_and_max_work_atomically(self) -> None:
         before_level = self.session.revision
         added = self.editor().execute(

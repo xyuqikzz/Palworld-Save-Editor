@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import {
   availablePalElements,
   filterSpeciesOptions,
+  palSpeciesIconKey,
 } from '../src/components/modules/pal-species-filter.js'
 
 const pickerPath = fileURLToPath(
@@ -46,6 +47,29 @@ test('species filtering separates Pals and NPCs and filters Pals by element', ()
   )
 })
 
+test('boss-only otomo species use the base Pal portrait', () => {
+  assert.equal(
+    palSpeciesIconKey({ InternalName: 'BOSS_KingWhale_otomo', IsHuman: false }),
+    'KingWhale',
+  )
+  assert.equal(
+    palSpeciesIconKey({ InternalName: 'BOSS_SheepBall', IsHuman: false }),
+    'SheepBall',
+  )
+  assert.equal(
+    palSpeciesIconKey({ InternalName: 'SheepBall_Oilrig', IsHuman: false }),
+    'SheepBall',
+  )
+  assert.equal(
+    palSpeciesIconKey({ InternalName: 'BOSS_FireCult_FlameThrower', IsHuman: true, HasIcon: true }),
+    'BOSS_FireCult_FlameThrower',
+  )
+  assert.equal(
+    palSpeciesIconKey({ InternalName: 'SalesPerson', IsHuman: true, HasIcon: false }),
+    'Human',
+  )
+})
+
 test('the common species picker renders category tabs and an element filter', () => {
   const source = readFileSync(pickerPath, 'utf8')
 
@@ -53,7 +77,6 @@ test('the common species picker renders category tabs and an element filter', ()
   assert.match(source, /activeCategory === 'pal'[\s\S]*?PalSpeciesPicker_Pals/)
   assert.match(source, /activeCategory === 'npc'[\s\S]*?PalSpeciesPicker_Npcs/)
   assert.match(source, /class="pal-species-element-filters"[\s\S]*?activeElementFilter/)
-  assert.match(source, /pal\?\.IsHuman[\s\S]*?pal\.HasIcon[\s\S]*?pal\.InternalName/)
   assert.match(source, /pal\.IsHuman && pal\.DefaultWeapon[\s\S]*?PalSpeciesPicker_DefaultWeapon/)
 
   for (const localePath of localePaths) {

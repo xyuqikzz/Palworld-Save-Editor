@@ -32,6 +32,7 @@ from palworld_pal_editor.domain.commands import (
     ClonePal,
     DeletePal,
     FillItemSlots,
+    HealAllPals,
     MovePal,
     PutItem,
     RecoverDetachedPal,
@@ -1328,6 +1329,68 @@ class RealSaveRoundTripTests(unittest.TestCase):
                 self.assertEqual(("Level.sav",), saved.written_files)
                 backup = Path(saved.backup_path) / "files" / "Level.sav"
                 self.assertEqual(before["Level.sav"], _sha256(backup))
+                self._assert_source_unchanged(fixture, source_hashes)
+        self.assertGreater(exercised, 0, "No fixture enables pal_move_roundtrip")
+
+    def test_real_save_heal_all_pals_roundtrip(self) -> None:
+        exercised = 0
+        for fixture in self.fixtures:
+            if not self._capable(fixture, "pal_move_roundtrip"):
+                continue
+            exercised += 1
+            with self.subTest(fixture=fixture["fixture_id"]), tempfile.TemporaryDirectory(
+                prefix="pal-editor-real-heal-"
+            ) as temp_name:
+                work, source_hashes = self._copy_fixture(
+                    fixture, Path(temp_name) / fixture["fixture_id"]
+                )
+                before = _save_hashes(work)
+                with self._quiet():
+                    session = self._open(work)
+                    target = next(
+                        (
+                            pal
+                            for pal in CharacterIndex(session.manager).pals.values()
+                            if pal.ComputedMaxHP
+                            and DataProvider.get_pal_stats(
+                                pal.DataAccessKey, "FOOD"
+                            )
+                        ),
+                        None,
+                    )
+                    self.assertIsNotNone(target, "No healable real Pal candidate")
+                    target_id = str(target.InstanceId)
+                    expected_health = target.ComputedMaxHP
+                    expected_satiety = DataProvider.get_pal_stats(
+                        target.DataAccessKey, "FOOD"
+                    )
+                    target.Hp = 0
+                    target.FullStomach = 0.0
+                    target.SanityValue = 0.0
+                    result = CharacterEditor(session).execute(
+                        HealAllPals(
+                            session_id=session.session_id,
+                            expected_revision=session.revision,
+                        )
+                    )
+                    self.assertEqual(
+                        len(CharacterIndex(session.manager).pals),
+                        result["value"]["healed_count"],
+                    )
+                    saved = SaveWriter().save(session, work, session.revision)
+                    session.close()
+                    reloaded = self._open(work)
+                    healed = CharacterIndex(reloaded.manager).pals[target_id]
+                self.assertEqual(expected_health, healed.Hp)
+                self.assertEqual(expected_satiety, healed.FullStomach)
+                self.assertEqual(100.0, healed.SanityValue)
+                after = _save_hashes(work)
+                changed = sorted(path for path in before if before[path] != after[path])
+                self.assertEqual(["Level.sav"], changed)
+                self.assertEqual(("Level.sav",), saved.written_files)
+                self.assertTrue(saved.staged_reload_verified)
+                self.assertTrue(saved.target_reload_verified)
+                reloaded.close()
                 self._assert_source_unchanged(fixture, source_hashes)
         self.assertGreater(exercised, 0, "No fixture enables pal_move_roundtrip")
 

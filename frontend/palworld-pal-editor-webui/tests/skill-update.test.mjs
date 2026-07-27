@@ -132,3 +132,99 @@ test('equipping from the mastered-skill picker accepts the selected skill id', a
   assert.deepEqual(skillRequest.active, [skillId])
   assert.deepEqual(skillRequest.mastered, [skillId])
 })
+
+test('adding a unique active skill warns before changing the Pal', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  const palId = 'pal-4'
+  const skillId = 'EPalWazaID::UniqueSkill'
+  const pal = {
+    InstanceId: palId,
+    EquipWaza: [],
+    MasteredWaza: [],
+    PassiveSkillList: [],
+  }
+  const player = { pals: new Map([[palId, pal]]) }
+  store.SESSION_ID = 'session-1'
+  store.SESSION_REVISION = 0
+  store.SELECTED_PLAYER_ID = 'player-1'
+  store.PLAYER_MAP = new Map([['player-1', player]])
+  store.PAL_MAP = player.pals
+  store.ACTIVE_SKILLS = {
+    [skillId]: {
+      InternalName: skillId,
+      I18n: ['Unique Skill'],
+      IsUniqueSkill: true,
+    },
+  }
+
+  let confirmMessage = ''
+  let commandSent = false
+  window.confirm = message => {
+    confirmMessage = message
+    return false
+  }
+  axios.post = async url => {
+    if (url.includes('/commands')) commandSent = true
+    if (url === '/api/pal/paldata') return { data: { status: 0, data: pal } }
+    throw new Error(`unexpected ${url}`)
+  }
+
+  await store.selectPal(palId, true)
+  store.SELECTED_PAL_DATA.add_MasteredWaza(skillId)
+
+  assert.match(confirmMessage, /Unique Skill/)
+  assert.equal(commandSent, false)
+  assert.deepEqual(store.SELECTED_PAL_DATA.MasteredWaza, [])
+})
+
+test('adding a regular active skill does not show the unique-skill warning', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  const palId = 'pal-5'
+  const skillId = 'EPalWazaID::RegularSkill'
+  const pal = {
+    InstanceId: palId,
+    EquipWaza: [],
+    MasteredWaza: [],
+    PassiveSkillList: [],
+  }
+  const player = { pals: new Map([[palId, pal]]) }
+  store.SESSION_ID = 'session-1'
+  store.SESSION_REVISION = 0
+  store.SELECTED_PLAYER_ID = 'player-1'
+  store.PLAYER_MAP = new Map([['player-1', player]])
+  store.PAL_MAP = player.pals
+  store.ACTIVE_SKILLS = {
+    [skillId]: {
+      InternalName: skillId,
+      I18n: ['Regular Skill'],
+      IsUniqueSkill: false,
+    },
+  }
+
+  let confirmCalled = false
+  let resolveSkillRequest
+  const skillRequestReceived = new Promise(resolve => {
+    resolveSkillRequest = resolve
+  })
+  window.confirm = () => {
+    confirmCalled = true
+    return true
+  }
+  axios.post = async (url, data) => {
+    if (url.includes('/commands')) {
+      resolveSkillRequest(data)
+      return { data: { status: 0, data: { revision: 1 } } }
+    }
+    if (url === '/api/pal/paldata') return { data: { status: 0, data: pal } }
+    throw new Error(`unexpected ${url}`)
+  }
+
+  await store.selectPal(palId, true)
+  store.SELECTED_PAL_DATA.add_MasteredWaza(skillId)
+  const skillRequest = await skillRequestReceived
+
+  assert.equal(confirmCalled, false)
+  assert.deepEqual(skillRequest.mastered, [skillId])
+})

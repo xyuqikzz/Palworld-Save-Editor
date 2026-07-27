@@ -27,11 +27,60 @@ const NPC_WEAPON_TRANSLATION_KEYS = Object.freeze({
 });
 
 const SAVE_SOURCE_MODE_STORAGE_KEY = "PAL_SAVE_SOURCE_MODE";
+const SKIP_UPDATE_CHECK_STORAGE_KEY = "PAL_SKIP_UPDATE_CHECK";
+const REMOTE_SERVER_ADDRESS_STORAGE_KEY = "PAL_REMOTE_SERVER_ADDRESS";
+const REMOTE_CERTIFICATE_FINGERPRINT_STORAGE_KEY =
+    "PAL_REMOTE_CERTIFICATE_FINGERPRINT";
+const REMOTE_ALLOW_INSECURE_LOCAL_STORAGE_KEY =
+    "PAL_REMOTE_ALLOW_INSECURE_LOCAL";
+const FOG_CLEAR_CONFIRMATION = "清除迷雾";
+const FOG_RESET_CONFIRMATION = "重新覆盖未探索迷雾";
+const FAST_TRAVEL_UNLOCK_CONFIRMATION = "解锁所有传送点";
+const LOCALIZED_SAVE_ERROR_CODES = new Set([
+    "BACKUP_FAILED",
+    "FAST_TRAVEL_CATALOG_MISMATCH",
+    "FAST_TRAVEL_CONFIRMATION_REQUIRED",
+    "FAST_TRAVEL_FIELD_MISSING",
+    "FAST_TRAVEL_RECORD_DATA_MISSING",
+    "FAST_TRAVEL_RECORD_DATA_UNSUPPORTED",
+    "FAST_TRAVEL_STRUCTURE_UNSUPPORTED",
+    "FOG_OF_WAR_CLEAR_CONFIRMATION_REQUIRED",
+    "FOG_OF_WAR_CONFIRMATION_REQUIRED",
+    "FOG_OF_WAR_STRUCTURE_UNSUPPORTED",
+    "LOCAL_DATA_NOT_SELECTED",
+    "LOCAL_DATA_PATH_REQUIRED",
+    "LOCAL_DATA_PATH_NOT_ABSOLUTE",
+    "LOCAL_DATA_FILE_REQUIRED",
+    "LOCAL_DATA_WGS_SLOT_MISSING",
+    "LOCAL_DATA_SELECTION_REQUIRES_CLEAN_SESSION",
+    "LOCAL_DATA_STORAGE_UNSUPPORTED",
+    "WGS_LOCAL_DATA_EXTERNAL_UNSUPPORTED",
+    "EXTERNAL_LOCAL_DATA_TARGET_UNSUPPORTED",
+    "LOCAL_DATA_MISSING",
+    "LOCAL_DATA_UNREADABLE",
+    "PLAYER_INVENTORY_CAPACITY_UNSUPPORTED",
+    "PLAYER_INVENTORY_CAPACITY_MAXIMUM_REACHED",
+    "PLAYER_INVENTORY_SLOTNUM_UNSUPPORTED",
+    "PLAYER_INVENTORY_CONTAINER_MISSING",
+    "PLAYER_INVENTORY_SHRINK_UNSUPPORTED",
+    "INVALID_PLAYER_INVENTORY_CAPACITY",
+    "SAVE_TARGET_CHANGED",
+    "NETWORK_NO_RESPONSE",
+    "CLIENT_REQUEST_FAILED",
+]);
+const SAVE_ERROR_ACTION_KEYS = Object.freeze({
+    BACKUP_FAILED: "Save_Backup_Failure_Action",
+    WGS_BACKUP_FAILED: "Save_Backup_Failure_Action",
+    WGS_GAME_RUNNING: "Save_Wgs_Running_Action",
+    SAVE_TARGET_CHANGED: "Save_Source_Changed_Action",
+    WGS_SOURCE_CHANGED: "Save_Source_Changed_Action",
+    NETWORK_NO_RESPONSE: "Save_Network_No_Response_Action",
+    CLIENT_REQUEST_FAILED: "Save_Client_Request_Failed_Action",
+});
 
 function getInitialSaveSourceMode() {
-    return localStorage.getItem(SAVE_SOURCE_MODE_STORAGE_KEY) === "xgp"
-        ? "xgp"
-        : "steam";
+    const mode = localStorage.getItem(SAVE_SOURCE_MODE_STORAGE_KEY);
+    return ["steam", "xgp", "remote"].includes(mode) ? mode : "steam";
 }
 
 export const usePalEditorStore = defineStore("paleditor", () => {
@@ -54,6 +103,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.TechnologyPoint = obj.TechnologyPoint;
             this.bossTechnologyPoint = obj.bossTechnologyPoint;
             this.PlayerAttributes = obj.PlayerAttributes || [];
+            this.FastTravelUnlockCapability =
+                obj.FastTravelUnlockCapability || {
+                    available: false,
+                    reason: "FAST_TRAVEL_RECORD_DATA_MISSING",
+                    format: null,
+                    unlocked_count: null,
+                    total_count: 0,
+                };
+            this.InventoryCapacityCapability =
+                obj.InventoryCapacityCapability || {
+                    available: false,
+                    reason: "PLAYER_INVENTORY_CONTAINER_MISSING",
+                    current_capacity: null,
+                    allowed_capacities: [],
+                    minimum_capacity: null,
+                    maximum_capacity: 1000,
+                    custom_input: true,
+                    expand_only: true,
+                };
             this.Inventory = obj.Inventory || { Capacity: 0, Items: [] };
             this.InventoryContainers = obj.InventoryContainers || [];
         }
@@ -352,11 +420,23 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         add_MasteredWaza(skill = PAL_ACTIVE_SELECTED_ITEM.value) {
-            if (!ACTIVE_SKILLS.value[skill]) {
+            const skillData = ACTIVE_SKILLS.value[skill];
+            if (!skillData) {
                 alert("Select a skill first!");
                 return;
             }
             if (this.isMasteredSkill(skill)) {
+                return;
+            }
+            if (
+                skillData.IsUniqueSkill &&
+                !window.confirm(
+                    getTranslatedText(
+                        "Confirm_AddUniqueActiveSkill",
+                        [skillData.I18n?.[0] || skill]
+                    )
+                )
+            ) {
                 return;
             }
             updatePal({
@@ -570,6 +650,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const BASE_PAL_MAP = ref(new Map());
     const PLAYER_MAP = ref(new Map());
     const GUILD_TREE = ref([]);
+    const GUILD_LIST = ref([]);
+    const GUILD_LOADING = ref(false);
     const PAL_PASSIVE_SELECTED_ITEM = ref("");
     const PAL_ACTIVE_SELECTED_ITEM = ref("");
 
@@ -577,14 +659,20 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const SELECTED_PAL_DATA = ref(new Map());
     const SELECTED_PLAYER_DATA = ref(new Map());
     const PAL_MAP = ref(new Map());
-    const EXPEDITION_PAL_COUNT = computed(() =>
-        Array.from(PAL_MAP.value.values()).filter(pal => pal.IsExpeditionPal).length
-    );
-    const COMPLETABLE_EXPEDITION_COUNT = computed(() => new Set(
-        Array.from(PAL_MAP.value.values())
-            .filter(pal => pal.ExpeditionCanComplete && pal.ExpeditionInstanceId)
-            .map(pal => pal.ExpeditionInstanceId)
-    ).size);
+    const EXPEDITION_DATA = ref(null);
+    const EXPEDITION_LOADING = ref(false);
+    const EXPEDITION_PAL_COUNT = computed(() => (
+        EXPEDITION_DATA.value?.locked_count
+        ?? Array.from(PAL_MAP.value.values()).filter(pal => pal.IsExpeditionPal).length
+    ));
+    const COMPLETABLE_EXPEDITION_COUNT = computed(() => (
+        EXPEDITION_DATA.value?.completable_count
+        ?? new Set(
+            Array.from(PAL_MAP.value.values())
+                .filter(pal => pal.ExpeditionCanComplete && pal.ExpeditionInstanceId)
+                .map(pal => pal.ExpeditionInstanceId)
+        ).size
+    ));
 
     // selected id
     const SELECTED_PLAYER_ID = ref(null);
@@ -601,16 +689,71 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const VERSION = ref("0.0.0");
     const IS_OFFICIAL_BUILD = ref(false);
     const AVAILABLE_UPDATE = ref(null);
+    const SKIP_UPDATE_CHECK = ref(
+        localStorage.getItem(SKIP_UPDATE_CHECK_STORAGE_KEY) === "true"
+    );
+    watch(SKIP_UPDATE_CHECK, (skip) => {
+        localStorage.setItem(SKIP_UPDATE_CHECK_STORAGE_KEY, String(skip));
+        if (skip) AVAILABLE_UPDATE.value = null;
+    });
     const I18n = ref(localStorage.getItem("PAL_I18n"));
     const PAL_GAME_SAVE_PATH = ref(localStorage.getItem("PAL_GAME_SAVE_PATH"));
     const HAS_PASSWORD = ref(false);
     const PAL_WRITE_BACK_PATH = ref("");
     const SAVE_SOURCE_MODE = ref(getInitialSaveSourceMode());
     watch(SAVE_SOURCE_MODE, (mode) => {
-        if (mode === "steam" || mode === "xgp") {
+        if (["steam", "xgp", "remote"].includes(mode)) {
             localStorage.setItem(SAVE_SOURCE_MODE_STORAGE_KEY, mode);
         }
     }, { immediate: true });
+    const REMOTE_SERVER_ADDRESS = ref(
+        localStorage.getItem(REMOTE_SERVER_ADDRESS_STORAGE_KEY) || ""
+    );
+    const REMOTE_CERTIFICATE_FINGERPRINT = ref(
+        localStorage.getItem(REMOTE_CERTIFICATE_FINGERPRINT_STORAGE_KEY) || ""
+    );
+    const REMOTE_ALLOW_INSECURE_LOCAL = ref(
+        localStorage.getItem(REMOTE_ALLOW_INSECURE_LOCAL_STORAGE_KEY) === "true"
+    );
+    const REMOTE_REMEMBER_CREDENTIAL = ref(false);
+    const REMOTE_CREDENTIAL_SAVED = ref(false);
+    const REMOTE_CREDENTIAL_STORAGE_AVAILABLE = ref(false);
+    const REMOTE_SESSION_ID = ref(null);
+    const REMOTE_SESSION_REVISION = ref(0);
+    const REMOTE_SERVER = ref(null);
+    const REMOTE_STATUS = ref(null);
+    const REMOTE_PLAYERS = ref([]);
+    const REMOTE_GUILDS = ref([]);
+    const REMOTE_PLAYER_DETAILS = ref(null);
+    const REMOTE_PLAYER_DETAILS_LOADING = ref(false);
+    const REMOTE_MAP_DATA = ref(null);
+    const REMOTE_MAP_LOADING = ref(false);
+    let remotePlayerDetailsRequest = 0;
+    let remotePlayerInventoryRequest = 0;
+    let remotePlayerPalsRequest = 0;
+    let remotePlayerDetailsLoading = false;
+    let remotePlayerInventoryLoading = false;
+    let remotePlayerPalsLoading = false;
+    const REMOTE_CAPABILITIES = ref([]);
+    const REMOTE_LOADING = ref(false);
+    const REMOTE_CONNECTED = computed(() => Boolean(REMOTE_SESSION_ID.value));
+
+    function syncRemotePlayerDetailsLoading() {
+        REMOTE_PLAYER_DETAILS_LOADING.value = (
+            remotePlayerDetailsLoading
+            || remotePlayerInventoryLoading
+            || remotePlayerPalsLoading
+        );
+    }
+
+    function remoteDetailsPlayerId(details) {
+        return String(
+            details?.player?.playerId
+            || details?.player?.player_uid
+            || "",
+        ).trim();
+    }
+
     const XGP_WGS_PATH = ref("");
     const XGP_SOURCES = ref([]);
     const SELECTED_XGP_SOURCE_ID = ref(null);
@@ -622,12 +765,33 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         exportSteamCopy: true,
         targetPathEditable: true,
         cloudSyncVerified: false,
+        localDataSelection: {
+            required: true,
+            selected: false,
+            platform: "steam",
+            canSelectFile: true,
+            source: null,
+            reason: "LOCAL_DATA_NOT_SELECTED",
+        },
+        fogOfWarClear: {
+            available: false,
+            reason: "LOCAL_DATA_NOT_SELECTED",
+            format: null,
+            maps: [],
+        },
+        fogOfWarReset: {
+            available: false,
+            reason: "LOCAL_DATA_NOT_SELECTED",
+            format: null,
+            maps: [],
+        },
     });
     const XGP_SAVE_CONFIRMED = ref(false);
     const PATH_CONTEXT = ref(new Map());
     const SESSION_ID = ref(null);
     const SESSION_REVISION = ref(0);
     const PENDING_CHANGE_COUNT = ref(0);
+    const RAW_JSON_PENDING = ref(false);
     const SAVE_COMPATIBILITY = ref(null);
     const LAST_ERROR = ref(null);
     const LAST_SAVE_RESULT = ref(null);
@@ -642,19 +806,34 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         source: null,
     });
     const MISSION_LOADING = ref(false);
+    const ARENA_LEADERBOARD = ref([]);
+    const ARENA_EDITABLE_COUNT = ref(0);
+    const ARENA_RANKED_PLAYER_COUNT = ref(0);
+    const ARENA_INITIALIZABLE_COUNT = ref(0);
+    const ARENA_UNSUPPORTED_COUNT = ref(0);
+    const ARENA_NPC_COUNT = ref(0);
+    const ARENA_NPC_SOURCE_BUILD = ref(null);
+    const ARENA_LOADING = ref(false);
+    const MAP_DATA = ref(null);
+    const MAP_LOADING = ref(false);
+    const OVERVIEW_DATA = ref(null);
+    const OVERVIEW_LOADING = ref(false);
 
     const SHOW_FILE_PICKER = ref(false);
     const PAL_FILE_PICKER_PATH = ref(PAL_GAME_SAVE_PATH.value);
+    const PAL_FILE_PICKER_SELECTION = ref(null);
     const FILE_PICKER_PURPOSE = ref("steam");
 
     // auth
     let auth_token = "";
     const IS_LOCKED = ref(true);
 
-    async function GET(api) {
+    async function GET(api, options = {}) {
         try {
             const response = await axios.get(api, {
+                ...options,
                 headers: {
+                    ...(options.headers || {}),
                     Authorization: "Bearer " + auth_token,
                 },
             });
@@ -678,7 +857,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
     }
 
-    async function POST(api, data) {
+    async function POST(api, data, { errorContext = null } = {}) {
         try {
             const response = await axios.post(api, data, {
                 headers: { Authorization: "Bearer " + auth_token },
@@ -692,12 +871,42 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     msg: error.response.statusText + ": " + error.response.status,
                 };
             } else if (error.request) {
-                alert(
-                    `no response from the backend, make sure it is running, error: ${error.request}`
-                );
+                if (errorContext) {
+                    const messageKey = "NETWORK_NO_RESPONSE";
+                    const actionKey = SAVE_ERROR_ACTION_KEYS[messageKey];
+                    LAST_ERROR.value = {
+                        context: errorContext,
+                        message: getTranslatedText(messageKey),
+                        messageKey,
+                        action: getTranslatedText(actionKey),
+                        actionKey,
+                        code: messageKey,
+                        details: {},
+                        retryable: true,
+                    };
+                } else {
+                    alert(
+                        `no response from the backend, make sure it is running, error: ${error.request}`
+                    );
+                }
                 return false;
             } else {
-                alert(`post(): ${error.message}`);
+                if (errorContext) {
+                    const messageKey = "CLIENT_REQUEST_FAILED";
+                    const actionKey = SAVE_ERROR_ACTION_KEYS[messageKey];
+                    LAST_ERROR.value = {
+                        context: errorContext,
+                        message: getTranslatedText(messageKey),
+                        messageKey,
+                        action: getTranslatedText(actionKey),
+                        actionKey,
+                        code: messageKey,
+                        details: {},
+                        retryable: false,
+                    };
+                } else {
+                    alert(`post(): ${error.message}`);
+                }
                 return false;
             }
         }
@@ -761,7 +970,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     function acceptResponse(response, context, { command = false } = {}) {
         if (!response || response.status !== 0) {
             const errorCode = response?.error?.code || "REQUEST_FAILED";
-            const messageKey = errorCode.startsWith("WGS_") ? errorCode : null;
+            const messageKey = (
+                errorCode.startsWith("WGS_")
+                || LOCALIZED_SAVE_ERROR_CODES.has(errorCode)
+            ) ? errorCode : null;
+            const actionKey = SAVE_ERROR_ACTION_KEYS[errorCode] || null;
             const localizedMessage = messageKey
                 ? getTranslatedText(messageKey)
                 : response?.msg || "The operation failed.";
@@ -769,6 +982,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 context,
                 message: localizedMessage,
                 messageKey,
+                action: actionKey ? getTranslatedText(actionKey) : null,
+                actionKey,
                 code: errorCode,
                 details: response?.error?.details || {},
                 retryable: Boolean(response?.error?.retryable),
@@ -786,11 +1001,536 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return true;
     }
 
+    function acceptRemoteResponse(response, context) {
+        if (!response || response.status !== 0) {
+            LAST_ERROR.value = {
+                context,
+                message: response?.msg || "The remote operation failed.",
+                messageKey: null,
+                code: response?.error?.code || "REMOTE_REQUEST_FAILED",
+                details: response?.error?.details || {},
+                retryable: Boolean(response?.error?.retryable),
+            };
+            return false;
+        }
+        LAST_ERROR.value = null;
+        return true;
+    }
+
+    function applyRemoteStatus(data) {
+        const session = data?.session;
+        if (session) {
+            REMOTE_SESSION_ID.value = session.session_id;
+            REMOTE_SESSION_REVISION.value = session.revision ?? 0;
+            REMOTE_SERVER.value = session.server || null;
+            REMOTE_CAPABILITIES.value = Array.isArray(session.capabilities)
+                ? session.capabilities
+                : [];
+        }
+        REMOTE_STATUS.value = data || null;
+    }
+
+    function applyRemoteProfile(profile) {
+        if (!profile) return;
+        REMOTE_SERVER_ADDRESS.value = profile.address || "";
+        REMOTE_CERTIFICATE_FINGERPRINT.value =
+            profile.certificate_fingerprint || "";
+        REMOTE_ALLOW_INSECURE_LOCAL.value =
+            profile.allow_insecure_local === true;
+        REMOTE_CREDENTIAL_SAVED.value = profile.credential_saved === true;
+        localStorage.setItem(
+            REMOTE_SERVER_ADDRESS_STORAGE_KEY,
+            REMOTE_SERVER_ADDRESS.value
+        );
+        localStorage.setItem(
+            REMOTE_CERTIFICATE_FINGERPRINT_STORAGE_KEY,
+            REMOTE_CERTIFICATE_FINGERPRINT.value
+        );
+        localStorage.setItem(
+            REMOTE_ALLOW_INSECURE_LOCAL_STORAGE_KEY,
+            String(REMOTE_ALLOW_INSECURE_LOCAL.value)
+        );
+    }
+
+    function clearRemoteSession() {
+        REMOTE_SESSION_ID.value = null;
+        REMOTE_SESSION_REVISION.value = 0;
+        REMOTE_SERVER.value = null;
+        REMOTE_STATUS.value = null;
+        REMOTE_PLAYERS.value = [];
+        REMOTE_GUILDS.value = [];
+        REMOTE_PLAYER_DETAILS.value = null;
+        REMOTE_PLAYER_DETAILS_LOADING.value = false;
+        REMOTE_MAP_DATA.value = null;
+        REMOTE_MAP_LOADING.value = false;
+        remotePlayerDetailsRequest += 1;
+        remotePlayerInventoryRequest += 1;
+        remotePlayerPalsRequest += 1;
+        remotePlayerDetailsLoading = false;
+        remotePlayerInventoryLoading = false;
+        remotePlayerPalsLoading = false;
+        REMOTE_CAPABILITIES.value = [];
+    }
+
+    async function connectRemote({
+        username = "admin",
+        adminPassword,
+    } = {}) {
+        REMOTE_LOADING.value = true;
+        try {
+            const useSavedCredential =
+                !adminPassword && REMOTE_CREDENTIAL_SAVED.value;
+            const response = useSavedCredential
+                ? await POST("/api/remote/reconnect", {})
+                : await POST("/api/remote/connect", {
+                    address: REMOTE_SERVER_ADDRESS.value,
+                    username,
+                    admin_password: adminPassword,
+                    remember_credential: true,
+                });
+            if (!acceptRemoteResponse(response, "remote-connect")) return false;
+            applyRemoteStatus(response.data);
+            applyRemoteProfile(response.data?.profile || {
+                address: REMOTE_SERVER_ADDRESS.value,
+                certificate_fingerprint: null,
+                allow_insecure_local: false,
+                credential_saved: true,
+            });
+            if (REMOTE_CAPABILITIES.value.includes("player.list")) {
+                await loadRemotePlayers();
+            }
+            if (REMOTE_CAPABILITIES.value.includes("guild.list")) {
+                await loadRemoteGuilds();
+            }
+            return true;
+        } finally {
+            REMOTE_LOADING.value = false;
+        }
+    }
+
+    async function connectLocalGame() {
+        REMOTE_LOADING.value = true;
+        try {
+            const response = await POST("/api/remote/connect-local", {});
+            if (!acceptRemoteResponse(response, "local-connect")) return false;
+            applyRemoteStatus(response.data);
+            if (REMOTE_CAPABILITIES.value.includes("player.list")) {
+                await loadRemotePlayers();
+            }
+            if (REMOTE_CAPABILITIES.value.includes("guild.list")) {
+                await loadRemoteGuilds();
+            }
+            return true;
+        } finally {
+            REMOTE_LOADING.value = false;
+        }
+    }
+
+    async function loadRemoteProfile() {
+        const response = await GET("/api/remote/profile");
+        if (response === false) return false;
+        if (!acceptRemoteResponse(response, "remote-profile")) return false;
+        REMOTE_CREDENTIAL_STORAGE_AVAILABLE.value =
+            response.data?.credential_storage_available === true;
+        applyRemoteProfile(response.data?.profile);
+        return true;
+    }
+
+    async function resumeRemoteSession() {
+        const response = await GET("/api/remote/session");
+        if (response === false) return false;
+        if (response.status === 0) {
+            applyRemoteStatus(response.data);
+            if (REMOTE_CAPABILITIES.value.includes("player.list")) {
+                await loadRemotePlayers();
+            }
+            if (REMOTE_CAPABILITIES.value.includes("guild.list")) {
+                await loadRemoteGuilds();
+            }
+            return true;
+        }
+        if (response?.error?.code === "REMOTE_SESSION_NOT_FOUND") {
+            clearRemoteSession();
+            LAST_ERROR.value = null;
+            return false;
+        }
+        acceptRemoteResponse(response, "remote-session");
+        return false;
+    }
+
+    async function refreshRemoteStatus({ background = false } = {}) {
+        if (!REMOTE_SESSION_ID.value) return false;
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        if (!background) REMOTE_LOADING.value = true;
+        try {
+            const sessionId = encodeURIComponent(activeSessionId);
+            const response = await GET(`/api/remote/status?session_id=${sessionId}`);
+            if (REMOTE_SESSION_ID.value !== activeSessionId) return false;
+            if (!acceptRemoteResponse(response, "remote-status")) return false;
+            const responseRevision = response.data?.session?.revision;
+            if (
+                Number.isInteger(responseRevision)
+                && responseRevision < REMOTE_SESSION_REVISION.value
+            ) {
+                return false;
+            }
+            applyRemoteStatus(response.data);
+            return true;
+        } finally {
+            if (!background) REMOTE_LOADING.value = false;
+        }
+    }
+
+    async function loadRemotePlayers() {
+        if (
+            !REMOTE_SESSION_ID.value
+            || !REMOTE_CAPABILITIES.value.includes("player.list")
+        ) {
+            REMOTE_PLAYERS.value = [];
+            return false;
+        }
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        const sessionId = encodeURIComponent(activeSessionId);
+        const response = await GET(`/api/remote/players?session_id=${sessionId}`);
+        if (REMOTE_SESSION_ID.value !== activeSessionId) return false;
+        if (!acceptRemoteResponse(response, "remote-players")) return false;
+        if (
+            Number.isInteger(response.data?.revision)
+            && response.data.revision < REMOTE_SESSION_REVISION.value
+        ) {
+            return false;
+        }
+        REMOTE_PLAYERS.value = Array.isArray(response.data?.players)
+            ? response.data.players
+            : [];
+        if (Number.isInteger(response.data?.revision)) {
+            REMOTE_SESSION_REVISION.value = response.data.revision;
+        }
+        return true;
+    }
+
+    async function loadRemoteGuilds() {
+        if (
+            !REMOTE_SESSION_ID.value
+            || !REMOTE_CAPABILITIES.value.includes("guild.list")
+        ) {
+            REMOTE_GUILDS.value = [];
+            return false;
+        }
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        const sessionId = encodeURIComponent(activeSessionId);
+        const response = await GET(`/api/remote/guilds?session_id=${sessionId}`);
+        if (REMOTE_SESSION_ID.value !== activeSessionId) return false;
+        if (!acceptRemoteResponse(response, "remote-guilds")) return false;
+        if (
+            Number.isInteger(response.data?.revision)
+            && response.data.revision < REMOTE_SESSION_REVISION.value
+        ) {
+            return false;
+        }
+        REMOTE_GUILDS.value = Array.isArray(response.data?.guilds)
+            ? response.data.guilds
+            : [];
+        if (Number.isInteger(response.data?.revision)) {
+            REMOTE_SESSION_REVISION.value = response.data.revision;
+        }
+        return true;
+    }
+
+    async function loadRemoteMapData() {
+        if (
+            !REMOTE_SESSION_ID.value
+            || !REMOTE_CAPABILITIES.value.includes("map.read")
+        ) {
+            REMOTE_MAP_DATA.value = null;
+            return false;
+        }
+        if (REMOTE_MAP_LOADING.value) return false;
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        REMOTE_MAP_LOADING.value = true;
+        try {
+            const sessionId = encodeURIComponent(activeSessionId);
+            const response = await GET(
+                `/api/remote/map?session_id=${sessionId}`
+            );
+            if (REMOTE_SESSION_ID.value !== activeSessionId) return false;
+            if (!acceptRemoteResponse(response, "remote-map")) return false;
+            if (
+                Number.isInteger(response.data?.revision)
+                && response.data.revision < REMOTE_SESSION_REVISION.value
+            ) {
+                return false;
+            }
+            REMOTE_MAP_DATA.value = response.data || null;
+            if (Number.isInteger(response.data?.revision)) {
+                REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            return true;
+        } finally {
+            REMOTE_MAP_LOADING.value = false;
+        }
+    }
+
+    async function loadRemotePlayerDetails(playerId) {
+        const normalizedPlayerId = String(playerId || "").trim();
+        const requestId = ++remotePlayerDetailsRequest;
+        if (
+            !REMOTE_SESSION_ID.value
+            || !normalizedPlayerId
+            || !REMOTE_CAPABILITIES.value.includes("player.details")
+        ) {
+            REMOTE_PLAYER_DETAILS.value = null;
+            remotePlayerDetailsLoading = false;
+            syncRemotePlayerDetailsLoading();
+            return false;
+        }
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        remotePlayerDetailsLoading = true;
+        syncRemotePlayerDetailsLoading();
+        try {
+            const sessionId = encodeURIComponent(activeSessionId);
+            const encodedPlayerId = encodeURIComponent(normalizedPlayerId);
+            const response = await GET(
+                `/api/remote/players/${encodedPlayerId}/details?session_id=${sessionId}`
+            );
+            if (
+                REMOTE_SESSION_ID.value !== activeSessionId
+                || requestId !== remotePlayerDetailsRequest
+            ) return false;
+            if (!acceptRemoteResponse(response, "remote-player-details")) {
+                REMOTE_PLAYER_DETAILS.value = null;
+                return false;
+            }
+            if (
+                Number.isInteger(response.data?.revision)
+                && response.data.revision < REMOTE_SESSION_REVISION.value
+            ) {
+                return false;
+            }
+            const current = REMOTE_PLAYER_DETAILS.value;
+            const currentPlayerId = remoteDetailsPlayerId(current);
+            const samePlayer = currentPlayerId === normalizedPlayerId;
+            REMOTE_PLAYER_DETAILS.value = {
+                ...(samePlayer ? current : {}),
+                ...(response.data || {}),
+                inventory: samePlayer && current?.inventory
+                    ? current.inventory
+                    : { status: "deferred", containers: [] },
+                pals: samePlayer && current?.pals
+                    ? current.pals
+                    : {
+                        status: "deferred",
+                        entries: [],
+                        pageIndex: 0,
+                        pageSize: 12,
+                    },
+            };
+            if (Number.isInteger(response.data?.revision)) {
+                REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            return true;
+        } finally {
+            if (requestId === remotePlayerDetailsRequest) {
+                remotePlayerDetailsLoading = false;
+                syncRemotePlayerDetailsLoading();
+            }
+        }
+    }
+
+    async function loadRemotePlayerInventory(playerId, { force = false } = {}) {
+        const normalizedPlayerId = String(playerId || "").trim();
+        const requestId = ++remotePlayerInventoryRequest;
+        if (
+            !REMOTE_SESSION_ID.value
+            || !normalizedPlayerId
+            || !REMOTE_CAPABILITIES.value.includes("inventory.read")
+        ) {
+            remotePlayerInventoryLoading = false;
+            syncRemotePlayerDetailsLoading();
+            return false;
+        }
+        if (
+            !force
+            && remoteDetailsPlayerId(REMOTE_PLAYER_DETAILS.value)
+                === normalizedPlayerId
+            && REMOTE_PLAYER_DETAILS.value?.revision
+                === REMOTE_SESSION_REVISION.value
+            && REMOTE_PLAYER_DETAILS.value?.inventory?.status === "available"
+        ) {
+            return true;
+        }
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        remotePlayerInventoryLoading = true;
+        syncRemotePlayerDetailsLoading();
+        try {
+            const sessionId = encodeURIComponent(activeSessionId);
+            const encodedPlayerId = encodeURIComponent(normalizedPlayerId);
+            const response = await GET(
+                `/api/remote/players/${encodedPlayerId}/inventory?session_id=${sessionId}`
+            );
+            if (
+                REMOTE_SESSION_ID.value !== activeSessionId
+                || requestId !== remotePlayerInventoryRequest
+                || remoteDetailsPlayerId(REMOTE_PLAYER_DETAILS.value)
+                    !== normalizedPlayerId
+            ) return false;
+            if (!acceptRemoteResponse(response, "remote-player-inventory")) {
+                return false;
+            }
+            REMOTE_PLAYER_DETAILS.value = {
+                ...REMOTE_PLAYER_DETAILS.value,
+                revision: response.data?.revision
+                    ?? REMOTE_PLAYER_DETAILS.value?.revision,
+                inventory: response.data?.inventory || {
+                    status: "unavailable",
+                    containers: [],
+                },
+            };
+            if (Number.isInteger(response.data?.revision)) {
+                REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            return true;
+        } finally {
+            if (requestId === remotePlayerInventoryRequest) {
+                remotePlayerInventoryLoading = false;
+                syncRemotePlayerDetailsLoading();
+            }
+        }
+    }
+
+    async function loadRemotePlayerPals(
+        playerId,
+        page = 0,
+        { collection = "palbox", force = false, pageSize = 12 } = {},
+    ) {
+        const normalizedPlayerId = String(playerId || "").trim();
+        const normalizedCollection = collection === "party"
+            ? "party"
+            : "palbox";
+        const normalizedPage = Math.max(0, Math.trunc(Number(page) || 0));
+        const normalizedPageSize = Math.min(
+            30,
+            Math.max(1, Math.trunc(Number(pageSize) || 12)),
+        );
+        const requestId = ++remotePlayerPalsRequest;
+        if (
+            !REMOTE_SESSION_ID.value
+            || !normalizedPlayerId
+            || !REMOTE_CAPABILITIES.value.includes("pal.list")
+        ) {
+            remotePlayerPalsLoading = false;
+            syncRemotePlayerDetailsLoading();
+            return false;
+        }
+        const currentPals = REMOTE_PLAYER_DETAILS.value?.pals;
+        if (
+            !force
+            && remoteDetailsPlayerId(REMOTE_PLAYER_DETAILS.value)
+                === normalizedPlayerId
+            && REMOTE_PLAYER_DETAILS.value?.revision
+                === REMOTE_SESSION_REVISION.value
+            && currentPals?.status === "available"
+            && currentPals.collection === normalizedCollection
+            && currentPals.pageIndex === normalizedPage
+            && currentPals.pageSize === normalizedPageSize
+        ) {
+            return true;
+        }
+        const activeSessionId = REMOTE_SESSION_ID.value;
+        remotePlayerPalsLoading = true;
+        syncRemotePlayerDetailsLoading();
+        try {
+            const sessionId = encodeURIComponent(activeSessionId);
+            const encodedPlayerId = encodeURIComponent(normalizedPlayerId);
+            const encodedCollection = encodeURIComponent(normalizedCollection);
+            const response = await GET(
+                `/api/remote/players/${encodedPlayerId}/pals`
+                + `?session_id=${sessionId}&collection=${encodedCollection}&page=${normalizedPage}`
+                + `&page_size=${normalizedPageSize}`
+            );
+            if (
+                REMOTE_SESSION_ID.value !== activeSessionId
+                || requestId !== remotePlayerPalsRequest
+                || remoteDetailsPlayerId(REMOTE_PLAYER_DETAILS.value)
+                    !== normalizedPlayerId
+            ) return false;
+            if (!acceptRemoteResponse(response, "remote-player-pals")) {
+                return false;
+            }
+            REMOTE_PLAYER_DETAILS.value = {
+                ...REMOTE_PLAYER_DETAILS.value,
+                revision: response.data?.revision
+                    ?? REMOTE_PLAYER_DETAILS.value?.revision,
+                pals: response.data?.pals || {
+                    status: "unavailable",
+                    entries: [],
+                    collection: normalizedCollection,
+                },
+            };
+            if (Number.isInteger(response.data?.revision)) {
+                REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            return true;
+        } finally {
+            if (requestId === remotePlayerPalsRequest) {
+                remotePlayerPalsLoading = false;
+                syncRemotePlayerDetailsLoading();
+            }
+        }
+    }
+
+    async function executeRemoteCommand({
+        operation,
+        target = {},
+        payload = {},
+        commandId = null,
+    }) {
+        if (!REMOTE_SESSION_ID.value) return false;
+        REMOTE_LOADING.value = true;
+        try {
+            const request = {
+                session_id: REMOTE_SESSION_ID.value,
+                expected_revision: REMOTE_SESSION_REVISION.value,
+                operation,
+                target,
+                payload,
+            };
+            if (commandId) request.command_id = commandId;
+            const response = await POST("/api/remote/commands", request);
+            if (!acceptRemoteResponse(response, "remote-command")) return false;
+            if (Number.isInteger(response.data?.revision)) {
+                REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            return response.data;
+        } finally {
+            REMOTE_LOADING.value = false;
+        }
+    }
+
+    async function disconnectRemote() {
+        if (!REMOTE_SESSION_ID.value) {
+            clearRemoteSession();
+            return true;
+        }
+        REMOTE_LOADING.value = true;
+        try {
+            const response = await POST("/api/remote/disconnect", {
+                session_id: REMOTE_SESSION_ID.value,
+            });
+            if (!acceptRemoteResponse(response, "remote-disconnect")) return false;
+            clearRemoteSession();
+            return true;
+        } finally {
+            REMOTE_LOADING.value = false;
+        }
+    }
+
     function applySessionState(data) {
         const session = data.session;
         SESSION_ID.value = session.session_id;
         SESSION_REVISION.value = session.revision;
         PENDING_CHANGE_COUNT.value = session.pending_change_count;
+        RAW_JSON_PENDING.value = Boolean(session.raw_json_pending);
         SAVE_COMPATIBILITY.value = data.compatibility;
         SAVE_PLATFORM.value = session.platform || "steam";
         SAVE_SOURCE_MODE.value = SAVE_PLATFORM.value;
@@ -930,20 +1670,33 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
+    function localDataPickerInitialPath() {
+        return PAL_GAME_SAVE_PATH.value
+            || SAVE_CAPABILITIES.value?.localDataSelection?.source
+            || undefined;
+    }
+
     function update_path_picker_result(data) {
         IS_PAL_SAVE_PATH.value = data.isPalDir;
         PAL_FILE_PICKER_PATH.value = data.currentPath;
         PATH_CONTEXT.value = new Map(Object.entries(data.children));
         SHOW_FILE_PICKER.value = true;
+        if (FILE_PICKER_PURPOSE.value === "local-data") {
+            PAL_FILE_PICKER_SELECTION.value = null;
+        }
     }
 
     async function show_file_picker(purpose = SAVE_SOURCE_MODE.value) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
-        FILE_PICKER_PURPOSE.value = purpose === "xgp" ? "xgp" : "steam";
+        FILE_PICKER_PURPOSE.value = purpose === "xgp"
+            ? "xgp"
+            : purpose === "local-data"
+                ? "local-data"
+                : "steam";
 
         const nativePicker = window.pywebview?.api?.select_save_directory;
-        if (nativePicker) {
+        if (FILE_PICKER_PURPOSE.value !== "local-data" && nativePicker) {
             try {
                 const selectedPath = await nativePicker(
                     FILE_PICKER_PURPOSE.value === "xgp"
@@ -992,7 +1745,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         let response = undefined;
-        if (FILE_PICKER_PURPOSE.value === "xgp") {
+        if (FILE_PICKER_PURPOSE.value === "local-data") {
+            response = await POST("/api/save/browse-directory", {
+                path: localDataPickerInitialPath(),
+            });
+            if (!response || response.status !== 0) {
+                response = await POST("/api/save/browse-directory", {});
+            }
+        } else if (FILE_PICKER_PURPOSE.value === "xgp") {
             response = await POST("/api/save/browse-directory", {
                 path: XGP_WGS_PATH.value || PAL_GAME_SAVE_PATH.value || undefined,
             });
@@ -1031,7 +1791,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        const response = FILE_PICKER_PURPOSE.value === "xgp"
+        const response = ["xgp", "local-data"].includes(
+            FILE_PICKER_PURPOSE.value
+        )
             ? await POST("/api/save/browse-directory", {
                 path: PAL_FILE_PICKER_PATH.value,
                 parent: true,
@@ -1058,7 +1820,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
         const response = await POST(
-            FILE_PICKER_PURPOSE.value === "xgp"
+            ["xgp", "local-data"].includes(
+                FILE_PICKER_PURPOSE.value
+            )
                 ? "/api/save/browse-directory"
                 : "/api/save/path",
             { path }
@@ -1079,7 +1843,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
-    async function updateI18n() {
+    async function updateI18n(options = {}) {
+        const refreshStaticData = options?.refreshStaticData !== false;
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
@@ -1102,6 +1867,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     refreshes.push(loadInventory(SELECTED_PLAYER_ID.value));
                     refreshes.push(loadPlayerMissions(SELECTED_PLAYER_ID.value));
                 }
+                if (OVERVIEW_DATA.value) refreshes.push(loadOverview());
             }
             if (lastItemCatalogSearch !== null) {
                 refreshes.push(searchItemCatalog(
@@ -1109,7 +1875,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     lastItemCatalogSearch.containerType
                 ));
             }
-            if (!IS_LOCKED.value) refreshes.push(fetchStaticData());
+            if (!IS_LOCKED.value && refreshStaticData) {
+                refreshes.push(fetchStaticData());
+            }
             await Promise.all(refreshes);
             syncSelectedPalLocalization();
             syncLastErrorLocalization();
@@ -1204,6 +1972,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             writable: false,
             source: null,
         };
+        ARENA_LEADERBOARD.value = [];
+        ARENA_EDITABLE_COUNT.value = 0;
+        ARENA_RANKED_PLAYER_COUNT.value = 0;
+        ARENA_INITIALIZABLE_COUNT.value = 0;
+        ARENA_UNSUPPORTED_COUNT.value = 0;
+        ARENA_NPC_COUNT.value = 0;
+        ARENA_NPC_SOURCE_BUILD.value = null;
+        ARENA_LOADING.value = false;
     }
 
     function reset() {
@@ -1216,9 +1992,16 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SESSION_ID.value = null;
         SESSION_REVISION.value = 0;
         PENDING_CHANGE_COUNT.value = 0;
+        RAW_JSON_PENDING.value = false;
         SAVE_COMPATIBILITY.value = null;
         LAST_ERROR.value = null;
         LAST_SAVE_RESULT.value = null;
+        MAP_DATA.value = null;
+        MAP_LOADING.value = false;
+        OVERVIEW_DATA.value = null;
+        OVERVIEW_LOADING.value = false;
+        EXPEDITION_DATA.value = null;
+        EXPEDITION_LOADING.value = false;
         SAVE_PLATFORM.value = "steam";
         SOURCE_ID.value = null;
         SOURCE_DISPLAY_NAME.value = "";
@@ -1227,6 +2010,26 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             exportSteamCopy: true,
             targetPathEditable: true,
             cloudSyncVerified: false,
+            localDataSelection: {
+                required: true,
+                selected: false,
+                platform: "steam",
+                canSelectFile: true,
+                source: null,
+                reason: "LOCAL_DATA_NOT_SELECTED",
+            },
+            fogOfWarClear: {
+                available: false,
+                reason: "LOCAL_DATA_NOT_SELECTED",
+                format: null,
+                maps: [],
+            },
+            fogOfWarReset: {
+                available: false,
+                reason: "LOCAL_DATA_NOT_SELECTED",
+                format: null,
+                maps: [],
+            },
         };
         XGP_SAVE_CONFIRMED.value = false;
         ITEM_CATALOG_RESULTS.value = [];
@@ -1244,6 +2047,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         BASE_PAL_MAP.value = new Map();
         PLAYER_MAP.value = new Map();
         GUILD_TREE.value = [];
+        GUILD_LIST.value = [];
+        GUILD_LOADING.value = false;
         PAL_PASSIVE_SELECTED_ITEM.value = "";
         PAL_ACTIVE_SELECTED_ITEM.value = "";
 
@@ -1285,6 +2090,29 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 return false;
             }
             reset();
+            return true;
+        } finally {
+            if (!noSetLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function refreshSave() {
+        if (!SESSION_ID.value) return false;
+        if (!window.confirm(getTranslatedText("Confirm_DiscardChangesAndRefresh"))) {
+            return false;
+        }
+
+        const noSetLoadingFlag = LOADING_FLAG.value;
+        if (!noSetLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/reload", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                discard_changes: true,
+            });
+            if (response === false || !acceptResponse(response, "reload-save")) {
+                return false;
+            }
             return true;
         } finally {
             if (!noSetLoadingFlag) LOADING_FLAG.value = false;
@@ -1367,6 +2195,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const messageKey = LAST_ERROR.value?.messageKey;
         if (messageKey) {
             LAST_ERROR.value.message = getTranslatedText(messageKey);
+        }
+        const actionKey = LAST_ERROR.value?.actionKey;
+        if (actionKey) {
+            LAST_ERROR.value.action = getTranslatedText(actionKey);
         }
     }
 
@@ -1517,6 +2349,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     async function checkForUpdate() {
         AVAILABLE_UPDATE.value = null;
+        if (SKIP_UPDATE_CHECK.value) return false;
         if (!IS_OFFICIAL_BUILD.value) return false;
         try {
             const response = await GET("/api/save/update");
@@ -1733,6 +2566,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         });
     }
 
+    async function swapInventorySlots(container, sourceSlotIndex, targetSlotIndex) {
+        return executeInventoryLayoutCommand(container.container_type, {
+            command: "swap_item_slots",
+            source_slot_index: sourceSlotIndex,
+            target_slot_index: targetSlotIndex,
+        });
+    }
     async function sortInventoryContainer(container, sortBy, descending = false) {
         return executeInventoryLayoutCommand(container.container_type, {
             command: "sort_item_container",
@@ -1893,40 +2733,122 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         });
     }
 
+    async function healAllPalsInSave() {
+        const palCount = Number(OVERVIEW_DATA.value?.totals?.pals) || 0;
+        if (!palCount || !SESSION_ID.value) return false;
+        if (!window.confirm(getTranslatedText(
+            "Confirm_HealAllPalsInSave",
+            [palCount]
+        ))) return false;
+
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/pals/commands", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command: "heal_all_pals",
+            });
+            if (!acceptResponse(response, "heal-all-pals-in-save", { command: true })) {
+                return false;
+            }
+            if (SELECTED_PAL_ID.value) {
+                await selectPal(SELECTED_PAL_ID.value, true);
+            }
+            await loadOverview();
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
     async function unlockExpeditionPals() {
-        const lockedPals = Array.from(PAL_MAP.value.entries()).filter(
-            ([, pal]) => pal.IsExpeditionPal
+        const lockedPalMap = new Map(
+            Array.from(PAL_MAP.value.entries()).filter(([, pal]) => pal.IsExpeditionPal)
         );
-        const operations = lockedPals.map(([palId]) => ({
-            resource: "pal",
-            command: "unlock_pal_expedition",
-            pal_id: palId,
-        }));
-        if (!operations.length) return false;
+        if (EXPEDITION_DATA.value) {
+            for (const expedition of EXPEDITION_DATA.value.expeditions || []) {
+                for (const pal of expedition.members || []) {
+                    if (pal.assignment_status === "valid") {
+                        lockedPalMap.set(pal.pal_id, pal);
+                    }
+                }
+            }
+            for (const pal of [
+                ...(EXPEDITION_DATA.value.invalid_locked_pals || []),
+                ...(EXPEDITION_DATA.value.unknown_locked_pals || []),
+            ]) {
+                lockedPalMap.set(pal.pal_id, pal);
+            }
+        }
+        const lockedPals = Array.from(lockedPalMap.entries());
+        if (!lockedPals.length || !SESSION_ID.value) return false;
         const statusCounts = { valid: 0, invalid: 0, unknown: 0 };
         for (const [, pal] of lockedPals) {
-            const status = pal.ExpeditionAssignmentStatus;
+            const status = pal.ExpeditionAssignmentStatus ?? pal.assignment_status;
             statusCounts[statusCounts[status] === undefined ? "unknown" : status] += 1;
         }
-        const succeeded = await executeBatchOperations(operations, {
-            confirmBeforePreview: true,
-            trackLoading: true,
-            confirmationKey: "Confirm_UnlockExpeditionPals",
-            confirmationArgs: [
-                lockedPals.length,
-                statusCounts.valid,
-                statusCounts.invalid,
-                statusCounts.unknown,
-            ],
-        });
-        if (succeeded) {
+        if (!window.confirm(getTranslatedText("Confirm_UnlockExpeditionPals", [
+            lockedPals.length,
+            statusCounts.valid,
+            statusCounts.invalid,
+            statusCounts.unknown,
+        ]))) return false;
+
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/pals/commands", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command: "unlock_all_expedition_pals",
+            });
+            if (!acceptResponse(response, "unlock-expedition-pals", { command: true })) {
+                return false;
+            }
             for (const [, pal] of lockedPals) {
                 pal.IsExpeditionPal = false;
                 pal.ExpeditionInstanceId = null;
                 pal.ExpeditionAssignmentStatus = null;
+                pal.assignment_status = "unassigned";
+            }
+            if (SELECTED_PAL_ID.value) {
+                await selectPal(SELECTED_PAL_ID.value, true);
+            }
+            await loadExpeditions();
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    function applyCompletedExpeditions(expeditionIds) {
+        const completedIds = new Set(
+            (expeditionIds || []).map(value => String(value).toLowerCase())
+        );
+        for (const pal of PAL_MAP.value.values()) {
+            if (completedIds.has(String(pal.ExpeditionInstanceId || "").toLowerCase())) {
+                pal.ExpeditionCanComplete = false;
             }
         }
-        return succeeded;
+        if (
+            SELECTED_PAL_DATA.value?.ExpeditionInstanceId
+            && completedIds.has(
+                String(SELECTED_PAL_DATA.value.ExpeditionInstanceId).toLowerCase()
+            )
+        ) {
+            SELECTED_PAL_DATA.value.ExpeditionCanComplete = false;
+        }
+        if (EXPEDITION_DATA.value) {
+            for (const expedition of EXPEDITION_DATA.value.expeditions || []) {
+                if (completedIds.has(String(expedition.expedition_id).toLowerCase())) {
+                    expedition.can_complete = false;
+                }
+            }
+            EXPEDITION_DATA.value.completable_count = (
+                EXPEDITION_DATA.value.expeditions || []
+            ).filter(expedition => expedition.can_complete).length;
+        }
     }
 
     async function completeActiveExpeditions() {
@@ -1945,23 +2867,41 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (!acceptResponse(response, "complete-active-expeditions", { command: true })) {
                 return false;
             }
-            const completedIds = new Set(
-                (response.data.value?.expedition_ids || [])
-                    .map(value => String(value).toLowerCase())
-            );
-            for (const pal of PAL_MAP.value.values()) {
-                if (completedIds.has(String(pal.ExpeditionInstanceId || "").toLowerCase())) {
-                    pal.ExpeditionCanComplete = false;
-                }
+            applyCompletedExpeditions(response.data.value?.expedition_ids);
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function completeExpedition(expeditionId) {
+        if (!SESSION_ID.value || !expeditionId) return false;
+        const expedition = (EXPEDITION_DATA.value?.expeditions || []).find(
+            item => String(item.expedition_id).toLowerCase() === String(expeditionId).toLowerCase()
+        );
+        if (expedition && !expedition.can_complete) return false;
+        const baseLabel = expedition?.base_number
+            ? getTranslatedText("PlayerTree_BaseNumber", [expedition.base_number])
+            : expedition?.base_id || "-";
+        if (!window.confirm(getTranslatedText("Confirm_CompleteExpedition", [
+            expedition?.mission_id || expeditionId,
+            baseLabel,
+        ]))) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST("/api/save/expeditions/commands", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command: "complete_expedition",
+                expedition_id: expeditionId,
+            });
+            if (!acceptResponse(response, "complete-expedition", { command: true })) {
+                return false;
             }
-            if (
-                SELECTED_PAL_DATA.value?.ExpeditionInstanceId
-                && completedIds.has(
-                    String(SELECTED_PAL_DATA.value.ExpeditionInstanceId).toLowerCase()
-                )
-            ) {
-                SELECTED_PAL_DATA.value.ExpeditionCanComplete = false;
-            }
+            applyCompletedExpeditions(response.data.value?.expedition_ids);
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -1999,6 +2939,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             pal.IsExpeditionPal = false;
             pal.ExpeditionInstanceId = null;
             pal.ExpeditionAssignmentStatus = null;
+            await loadExpeditions();
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -2116,6 +3057,524 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return true;
     }
 
+    async function loadGuilds() {
+        if (!SESSION_ID.value) return false;
+        GUILD_LOADING.value = true;
+        try {
+            const params = new URLSearchParams({
+                session_id: SESSION_ID.value,
+            });
+            const response = await GET(
+                `/api/save/query/guilds?${params.toString()}`
+            );
+            if (!acceptResponse(response, "load-guilds")) return false;
+            GUILD_LIST.value = Array.isArray(response.data?.guilds)
+                ? response.data.guilds
+                : [];
+            return true;
+        } finally {
+            GUILD_LOADING.value = false;
+        }
+    }
+
+    async function loadOverview() {
+        if (!SESSION_ID.value) return false;
+        OVERVIEW_LOADING.value = true;
+        try {
+            const response = await GET(
+                `/api/save/query/overview?session_id=${encodeURIComponent(SESSION_ID.value)}`
+            );
+            if (!acceptResponse(response, "load-overview")) return false;
+            OVERVIEW_DATA.value = response.data || null;
+            return true;
+        } finally {
+            OVERVIEW_LOADING.value = false;
+        }
+    }
+
+    async function loadExpeditions() {
+        if (!SESSION_ID.value) return false;
+        EXPEDITION_LOADING.value = true;
+        try {
+            const response = await GET(
+                `/api/save/query/expeditions?session_id=${encodeURIComponent(SESSION_ID.value)}`
+            );
+            if (!acceptResponse(response, "load-expeditions")) return false;
+            EXPEDITION_DATA.value = response.data || null;
+            return true;
+        } finally {
+            EXPEDITION_LOADING.value = false;
+        }
+    }
+
+    function applyArenaLeaderboard(data) {
+        ARENA_LEADERBOARD.value = Array.isArray(data?.entries) ? data.entries : [];
+        ARENA_EDITABLE_COUNT.value = Number(data?.editable_count) || 0;
+        ARENA_RANKED_PLAYER_COUNT.value = Number(data?.ranked_player_count) || 0;
+        ARENA_INITIALIZABLE_COUNT.value = Number(data?.initializable_count) || 0;
+        ARENA_UNSUPPORTED_COUNT.value = Number(data?.unsupported_count) || 0;
+        ARENA_NPC_COUNT.value = Number(data?.npc_count) || 0;
+        ARENA_NPC_SOURCE_BUILD.value = Number(data?.npc_source_build) || null;
+    }
+
+    async function loadArenaLeaderboard() {
+        if (!SESSION_ID.value) return false;
+        ARENA_LOADING.value = true;
+        try {
+            const response = await GET(
+                `/api/arena/leaderboard?session_id=${encodeURIComponent(SESSION_ID.value)}`
+            );
+            if (!acceptResponse(response, "load-arena-leaderboard")) return false;
+            applyArenaLeaderboard(response.data);
+            return true;
+        } finally {
+            ARENA_LOADING.value = false;
+        }
+    }
+
+    async function executeArenaCommand(command, values = {}) {
+        if (!SESSION_ID.value) return false;
+        ARENA_LOADING.value = true;
+        try {
+            const response = await POST("/api/arena/commands", {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command,
+                ...values,
+            });
+            if (!acceptResponse(response, `arena-${command}`, { command: true })) {
+                return false;
+            }
+            applyArenaLeaderboard(response.data);
+            return response.data;
+        } finally {
+            ARENA_LOADING.value = false;
+        }
+    }
+
+    function setArenaRankPoint(playerId, rankPoint) {
+        return executeArenaCommand("set_rank_point", {
+            player_id: playerId,
+            rank_point: rankPoint,
+        });
+    }
+
+    function resetArenaPlayer(playerId) {
+        return executeArenaCommand("reset_player", { player_id: playerId });
+    }
+
+    function resetArenaLeaderboard() {
+        return executeArenaCommand("reset_all");
+    }
+
+    async function loadMapData() {
+        if (!SESSION_ID.value) return false;
+        MAP_LOADING.value = true;
+        try {
+            const response = await GET(
+                `/api/save/query/map?session_id=${encodeURIComponent(SESSION_ID.value)}`
+            );
+            if (!acceptResponse(response, "load-map-data")) return false;
+            MAP_DATA.value = response.data || null;
+            return true;
+        } finally {
+            MAP_LOADING.value = false;
+        }
+    }
+
+    async function bindLocalData(selectedPath = null) {
+        if (!SESSION_ID.value) return false;
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const payload = {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+            };
+            if (SAVE_PLATFORM.value === "steam") payload.path = selectedPath;
+            const response = await POST("/api/save/local-data/select", payload);
+            if (!acceptResponse(response, "select-local-data")) return false;
+            SAVE_CAPABILITIES.value = response.data?.saveCapabilities || {};
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function confirmLocalDataFileSelection(selectedPath) {
+        const normalizedPath = typeof selectedPath === "string"
+            ? selectedPath.trim()
+            : "";
+        if (
+            SAVE_PLATFORM.value !== "steam"
+            || !/(^|[\\/])LocalData\.sav$/i.test(normalizedPath)
+        ) {
+            return false;
+        }
+        const selected = await bindLocalData(normalizedPath);
+        if (selected) {
+            SHOW_FILE_PICKER.value = false;
+            PAL_FILE_PICKER_SELECTION.value = null;
+        }
+        return selected;
+    }
+
+    async function selectLocalData() {
+        if (!SESSION_ID.value) return false;
+        if (SAVE_PLATFORM.value !== "steam") {
+            return bindLocalData();
+        }
+
+        const currentSource =
+            SAVE_CAPABILITIES.value?.localDataSelection?.source || "";
+        const initialPath = PAL_GAME_SAVE_PATH.value || currentSource;
+        const nativePicker = window.pywebview?.api?.select_local_data_file;
+        if (nativePicker) {
+            let selectedPath = null;
+            try {
+                selectedPath = await nativePicker(initialPath);
+            } catch (error) {
+                console.error(
+                    "Native LocalData picker failed, using web picker.",
+                    error,
+                );
+                await show_file_picker("local-data");
+                return SHOW_FILE_PICKER.value;
+            }
+            if (!selectedPath) return false;
+            return bindLocalData(selectedPath);
+        }
+
+        await show_file_picker("local-data");
+        return SHOW_FILE_PICKER.value;
+    }
+
+    async function clearFogOfWar() {
+        if (!SESSION_ID.value) return false;
+        const capability = SAVE_CAPABILITIES.value?.fogOfWarClear || {};
+        if (!capability.available) {
+            const reason = capability.reason || "FOG_OF_WAR_STRUCTURE_UNSUPPORTED";
+            LAST_ERROR.value = {
+                context: "clear-fog-of-war",
+                message: getTranslatedText(reason),
+                messageKey: reason,
+                action: null,
+                actionKey: null,
+                code: reason,
+                details: { capability },
+                retryable: false,
+            };
+            return false;
+        }
+        if (!window.confirm(getTranslatedText("Map_FogClear_Confirm"))) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                "/api/save/local-data/fog-of-war/clear",
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    confirmation: FOG_CLEAR_CONFIRMATION,
+                }
+            );
+            if (
+                response === false
+                || !acceptResponse(
+                    response,
+                    "clear-fog-of-war",
+                    { command: true },
+                )
+            ) {
+                return false;
+            }
+            alert(getTranslatedText(
+                response.data?.changed
+                    ? "Map_FogClear_Staged"
+                    : "Map_FogClear_AlreadyCleared"
+            ));
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function resetFogOfWar() {
+        if (!SESSION_ID.value) return false;
+        const capability = SAVE_CAPABILITIES.value?.fogOfWarReset || {};
+        if (!capability.available) {
+            const reason = capability.reason || "FOG_OF_WAR_STRUCTURE_UNSUPPORTED";
+            LAST_ERROR.value = {
+                context: "reset-fog-of-war",
+                message: getTranslatedText(reason),
+                messageKey: reason,
+                action: null,
+                actionKey: null,
+                code: reason,
+                details: { capability },
+                retryable: false,
+            };
+            return false;
+        }
+        if (!window.confirm(getTranslatedText("Map_FogReset_Confirm"))) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                "/api/save/local-data/fog-of-war/reset",
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    confirmation: FOG_RESET_CONFIRMATION,
+                }
+            );
+            if (
+                response === false
+                || !acceptResponse(
+                    response,
+                    "reset-fog-of-war",
+                    { command: true },
+                )
+            ) {
+                return false;
+            }
+            alert(getTranslatedText(
+                response.data?.changed
+                    ? "Map_FogReset_Staged"
+                    : "Map_FogReset_AlreadyReset"
+            ));
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function unlockAllFastTravelPoints() {
+        if (!SESSION_ID.value || !SELECTED_PLAYER_ID.value) return false;
+        const capability =
+            SELECTED_PLAYER_DATA.value?.FastTravelUnlockCapability || {};
+        if (!capability.available) {
+            const reason =
+                capability.reason || "FAST_TRAVEL_STRUCTURE_UNSUPPORTED";
+            LAST_ERROR.value = {
+                context: "unlock-all-fast-travel-points",
+                message: getTranslatedText(reason),
+                messageKey: reason,
+                action: null,
+                actionKey: null,
+                code: reason,
+                details: { capability },
+                retryable: false,
+            };
+            return false;
+        }
+        if (!window.confirm(getTranslatedText("PlayerMap_FastTravel_Confirm"))) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(
+                    SELECTED_PLAYER_ID.value,
+                )}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "unlock_all_fast_travel_points",
+                    confirmation: FAST_TRAVEL_UNLOCK_CONFIRMATION,
+                },
+            );
+            if (
+                response === false
+                || !acceptResponse(
+                    response,
+                    "unlock-all-fast-travel-points",
+                    { command: true },
+                )
+            ) {
+                return false;
+            }
+            if (
+                response.data?.value
+                && SELECTED_PLAYER_DATA.value?.FastTravelUnlockCapability
+            ) {
+                Object.assign(
+                    SELECTED_PLAYER_DATA.value.FastTravelUnlockCapability,
+                    {
+                        available: true,
+                        reason: null,
+                        format: response.data.value.format,
+                        unlocked_count: response.data.value.unlocked_count,
+                        total_count: response.data.value.total_count,
+                    },
+                );
+            }
+            alert(getTranslatedText(
+                response.data?.changed
+                    ? "PlayerMap_FastTravel_Staged"
+                    : "PlayerMap_FastTravel_AlreadyUnlocked",
+            ));
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function updatePlayerInventoryCapacity(capacity) {
+        if (!SESSION_ID.value || !SELECTED_PLAYER_ID.value) return false;
+        const capability =
+            SELECTED_PLAYER_DATA.value?.InventoryCapacityCapability || {};
+        const targetCapacity = Number(capacity);
+        const currentCapacity = Number(capability.current_capacity);
+        const minimumCapacity = Number(capability.minimum_capacity);
+        const maximumCapacity = Number(capability.maximum_capacity);
+        if (
+            !capability.available
+            || !Number.isInteger(targetCapacity)
+            || !Number.isInteger(currentCapacity)
+            || !Number.isInteger(minimumCapacity)
+            || !Number.isInteger(maximumCapacity)
+            || targetCapacity <= currentCapacity
+            || targetCapacity < minimumCapacity
+            || targetCapacity > maximumCapacity
+        ) {
+            const reason = capability.reason || (
+                Number.isInteger(targetCapacity)
+                && Number.isInteger(currentCapacity)
+                && targetCapacity <= currentCapacity
+                    ? "PLAYER_INVENTORY_SHRINK_UNSUPPORTED"
+                    : "INVALID_PLAYER_INVENTORY_CAPACITY"
+            );
+            LAST_ERROR.value = {
+                context: "update-player-inventory-capacity",
+                message: getTranslatedText(reason),
+                messageKey: reason,
+                action: null,
+                actionKey: null,
+                code: reason,
+                details: { capability, capacity: targetCapacity },
+                retryable: false,
+            };
+            return false;
+        }
+        if (
+            !window.confirm(
+                getTranslatedText("PlayerInventoryCapacity_Confirm", [
+                    capability.current_capacity,
+                    targetCapacity,
+                ]),
+            )
+        ) {
+            return false;
+        }
+
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(
+                    SELECTED_PLAYER_ID.value,
+                )}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_player_inventory_capacity",
+                    capacity: targetCapacity,
+                },
+            );
+            if (
+                !acceptResponse(
+                    response,
+                    "update-player-inventory-capacity",
+                    { command: true },
+                )
+            ) {
+                return false;
+            }
+            if (SELECTED_PLAYER_DATA.value && response.data?.capability) {
+                SELECTED_PLAYER_DATA.value.InventoryCapacityCapability = {
+                    ...response.data.capability,
+                };
+            }
+            await loadInventory();
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function loadJsonEditorFiles() {
+        if (!SESSION_ID.value) return false;
+        const response = await GET(
+            `/api/json-editor/files?session_id=${encodeURIComponent(SESSION_ID.value)}`
+        );
+        if (!acceptResponse(response, "load-json-editor-files")) return false;
+        RAW_JSON_PENDING.value = Boolean(response.data?.raw_json_pending);
+        return response.data;
+    }
+
+    async function loadJsonDocument(path) {
+        if (!SESSION_ID.value || !path) return false;
+        const params = new URLSearchParams({
+            session_id: SESSION_ID.value,
+            path,
+        });
+        const response = await GET(
+            `/api/json-editor/document?${params.toString()}`,
+            {
+                responseType: "text",
+                transformResponse: [value => value],
+            }
+        );
+        if (typeof response === "string") {
+            const prefix = response.trimStart().slice(0, 64);
+            if (/^\{\s*"(?:data|error|status)"\s*:/.test(prefix)) {
+                try {
+                    const envelope = JSON.parse(response);
+                    acceptResponse(envelope, "load-json-document");
+                    return false;
+                } catch {
+                    // Fall through: malformed envelopes are handled as raw text.
+                }
+            }
+            return response;
+        }
+        acceptResponse(response, "load-json-document");
+        return false;
+    }
+
+    async function applyJsonDocument(path, text) {
+        if (!SESSION_ID.value || !path) return false;
+        const params = new URLSearchParams({
+            session_id: SESSION_ID.value,
+            expected_revision: String(SESSION_REVISION.value),
+            path,
+        });
+        const response = await POST(
+            `/api/json-editor/document?${params.toString()}`,
+            text
+        );
+        if (!acceptResponse(response, "apply-json-document", { command: true })) {
+            return false;
+        }
+        if (response.data?.changed) RAW_JSON_PENDING.value = true;
+        return response.data;
+    }
+
+    function updateGuildCollections(guildId, update) {
+        for (const collection of [GUILD_TREE.value, GUILD_LIST.value]) {
+            const guild = collection.find(
+                item => String(item.guild_id) === String(guildId)
+            );
+            if (guild) update(guild);
+        }
+    }
+
     async function updateGuildName(guildId, name) {
         if (!SESSION_ID.value || !guildId) return false;
         const normalizedName = typeof name === "string" ? name.trim() : "";
@@ -2135,10 +3594,96 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (!acceptResponse(response, "update-guild-name", { command: true })) {
                 return false;
             }
-            const updated = GUILD_TREE.value.find(
-                guild => String(guild.guild_id) === String(guildId)
+            updateGuildCollections(
+                guildId,
+                guild => {
+                    guild.name = response.data.value?.name ?? normalizedName;
+                }
             );
-            if (updated) updated.name = response.data.value?.name ?? normalizedName;
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function updateGuildChestCapacity(guildId, capacity) {
+        if (!SESSION_ID.value || !guildId) return false;
+        const normalizedCapacity = Number(capacity);
+        if (
+            !Number.isInteger(normalizedCapacity)
+            || normalizedCapacity < 1
+            || normalizedCapacity > 2466
+        ) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/save/guilds/${encodeURIComponent(guildId)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_guild_chest_capacity",
+                    capacity: normalizedCapacity,
+                }
+            );
+            if (
+                !acceptResponse(
+                    response,
+                    "update-guild-chest-capacity",
+                    { command: true }
+                )
+            ) {
+                return false;
+            }
+            updateGuildCollections(guildId, guild => {
+                guild.guild_chest_capacity =
+                    response.data.value?.capacity ?? normalizedCapacity;
+                guild.guild_chest_status = "available";
+            });
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function updateGuildBaseCampLevel(guildId, level) {
+        if (!SESSION_ID.value || !guildId) return false;
+        const normalizedLevel = Number(level);
+        if (
+            !Number.isInteger(normalizedLevel)
+            || normalizedLevel < 1
+            || normalizedLevel > 35
+        ) {
+            return false;
+        }
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/save/guilds/${encodeURIComponent(guildId)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_base_camp_level",
+                    level: normalizedLevel,
+                }
+            );
+            if (
+                !acceptResponse(
+                    response,
+                    "update-guild-base-camp-level",
+                    { command: true }
+                )
+            ) {
+                return false;
+            }
+            updateGuildCollections(guildId, guild => {
+                guild.base_camp_level =
+                    response.data.value?.level ?? normalizedLevel;
+                guild.base_camp_level_status = "available";
+            });
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -2171,7 +3716,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        await updateI18n();
+        await updateI18n({ refreshStaticData: false });
 
         if (requestedMode === "xgp" && !requestedSourceId) {
             LAST_ERROR.value = {
@@ -2212,52 +3757,65 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     async function writeSave() {
         let retval = false;
-        let no_set_loading_flag = LOADING_FLAG.value;
-        if (!no_set_loading_flag) LOADING_FLAG.value = true;
-        if (
-            SAVE_PLATFORM.value === "xgp"
-            && !XGP_SAVE_CONFIRMED.value
-            && !window.confirm(getTranslatedText("Confirm_Xgp_Save"))
-        ) {
-            if (!no_set_loading_flag) LOADING_FLAG.value = false;
-            return false;
-        }
-        const savePayload = {
-            session_id: SESSION_ID.value,
-            expected_revision: SESSION_REVISION.value,
-        };
-        if (SAVE_PLATFORM.value !== "xgp") {
-            savePayload.WritePath = PAL_WRITE_BACK_PATH.value;
-        }
-        const response = await POST("/api/save/save", savePayload);
-        if (response === false) return;
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            if (
+                SAVE_PLATFORM.value === "xgp"
+                && !XGP_SAVE_CONFIRMED.value
+                && !window.confirm(getTranslatedText("Confirm_Xgp_Save"))
+            ) {
+                return false;
+            }
+            const savePayload = {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+            };
+            if (SAVE_PLATFORM.value !== "xgp") {
+                savePayload.WritePath = PAL_WRITE_BACK_PATH.value;
+            }
+            const response = await POST(
+                "/api/save/save",
+                savePayload,
+                { errorContext: "save" },
+            );
+            if (response === false) return false;
 
-        if (response.status == 0) {
-            LAST_SAVE_RESULT.value = response.data;
-            SESSION_REVISION.value = response.data.revision;
-            PENDING_CHANGE_COUNT.value = 0;
-            LAST_ERROR.value = null;
-            if (SAVE_PLATFORM.value === "xgp") XGP_SAVE_CONFIRMED.value = true;
-            const Alert_Successful_Save = SAVE_PLATFORM.value === "xgp"
-                ? getTranslatedText("Alert_Xgp_Save_Success", [
-                    response.data.backup_path || getTranslatedText("Common_NotApplicable"),
-                ])
-                : getTranslatedText("Alert_Successful_Save").replace(
-                    "{{path}}",
-                    PAL_WRITE_BACK_PATH.value
-                );
-            alert(Alert_Successful_Save);
-            retval = true;
-        } else if (response.status == 2) {
-            alert("Unauthorized Access, Please Login. ");
-            IS_LOCKED.value = true;
-            reset();
-        } else {
-            acceptResponse(response, "save");
-            alert(`- writeSave - Error occured: ${response.msg}`);
+            if (response.status == 0) {
+                LAST_SAVE_RESULT.value = response.data;
+                if (response.data.session) {
+                    await loadSessionState({
+                        session: response.data.session,
+                        compatibility: response.data.compatibility,
+                    });
+                } else {
+                    SESSION_REVISION.value = response.data.revision;
+                    PENDING_CHANGE_COUNT.value = 0;
+                }
+                LAST_ERROR.value = null;
+                if (SAVE_PLATFORM.value === "xgp") XGP_SAVE_CONFIRMED.value = true;
+                const Alert_Successful_Save = SAVE_PLATFORM.value === "xgp"
+                    ? getTranslatedText("Alert_Xgp_Save_Success", [
+                        response.data.backup_path || getTranslatedText("Common_NotApplicable"),
+                    ])
+                    : getTranslatedText("Alert_Successful_Save").replace(
+                        "{{path}}",
+                        PAL_WRITE_BACK_PATH.value
+                    );
+                alert(Alert_Successful_Save);
+                retval = true;
+            } else if (response.status == 2) {
+                alert("Unauthorized Access, Please Login. ");
+                IS_LOCKED.value = true;
+                reset();
+            } else {
+                acceptResponse(response, "save");
+                alert(`- writeSave - Error occured: ${response.msg}`);
+            }
+            return retval;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
         }
-        if (!no_set_loading_flag) LOADING_FLAG.value = false;
-        return retval;
     }
 
     async function exportSteamCopy() {
@@ -2727,6 +4285,51 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
     }
 
+    async function addCustomPassive(internalName) {
+        if (!SELECTED_PAL_ID.value || !SELECTED_PAL_DATA.value) {
+            LAST_ERROR.value = {
+                context: "add-custom-passive",
+                code: "PAL_NOT_SELECTED",
+                message: "Select a Pal first.",
+                details: {},
+            };
+            return false;
+        }
+
+        const passive = [
+            ...(SELECTED_PAL_DATA.value.PassiveSkillList || []),
+            internalName,
+        ];
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/pal/${encodeURIComponent(SELECTED_PAL_ID.value)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_pal_skills",
+                    active: null,
+                    mastered: null,
+                    passive,
+                    allow_custom_passive: true,
+                }
+            );
+            if (!acceptResponse(
+                response,
+                "add-custom-passive",
+                { command: true }
+            )) {
+                return false;
+            }
+            await selectPal(SELECTED_PAL_ID.value, true);
+            UPDATE_PAL_RESELECT_CTR.value++;
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
     function GET_PAL_OWNER_API_ID() {
         return BASE_PAL_BTN_CLK_FLAG.value
             ? PAL_BASE_WORKER_BTN.value
@@ -3032,7 +4635,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_BASE_WORKER_BTN,
         PLAYER_MAP,
         GUILD_TREE,
+        GUILD_LIST,
+        GUILD_LOADING,
         PAL_MAP,
+        EXPEDITION_DATA,
+        EXPEDITION_LOADING,
         EXPEDITION_PAL_COUNT,
         COMPLETABLE_EXPEDITION_COUNT,
         SELECTED_PLAYER_ID,
@@ -3061,6 +4668,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PATH_CONTEXT,
         SHOW_FILE_PICKER,
         PAL_FILE_PICKER_PATH,
+        PAL_FILE_PICKER_SELECTION,
         IS_PAL_SAVE_PATH,
         FILE_PICKER_PURPOSE,
 
@@ -3070,6 +4678,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_GAME_SAVE_PATH,
         PAL_WRITE_BACK_PATH,
         SAVE_SOURCE_MODE,
+        REMOTE_SERVER_ADDRESS,
+        REMOTE_CERTIFICATE_FINGERPRINT,
+        REMOTE_ALLOW_INSECURE_LOCAL,
+        REMOTE_REMEMBER_CREDENTIAL,
+        REMOTE_CREDENTIAL_SAVED,
+        REMOTE_CREDENTIAL_STORAGE_AVAILABLE,
+        REMOTE_SESSION_ID,
+        REMOTE_SESSION_REVISION,
+        REMOTE_SERVER,
+        REMOTE_STATUS,
+        REMOTE_PLAYERS,
+        REMOTE_GUILDS,
+        REMOTE_PLAYER_DETAILS,
+        REMOTE_PLAYER_DETAILS_LOADING,
+        REMOTE_MAP_DATA,
+        REMOTE_MAP_LOADING,
+        REMOTE_CAPABILITIES,
+        REMOTE_LOADING,
+        REMOTE_CONNECTED,
         XGP_WGS_PATH,
         XGP_SOURCES,
         SELECTED_XGP_SOURCE_ID,
@@ -3080,6 +4707,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SESSION_ID,
         SESSION_REVISION,
         PENDING_CHANGE_COUNT,
+        RAW_JSON_PENDING,
         SAVE_COMPATIBILITY,
         LAST_ERROR,
         LAST_SAVE_RESULT,
@@ -3087,9 +4715,22 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         ITEM_CLIPBOARD,
         PLAYER_MISSIONS,
         MISSION_LOADING,
+        ARENA_LEADERBOARD,
+        ARENA_EDITABLE_COUNT,
+        ARENA_RANKED_PLAYER_COUNT,
+        ARENA_INITIALIZABLE_COUNT,
+        ARENA_UNSUPPORTED_COUNT,
+        ARENA_NPC_COUNT,
+        ARENA_NPC_SOURCE_BUILD,
+        ARENA_LOADING,
+        MAP_DATA,
+        MAP_LOADING,
+        OVERVIEW_DATA,
+        OVERVIEW_LOADING,
         VERSION,
         IS_OFFICIAL_BUILD,
         AVAILABLE_UPDATE,
+        SKIP_UPDATE_CHECK,
         I18n,
         I18nList,
         PAL_STATIC_DATA,
@@ -3114,17 +4755,52 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         reset,
         clearEditorSelection,
         returnToMain,
+        refreshSave,
         updateI18n,
+        fetchStaticData,
         loadSave,
+        connectLocalGame,
+        connectRemote,
+        loadRemoteProfile,
+        resumeRemoteSession,
+        refreshRemoteStatus,
+        loadRemotePlayers,
+            loadRemoteGuilds,
+            loadRemoteMapData,
+            loadRemotePlayerDetails,
+            loadRemotePlayerInventory,
+            loadRemotePlayerPals,
+            executeRemoteCommand,
+        disconnectRemote,
         resumeCurrentSession,
         queryPlayers,
+        loadGuilds,
+        loadOverview,
+        loadExpeditions,
+        loadArenaLeaderboard,
+        setArenaRankPoint,
+        resetArenaPlayer,
+        resetArenaLeaderboard,
+        loadMapData,
+        selectLocalData,
+        confirmLocalDataFileSelection,
+        clearFogOfWar,
+        resetFogOfWar,
+        unlockAllFastTravelPoints,
+        updatePlayerInventoryCapacity,
+        loadJsonEditorFiles,
+        loadJsonDocument,
+        applyJsonDocument,
         updateGuildName,
+        updateGuildChestCapacity,
+        updateGuildBaseCampLevel,
         queryPals,
         clearPalQuery,
         selectPlayer,
         selectBase,
         selectPal,
         updatePal,
+        addCustomPassive,
         updatePlayer,
         updatePlayerAttributes,
         updateInventoryItem,
@@ -3137,6 +4813,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         searchItemCatalog,
         copyInventoryItem,
         pasteInventoryItem,
+        swapInventorySlots,
         sortInventoryContainer,
         fillInventorySlots,
         loadDynamicItemAttributes,
@@ -3146,7 +4823,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         maxSelectedPal,
         executeBatchOperations,
         healAllPals,
+        healAllPalsInSave,
         completeActiveExpeditions,
+        completeExpedition,
         unlockExpeditionPals,
         cancelSelectedPalExpedition,
         refreshSessionMetadata,

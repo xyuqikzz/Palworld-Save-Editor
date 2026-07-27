@@ -13,20 +13,41 @@ import palworld_pal_editor.storage.xgp as xgp_module
 
 
 class _Session:
-    def __init__(self, session_id: str, source: str, *, dirty: bool = False) -> None:
+    def __init__(
+        self,
+        session_id: str,
+        source: str,
+        *,
+        dirty: bool = False,
+        platform: SavePlatform = SavePlatform.STEAM,
+        source_id: str | None = None,
+    ) -> None:
         self.session_id = session_id
         self.source = Path(source).resolve()
         self._dirty = dirty
         self.revision = 1 if dirty else 0
+        self.platform = platform
+        self.source_id = source_id or f"{platform.value}-source"
+        self.closed = False
 
     def changes(self):
         return [{"change": True}] if self._dirty else []
 
-    def require_command(self, session_id: str, expected_revision: int) -> None:
+    def require_command(
+        self,
+        session_id: str,
+        expected_revision: int,
+        *,
+        allow_raw_json: bool = False,
+    ) -> None:
+        del allow_raw_json
         if session_id != self.session_id:
             raise DomainError("SESSION_NOT_FOUND", "session not found", http_status=404)
         if expected_revision != self.revision:
             raise DomainError("STALE_REVISION", "stale revision", http_status=409)
+
+    def close(self) -> None:
+        self.closed = True
 
 
 class SessionRuntimeTests(unittest.TestCase):
@@ -99,6 +120,97 @@ class SessionRuntimeTests(unittest.TestCase):
         self.assertEqual(0, result["discarded_change_count"])
         with self.assertRaises(DomainError):
             runtime.get()
+
+    def test_refresh_reloads_original_steam_source_after_explicit_discard(
+        self,
+    ) -> None:
+        runtime = SessionRuntime()
+        current = _Session("current", "steam-save", dirty=True)
+        refreshed = _Session("refreshed", "steam-save")
+        runtime.replace_for_tests(current)
+
+        with self.assertRaises(DomainError) as unsaved:
+            runtime.reload("current", 1)
+        self.assertEqual("UNSAVED_CHANGES_PRESENT", unsaved.exception.code)
+
+        with patch(
+            "palworld_pal_editor.application.runtime.SaveSession.open",
+            return_value=refreshed,
+        ) as open_session:
+            result, discarded = runtime.reload(
+                "current",
+                1,
+                discard_changes=True,
+            )
+
+        open_session.assert_called_once_with(current.source)
+        self.assertIs(refreshed, result)
+        self.assertEqual(1, discarded)
+        self.assertTrue(current.closed)
+        self.assertIs(refreshed, runtime.get())
+
+    def test_refresh_reopens_the_original_xgp_source_id(self) -> None:
+        source = SaveSource(
+            platform=SavePlatform.XGP,
+            canonical_path=Path("xgp-save").resolve(),
+            source_id="xgp-source",
+            display_name="Game Pass test save",
+            world_id="A" * 32,
+        )
+        catalog = SimpleNamespace(resolve=lambda source_id: source)
+        runtime = SessionRuntime(source_catalog=catalog)
+        current = _Session(
+            "current",
+            "xgp-workspace",
+            dirty=True,
+            platform=SavePlatform.XGP,
+            source_id=source.source_id,
+        )
+        refreshed = _Session(
+            "refreshed",
+            "new-xgp-workspace",
+            platform=SavePlatform.XGP,
+            source_id=source.source_id,
+        )
+        runtime.replace_for_tests(current)
+
+        with patch(
+            "palworld_pal_editor.application.runtime.SaveSession.open_storage",
+            return_value=refreshed,
+        ) as open_storage:
+            result, discarded = runtime.reload(
+                "current",
+                1,
+                discard_changes=True,
+            )
+
+        self.assertIs(source, open_storage.call_args.args[0])
+        self.assertIs(refreshed, result)
+        self.assertEqual(1, discarded)
+        self.assertTrue(current.closed)
+        self.assertEqual(source.source_id, runtime.get().source_id)
+
+    def test_refresh_failure_preserves_the_current_session(self) -> None:
+        runtime = SessionRuntime()
+        current = _Session("current", "steam-save", dirty=True)
+        runtime.replace_for_tests(current)
+
+        with (
+            patch(
+                "palworld_pal_editor.application.runtime.SaveSession.open",
+                side_effect=DomainError(
+                    "INVALID_SAVE_PATH",
+                    "refresh failed",
+                    http_status=400,
+                ),
+            ),
+            self.assertRaises(DomainError) as failed,
+        ):
+            runtime.reload("current", 1, discard_changes=True)
+
+        self.assertEqual("INVALID_SAVE_PATH", failed.exception.code)
+        self.assertFalse(current.closed)
+        self.assertIs(current, runtime.get())
 
     def test_dirty_steam_discard_then_xgp_open_does_not_depend_on_tasklist(self) -> None:
         source = SaveSource(

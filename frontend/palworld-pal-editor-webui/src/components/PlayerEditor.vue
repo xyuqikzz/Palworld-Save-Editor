@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePalEditorStore } from '@/stores/paleditor'
 import ItemCard from '@/components/modules/TechCard.vue'
@@ -10,7 +10,117 @@ import MissionEditor from '@/components/MissionEditor.vue'
 const palStore = usePalEditorStore()
 const route = useRoute()
 const router = useRouter()
-const playerEditorTabs = new Set(['inventory', 'technology', 'missions', 'attributes'])
+const playerEditorTabs = new Set([
+    'inventory',
+    'technology',
+    'missions',
+    'map-progress',
+    'attributes',
+])
+
+const fogClearCapability = computed(() => (
+    palStore.SAVE_CAPABILITIES?.fogOfWarClear || {
+        available: false,
+        reason: 'FOG_OF_WAR_STRUCTURE_UNSUPPORTED',
+    }
+))
+const fogClearReason = computed(() => (
+    fogClearCapability.value.available
+        ? ''
+        : palStore.getTranslatedText(
+            fogClearCapability.value.reason || 'FOG_OF_WAR_STRUCTURE_UNSUPPORTED',
+        )
+))
+const fogResetCapability = computed(() => (
+    palStore.SAVE_CAPABILITIES?.fogOfWarReset || {
+        available: false,
+        reason: 'FOG_OF_WAR_STRUCTURE_UNSUPPORTED',
+    }
+))
+const fogResetReason = computed(() => (
+    fogResetCapability.value.available
+        ? ''
+        : palStore.getTranslatedText(
+            fogResetCapability.value.reason || 'FOG_OF_WAR_STRUCTURE_UNSUPPORTED',
+        )
+))
+const localDataSelection = computed(() => (
+    palStore.SAVE_CAPABILITIES?.localDataSelection || {
+        selected: false,
+        platform: palStore.SAVE_PLATFORM,
+        canSelectFile: palStore.SAVE_PLATFORM === 'steam',
+        source: null,
+        reason: 'LOCAL_DATA_NOT_SELECTED',
+    }
+))
+const fastTravelCapability = computed(() => (
+    palStore.SELECTED_PLAYER_DATA.FastTravelUnlockCapability || {
+        available: false,
+        reason: 'FAST_TRAVEL_RECORD_DATA_MISSING',
+        unlocked_count: null,
+        total_count: 0,
+    }
+))
+const fastTravelReason = computed(() => (
+    fastTravelCapability.value.available
+        ? ''
+        : palStore.getTranslatedText(
+            fastTravelCapability.value.reason || 'FAST_TRAVEL_STRUCTURE_UNSUPPORTED',
+        )
+))
+const inventoryCapacityCapability = computed(() => (
+    palStore.SELECTED_PLAYER_DATA.InventoryCapacityCapability || {
+        available: false,
+        reason: 'PLAYER_INVENTORY_CONTAINER_MISSING',
+        current_capacity: null,
+        allowed_capacities: [],
+        minimum_capacity: null,
+        maximum_capacity: 1000,
+        custom_input: true,
+        expand_only: true,
+    }
+))
+const inventoryCapacityReason = computed(() => (
+    inventoryCapacityCapability.value.available
+        ? ''
+        : palStore.getTranslatedText(
+            inventoryCapacityCapability.value.reason
+                || 'PLAYER_INVENTORY_CAPACITY_UNSUPPORTED',
+        )
+))
+const inventoryCapacityTarget = ref(null)
+const inventoryCapacityTargetValid = computed(() => {
+    const target = Number(inventoryCapacityTarget.value)
+    const current = Number(inventoryCapacityCapability.value.current_capacity)
+    const minimum = Number(inventoryCapacityCapability.value.minimum_capacity)
+    const maximum = Number(inventoryCapacityCapability.value.maximum_capacity)
+    return Number.isInteger(target)
+        && Number.isInteger(current)
+        && Number.isInteger(minimum)
+        && Number.isInteger(maximum)
+        && target > current
+        && target >= minimum
+        && target <= maximum
+})
+
+watch(
+    inventoryCapacityCapability,
+    (capability) => {
+        const minimum = Number(capability.minimum_capacity)
+        const maximum = Number(capability.maximum_capacity)
+        if (
+            !Number.isInteger(Number(inventoryCapacityTarget.value))
+            || Number(inventoryCapacityTarget.value) < minimum
+            || Number(inventoryCapacityTarget.value) > maximum
+        ) {
+            inventoryCapacityTarget.value =
+                Number.isInteger(minimum) && minimum <= maximum
+                    ? minimum
+                    : null
+        }
+    },
+    { immediate: true },
+)
 
 function requestedEditorTab() {
     const tab = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
@@ -156,6 +266,15 @@ const formatAttributeEffect = (value) => {
                 aria-controls="player-attributes-panel"
                 @click="activeEditorTab = 'attributes'"
             >{{ palStore.getTranslatedText('PlayerTab_Attributes') }}</button>
+            <button
+                id="player-map-progress-tab"
+                type="button"
+                role="tab"
+                :class="{ active: activeEditorTab === 'map-progress' }"
+                :aria-selected="activeEditorTab === 'map-progress'"
+                aria-controls="player-map-progress-panel"
+                @click="activeEditorTab = 'map-progress'"
+            >{{ palStore.getTranslatedText('PlayerTab_MapProgress') }}</button>
         </nav>
         <InventoryEditor
             v-show="activeEditorTab === 'inventory'"
@@ -198,6 +317,135 @@ const formatAttributeEffect = (value) => {
             role="tabpanel"
             aria-labelledby="player-missions-tab"
         />
+        <section
+            v-show="activeEditorTab === 'map-progress'"
+            id="player-map-progress-panel"
+            class="EditorItem player-map-progress-panel"
+            role="tabpanel"
+            aria-labelledby="player-map-progress-tab"
+        >
+            <article class="player-map-action">
+                <div class="player-map-action__heading">
+                    <strong>{{ palStore.getTranslatedText('Map_FogReset_Title') }}</strong>
+                    <span
+                        class="player-map-action__source"
+                        :aria-label="palStore.getTranslatedText('Map_FogReset_Description')"
+                        :title="palStore.getTranslatedText('Map_FogReset_Description')"
+                    >{{ palStore.getTranslatedText('PlayerMap_RequiredSaveFile') }} <code>{{ palStore.getTranslatedText('PlayerMap_FogSaveFile') }}</code></span>
+                    <p
+                        v-if="fogClearReason || fogResetReason"
+                        id="player-fog-reason"
+                        class="player-map-action__reason"
+                        role="status"
+                    >{{ fogClearReason || fogResetReason }}</p>
+                </div>
+                <div class="player-map-action__actions">
+                    <button
+                        type="button"
+                        class="player-map-action__button player-map-action__button--wide player-map-action__button--secondary"
+                        :disabled="palStore.LOADING_FLAG"
+                        :title="localDataSelection.source || palStore.getTranslatedText('PlayerMap_LocalData_Select')"
+                        @click="palStore.selectLocalData"
+                    >{{ palStore.getTranslatedText(
+                        localDataSelection.selected
+                            ? 'PlayerMap_LocalData_Reselect'
+                            : 'PlayerMap_LocalData_Select'
+                    ) }}</button>
+                    <button
+                        type="button"
+                        class="player-map-action__button"
+                        :aria-describedby="fogClearReason ? 'player-fog-reason' : undefined"
+                        :disabled="palStore.LOADING_FLAG || !fogClearCapability.available"
+                        :title="fogClearReason || palStore.getTranslatedText('Map_FogClear_Button')"
+                        @click="palStore.clearFogOfWar"
+                    >{{ palStore.getTranslatedText('Map_FogClear_Button') }}</button>
+                    <button
+                        type="button"
+                        class="player-map-action__button player-map-action__button--danger"
+                        :aria-describedby="fogResetReason ? 'player-fog-reason' : undefined"
+                        :disabled="palStore.LOADING_FLAG || !fogResetCapability.available"
+                        :title="fogResetReason || palStore.getTranslatedText('Map_FogReset_Button')"
+                        @click="palStore.resetFogOfWar"
+                    >{{ palStore.getTranslatedText('Map_FogReset_Button') }}</button>
+                </div>
+            </article>
+            <article class="player-map-action">
+                <div class="player-map-action__heading">
+                    <strong>{{ palStore.getTranslatedText('PlayerMap_FastTravel_Title') }}</strong>
+                    <span
+                        class="player-map-action__source"
+                        :aria-label="palStore.getTranslatedText('PlayerMap_FastTravel_Description')"
+                        :title="palStore.getTranslatedText('PlayerMap_FastTravel_Description')"
+                    >{{ palStore.getTranslatedText('PlayerMap_RequiredSaveFile') }} <code>{{ palStore.getTranslatedText('PlayerMap_FastTravelSaveFile') }}</code></span>
+                    <p
+                        v-if="fastTravelReason"
+                        id="player-fast-travel-reason"
+                        class="player-map-action__reason"
+                        role="status"
+                    >{{ fastTravelReason }}</p>
+                </div>
+                <span v-if="fastTravelCapability.available" class="player-map-action__progress">
+                    {{ palStore.getTranslatedText('PlayerMap_FastTravel_Progress', [
+                        fastTravelCapability.unlocked_count,
+                        fastTravelCapability.total_count,
+                    ]) }}
+                </span>
+                <div class="player-map-action__actions player-map-action__actions--single">
+                    <button
+                        type="button"
+                        class="player-map-action__button"
+                        :aria-describedby="fastTravelReason ? 'player-fast-travel-reason' : undefined"
+                        :disabled="palStore.LOADING_FLAG || !fastTravelCapability.available"
+                        :title="fastTravelReason || palStore.getTranslatedText('PlayerMap_FastTravel_Button')"
+                        @click="palStore.unlockAllFastTravelPoints"
+                    >{{ palStore.getTranslatedText('PlayerMap_FastTravel_Button') }}</button>
+                </div>
+            </article>
+            <article class="player-map-action">
+                <div class="player-map-action__heading">
+                    <strong>{{ palStore.getTranslatedText('PlayerInventoryCapacity_Title') }}</strong>
+                    <span
+                        class="player-map-action__source"
+                        :title="palStore.getTranslatedText('PlayerInventoryCapacity_Description')"
+                    >{{ palStore.getTranslatedText('PlayerMap_RequiredSaveFile') }} <code>{{ palStore.getTranslatedText('PlayerInventoryCapacity_SaveFile') }}</code></span>
+                    <p
+                        v-if="inventoryCapacityReason"
+                        id="player-inventory-capacity-reason"
+                        class="player-map-action__reason"
+                        role="status"
+                    >{{ inventoryCapacityReason }}</p>
+                </div>
+                <span
+                    v-if="inventoryCapacityCapability.current_capacity !== null"
+                    class="player-map-action__progress"
+                >{{ palStore.getTranslatedText('PlayerInventoryCapacity_Current', [
+                    inventoryCapacityCapability.current_capacity,
+                ]) }}</span>
+                <p class="player-map-action__notice">
+                    {{ palStore.getTranslatedText('PlayerInventoryCapacity_PerformanceWarning') }}
+                </p>
+                <div class="player-map-action__capacity-control">
+                    <input
+                        v-model.number="inventoryCapacityTarget"
+                        type="number"
+                        step="1"
+                        :min="inventoryCapacityCapability.minimum_capacity"
+                        :max="inventoryCapacityCapability.maximum_capacity"
+                        :disabled="palStore.LOADING_FLAG || !inventoryCapacityCapability.available"
+                        :aria-label="palStore.getTranslatedText('PlayerInventoryCapacity_Target')"
+                    >
+                    <button
+                        type="button"
+                        class="player-map-action__button"
+                        :aria-describedby="inventoryCapacityReason ? 'player-inventory-capacity-reason' : undefined"
+                        :disabled="palStore.LOADING_FLAG
+                            || !inventoryCapacityCapability.available
+                            || !inventoryCapacityTargetValid"
+                        @click="palStore.updatePlayerInventoryCapacity(inventoryCapacityTarget)"
+                    >{{ palStore.getTranslatedText('PlayerInventoryCapacity_Button') }}</button>
+                </div>
+            </article>
+        </section>
         <section
             v-show="activeEditorTab === 'attributes'"
             id="player-attributes-panel"
@@ -712,6 +960,157 @@ select.selector {
 .player-editor-tabs button:focus-visible {
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
+}
+
+:global(#EditorMain .PalEditor.player-editor-layout .EditorItem.player-map-progress-panel) {
+    display: flex;
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+    align-self: flex-start;
+    align-items: stretch;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 18px 18px;
+    box-sizing: border-box;
+}
+
+.player-map-action {
+    display: flex;
+    flex: 0 1 320px;
+    min-width: 0;
+    max-width: 360px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    background: var(--ui-surface-raised);
+}
+
+.player-map-action__heading {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.player-map-action__heading strong {
+    color: var(--ui-text);
+    font-size: 14px;
+}
+
+.player-map-action__source {
+    display: inline-flex;
+    align-items: baseline;
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: var(--ui-text);
+    background: var(--ui-surface);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.player-map-action__source code {
+    font-size: inherit;
+    font-weight: 700;
+}
+
+.player-map-action__progress {
+    color: var(--ui-text-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.player-map-action__reason {
+    width: 100%;
+    margin: 0;
+    color: #efb36b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.player-map-action__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: auto;
+}
+
+.player-map-action__actions--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.player-map-action__button {
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--ui-accent);
+    border-radius: 8px;
+    color: var(--ui-text);
+    background: var(--ui-accent-soft);
+    font-weight: 700;
+}
+
+.player-map-action__button--danger {
+    border-color: rgba(250, 168, 125, 0.72);
+    background: rgba(178, 70, 47, 0.28);
+}
+
+.player-map-action__button--wide {
+    grid-column: 1 / -1;
+}
+
+.player-map-action__button--secondary {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface);
+}
+
+.player-map-action__capacity-control {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 8px;
+    margin-top: auto;
+}
+
+.player-map-action__capacity-control input {
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--ui-border-strong);
+    border-radius: 8px;
+    color: var(--ui-text);
+    background: var(--ui-surface);
+}
+
+.player-map-action__notice {
+    margin: 0;
+    padding: 7px 9px;
+    border: 1px solid rgba(239, 179, 107, 0.28);
+    border-radius: 7px;
+    color: #efb36b;
+    background: rgba(239, 179, 107, 0.07);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.player-map-action__button:hover:not(:disabled) {
+    filter: brightness(1.14);
+}
+
+.player-map-action__button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+@media (max-width: 820px) {
+    .player-map-action {
+        flex-basis: 100%;
+        max-width: none;
+    }
 }
 
 :global(#EditorMain .PalEditor.player-editor-layout .EditorItem.basicInfo.player-summary-card) {

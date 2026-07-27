@@ -19,9 +19,13 @@
   --ui-radius-sm: 7px;
   --ui-radius-md: 11px;
   --ui-radius-lg: 16px;
-  --editor-top-offset: 72px;
+  --editor-top-offset: 124px;
   --sub-height: calc(100dvh - var(--editor-top-offset) - 16px);
   --editor-panel-width: calc(100vw - 30rem);
+}
+
+@media (max-width: 760px) {
+  :root { --editor-top-offset: 140px; }
 }
 
 *,

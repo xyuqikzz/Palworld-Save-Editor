@@ -61,6 +61,42 @@ class PalContainer:
         self._slots_data[:] = deepcopy(snapshot)
         self._rebuild_index()
 
+    def snapshot_capacity(self) -> int:
+        return self.size
+
+    def restore_capacity(self, capacity: int) -> None:
+        self._set_capacity(capacity)
+
+    def expand_capacity(self, capacity: int) -> None:
+        if capacity < self.size:
+            raise ValueError("Character container capacity cannot shrink")
+        self._set_capacity(capacity)
+
+    def capacity_matches_declared(self, capacity: int) -> bool:
+        return (
+            self.size == capacity
+            and PalObjects.get_BaseType(
+                self._container_obj["value"]["SlotNum"]
+            )
+            == capacity
+            and all(0 <= slot.inv_idx < capacity for slot in self.slots)
+        )
+
+    def _set_capacity(self, capacity: int) -> None:
+        if (
+            isinstance(capacity, bool)
+            or not isinstance(capacity, int)
+            or capacity < 0
+        ):
+            raise ValueError(
+                "Character container capacity must be a non-negative integer"
+            )
+        PalObjects.set_BaseType(
+            self._container_obj["value"]["SlotNum"], capacity
+        )
+        self.size = capacity
+        self._rebuild_index()
+
     def _new_slot(self, target_inv_idx: int | None = None) -> Optional[int]:
         slotidx = self.get_empty_slot()
         if slotidx == -1:

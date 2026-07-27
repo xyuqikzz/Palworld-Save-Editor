@@ -1,0 +1,21 @@
+Palworld Save Pal map asset notice
+
+Source repository:
+https://github.com/oMaN-Rod/palworld-save-pal
+
+Source revision:
+0d99b04acba369ec88550d122794b9917bbf820e
+
+The source repository README identifies Palworld Save Pal as MIT licensed, but
+the source revision above does not contain a standalone LICENSE file. The
+following files are redistributed unchanged from
+ui/src/lib/assets/img/:
+
+- t_worldmap.webp
+- t_treemap.webp
+- t_icon_compass_11.webp
+- t_icon_compass_camp.webp
+- t_icon_compass_fttower.webp
+
+Palworld names, imagery, and other game assets remain the property of their
+respective rights holders.

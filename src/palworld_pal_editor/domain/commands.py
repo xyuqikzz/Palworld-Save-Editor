@@ -13,9 +13,43 @@ class SessionCommand:
 
 
 @dataclass(frozen=True, kw_only=True)
+class ResetFogOfWar(SessionCommand):
+    confirmation: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class ClearFogOfWar(SessionCommand):
+    confirmation: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnlockAllFastTravelPoints(SessionCommand):
+    player_id: str
+    confirmation: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdatePlayerInventoryCapacity(SessionCommand):
+    player_id: str
+    capacity: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class UpdateGuildName(SessionCommand):
     guild_id: str
     name: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdateGuildChestCapacity(SessionCommand):
+    guild_id: str
+    capacity: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdateGuildBaseCampLevel(SessionCommand):
+    guild_id: str
+    level: int
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -53,6 +87,14 @@ class PasteItemSlot(SessionCommand):
     container_type: ItemContainerType
     slot_index: int
     clipboard_token: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class SwapItemSlots(SessionCommand):
+    player_id: str
+    container_type: ItemContainerType
+    source_slot_index: int
+    target_slot_index: int
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -151,6 +193,7 @@ class UpdatePalSkills(SessionCommand):
     active: tuple[str, ...] | None = None
     mastered: tuple[str, ...] | None = None
     passive: tuple[str, ...] | None = None
+    allow_custom_passive: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -172,8 +215,23 @@ class UnlockPalExpedition(SessionCommand):
 
 
 @dataclass(frozen=True, kw_only=True)
+class UnlockAllExpeditionPals(SessionCommand):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class HealAllPals(SessionCommand):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
 class CompleteActiveExpeditions(SessionCommand):
     pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class CompleteExpedition(SessionCommand):
+    expedition_id: str
 
 
 @dataclass(frozen=True, kw_only=True)

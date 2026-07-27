@@ -101,7 +101,7 @@ class InventoryApiTests(unittest.TestCase):
                                 {
                                     "key": {"ID": PalObjects.Guid(self.container_id)},
                                     "value": {
-                                        "SlotNum": PalObjects.IntProperty(3),
+                                        "SlotNum": PalObjects.IntProperty(54),
                                         "Slots": {
                                             "value": {
                                                 "values": [
@@ -210,6 +210,44 @@ class InventoryApiTests(unittest.TestCase):
         self.assertEqual([1, 2, 3], self.raw["trailing_bytes"])
         self.assertEqual(3, self.session.revision)
 
+    def test_expand_ordinary_backpack_updates_inventory_shape(self) -> None:
+        response = self.client.post(
+            "/api/player/player-a/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_player_inventory_capacity",
+                "capacity": 75,
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        data = response.get_json()["data"]
+        self.assertTrue(data["changed"])
+        self.assertEqual(75, data["value"]["capacity"])
+        self.assertEqual(
+            [90, 120], data["capability"]["allowed_capacities"]
+        )
+        self.assertEqual(76, data["capability"]["minimum_capacity"])
+        self.assertEqual(1000, data["capability"]["maximum_capacity"])
+        self.assertEqual(
+            ["level:ItemContainerSaveData"],
+            self.session.changes()[0]["affected_records"],
+        )
+
+        with patch.object(ItemCatalog, "load_default", return_value=_catalog()):
+            inventory = self.client.get(
+                "/api/player/player-a/inventory", headers=self.headers
+            )
+        common = next(
+            container
+            for container in inventory.get_json()["data"]["containers"]
+            if container["container_type"] == "COMMON"
+        )
+        self.assertEqual(75, common["capacity"])
+        self.assertEqual(75, len(common["slots"]))
+
     def test_raw_container_id_is_rejected_without_mutation(self) -> None:
         response = self.client.post(
             "/api/player/player-a/inventory/commands",
@@ -232,6 +270,47 @@ class InventoryApiTests(unittest.TestCase):
         self.assertEqual(5, self.raw["count"])
         self.assertEqual(0, self.session.revision)
 
+    def test_swap_layout_command_moves_complete_payload_and_is_revision_bound(self) -> None:
+        before = dict(self.raw)
+        before["item"] = dict(self.raw["item"])
+        before["item"]["dynamic_id"] = dict(self.raw["item"]["dynamic_id"])
+        before["trailing_bytes"] = list(self.raw["trailing_bytes"])
+        with patch.object(ItemCatalog, "load_default", return_value=_catalog()):
+            response = self.client.post(
+                "/api/player/player-a/inventory/layout/commands",
+                headers=self.headers,
+                json={
+                    "session_id": self.session.session_id,
+                    "expected_revision": 0,
+                    "command": "swap_item_slots",
+                    "container_type": "COMMON",
+                    "source_slot_index": 0,
+                    "target_slot_index": 1,
+                },
+            )
+        self.assertEqual(200, response.status_code)
+        container = self.session.manager.item_container_data.get(self.container_id)
+        expected = dict(before)
+        expected["slot_index"] = 1
+        self.assertTrue(container.is_empty(0))
+        self.assertEqual(expected, container.get_occupied(1)._raw_data)
+        self.assertEqual(1, response.get_json()["data"]["revision"])
+
+        stale = self.client.post(
+            "/api/player/player-a/inventory/layout/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "swap_item_slots",
+                "container_type": "COMMON",
+                "source_slot_index": 1,
+                "target_slot_index": 2,
+            },
+        )
+        self.assertEqual(409, stale.status_code)
+        self.assertEqual("STALE_REVISION", stale.get_json()["error"]["code"])
+        self.assertEqual(1, self.session.revision)
     def test_copy_paste_and_sort_layout_commands_use_revision_bound_clipboard(self) -> None:
         with patch.object(ItemCatalog, "load_default", return_value=_catalog()):
             copied = self.client.post(

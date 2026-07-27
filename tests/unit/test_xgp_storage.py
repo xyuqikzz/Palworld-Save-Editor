@@ -7,6 +7,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 import pytest
+from palworld_save_tools.archive import UUID
 from palworld_save_tools.gvas import GvasFile, GvasHeader
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
 from palworld_save_tools.paltypes import PALWORLD_TYPE_HINTS
@@ -29,6 +30,51 @@ import palworld_pal_editor.storage.xgp as xgp_module
 from tests.wgs_fixture import make_user_directory
 
 
+START_POINT_ID = "04099789-4a41-4a09-f6f1-99985c080bc8"
+LOCKER_PLAYER_UID = "7e358108-07d8-4c32-bd21-69c77b15f83d"
+LOCKER_INSTANCE_ID = "49a8e005-50ab-4b88-86c8-fd768a010cba"
+
+
+def _set_property_world_data() -> dict:
+    return {
+        "type": "StructProperty",
+        "struct_type": "PalWorldSaveData",
+        "struct_id": PalObjects.EMPTY_UUID,
+        "id": None,
+        "value": {
+            "InLockerCharacterInstanceIDArray": {
+                "type": "SetProperty",
+                "set_type": "StructProperty",
+                "set_struct_type": "StructProperty",
+                "id": None,
+                "value": {
+                    "values": [
+                        {
+                            "PlayerUId": PalObjects.Guid(LOCKER_PLAYER_UID),
+                            "InstanceId": PalObjects.Guid(LOCKER_INSTANCE_ID),
+                        }
+                    ]
+                },
+            },
+            "InvaderDeclarationSaveData": {
+                "type": "StructProperty",
+                "struct_type": "PalInvaderDeclarationSaveData",
+                "struct_id": PalObjects.EMPTY_UUID,
+                "id": None,
+                "value": {
+                    "ValidatedStartPointIds": {
+                        "type": "SetProperty",
+                        "set_type": "StructProperty",
+                        "set_struct_type": "Guid",
+                        "id": None,
+                        "value": {"values": [UUID.from_str(START_POINT_ID)]},
+                    }
+                },
+            }
+        },
+    }
+
+
 def _gvas(counter: int) -> GvasFile:
     gvas = GvasFile()
     gvas.header = GvasHeader.load(
@@ -47,7 +93,10 @@ def _gvas(counter: int) -> GvasFile:
             "save_game_class_name": "/Script/Pal.PalWorldSaveGame",
         }
     )
-    gvas.properties = {"Counter": PalObjects.IntProperty(counter)}
+    gvas.properties = {
+        "Counter": PalObjects.IntProperty(counter),
+        "worldSaveData": _set_property_world_data(),
+    }
     gvas.trailer = b"\0\0\0\0"
     return gvas
 
@@ -56,11 +105,30 @@ def _sav(gvas: GvasFile) -> bytes:
     return compress_gvas_to_sav(gvas.write(MAIN_SKIP_PROPERTIES), 0x32, zlib=True)
 
 
-def _counter(path: Path) -> int:
+def _read_gvas(path: Path) -> GvasFile:
     raw, _compression = decompress_sav_to_gvas(path.read_bytes())
-    return GvasFile.read(raw, PALWORLD_TYPE_HINTS, MAIN_SKIP_PROPERTIES).properties[
-        "Counter"
-    ]["value"]
+    return GvasFile.read(raw, PALWORLD_TYPE_HINTS, MAIN_SKIP_PROPERTIES)
+
+
+def _counter(path: Path) -> int:
+    return _read_gvas(path).properties["Counter"]["value"]
+
+
+def _start_point_ids(path: Path) -> tuple[str, ...]:
+    values = _read_gvas(path).properties["worldSaveData"]["value"][
+        "InvaderDeclarationSaveData"
+    ]["value"]["ValidatedStartPointIds"]["value"]["values"]
+    return tuple(str(value) for value in values)
+
+
+def _locker_character_ids(path: Path) -> tuple[tuple[str, str], ...]:
+    values = _read_gvas(path).properties["worldSaveData"]["value"][
+        "InLockerCharacterInstanceIDArray"
+    ]["value"]["values"]
+    return tuple(
+        (str(value["PlayerUId"]["value"]), str(value["InstanceId"]["value"]))
+        for value in values
+    )
 
 
 def _cnk0_payload(sav: bytes) -> bytes:
@@ -336,6 +404,12 @@ def test_xgp_commit_replaces_cnk0_level_with_verified_standard_payload() -> None
         )
         opened = adapter.open(source)
         before = snapshot_tree(user).by_path()
+        assert _start_point_ids(opened.workspace / "Level.sav") == (
+            START_POINT_ID,
+        )
+        assert _locker_character_ids(opened.workspace / "Level.sav") == (
+            (LOCKER_PLAYER_UID, LOCKER_INSTANCE_ID),
+        )
         level_relative = str(
             opened.storage_metadata["bindings"]["Level.sav"]["payload_relative"]
         )
@@ -344,7 +418,9 @@ def test_xgp_commit_replaces_cnk0_level_with_verified_standard_payload() -> None
                 "payload_relative"
             ]
         )
-        replacement = _sav(_gvas(2))
+        edited_gvas = _read_gvas(opened.workspace / "Level.sav")
+        edited_gvas.properties["Counter"]["value"] = 2
+        replacement = _sav(edited_gvas)
         stage = base / "stage"
         stage.mkdir()
         (stage / "Level.sav").write_bytes(replacement)
@@ -366,6 +442,12 @@ def test_xgp_commit_replaces_cnk0_level_with_verified_standard_payload() -> None
         adapter.close(opened)
         reopened = adapter.open(source)
         assert _counter(reopened.workspace / "Level.sav") == 2
+        assert _start_point_ids(reopened.workspace / "Level.sav") == (
+            START_POINT_ID,
+        )
+        assert _locker_character_ids(reopened.workspace / "Level.sav") == (
+            (LOCKER_PLAYER_UID, LOCKER_INSTANCE_ID),
+        )
         adapter.close(reopened)
 
 

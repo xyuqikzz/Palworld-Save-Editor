@@ -200,7 +200,8 @@ test('inventory writes use semantic container type and advance session revision'
   const calls = []
   axios.post = async (url, data) => {
     calls.push({ url, data: structuredClone(data) })
-    return { data: { status: 0, data: { revision: 1, slot: {} } } }
+    const revision = data.command === 'swap_item_slots' ? 2 : 1
+    return { data: { status: 0, data: { revision, slot: {} } } }
   }
   axios.get = async () => ({
     data: {
@@ -402,12 +403,15 @@ test('inventory clipboard and layout commands stay semantic and revision-bound',
         item: { static_id: 'Stone', count: 5, dynamic_kind: 'none' },
       } } }
     }
-    return { data: { status: 0, data: { revision: 1, slot: {} } } }
+    const revision = data.command === 'swap_item_slots' ? 2 : 1
+    return { data: { status: 0, data: { revision, slot: {} } } }
   }
   axios.get = async () => ({ data: { status: 0, data: { containers: [] } } })
   const container = { container_type: 'COMMON' }
   await store.copyInventoryItem(container, { slot_index: 2 })
   await store.pasteInventoryItem(container, { slot_index: 4 })
+  assert.equal(store.SESSION_REVISION, 1)
+  await store.swapInventorySlots(container, 4, 1)
 
   assert.equal(calls[0].url, `/api/player/${playerId}/inventory/copy`)
   assert.equal(calls[1].url, `/api/player/${playerId}/inventory/layout/commands`)
@@ -420,7 +424,45 @@ test('inventory clipboard and layout commands stay semantic and revision-bound',
     clipboard_token: 'clipboard-1',
   })
   assert.equal('container_id' in calls[1].data, false)
-  assert.equal(store.SESSION_REVISION, 1)
+  assert.equal(calls[2].url, `/api/player/${playerId}/inventory/layout/commands`)
+  assert.deepEqual(calls[2].data, {
+    session_id: 'session-1',
+    expected_revision: 1,
+    container_type: 'COMMON',
+    command: 'swap_item_slots',
+    source_slot_index: 4,
+    target_slot_index: 1,
+  })
+  assert.equal('container_id' in calls[2].data, false)
+  assert.equal(store.SESSION_REVISION, 2)
+})
+
+test('inventory editor keeps the restored card layout and accessible move behavior', () => {
+  const source = readFileSync(
+    new URL('../src/components/InventoryEditor.vue', import.meta.url),
+    'utf8',
+  )
+  for (const marker of [
+    "'slot-card'",
+    'grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));',
+    `:draggable="slot.state === 'occupied' && !palStore.LOADING_FLAG"`,
+    '@drop="onDrop($event, selectedContainer, slot)"',
+    '@keydown="onSlotKeydown($event, selectedContainer, slot)"',
+    'sourceContainerType === container?.container_type',
+    'swapInventorySlots',
+  ]) {
+    assert.ok(source.includes(marker), 'missing restored inventory behavior: ' + marker)
+  }
+  assert.doesNotMatch(source, /inventory-game-layout|equipment-stage/)
+  for (const action of [
+    'updateInventoryItem',
+    'copyInventoryItem',
+    'clearInventoryItem',
+    'pasteInventoryItem',
+    'toggleDynamicEditor',
+  ]) {
+    assert.match(source, new RegExp(action))
+  }
 })
 
 test('batch UI previews impact before one atomic execution', async () => {
@@ -531,7 +573,7 @@ test('heal all confirms immediately before waiting for the batch preview', async
   }
 })
 
-test('unlock expedition Pals targets only locked Pals in the current list', async () => {
+test('unlock all expedition Pals uses one whole-save command and refreshes expeditions', async () => {
   const { store, player } = makeStore()
   const lockedPal = { IsExpeditionPal: true }
   const normalPal = { IsExpeditionPal: false }
@@ -541,31 +583,39 @@ test('unlock expedition Pals targets only locked Pals in the current list', asyn
   const calls = []
   axios.post = async (url, data) => {
     calls.push({ url, data: structuredClone(data) })
-    if (url === '/api/batch/preview') {
-      return { data: { status: 0, data: {
-        impact: { operation_count: 1, atomicity: 'all_or_nothing' },
-        impact_token: 'unlock-expedition-impact',
-      } } }
-    }
-    return { data: { status: 0, data: { revision: 1, operation_count: 1 } } }
+    return { data: { status: 0, data: {
+      revision: 1,
+      value: { unlocked_count: 1 },
+    } } }
   }
-  axios.get = async () => ({ data: { status: 0, data: { containers: [] } } })
+  const getCalls = []
+  axios.get = async url => {
+    getCalls.push(url)
+    return { data: { status: 0, data: {
+      revision: 1,
+      active_count: 0,
+      completable_count: 0,
+      locked_count: 0,
+      expeditions: [],
+      invalid_locked_pals: [],
+      unknown_locked_pals: [],
+    } } }
+  }
 
   const succeeded = await store.unlockExpeditionPals()
 
   assert.equal(succeeded, true)
-  assert.deepEqual(calls[0], {
-    url: '/api/batch/preview',
+  assert.deepEqual(calls, [{
+    url: '/api/save/pals/commands',
     data: {
       session_id: 'session-1',
       expected_revision: 0,
-      operations: [
-        { resource: 'pal', command: 'unlock_pal_expedition', pal_id: 'pal-locked' },
-      ],
+      command: 'unlock_all_expedition_pals',
     },
-  })
-  assert.equal(calls[1].url, '/api/batch/commands')
-  assert.equal(calls[1].data.impact_token, 'unlock-expedition-impact')
+  }])
+  assert.deepEqual(getCalls, [
+    '/api/save/query/expeditions?session_id=session-1',
+  ])
   assert.equal(lockedPal.IsExpeditionPal, false)
   assert.equal(normalPal.IsExpeditionPal, false)
   assert.equal(store.EXPEDITION_PAL_COUNT, 0)
@@ -614,7 +664,56 @@ test('complete expeditions uses the global save command and disables completed t
   }
 })
 
-test('single expedition unlock confirms risk and clears the selected Pal status', async () => {
+test('single expedition completion targets only the selected expedition', async () => {
+  const { store } = makeStore()
+  const firstId = '44444444-5555-6666-7777-888888888888'
+  const secondId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  axios.get = async () => ({ data: { status: 0, data: {
+    revision: 0,
+    active_count: 2,
+    completable_count: 2,
+    locked_count: 2,
+    expeditions: [
+      { expedition_id: firstId, mission_id: 'DUNGEON_GRASS', base_name: 'Base One', can_complete: true, members: [] },
+      { expedition_id: secondId, mission_id: 'DUNGEON_DESERT', base_name: 'Base Two', can_complete: true, members: [] },
+    ],
+    invalid_locked_pals: [],
+    unknown_locked_pals: [],
+  } } })
+  await store.loadExpeditions()
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: {
+      revision: 1,
+      value: { completed_count: 1, expedition_ids: [firstId] },
+    } } }
+  }
+  const previousConfirm = window.confirm
+  window.confirm = () => true
+
+  try {
+    const succeeded = await store.completeExpedition(firstId)
+
+    assert.equal(succeeded, true)
+    assert.deepEqual(calls, [{
+      url: '/api/save/expeditions/commands',
+      data: {
+        session_id: 'session-1',
+        expected_revision: 0,
+        command: 'complete_expedition',
+        expedition_id: firstId,
+      },
+    }])
+    assert.equal(store.EXPEDITION_DATA.expeditions[0].can_complete, false)
+    assert.equal(store.EXPEDITION_DATA.expeditions[1].can_complete, true)
+    assert.equal(store.COMPLETABLE_EXPEDITION_COUNT, 1)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('single expedition unlock confirms coordinated removal and clears the selected Pal status', async () => {
   const { store, player } = makeStore()
   const palId = 'pal-expedition'
   const pal = {
@@ -637,6 +736,18 @@ test('single expedition unlock confirms risk and clears the selected Pal status'
   axios.post = async (url, data) => {
     calls.push({ url, data: structuredClone(data) })
     return { data: { status: 0, data: { revision: 1, value: { expedition_locked: false } } } }
+  }
+  axios.get = async url => {
+    assert.equal(url, '/api/save/query/expeditions?session_id=session-1')
+    return { data: { status: 0, data: {
+      revision: 1,
+      active_count: 0,
+      completable_count: 0,
+      locked_count: 0,
+      expeditions: [],
+      invalid_locked_pals: [],
+      unknown_locked_pals: [],
+    } } }
   }
 
   try {

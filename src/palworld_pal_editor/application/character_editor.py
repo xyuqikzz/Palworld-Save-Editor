@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from copy import deepcopy
 import math
+import unicodedata
 from typing import Any, Callable
 
 from palworld_pal_editor.config import Config
 from palworld_pal_editor.core.pal_objects import PalGender, PalObjects, PalSuitability
 from palworld_pal_editor.domain.commands import (
+    HealAllPals,
     MaxPal,
+    UnlockAllExpeditionPals,
     UnlockPalExpedition,
     UpdatePalEnhancement,
     UpdatePalIdentity,
@@ -39,6 +42,9 @@ MAX_REGULAR_PAL_LEVEL = 80
 MAX_REGULAR_IV = 100
 MAX_REGULAR_CONDENSATION = 5
 MAX_FRIENDSHIP_LEVEL = 10
+MAX_CUSTOM_PASSIVE_ID_LENGTH = 128
+
+
 class CharacterEditor:
     """Explicit, atomic player and Pal field commands."""
 
@@ -65,6 +71,10 @@ class CharacterEditor:
             return self._update_pal_skills(command)
         if isinstance(command, UpdatePalEnhancement):
             return self._update_pal_enhancement(command)
+        if isinstance(command, HealAllPals):
+            return self._heal_all_pals(command)
+        if isinstance(command, UnlockAllExpeditionPals):
+            return self._unlock_all_expedition_pals(command)
         if isinstance(command, MaxPal):
             return self._max_pal(command)
         if isinstance(command, UnlockPalExpedition):
@@ -510,8 +520,252 @@ class CharacterEditor:
         )
         return self._result(entry, self._pal_progression(pal))
 
+    def _heal_all_pals(self, command: HealAllPals) -> dict:
+        pals: dict[str, Any] = {}
+
+        def add_pal(pal) -> None:
+            pal_id = str(pal.InstanceId)
+            existing = pals.get(pal_id)
+            if existing is not None and existing is not pal:
+                raise DomainError(
+                    code="PAL_REFERENCE_AMBIGUOUS",
+                    message="A Pal has multiple in-memory records.",
+                    details={"pal_id": pal_id},
+                    http_status=409,
+                )
+            pals[pal_id] = pal
+
+        manager = self._session.manager
+        for player in (getattr(manager, "player_mapping", None) or {}).values():
+            for pal in (getattr(player, "_palbox", None) or {}).values():
+                add_pal(pal)
+        for pal in (
+            getattr(manager, "baseworker_mapping", None) or {}
+        ).values():
+            add_pal(pal)
+        for pal in (getattr(manager, "_dangling_pals", None) or {}).values():
+            add_pal(pal)
+
+        if not pals:
+            raise DomainError(
+                code="NO_PALS",
+                message="The loaded save contains no Pals to heal.",
+                http_status=409,
+            )
+
+        def snapshot() -> dict[str, dict]:
+            return {
+                pal_id: deepcopy(pal._pal_param)
+                for pal_id, pal in pals.items()
+            }
+
+        def restore(state: dict[str, dict]) -> None:
+            for pal_id, pal in pals.items():
+                pal._pal_param.clear()
+                pal._pal_param.update(deepcopy(state[pal_id]))
+                cache = getattr(pal, "_display_name_cache", None)
+                if isinstance(cache, dict):
+                    cache.clear()
+
+        def summarize() -> dict[str, int]:
+            progressions = [
+                self._pal_progression(pal)
+                for pal in pals.values()
+            ]
+            return {
+                "pal_count": len(progressions),
+                "fully_healed": sum(
+                    self._pal_is_fully_healed(pal, progression)
+                    for pal, progression in zip(pals.values(), progressions)
+                ),
+                "sick": sum(bool(value["worker_sick"]) for value in progressions),
+                "fainted": sum(bool(value["fainted"]) for value in progressions),
+            }
+
+        def mutate() -> None:
+            for pal in pals.values():
+                pal.heal_pal()
+
+        def validate() -> None:
+            for pal_id, pal in pals.items():
+                progression = self._pal_progression(pal)
+                if not self._pal_is_fully_healed(pal, progression):
+                    raise DomainError(
+                        code="PAL_HEAL_POSTCONDITION_FAILED",
+                        message="A Pal could not be restored to its supported maximums.",
+                        details={"pal_id": pal_id},
+                        http_status=409,
+                    )
+
+        entry = self._apply(
+            command=command,
+            command_name="HealAllPals",
+            target={"scope": "all_pals", "pal_count": len(pals)},
+            snapshot=snapshot,
+            restore=restore,
+            before=summarize,
+            mutate=mutate,
+            validate=validate,
+            after=summarize,
+            affected_records=("level:CharacterSaveParameterMap",),
+        )
+        return self._result(
+            entry,
+            {
+                "healed_count": len(pals),
+                "condition": summarize(),
+            },
+        )
+
+    def _unlock_all_expedition_pals(
+        self, command: UnlockAllExpeditionPals
+    ) -> dict:
+        pals: dict[str, Any] = {}
+
+        def add_pal(pal) -> None:
+            if not pal.IsExpeditionPal:
+                return
+            pal_id = str(pal.InstanceId)
+            existing = pals.get(pal_id)
+            if existing is not None and existing is not pal:
+                raise DomainError(
+                    code="PAL_REFERENCE_AMBIGUOUS",
+                    message="A Pal has multiple in-memory records.",
+                    details={"pal_id": pal_id},
+                    http_status=409,
+                )
+            pals[pal_id] = pal
+
+        manager = self._session.manager
+        for player in (getattr(manager, "player_mapping", None) or {}).values():
+            for pal in (getattr(player, "_palbox", None) or {}).values():
+                add_pal(pal)
+        for pal in (
+            getattr(manager, "baseworker_mapping", None) or {}
+        ).values():
+            add_pal(pal)
+        for pal in (getattr(manager, "_dangling_pals", None) or {}).values():
+            add_pal(pal)
+
+        if not pals:
+            raise DomainError(
+                code="NO_EXPEDITION_PALS",
+                message="The loaded save contains no expedition-assigned Pals.",
+                http_status=409,
+            )
+
+        has_member = getattr(manager, "expedition_has_member", None)
+        reverse_targets = {
+            pal_id: str(pal.ExpeditionInstanceId)
+            for pal_id, pal in pals.items()
+            if callable(has_member)
+            and has_member(str(pal.ExpeditionInstanceId), pal_id) is True
+        }
+
+        def snapshot():
+            return (
+                {
+                    pal_id: deepcopy(pal._pal_param)
+                    for pal_id, pal in pals.items()
+                },
+                (
+                    manager.snapshot_expedition_data()
+                    if reverse_targets
+                    else None
+                ),
+            )
+
+        def restore(saved) -> None:
+            pal_params, expedition_data = saved
+            for pal_id, pal in pals.items():
+                pal._pal_param.clear()
+                pal._pal_param.update(deepcopy(pal_params[pal_id]))
+                cache = getattr(pal, "_display_name_cache", None)
+                if isinstance(cache, dict):
+                    cache.clear()
+            if expedition_data is not None:
+                manager.restore_expedition_data(expedition_data)
+
+        def summarize() -> dict[str, int]:
+            return {
+                "locked_count": sum(
+                    bool(pal.IsExpeditionPal) for pal in pals.values()
+                ),
+                "reverse_member_count": sum(
+                    manager.expedition_has_member(expedition_id, pal_id) is True
+                    for pal_id, expedition_id in reverse_targets.items()
+                ),
+            }
+
+        def mutate() -> None:
+            if reverse_targets:
+                manager.remove_expedition_members(list(reverse_targets))
+            for pal in pals.values():
+                pal.unlock_expedition()
+
+        def validate() -> None:
+            for pal_id, pal in pals.items():
+                if pal.IsExpeditionPal:
+                    raise DomainError(
+                        code="EXPEDITION_UNLOCK_POSTCONDITION_FAILED",
+                        message="An expedition Pal assignment was not removed.",
+                        details={"pal_id": pal_id},
+                        http_status=409,
+                    )
+            for pal_id, expedition_id in reverse_targets.items():
+                if manager.expedition_has_member(expedition_id, pal_id) is not False:
+                    raise DomainError(
+                        code="EXPEDITION_UNLOCK_POSTCONDITION_FAILED",
+                        message="A Pal remained in an expedition member list.",
+                        details={
+                            "pal_id": pal_id,
+                            "expedition_id": expedition_id,
+                        },
+                        http_status=409,
+                    )
+
+        affected_records = ["level:CharacterSaveParameterMap"]
+        if reverse_targets:
+            affected_records.append("level:MapObjectSaveData")
+        entry = self._apply(
+            command=command,
+            command_name="UnlockAllExpeditionPals",
+            target={"scope": "all_expedition_pals", "pal_count": len(pals)},
+            snapshot=snapshot,
+            restore=restore,
+            before=summarize,
+            mutate=mutate,
+            validate=validate,
+            after=summarize,
+            affected_records=tuple(affected_records),
+        )
+        return self._result(
+            entry,
+            {
+                "unlocked_count": len(pals),
+                "reverse_member_count": len(reverse_targets),
+            },
+        )
+
     def _update_pal_skills(self, command: UpdatePalSkills) -> dict:
         pal = self._require_pal(command.pal_id)
+        if not isinstance(command.allow_custom_passive, bool):
+            raise DomainError(
+                code="INVALID_FIELD_TYPE",
+                message="allow_custom_passive must be a boolean.",
+                field="allow_custom_passive",
+                http_status=400,
+            )
+        if command.allow_custom_passive and command.passive is None:
+            raise DomainError(
+                code="INVALID_CUSTOM_PASSIVE_REQUEST",
+                message=(
+                    "allow_custom_passive can only be used when replacing "
+                    "PassiveSkillList."
+                ),
+                field="allow_custom_passive",
+                http_status=400,
+            )
         if (
             command.active is None
             and command.mastered is None
@@ -539,13 +793,16 @@ class CharacterEditor:
                 current_mastered,
             )
         if command.passive is not None:
-            self._validate_skill_ids(
+            unknown_passive = self._validate_skill_ids(
                 passive,
                 "passive",
                 DataProvider.has_passive_skill,
                 4,
                 current_passive,
+                allow_unknown_additions=command.allow_custom_passive,
             )
+            if command.allow_custom_passive:
+                self._validate_custom_passive_ids(unknown_passive)
         missing = sorted(set(active) - set(mastered))
         existing_missing = set(current_active) - set(current_mastered)
         introduced_missing = sorted(set(missing) - existing_missing)
@@ -594,6 +851,11 @@ class CharacterEditor:
                     )
                     if value is not None
                 ],
+                **(
+                    {"allow_custom_passive": True}
+                    if command.allow_custom_passive
+                    else {}
+                ),
             },
             before=lambda: self._pal_skills(pal),
             mutate=mutate,
@@ -907,25 +1169,69 @@ class CharacterEditor:
                 http_status=409,
             )
 
+        manager = self._session.manager
+        expedition_id = str(pal.ExpeditionInstanceId)
+        has_member = getattr(manager, "expedition_has_member", None)
+        has_reverse_membership = bool(
+            callable(has_member)
+            and has_member(expedition_id, str(pal.InstanceId)) is True
+        )
+
         def state() -> dict[str, Any]:
             return {
                 "pal_id": str(pal.InstanceId),
                 "expedition_locked": bool(pal.IsExpeditionPal),
             }
 
+        def snapshot():
+            return (
+                deepcopy(pal._pal_param),
+                (
+                    manager.snapshot_expedition_data()
+                    if has_reverse_membership
+                    else None
+                ),
+            )
+
+        def restore(saved) -> None:
+            pal_param, expedition_data = saved
+            pal._pal_param.clear()
+            pal._pal_param.update(deepcopy(pal_param))
+            cache = getattr(pal, "_display_name_cache", None)
+            if isinstance(cache, dict):
+                cache.clear()
+            if expedition_data is not None:
+                manager.restore_expedition_data(expedition_data)
+
+        def mutate() -> None:
+            if has_reverse_membership:
+                manager.remove_expedition_members([str(pal.InstanceId)])
+            pal.unlock_expedition()
+
         def validate() -> None:
             if pal.IsExpeditionPal:
                 self._postcondition("The Pal expedition assignment was not removed.")
+            if has_reverse_membership and manager.expedition_has_member(
+                expedition_id, str(pal.InstanceId)
+            ) is not False:
+                self._postcondition(
+                    "The Pal remained in the active expedition member list."
+                )
 
-        entry = self._apply_pal(
+        affected_records = ["level:CharacterSaveParameterMap"]
+        if has_reverse_membership:
+            affected_records.append("level:MapObjectSaveData")
+        entry = self._apply(
             command=command,
-            pal=pal,
             command_name="UnlockPalExpedition",
             target={"pal_id": str(pal.InstanceId)},
+            snapshot=snapshot,
+            restore=restore,
             before=state,
-            mutate=pal.unlock_expedition,
+            mutate=mutate,
             validate=validate,
             after=state,
+            affected_records=tuple(affected_records),
         )
         return self._result(entry, state())
 
@@ -1102,7 +1408,9 @@ class CharacterEditor:
         exists: Callable[[str], bool],
         limit: int,
         existing=(),
-    ) -> None:
+        *,
+        allow_unknown_additions: bool = False,
+    ) -> tuple[str, ...]:
         if not isinstance(values, (tuple, list)) or any(
             not isinstance(value, str) for value in values
         ):
@@ -1131,13 +1439,40 @@ class CharacterEditor:
             for value in values
             if value not in existing_values and not exists(value)
         )
-        if unknown:
+        if unknown and not allow_unknown_additions:
             raise DomainError(
                 code="UNKNOWN_SKILL",
                 message=f"{field} contains an unknown skill ID.",
                 field=field,
                 details={"skills": unknown},
             )
+        return tuple(unknown)
+
+    @staticmethod
+    def _validate_custom_passive_ids(values: tuple[str, ...]) -> None:
+        for value in values:
+            reason = None
+            if not value or not value.strip():
+                reason = "empty"
+            elif len(value) > MAX_CUSTOM_PASSIVE_ID_LENGTH:
+                reason = "too_long"
+            elif any(unicodedata.category(char) == "Cc" for char in value):
+                reason = "control_character"
+            if reason is not None:
+                raise DomainError(
+                    code="INVALID_CUSTOM_PASSIVE_ID",
+                    message=(
+                        "Custom passive InternalName must be a non-empty "
+                        "string without control characters and no longer than "
+                        f"{MAX_CUSTOM_PASSIVE_ID_LENGTH} characters."
+                    ),
+                    field="passive",
+                    details={
+                        "reason": reason,
+                        "maximum_length": MAX_CUSTOM_PASSIVE_ID_LENGTH,
+                    },
+                    http_status=400,
+                )
 
     @staticmethod
     def _replace_array(pal, field: str, array_type: str, values) -> None:
@@ -1287,6 +1622,27 @@ class CharacterEditor:
             "hunger_status": pal.HungerType,
             "physical_status": pal.PhysicalHealth,
         }
+
+    @staticmethod
+    def _pal_is_fully_healed(pal, progression: dict[str, Any]) -> bool:
+        if any(
+            (
+                progression["worker_sick"],
+                progression["fainted"],
+                progression["hunger_status"],
+                progression["physical_status"],
+            )
+        ):
+            return False
+        if progression["sanity"] != 100.0:
+            return False
+        maximum_food = DataProvider.get_pal_stats(pal.DataAccessKey, "FOOD")
+        if maximum_food is not None and progression["satiety"] < maximum_food:
+            return False
+        maximum_health = pal.ComputedMaxHP
+        if maximum_health is not None and progression["health"] < maximum_health:
+            return False
+        return True
 
     @staticmethod
     def _pal_skills(pal) -> dict[str, list[str]]:

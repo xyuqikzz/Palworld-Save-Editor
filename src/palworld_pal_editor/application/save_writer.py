@@ -12,12 +12,14 @@ from palworld_save_tools.gvas import GvasFile
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
 from palworld_save_tools.paltypes import PALWORLD_TYPE_HINTS
 
+from palworld_pal_editor.core.group_data import GroupData
 from palworld_pal_editor.core.item_container_data import ItemContainerData
 from palworld_pal_editor.core.character_index import (
     CharacterIndex,
     inspect_decoded_character_graph,
 )
 from palworld_pal_editor.core.dynamic_item_data import DynamicItemData
+from palworld_pal_editor.core.guild_item_storage_data import GuildItemStorageData
 from palworld_pal_editor.core.pal_objects import UUID2HexStr
 from palworld_pal_editor.core.save_manager import MAIN_SKIP_PROPERTIES, PLAYER_SKIP_PROPERTIES
 from palworld_pal_editor.domain.errors import DomainError, stale_revision
@@ -27,6 +29,8 @@ from palworld_pal_editor.domain.models import (
     StorageCommitRequest,
 )
 
+from .local_data import LOCAL_DATA_RELATIVE_PATH, LocalDataDocument
+from .fast_travel import PlayerFastTravelData
 from .save_session import SaveSession
 
 
@@ -102,7 +106,7 @@ class SaveWriter:
                 else:
                     shutil.copytree(session.workspace, staging_path)
             self._serialize_to_staging(session, staging_path, files)
-            self._verify_staged(staging_path, files)
+            self._verify_staged(staging_path, files, session=session)
             commit = session.storage.commit(
                 StorageCommitRequest(
                     opened=session.opened_save,
@@ -110,7 +114,11 @@ class SaveWriter:
                     changed_files=tuple(PurePosixPath(path) for path in files),
                     expected_revision=expected_revision,
                     target_path=target_path,
-                    verify_file=self._reload_file,
+                    verify_file=lambda path, relative_path: (
+                        self._reload_session_file(
+                            session, path, relative_path
+                        )
+                    ),
                     failure_hook=self._failure_hook,
                 )
             )
@@ -173,9 +181,13 @@ class SaveWriter:
             if files:
                 self._validate_global_invariants(session)
                 self._serialize_to_staging(session, staging, files)
-                self._verify_staged(staging, files)
+                self._verify_staged(staging, files, session=session)
             os.replace(staging, target_path)
-            self._verify_staged(target_path, files or ["Level.sav"])
+            self._verify_staged(
+                target_path,
+                files or ["Level.sav"],
+                session=session if files else None,
+            )
         except Exception as error:
             if staging.exists():
                 shutil.rmtree(staging, ignore_errors=True)
@@ -208,6 +220,8 @@ class SaveWriter:
                 elif record.startswith("player_file:"):
                     player_id = record.split(":", 1)[1]
                     files.add(f"Players/{UUID2HexStr(player_id)}.sav")
+                elif record == "local_data":
+                    files.add(LOCAL_DATA_RELATIVE_PATH)
         if not files:
             raise DomainError(
                 code="INVARIANT_VIOLATION",
@@ -228,9 +242,23 @@ class SaveWriter:
                         message="An item container does not match its declared capacity.",
                         http_status=409,
                     )
+        character_containers = getattr(manager, "container_data", None)
+        if character_containers is not None:
+            for container in character_containers.container_map.values():
+                if not container.capacity_matches_declared(container.size):
+                    raise DomainError(
+                        code="INVARIANT_VIOLATION",
+                        message=(
+                            "A character container does not match its "
+                            "declared capacity."
+                        ),
+                        http_status=409,
+                    )
         dynamic_items = getattr(manager, "dynamic_item_data", None)
         if dynamic_items is not None:
-            dynamic_items.assert_consistent()
+            dynamic_items.assert_no_new_issues(
+                session.dynamic_item_issue_baseline
+            )
         if all(
             hasattr(manager, field)
             for field in (
@@ -266,6 +294,8 @@ class SaveWriter:
                     data = compress_gvas_to_sav(
                         gvas.write(MAIN_SKIP_PROPERTIES), manager._compression_times
                     )
+                elif relative_path == LOCAL_DATA_RELATIVE_PATH:
+                    data = session.local_data.serialize_bytes()
                 else:
                     player_hex = Path(relative_path).stem
                     player = next(
@@ -294,10 +324,24 @@ class SaveWriter:
                 http_status=500,
             ) from error
 
-    def _verify_staged(self, root: Path, files: list[str]) -> None:
+    def _verify_staged(
+        self,
+        root: Path,
+        files: list[str],
+        *,
+        session: SaveSession | None = None,
+    ) -> None:
         try:
+            reloaded: dict[str, GvasFile] = {}
             for relative_path in files:
-                self._reload_file(root / Path(relative_path), relative_path)
+                path = root / Path(relative_path)
+                reloaded[relative_path] = (
+                    self._reload_session_file(session, path, relative_path)
+                    if session is not None
+                    else self._reload_file(path, relative_path)
+                )
+            if session is not None:
+                self._verify_change_postconditions(session, reloaded)
         except Exception as error:
             raise DomainError(
                 code="STAGED_RELOAD_FAILED",
@@ -306,7 +350,158 @@ class SaveWriter:
                 http_status=500,
             ) from error
 
-    def _reload_file(self, path: Path, relative_path: str) -> GvasFile:
+    def _verify_change_postconditions(
+        self,
+        session: SaveSession,
+        reloaded: dict[str, GvasFile],
+    ) -> None:
+        chest_expected: dict[str, int] = {}
+        level_expected: dict[str, int] = {}
+        player_inventory_expected: dict[str, int] = {}
+        for change in session.changes():
+            command = change.get("command")
+            target = change.get("target", {})
+            after = change.get("after", {})
+            guild_id = target.get("guild_id")
+            if command == "UpdateGuildChestCapacity":
+                capacity = after.get("capacity")
+                if (
+                    not isinstance(guild_id, str)
+                    or isinstance(capacity, bool)
+                    or not isinstance(capacity, int)
+                ):
+                    raise ValueError("Invalid guild chest change postcondition")
+                chest_expected[guild_id] = capacity
+            elif command == "UpdateGuildBaseCampLevel":
+                level = after.get("level")
+                if (
+                    not isinstance(guild_id, str)
+                    or isinstance(level, bool)
+                    or not isinstance(level, int)
+                ):
+                    raise ValueError("Invalid base camp level postcondition")
+                level_expected[guild_id] = level
+            elif command == "UpdatePlayerInventoryCapacity":
+                container_id = target.get("container_id")
+                capacity = after.get("capacity")
+                if (
+                    not isinstance(container_id, str)
+                    or isinstance(capacity, bool)
+                    or not isinstance(capacity, int)
+                ):
+                    raise ValueError(
+                        "Invalid player inventory capacity postcondition"
+                    )
+                player_inventory_expected[container_id] = capacity
+        if not (
+            chest_expected
+            or level_expected
+            or player_inventory_expected
+        ):
+            return
+
+        level = reloaded.get("Level.sav")
+        if level is None:
+            raise ValueError("Guild changes require a reloaded Level.sav")
+        if chest_expected:
+            guild_storage = GuildItemStorageData(level)
+            item_containers = ItemContainerData(level)
+            for guild_id, capacity in chest_expected.items():
+                binding = guild_storage.get(guild_id)
+                if binding is None:
+                    raise ValueError("Reloaded guild chest mapping is missing")
+                container = item_containers.get(binding.container_id)
+                if (
+                    container is None
+                    or not container.capacity_matches_declared(capacity)
+                ):
+                    raise ValueError(
+                        "Reloaded guild chest capacity does not match staging"
+                    )
+        if player_inventory_expected:
+            item_containers = ItemContainerData(level)
+            for container_id, capacity in player_inventory_expected.items():
+                container = item_containers.get(container_id)
+                if (
+                    container is None
+                    or not container.capacity_matches_declared(capacity)
+                ):
+                    raise ValueError(
+                        "Reloaded player inventory capacity does not match staging"
+                    )
+        if level_expected:
+            groups = GroupData(level)
+            for guild_id, expected_level in level_expected.items():
+                group = groups.get_group(guild_id)
+                if (
+                    group is None
+                    or group.base_camp_level != expected_level
+                ):
+                    raise ValueError(
+                        "Reloaded base camp level does not match staging"
+                    )
+    def _reload_session_file(
+        self,
+        session: SaveSession,
+        path: Path,
+        relative_path: str,
+    ) -> GvasFile:
+        if relative_path == LOCAL_DATA_RELATIVE_PATH:
+            return session.local_data.verify_reloaded_file(path)
+        allowed_dynamic_item_issues = (
+            session.dynamic_item_issue_baseline
+            if relative_path == "Level.sav"
+            else ()
+        )
+        reloaded = self._reload_file(
+            path,
+            relative_path,
+            allowed_dynamic_item_issues=allowed_dynamic_item_issues,
+        )
+        self._verify_fast_travel_reload(session, relative_path, reloaded)
+        return reloaded
+
+    @staticmethod
+    def _verify_fast_travel_reload(
+        session: SaveSession,
+        relative_path: str,
+        reloaded: GvasFile,
+    ) -> None:
+        if not relative_path.startswith("Players/"):
+            return
+        player_hex = Path(relative_path).stem
+        player_id = next(
+            (
+                change.get("target", {}).get("player_id")
+                for change in session.changes()
+                if change.get("command") == "UnlockAllFastTravelPoints"
+                and isinstance(change.get("target"), dict)
+                and isinstance(change["target"].get("player_id"), str)
+                and UUID2HexStr(change["target"]["player_id"]) == player_hex
+            ),
+            None,
+        )
+        if player_id is None:
+            return
+        player = session.manager.get_player(player_id)
+        if player is None:
+            raise ValueError("Fast-travel player is no longer loaded")
+        current = PlayerFastTravelData.from_player(player)
+        current.verify_reloaded(PlayerFastTravelData.from_gvas(reloaded))
+
+    def _reload_file(
+        self,
+        path: Path,
+        relative_path: str,
+        *,
+        allowed_dynamic_item_issues: tuple[str, ...] = (),
+    ) -> GvasFile:
+        if relative_path == LOCAL_DATA_RELATIVE_PATH:
+            document = LocalDataDocument.open_file(path)
+            document.require_resettable()
+            if document.gvas_file is None:
+                raise ValueError("LocalData.sav did not reload")
+            return document.gvas_file
         raw, _compression = decompress_sav_to_gvas(path.read_bytes())
         properties = MAIN_SKIP_PROPERTIES if relative_path == "Level.sav" else PLAYER_SKIP_PROPERTIES
         gvas = GvasFile.read(raw, PALWORLD_TYPE_HINTS, properties)
@@ -314,7 +509,9 @@ class SaveWriter:
             world = gvas.properties.get("worldSaveData")
             if world is not None:
                 containers = ItemContainerData(gvas)
-                DynamicItemData(gvas, containers).assert_consistent()
+                DynamicItemData(gvas, containers).assert_no_new_issues(
+                    allowed_dynamic_item_issues
+                )
                 character_issues = [
                     issue
                     for issue in inspect_decoded_character_graph(gvas)

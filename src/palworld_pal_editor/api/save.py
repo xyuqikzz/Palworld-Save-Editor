@@ -19,14 +19,43 @@ from palworld_pal_editor.domain.models import SavePlatform
 from palworld_pal_editor.storage.discovery import SOURCE_CATALOG
 from palworld_pal_editor.application.save_writer import SaveWriter
 from palworld_pal_editor.application.query_service import SaveQueryService
+from palworld_pal_editor.application.character_editor import CharacterEditor
 from palworld_pal_editor.application.expedition_editor import ExpeditionEditor
+from palworld_pal_editor.application.guild_base_editor import GuildBaseEditor
 from palworld_pal_editor.application.guild_editor import GuildEditor
-from palworld_pal_editor.domain.commands import CompleteActiveExpeditions, UpdateGuildName
+from palworld_pal_editor.application.guild_chest_editor import GuildChestEditor
+from palworld_pal_editor.application.fog_of_war_editor import FogOfWarEditor
+from palworld_pal_editor.domain.commands import (
+    ClearFogOfWar,
+    CompleteActiveExpeditions,
+    CompleteExpedition,
+    HealAllPals,
+    ResetFogOfWar,
+    UnlockAllExpeditionPals,
+    UpdateGuildBaseCampLevel,
+    UpdateGuildChestCapacity,
+    UpdateGuildName,
+)
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.utils import LOGGER, DataProvider
 from palworld_pal_editor.utils.util import get_path_context, reply
 
 save_blueprint = Blueprint("save", __name__)
+
+_SAVE_DIAGNOSTIC_ERROR_CODES = frozenset(
+    {
+        "BACKUP_FAILED",
+        "RECOVERY_FAILED",
+        "SAVE_TARGET_CHANGED",
+        "WGS_BACKUP_FAILED",
+        "WGS_COMMIT_FAILED",
+        "WGS_GAME_RUNNING",
+        "WGS_RECOVERY_FAILED",
+        "WGS_RELOAD_FAILED",
+        "WGS_SOURCE_CHANGED",
+        "WRITE_FAILED",
+    }
+)
 
 
 def _default_steam_save_path() -> str | None:
@@ -229,6 +258,45 @@ def close_session():
         )
 
 
+@save_blueprint.route("/reload", methods=["POST"])
+@jwt_required()
+def reload_session():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="The request body must be a JSON object.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session, discarded_change_count = SESSION_RUNTIME.reload(
+            payload.get("session_id"),
+            payload.get("expected_revision"),
+            discard_changes=payload.get("discard_changes", False),
+        )
+        return reply(
+            0,
+            {
+                "session": session.summary().to_dict(),
+                "compatibility": session.compatibility().to_dict(),
+                "discarded_change_count": discarded_change_count,
+            },
+        )
+    except DomainError as error:
+        return (
+            reply(1, msg=error.message, error=error.to_dict()),
+            error.http_status,
+        )
+    except Exception:
+        stack_trace = traceback.format_exc()
+        LOGGER.error(f"Error refreshing save {stack_trace}")
+        return reply(
+            1,
+            msg="Unexpected error while refreshing; see the local debug log.",
+        ), 500
+
+
 @save_blueprint.route("/changes", methods=["GET"])
 @jwt_required()
 def get_changes():
@@ -260,7 +328,26 @@ def execute_guild_command(guild_id: str):
             http_status=400,
         )
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
-    allowed = {"session_id", "expected_revision", "command", "name"}
+    command_name = payload.get("command")
+    command_fields = {
+        "update_guild_name": {"name"},
+        "update_guild_chest_capacity": {"capacity"},
+        "update_base_camp_level": {"level"},
+    }
+    if command_name not in command_fields:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND",
+            message="Unsupported guild command.",
+            field="command",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    allowed = {
+        "session_id",
+        "expected_revision",
+        "command",
+        *command_fields[command_name],
+    }
     unknown = sorted(set(payload) - allowed)
     if unknown:
         error = DomainError(
@@ -270,24 +357,35 @@ def execute_guild_command(guild_id: str):
             http_status=400,
         )
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
-    if payload.get("command") != "update_guild_name":
-        error = DomainError(
-            code="UNSUPPORTED_COMMAND",
-            message="Unsupported guild command.",
-            field="command",
-            http_status=400,
-        )
-        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
     try:
         session = SESSION_RUNTIME.get(payload.get("session_id"))
-        result = GuildEditor(session).execute(
-            UpdateGuildName(
-                session_id=payload.get("session_id"),
-                expected_revision=payload.get("expected_revision"),
-                guild_id=guild_id,
-                name=payload.get("name"),
+        if command_name == "update_guild_name":
+            result = GuildEditor(session).execute(
+                UpdateGuildName(
+                    session_id=payload.get("session_id"),
+                    expected_revision=payload.get("expected_revision"),
+                    guild_id=guild_id,
+                    name=payload.get("name"),
+                )
             )
-        )
+        elif command_name == "update_guild_chest_capacity":
+            result = GuildChestEditor(session).execute(
+                UpdateGuildChestCapacity(
+                    session_id=payload.get("session_id"),
+                    expected_revision=payload.get("expected_revision"),
+                    guild_id=guild_id,
+                    capacity=payload.get("capacity"),
+                )
+            )
+        else:
+            result = GuildBaseEditor(session).execute(
+                UpdateGuildBaseCampLevel(
+                    session_id=payload.get("session_id"),
+                    expected_revision=payload.get("expected_revision"),
+                    guild_id=guild_id,
+                    level=payload.get("level"),
+                )
+            )
         return reply(0, result)
     except DomainError as error:
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
@@ -296,6 +394,78 @@ def execute_guild_command(guild_id: str):
 @save_blueprint.route("/expeditions/commands", methods=["POST"])
 @jwt_required()
 def execute_expedition_command():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    command_name = payload.get("command")
+    command_fields = {
+        "complete_active_expeditions": set(),
+        "complete_expedition": {"expedition_id"},
+    }
+    if command_name not in command_fields:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND",
+            message="Unsupported expedition command.",
+            field="command",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    allowed = {
+        "session_id",
+        "expected_revision",
+        "command",
+        *command_fields[command_name],
+    }
+    unknown = sorted(set(payload) - allowed)
+    if unknown:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    expedition_id = payload.get("expedition_id")
+    if command_name == "complete_expedition" and (
+        not isinstance(expedition_id, str) or not expedition_id.strip()
+    ):
+        error = DomainError(
+            code="INVALID_FIELD",
+            message="A non-empty expedition_id is required.",
+            field="expedition_id",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        command = (
+            CompleteExpedition(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+                expedition_id=expedition_id.strip(),
+            )
+            if command_name == "complete_expedition"
+            else CompleteActiveExpeditions(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+            )
+        )
+        result = ExpeditionEditor(session).execute(
+            command
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/pals/commands", methods=["POST"])
+@jwt_required()
+def execute_global_pal_command():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         error = DomainError(
@@ -314,18 +484,23 @@ def execute_expedition_command():
             http_status=400,
         )
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
-    if payload.get("command") != "complete_active_expeditions":
+    command_types = {
+        "heal_all_pals": HealAllPals,
+        "unlock_all_expedition_pals": UnlockAllExpeditionPals,
+    }
+    command_type = command_types.get(payload.get("command"))
+    if command_type is None:
         error = DomainError(
             code="UNSUPPORTED_COMMAND",
-            message="Unsupported expedition command.",
+            message="Unsupported global Pal command.",
             field="command",
             http_status=400,
         )
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
     try:
         session = SESSION_RUNTIME.get(payload.get("session_id"))
-        result = ExpeditionEditor(session).execute(
-            CompleteActiveExpeditions(
+        result = CharacterEditor(session).execute(
+            command_type(
                 session_id=payload.get("session_id"),
                 expected_revision=payload.get("expected_revision"),
             )
@@ -397,6 +572,50 @@ def query_players():
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
 
+@save_blueprint.route("/query/overview", methods=["GET"])
+@jwt_required()
+def query_overview():
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        return reply(
+            0,
+            SaveQueryService(session, locale=Config.i18n).overview(),
+        )
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/query/guilds", methods=["GET"])
+@jwt_required()
+def query_guilds():
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        return reply(
+            0,
+            {
+                "revision": session.revision,
+                "guilds": SaveQueryService(
+                    session, locale=Config.i18n
+                ).guilds(),
+            },
+        )
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/query/expeditions", methods=["GET"])
+@jwt_required()
+def query_expeditions():
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        data = SaveQueryService(
+            session, locale=Config.i18n
+        ).expeditions()
+        return reply(0, {"revision": session.revision, **data})
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
 @save_blueprint.route("/query/pals", methods=["GET"])
 @jwt_required()
 def query_pals():
@@ -417,6 +636,101 @@ def query_pals():
             descending=_optional_bool("descending") or False,
         )
         return reply(0, {"revision": session.revision, "pals": rows})
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/query/map", methods=["GET"])
+@jwt_required()
+def query_map():
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        data = SaveQueryService(session, locale=Config.i18n).map_data()
+        return reply(0, {"revision": session.revision, **data})
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/local-data/select", methods=["POST"])
+@jwt_required()
+def select_local_data():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    unknown = sorted(
+        set(payload) - {"session_id", "expected_revision", "path"}
+    )
+    if unknown:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = session.select_local_data(
+            session_id=payload.get("session_id"),
+            expected_revision=payload.get("expected_revision"),
+            path=payload.get("path"),
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/local-data/fog-of-war/clear", methods=["POST"])
+@jwt_required()
+def clear_fog_of_war():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = FogOfWarEditor(session).execute(
+            ClearFogOfWar(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+                confirmation=payload.get("confirmation"),
+            )
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/local-data/fog-of-war/reset", methods=["POST"])
+@jwt_required()
+def reset_fog_of_war():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = FogOfWarEditor(session).execute(
+            ResetFogOfWar(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+                confirmation=payload.get("confirmation"),
+            )
+        )
+        return reply(0, result)
     except DomainError as error:
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
@@ -459,22 +773,39 @@ def save():
     path = payload.get("WritePath", None)
     try:
         session = SESSION_RUNTIME.get(payload.get("session_id"))
+        raw_json_pending = session.raw_json_pending
+        target = path if path is not None else (
+            session.source if session.platform is SavePlatform.STEAM else None
+        )
         result = SaveWriter().save(
             session,
-            path if path is not None else (
-                session.source if session.platform is SavePlatform.STEAM else None
-            ),
+            target,
             payload.get("expected_revision", session.revision),
         )
-        return reply(0, result.to_dict())
+        data = result.to_dict()
+        if raw_json_pending:
+            if session.platform is SavePlatform.XGP:
+                reloaded = SESSION_RUNTIME.open_source(session.source_id)
+            else:
+                reloaded = SESSION_RUNTIME.open(target or session.source)
+            data["session"] = reloaded.summary().to_dict()
+            data["compatibility"] = reloaded.compatibility().to_dict()
+        return reply(0, data)
     except DomainError as error:
+        if error.code in _SAVE_DIAGNOSTIC_ERROR_CODES:
+            LOGGER.error(
+                "Save request rejected "
+                f"({error.code})\n{traceback.format_exc()}"
+            )
         return (
             reply(1, msg=error.message, error=error.to_dict()),
             error.http_status,
         )
     except Exception:
-        stack_trace = traceback.format_exc()
-        LOGGER.error(f"Error in patch_paldata {stack_trace}")
+        LOGGER.error(
+            "Unexpected error while saving save data\n"
+            f"{traceback.format_exc()}"
+        )
         return reply(1, msg="Unexpected error while saving; see the local debug log."), 500
 
 
@@ -602,6 +933,8 @@ def get_pal_data():
     pal_arr = []
     for pal in pals_raw:
         iname = pal["InternalName"]
+        if DataProvider.get_constructible_pal_id(iname) != iname:
+            continue
         if (
             not DataProvider.is_pal_human(iname)
             and ("BOSS_" in iname or "Boss_" in iname)
@@ -614,7 +947,7 @@ def get_pal_data():
             "Invalid": pal.get("Invalid", False),
             "Suitabilities": DataProvider.get_pal_suitabilities(iname),
             "I18n": DataProvider.get_pal_i18n(iname) or iname,
-            "SortingKey": DataProvider.get_pal_sorting_key(iname),
+            "SortingKey": DataProvider.get_constructible_pal_sorting_key(iname),
             "IsHuman": DataProvider.is_pal_human(iname) or False,
             "HasIcon": DataProvider.has_human_icon(iname),
             "DefaultWeapon": pal.get("DefaultWeapon"),

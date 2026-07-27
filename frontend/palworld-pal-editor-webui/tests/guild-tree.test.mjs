@@ -118,6 +118,7 @@ test('renaming a guild sends a revision-bound command and updates the tree item'
   const store = makeStore()
   store.SESSION_REVISION = 3
   store.GUILD_TREE = [{ guild_id: 'guild-1', kind: 'guild', name: 'Builders' }]
+  store.GUILD_LIST = [{ guild_id: 'guild-1', kind: 'guild', name: 'Builders' }]
   let request
   axios.post = async (url, data) => {
     request = { url, data: structuredClone(data) }
@@ -140,8 +141,86 @@ test('renaming a guild sends a revision-bound command and updates the tree item'
     },
   })
   assert.equal(store.GUILD_TREE[0].name, 'New Builders')
+  assert.equal(store.GUILD_LIST[0].name, 'New Builders')
   assert.equal(store.SESSION_REVISION, 4)
   assert.equal(store.PENDING_CHANGE_COUNT, 1)
+})
+
+test('expanding a guild chest sends a revision-bound command and updates its capacity', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 4
+  store.GUILD_TREE = [{
+    guild_id: 'guild-1',
+    kind: 'guild',
+    name: 'Builders',
+    guild_chest_status: 'available',
+    guild_chest_capacity: 54,
+  }]
+  store.GUILD_LIST = [{
+    guild_id: 'guild-1',
+    kind: 'guild',
+    name: 'Builders',
+    guild_chest_status: 'available',
+    guild_chest_capacity: 54,
+  }]
+  let request
+  axios.post = async (url, data) => {
+    request = { url, data: structuredClone(data) }
+    return { data: { status: 0, data: {
+      revision: 5,
+      value: { guild_id: 'guild-1', capacity: 90 },
+    } } }
+  }
+
+  const updated = await store.updateGuildChestCapacity('guild-1', 90)
+
+  assert.equal(updated, true)
+  assert.deepEqual(request, {
+    url: '/api/save/guilds/guild-1/commands',
+    data: {
+      session_id: 'session-1',
+      expected_revision: 4,
+      command: 'update_guild_chest_capacity',
+      capacity: 90,
+    },
+  })
+  assert.equal(store.GUILD_TREE[0].guild_chest_capacity, 90)
+  assert.equal(store.GUILD_LIST[0].guild_chest_capacity, 90)
+  assert.equal(store.SESSION_REVISION, 5)
+  assert.equal(store.PENDING_CHANGE_COUNT, 1)
+})
+
+test('terminal level uses a dedicated revision-bound command', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 6
+  store.GUILD_LIST = [{
+    guild_id: 'guild-1',
+    base_camp_level: 14,
+  }]
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: {
+      revision: 7,
+      value: { guild_id: 'guild-1', level: 35 },
+    } } }
+  }
+
+  assert.equal(await store.updateGuildBaseCampLevel('guild-1', 35), true)
+
+  assert.deepEqual(calls, [
+    {
+      url: '/api/save/guilds/guild-1/commands',
+      data: {
+        session_id: 'session-1',
+        expected_revision: 6,
+        command: 'update_base_camp_level',
+        level: 35,
+      },
+    },
+  ])
+  assert.equal(store.GUILD_LIST[0].base_camp_level, 35)
+  assert.equal(store.SESSION_REVISION, 7)
 })
 
 test('the player panel renders guilds as the first tree level', () => {
@@ -150,11 +229,44 @@ test('the player panel renders guilds as the first tree level', () => {
   assert.match(source, /v-for="guild in palStore\.GUILD_TREE"/)
   assert.match(source, /palStore\.selectBase\(guild, base\)/)
   assert.match(source, /PlayerTree_NoGuild/)
-  assert.match(source, /class="guild-name-input"/)
-  assert.match(source, /class="guild-edit-action"/)
-  assert.match(source, /editingGuildId === guild\.guild_id \? 'check' : 'edit'/)
+  assert.doesNotMatch(source, /guild-name-input/)
+  assert.doesNotMatch(source, /guild-chest-row/)
+  assert.doesNotMatch(source, /updateGuildChestCapacity/)
   assert.doesNotMatch(source, /selectPlayer\(palStore\.PAL_BASE_WORKER_BTN\)/)
   assert.match(source, /\.guild-tree\s*\{[^}]*gap:\s*8px[^}]*padding:\s*8px 6px 10px/s)
+})
+
+test('the guild page owns guild, chest, terminal, read-only base capacity, and member controls', () => {
+  const source = fs.readFileSync(new URL('../src/views/GuildView.vue', import.meta.url), 'utf8')
+  const storeSource = fs.readFileSync(new URL('../src/stores/paleditor.js', import.meta.url), 'utf8')
+
+  assert.match(source, /v-for="guild in palStore\.GUILD_LIST"/)
+  assert.match(source, /palStore\.loadGuilds\(\)/)
+  assert.match(source, /palStore\.updateGuildName/)
+  assert.match(source, /palStore\.updateGuildChestCapacity/)
+  assert.match(source, /palStore\.updateGuildBaseCampLevel/)
+  assert.doesNotMatch(source, /updateBaseWorkerCapacity|saveEdit\('workers'|startEdit\('workers'/)
+  assert.doesNotMatch(storeSource, /updateBaseWorkerCapacity|update_base_worker_capacity/)
+  assert.match(source, /v-for="\(base, index\) in guild\.bases"/)
+  assert.match(source, /v-for="member in guild\.members"/)
+  assert.match(source, /Guild_WorkerCapacityValue/)
+  assert.doesNotMatch(source, /Guild_EditWorkerCapacity|Guild_WorkerCapacityHelp/)
+  assert.doesNotMatch(source, /Guild_Page(?:Eyebrow|Title|Description)/)
+})
+
+test('each guild base renders its working Pals with hover and keyboard details', () => {
+  const source = fs.readFileSync(new URL('../src/views/GuildView.vue', import.meta.url), 'utf8')
+
+  assert.match(source, /v-for="worker in base\.workers"/)
+  assert.match(source, /class="worker-pal"/)
+  assert.match(source, /tabindex="0"/)
+  assert.match(source, /class="worker-pal-tooltip"/)
+  assert.match(source, /role="tooltip"/)
+  assert.match(source, /worker\.work_suitabilities/)
+  assert.match(source, /worker\.passive_skills/)
+  assert.match(source, /\.worker-pal:hover \.worker-pal-tooltip/)
+  assert.match(source, /\.worker-pal:focus-visible \.worker-pal-tooltip/)
+  assert.match(source, /Guild_NoWorkingPals/)
 })
 
 test('the optional viewing-cage action keeps a stable centered title slot', () => {

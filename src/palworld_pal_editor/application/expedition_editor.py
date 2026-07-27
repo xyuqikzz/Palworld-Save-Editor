@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from palworld_pal_editor.domain.commands import CompleteActiveExpeditions
+from palworld_pal_editor.domain.commands import (
+    CompleteActiveExpeditions,
+    CompleteExpedition,
+)
 from palworld_pal_editor.domain.errors import DomainError
 
 from .save_session import SaveSession
@@ -12,15 +15,36 @@ class ExpeditionEditor:
     def __init__(self, session: SaveSession) -> None:
         self._session = session
 
-    def execute(self, command: CompleteActiveExpeditions) -> dict:
+    def execute(
+        self, command: CompleteActiveExpeditions | CompleteExpedition
+    ) -> dict:
         self._session.require_command(
             command.session_id, command.expected_revision
         )
-        targets = self._session.manager.completable_expeditions()
+        single_expedition_id = (
+            command.expedition_id.lower()
+            if isinstance(command, CompleteExpedition)
+            else None
+        )
+        targets = (
+            self._session.manager.completable_expeditions(
+                [single_expedition_id]
+            )
+            if single_expedition_id is not None
+            else self._session.manager.completable_expeditions()
+        )
         if not targets:
             raise DomainError(
-                code="NO_ACTIVE_EXPEDITIONS",
-                message="No active expedition can be completed safely.",
+                code=(
+                    "EXPEDITION_NOT_COMPLETABLE"
+                    if single_expedition_id is not None
+                    else "NO_ACTIVE_EXPEDITIONS"
+                ),
+                message=(
+                    "The selected expedition cannot be completed safely."
+                    if single_expedition_id is not None
+                    else "No active expedition can be completed safely."
+                ),
                 http_status=409,
             )
         expedition_ids = tuple(
@@ -36,7 +60,11 @@ class ExpeditionEditor:
 
         def mutate() -> None:
             completed_ids.extend(
-                self._session.manager.complete_active_expeditions()
+                self._session.manager.complete_active_expeditions(
+                    list(expedition_ids)
+                )
+                if single_expedition_id is not None
+                else self._session.manager.complete_active_expeditions()
             )
 
         def validate() -> None:
@@ -65,7 +93,7 @@ class ExpeditionEditor:
             entry = self._session.apply_atomic(
                 session_id=command.session_id,
                 expected_revision=command.expected_revision,
-                command="CompleteActiveExpeditions",
+                command=type(command).__name__,
                 target={"expedition_ids": list(expedition_ids)},
                 snapshot=self._session.manager.snapshot_expedition_data,
                 restore=self._session.manager.restore_expedition_data,
