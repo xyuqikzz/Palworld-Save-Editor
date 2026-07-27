@@ -218,8 +218,9 @@ test("version 1 presets migrate without losing data and can be pinned", () => {
 test("preset traits reuse passive cards while pinned presets size to their labels", async () => {
     const editor = await readFile(new URL("../src/components/PalEditor.vue", import.meta.url), "utf8");
     const dialog = await readFile(new URL("../src/components/modules/PassivePresetDialog.vue", import.meta.url), "utf8");
-    const quickbarStart = editor.indexOf('<nav\n          v-if="pinnedPassivePresets.length"');
-    const quickbar = editor.slice(quickbarStart, editor.indexOf('</nav>', quickbarStart));
+    const quickbarMatch = editor.match(/<nav\s+v-if="pinnedPassivePresets\.length"[\s\S]*?<\/nav>/);
+    assert.ok(quickbarMatch);
+    const quickbar = quickbarMatch[0];
 
     assert.match(editor, /<PassiveSkillCard[\s\S]*?:skill="palStore\.PASSIVE_SKILLS\[skill\]"/);
     assert.match(editor, /\.passive-preset-quickbar\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
