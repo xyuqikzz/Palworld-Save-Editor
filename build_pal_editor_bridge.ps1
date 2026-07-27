@@ -43,7 +43,7 @@ function Get-CMakeCommand {
         }
     }
 
-    throw "CMake was not found. Install Visual Studio 2022 with C++ and CMake tools."
+    throw "CMake was not found. Install Visual Studio with C++ and CMake tools."
 }
 
 $git = (Get-Command git.exe -ErrorAction Stop).Source
@@ -64,7 +64,6 @@ $python = (Get-Command python.exe -ErrorAction Stop).Source
 Invoke-Checked -Command $cmake -Arguments @(
     "-S", $nativeRoot,
     "-B", $coreBuildRoot,
-    "-G", "Visual Studio 17 2022",
     "-A", "x64",
     "-DPAL_EDITOR_BRIDGE_BUILD_TESTS=ON"
 )
@@ -141,7 +140,6 @@ if ($ue4ssStatus -and -not $AllowDirtyUE4SSRoot) {
 Invoke-Checked -Command $cmake -Arguments @(
     "-S", $nativeRoot,
     "-B", $ue4ssBuildRoot,
-    "-G", "Visual Studio 17 2022",
     "-A", "x64",
     "-DPAL_EDITOR_BRIDGE_BUILD_TESTS=OFF",
     "-DPAL_EDITOR_BRIDGE_UE4SS_ROOT=$ue4ssPath"

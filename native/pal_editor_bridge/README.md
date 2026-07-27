@@ -68,7 +68,7 @@ certificate must be pinned by its SHA-256 fingerprint in the EXE.
 Use a Visual Studio developer shell:
 
 ```powershell
-cmake -S native/pal_editor_bridge -B build/pal_editor_bridge -G "Visual Studio 17 2022"
+cmake -S native/pal_editor_bridge -B build/pal_editor_bridge -A x64
 cmake --build build/pal_editor_bridge --config Release
 ctest --test-dir build/pal_editor_bridge -C Release --output-on-failure
 ```

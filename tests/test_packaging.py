@@ -92,6 +92,7 @@ class PackagingTests(unittest.TestCase):
             "url.https://github.com/.insteadOf=git@github.com:",
             build_script,
         )
+        self.assertNotIn("Visual Studio 17 2022", build_script)
         self.assertIn("UseVerifiedPrebuilt", build_script)
         self.assertIn("sourceSha256", prebuilt_verifier)
         self.assertIn("dllSha256", prebuilt_verifier)
