@@ -18,7 +18,7 @@ npm run build
 ```
 
 - `npm run dev`：启动 Vite 开发服务器，并按 `vite.config.js` 代理后端请求。
-- `npm test`：运行 `tests/*.test.mjs` 中的前端领域与布局契约测试。
+- `npm test`：运行 `tests/` 中的前端领域与布局契约测试。
 - `npm run build`：生成 `dist/`；目录为本地产物，不提交到 Git。
 
 前后端完整启动、测试和贡献说明见仓库根目录 [README.cn.md](../../README.cn.md)。
