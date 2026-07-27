@@ -48,6 +48,9 @@ class PackagingTests(unittest.TestCase):
         package_script = (
             PROJECT_ROOT / "package_pal_editor_bridge.ps1"
         ).read_text(encoding="utf-8")
+        build_script = (
+            PROJECT_ROOT / "build_pal_editor_bridge.ps1"
+        ).read_text(encoding="utf-8")
         version = (
             PROJECT_ROOT / "native" / "pal_editor_bridge" / "VERSION"
         ).read_text(encoding="utf-8").strip()
@@ -82,6 +85,10 @@ class PackagingTests(unittest.TestCase):
         self.assertIn(version, install_guide)
         self.assertIn('Join-Path $repoRoot "mod"', package_script)
         self.assertNotIn('Join-Path $repoRoot "dist"', package_script)
+        self.assertIn(
+            "url.https://github.com/.insteadOf=git@github.com:",
+            build_script,
+        )
 
     def test_release_workflow_rebuilds_and_verifies_the_mod_before_publish(
         self,

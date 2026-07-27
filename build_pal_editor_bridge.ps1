@@ -76,6 +76,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $ue4ssPath ".git"))) {
         "-C", $ue4ssPath, "checkout", "--detach", $UE4SSRevision
     )
     Invoke-Checked -Command $git -Arguments @(
+        "-c", "url.https://github.com/.insteadOf=git@github.com:",
+        "-c", "url.https://github.com/.insteadOf=ssh://git@github.com/",
         "-C", $ue4ssPath, "submodule", "update", "--init", "--recursive"
     )
 }
