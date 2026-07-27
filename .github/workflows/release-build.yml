@@ -142,22 +142,27 @@ jobs:
           sed -i "s|^REPO = .*|REPO = \"${REPO}\"|" "$CONFIG_FILE"
         fi
 
-    - name: Build and test PalEditorBridge
+    - name: Test and package verified PalEditorBridge
       if: runner.os == 'Windows'
       id: bridge
       shell: pwsh
       run: |
         $output = ./build_pal_editor_bridge.ps1 `
-          -UE4SSRoot (Join-Path $env:RUNNER_TEMP "RE-UE4SS")
+          -UseVerifiedPrebuilt
         $output | Write-Host
         $packageLine = $output |
           Where-Object { $_ -is [string] -and $_.StartsWith("PACKAGE_ZIP=") } |
           Select-Object -Last 1
-        if (-not $packageLine) {
-          throw "PalEditorBridge packaging did not return PACKAGE_ZIP."
+        $dllLine = $output |
+          Where-Object { $_ -is [string] -and $_.StartsWith("DLL_PATH=") } |
+          Select-Object -Last 1
+        if (-not $packageLine -or -not $dllLine) {
+          throw "PalEditorBridge packaging did not return its verified outputs."
         }
         $package = $packageLine.Substring("PACKAGE_ZIP=".Length)
+        $dll = $dllLine.Substring("DLL_PATH=".Length)
         "package=$package" >> $env:GITHUB_OUTPUT
+        "dll=$dll" >> $env:GITHUB_OUTPUT
 
     - name: Build Windows EXE
       if: runner.os == 'Windows'
@@ -168,12 +173,10 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $dll = Join-Path $PWD `
-          "build\pal_editor_bridge_ue4ss\ue4ss\Game__Shipping__Win64\PalEditorBridge.dll"
         ./build/venv/Scripts/python.exe scripts/verify_release_artifacts.py `
           --exe dist/palworld-save-editor.exe `
           --mod "${{ steps.bridge.outputs.package }}" `
-          --dll $dll `
+          --dll "${{ steps.bridge.outputs.dll }}" `
           --version-file native/pal_editor_bridge/VERSION
         Copy-Item -LiteralPath "${{ steps.bridge.outputs.package }}" -Destination dist
 

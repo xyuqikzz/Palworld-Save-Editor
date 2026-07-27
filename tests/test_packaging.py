@@ -51,6 +51,9 @@ class PackagingTests(unittest.TestCase):
         build_script = (
             PROJECT_ROOT / "build_pal_editor_bridge.ps1"
         ).read_text(encoding="utf-8")
+        prebuilt_verifier = (
+            PROJECT_ROOT / "scripts" / "verify_bridge_prebuilt.py"
+        ).read_text(encoding="utf-8")
         version = (
             PROJECT_ROOT / "native" / "pal_editor_bridge" / "VERSION"
         ).read_text(encoding="utf-8").strip()
@@ -89,6 +92,10 @@ class PackagingTests(unittest.TestCase):
             "url.https://github.com/.insteadOf=git@github.com:",
             build_script,
         )
+        self.assertIn("UseVerifiedPrebuilt", build_script)
+        self.assertIn("sourceSha256", prebuilt_verifier)
+        self.assertIn("dllSha256", prebuilt_verifier)
+        self.assertIn("ue4ssRevision", prebuilt_verifier)
 
     def test_release_workflow_rebuilds_and_verifies_the_mod_before_publish(
         self,
@@ -109,6 +116,8 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("needs: release-checks", workflow)
         self.assertIn("needs: release-build", workflow)
         self.assertIn("actions/download-artifact@v4", workflow)
+        self.assertIn("-UseVerifiedPrebuilt", workflow)
+        self.assertIn("${{ steps.bridge.outputs.dll }}", workflow)
         self.assertIn("Prepare categorized release notes", workflow)
         self.assertIn('grep -Fxq "## New Features"', workflow)
         self.assertIn('grep -Fxq "## Bug Fixes"', workflow)

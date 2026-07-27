@@ -2,7 +2,9 @@ param(
     [string]$UE4SSRoot = "",
     [string]$UE4SSRepository = "https://github.com/Okaetsu/RE-UE4SS.git",
     [string]$UE4SSRevision = "c838a8acaade1a0f860bdf249f039e58f4e10088",
-    [switch]$AllowDirtyUE4SSRoot
+    [switch]$AllowDirtyUE4SSRoot,
+    [switch]$UseVerifiedPrebuilt,
+    [switch]$RefreshVerifiedPrebuilt
 )
 
 $ErrorActionPreference = "Stop"
@@ -51,6 +53,49 @@ if (-not (Test-Path -LiteralPath $ctest -PathType Leaf)) {
     throw "CTest was not found beside CMake: $ctest"
 }
 
+$nativeRoot = Join-Path $repoRoot "native\pal_editor_bridge"
+$coreBuildRoot = Join-Path $repoRoot "build\pal_editor_bridge_core"
+$ue4ssBuildRoot = Join-Path $repoRoot "build\pal_editor_bridge_ue4ss"
+$prebuiltRoot = Join-Path $nativeRoot "prebuilt"
+$prebuiltDll = Join-Path $prebuiltRoot "PalEditorBridge.dll"
+$prebuiltVerifier = Join-Path $repoRoot "scripts\verify_bridge_prebuilt.py"
+$python = (Get-Command python.exe -ErrorAction Stop).Source
+
+Invoke-Checked -Command $cmake -Arguments @(
+    "-S", $nativeRoot,
+    "-B", $coreBuildRoot,
+    "-G", "Visual Studio 17 2022",
+    "-A", "x64",
+    "-DPAL_EDITOR_BRIDGE_BUILD_TESTS=ON"
+)
+Invoke-Checked -Command $cmake -Arguments @(
+    "--build", $coreBuildRoot,
+    "--config", "Release",
+    "--target", "PalEditorBridgeCoreTests"
+)
+Invoke-Checked -Command $ctest -Arguments @(
+    "--test-dir", $coreBuildRoot,
+    "-C", "Release",
+    "--output-on-failure"
+)
+
+if ($UseVerifiedPrebuilt) {
+    if ($RefreshVerifiedPrebuilt) {
+        throw "UseVerifiedPrebuilt and RefreshVerifiedPrebuilt cannot be combined."
+    }
+    Invoke-Checked -Command $python -Arguments @(
+        $prebuiltVerifier,
+        "--expected-ue4ss-revision", $UE4SSRevision
+    )
+    & (Join-Path $repoRoot "package_pal_editor_bridge.ps1") `
+        -DllPath $prebuiltDll
+    if ($LASTEXITCODE -ne 0) {
+        throw "PalEditorBridge packaging failed with exit code $LASTEXITCODE."
+    }
+    Write-Output "DLL_PATH=$prebuiltDll"
+    exit 0
+}
+
 if (-not $UE4SSRoot) {
     $UE4SSRoot = Join-Path $repoRoot "build\dependencies\RE-UE4SS"
 }
@@ -93,28 +138,6 @@ if ($ue4ssStatus -and -not $AllowDirtyUE4SSRoot) {
     throw "UE4SS checkout is dirty and cannot be used for a reproducible build."
 }
 
-$nativeRoot = Join-Path $repoRoot "native\pal_editor_bridge"
-$coreBuildRoot = Join-Path $repoRoot "build\pal_editor_bridge_core"
-$ue4ssBuildRoot = Join-Path $repoRoot "build\pal_editor_bridge_ue4ss"
-
-Invoke-Checked -Command $cmake -Arguments @(
-    "-S", $nativeRoot,
-    "-B", $coreBuildRoot,
-    "-G", "Visual Studio 17 2022",
-    "-A", "x64",
-    "-DPAL_EDITOR_BRIDGE_BUILD_TESTS=ON"
-)
-Invoke-Checked -Command $cmake -Arguments @(
-    "--build", $coreBuildRoot,
-    "--config", "Release",
-    "--target", "PalEditorBridgeCoreTests"
-)
-Invoke-Checked -Command $ctest -Arguments @(
-    "--test-dir", $coreBuildRoot,
-    "-C", "Release",
-    "--output-on-failure"
-)
-
 Invoke-Checked -Command $cmake -Arguments @(
     "-S", $nativeRoot,
     "-B", $ue4ssBuildRoot,
@@ -136,7 +159,22 @@ if (-not (Test-Path -LiteralPath $dllPath -PathType Leaf)) {
     throw "PalEditorBridge build completed without the expected DLL: $dllPath"
 }
 
+if ($RefreshVerifiedPrebuilt) {
+    New-Item -ItemType Directory -Path $prebuiltRoot -Force | Out-Null
+    Copy-Item -LiteralPath $dllPath -Destination $prebuiltDll -Force
+    Invoke-Checked -Command $python -Arguments @(
+        $prebuiltVerifier,
+        "--write",
+        "--ue4ss-revision", $UE4SSRevision
+    )
+    Invoke-Checked -Command $python -Arguments @(
+        $prebuiltVerifier,
+        "--expected-ue4ss-revision", $UE4SSRevision
+    )
+}
+
 & (Join-Path $repoRoot "package_pal_editor_bridge.ps1") -DllPath $dllPath
 if ($LASTEXITCODE -ne 0) {
     throw "PalEditorBridge packaging failed with exit code $LASTEXITCODE."
 }
+Write-Output "DLL_PATH=$dllPath"

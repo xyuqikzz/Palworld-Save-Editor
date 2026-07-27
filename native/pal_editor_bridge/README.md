@@ -112,6 +112,20 @@ The script pins the UE4SS source revision used by GitHub Actions. The Mod
 version has one packaging source in `native/pal_editor_bridge/VERSION`; the
 runtime version strings are checked against it before a release is published.
 
+RE-UE4SS's `UEPseudo` source is access-gated by Epic Games and cannot be cloned
+by a public GitHub-hosted runner. Release workflows therefore use
+`build_pal_editor_bridge.ps1 -UseVerifiedPrebuilt`: the core is rebuilt and
+tested, and the committed DLL is accepted only when its version, size, SHA-256,
+UE4SS revision, and a hash of every build-relevant bridge source file match
+`prebuilt/manifest.json`. Any bridge source change makes the release fail until
+an authorized local source build refreshes the verified DLL:
+
+```powershell
+.\build_pal_editor_bridge.ps1 `
+  -UE4SSRoot C:\path\to\RE-UE4SS `
+  -RefreshVerifiedPrebuilt
+```
+
 The package is written to
 `mod/PalEditorBridge-UE4SS-Mod-0.6.0.zip`. It contains the required
 `PalEditorBridge/dlls/main.dll` layout, an `enabled.txt`, and Chinese
