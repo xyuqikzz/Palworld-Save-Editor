@@ -2,6 +2,7 @@
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
 import VariantBadge from '@/components/modules/VariantBadge.vue'
+import BaseStoragePanel from '@/components/modules/BaseStoragePanel.vue'
 import { elementTranslationKey } from '@/components/modules/pal-species-filter'
 import { usePalEditorStore } from '@/stores/paleditor'
 import { computed, nextTick, onMounted, ref } from 'vue'
@@ -10,10 +11,18 @@ const palStore = usePalEditorStore()
 const editingKind = ref(null)
 const editingGuildId = ref(null)
 const editDraft = ref('')
+const expandedStorage = ref({})
+const activeGuildTabs = ref({})
 
 const MAX_GUILD_NAME_LENGTH = 24
 const MAX_BASE_CAMP_LEVEL = 35
 const MAX_GUILD_CHEST_CAPACITY = 2466
+const GUILD_ROLE_LABEL_KEYS = {
+  1: 'Guild_RoleGuildMaster',
+  2: 'Guild_RoleSubmaster',
+  3: 'Guild_RoleMember',
+  4: 'Guild_RoleGuest',
+}
 
 const SUITABILITY_LABEL_KEYS = {
   'EPalWorkSuitability::EmitFlame': 'Guild_Suitability_EmitFlame',
@@ -34,7 +43,6 @@ const SUITABILITY_LABEL_KEYS = {
 const writesDisabled = computed(() => (
   palStore.LOADING_FLAG
   || palStore.GUILD_LOADING
-  || palStore.RAW_JSON_PENDING
 ))
 
 function shortId(value) {
@@ -43,6 +51,44 @@ function shortId(value) {
 
 function guildName(guild) {
   return guild.name || palStore.getTranslatedText('PlayerTree_UnnamedGuild')
+}
+
+function memberName(member) {
+  return member.name || shortId(member.player_id)
+}
+
+function memberRoleLabel(member) {
+  return palStore.getTranslatedText(
+    GUILD_ROLE_LABEL_KEYS[member.role] || 'Guild_RoleUnavailable',
+  )
+}
+
+function ownerCandidates(guild) {
+  return (guild.members || []).filter(member => member.owner_eligible)
+}
+
+function ownerName(guild) {
+  const owner = (guild.members || []).find(
+    member => String(member.player_id) === String(guild.owner_player_id),
+  )
+  if (owner) return memberName(owner)
+  if (guild.owner_status === 'unassigned') {
+    return palStore.getTranslatedText('Guild_OwnerUnassigned')
+  }
+  return palStore.getTranslatedText('Guild_FieldUnavailable')
+}
+
+async function changeGuildOwner(guild, event) {
+  const playerId = event.target.value
+  if (
+    writesDisabled.value
+    || !playerId
+    || String(playerId) === String(guild.owner_player_id)
+  ) {
+    return
+  }
+  const updated = await palStore.updateGuildOwner(guild.guild_id, playerId)
+  if (!updated) event.target.value = guild.owner_player_id || ''
 }
 
 function baseName(base, index) {
@@ -172,8 +218,41 @@ function canEditChest(guild) {
     && guild.guild_chest_capacity < MAX_GUILD_CHEST_CAPACITY
 }
 
+function storageKey(guild, base) {
+  return `${String(guild.guild_id)}:${String(base.base_id)}`
+}
+
+function isStorageExpanded(guild, base) {
+  return Boolean(expandedStorage.value[storageKey(guild, base)])
+}
+
+function toggleStorage(guild, base) {
+  const key = storageKey(guild, base)
+  expandedStorage.value = {
+    ...expandedStorage.value,
+    [key]: !expandedStorage.value[key],
+  }
+}
+
+function activeGuildTab(guild) {
+  return activeGuildTabs.value[guild.guild_id] || 'bases'
+}
+
+function setGuildTab(guild, tab) {
+  activeGuildTabs.value = {
+    ...activeGuildTabs.value,
+    [guild.guild_id]: tab,
+  }
+}
+
+function guildTabId(guild, tab) {
+  return `guild-${guild.guild_id}-${tab}`
+}
+
 function refreshGuilds() {
   cancelEdit()
+  expandedStorage.value = {}
+  activeGuildTabs.value = {}
   return palStore.loadGuilds()
 }
 
@@ -304,10 +383,83 @@ onMounted(refreshGuilds)
                 <AppIcon :name="isEditing('chest', guild) ? 'check' : 'edit'" :size="15" />
               </button>
             </div>
+
+            <div class="guild-metric guild-owner-metric">
+              <span class="guild-metric__icon"><AppIcon name="user" :size="17" /></span>
+              <div>
+                <small>{{ palStore.getTranslatedText('Guild_Owner') }}</small>
+                <select
+                  v-if="guild.owner_editable"
+                  class="guild-owner-select"
+                  :value="guild.owner_player_id || ''"
+                  :aria-label="palStore.getTranslatedText('Guild_Owner')"
+                  :disabled="writesDisabled"
+                  @change="changeGuildOwner(guild, $event)"
+                >
+                  <option v-if="!guild.owner_player_id" value="" disabled>
+                    {{ palStore.getTranslatedText('Guild_OwnerUnassigned') }}
+                  </option>
+                  <option
+                    v-for="member in ownerCandidates(guild)"
+                    :key="member.player_id"
+                    :value="member.player_id"
+                  >
+                    {{ memberName(member) }}
+                  </option>
+                </select>
+                <strong v-else>{{ ownerName(guild) }}</strong>
+                <span>
+                  {{ palStore.getTranslatedText(
+                    guild.owner_editable
+                      ? 'Guild_OwnerHelp'
+                      : 'Guild_OwnerUnavailableHelp',
+                  ) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="guild-tabs"
+            role="tablist"
+            :aria-label="guildName(guild)"
+          >
+            <button
+              type="button"
+              role="tab"
+              :id="guildTabId(guild, 'bases-tab')"
+              :aria-controls="guildTabId(guild, 'bases-panel')"
+              :aria-selected="activeGuildTab(guild) === 'bases'"
+              :class="{ 'is-active': activeGuildTab(guild) === 'bases' }"
+              @click="setGuildTab(guild, 'bases')"
+            >
+              <AppIcon name="building" :size="15" />
+              <span>{{ palStore.getTranslatedText('PlayerTree_Bases') }}</span>
+              <strong>{{ guild.base_count }}</strong>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :id="guildTabId(guild, 'members-tab')"
+              :aria-controls="guildTabId(guild, 'members-panel')"
+              :aria-selected="activeGuildTab(guild) === 'members'"
+              :class="{ 'is-active': activeGuildTab(guild) === 'members' }"
+              @click="setGuildTab(guild, 'members')"
+            >
+              <AppIcon name="user" :size="15" />
+              <span>{{ palStore.getTranslatedText('PlayerTree_Members') }}</span>
+              <strong>{{ guild.member_count }}</strong>
+            </button>
           </div>
 
           <div class="guild-content-grid">
-            <section class="guild-section">
+            <section
+              v-if="activeGuildTab(guild) === 'bases'"
+              :id="guildTabId(guild, 'bases-panel')"
+              class="guild-section"
+              role="tabpanel"
+              :aria-labelledby="guildTabId(guild, 'bases-tab')"
+            >
               <header>
                 <div>
                   <AppIcon name="building" :size="16" />
@@ -343,6 +495,36 @@ onMounted(refreshGuilds)
                       </strong>
                     </div>
                   </div>
+                  <section v-if="base.kind === 'base'" class="base-storage">
+                    <button
+                      type="button"
+                      class="base-storage__toggle"
+                      :aria-expanded="isStorageExpanded(guild, base)"
+                      @click="toggleStorage(guild, base)"
+                    >
+                      <span>
+                        <AppIcon name="box" :size="14" />
+                        <strong>{{ palStore.getTranslatedText('Guild_BaseStorage') }}</strong>
+                      </span>
+                      <span>
+                        {{ palStore.getTranslatedText(
+                          isStorageExpanded(guild, base)
+                            ? 'Guild_BaseStorageCollapse'
+                            : 'Guild_BaseStorageExpand',
+                        ) }}
+                        <AppIcon
+                          name="chevron-down"
+                          :size="14"
+                          :class="{ 'is-expanded': isStorageExpanded(guild, base) }"
+                        />
+                      </span>
+                    </button>
+                    <BaseStoragePanel
+                      v-if="isStorageExpanded(guild, base)"
+                      :guild-id="guild.guild_id"
+                      :base-id="base.base_id"
+                    />
+                  </section>
                   <section v-if="base.kind === 'base'" class="base-workers">
                     <header>
                       <div>
@@ -477,7 +659,13 @@ onMounted(refreshGuilds)
               </p>
             </section>
 
-            <section class="guild-section">
+            <section
+              v-else
+              :id="guildTabId(guild, 'members-panel')"
+              class="guild-section"
+              role="tabpanel"
+              :aria-labelledby="guildTabId(guild, 'members-tab')"
+            >
               <header>
                 <div>
                   <AppIcon name="user" :size="16" />
@@ -492,9 +680,17 @@ onMounted(refreshGuilds)
                     {{ (member.name || '?').slice(0, 1).toUpperCase() }}
                   </span>
                   <div>
-                    <strong>{{ member.name || shortId(member.player_id) }}</strong>
+                    <strong>{{ memberName(member) }}</strong>
                     <small :title="member.player_id">{{ shortId(member.player_id) }}</small>
                   </div>
+                  <span
+                    :class="['member-role', {
+                      'is-owner': member.is_owner,
+                      'is-muted': member.role_status !== 'available',
+                    }]"
+                  >
+                    {{ memberRoleLabel(member) }}
+                  </span>
                   <span v-if="member.level != null" class="member-level">
                     {{ palStore.getTranslatedText('Common_LevelWithValue', [member.level]) }}
                   </span>
@@ -536,6 +732,8 @@ onMounted(refreshGuilds)
 .guild-section > header > div,
 .base-row__heading,
 .worker-capacity-row,
+.base-storage__toggle,
+.base-storage__toggle > span,
 .base-workers > header,
 .base-workers > header > div,
 .worker-pal,
@@ -570,6 +768,40 @@ onMounted(refreshGuilds)
 .guild-button:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--ui-border));
   background: var(--ui-surface-hover);
+}
+
+.base-storage {
+  margin-top: 10px;
+}
+
+.base-storage__toggle {
+  width: 100%;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.base-storage__toggle > span {
+  gap: 6px;
+  font-size: 10px;
+}
+
+.base-storage__toggle strong {
+  color: var(--ui-text);
+  font-size: 11px;
+}
+
+.base-storage__toggle svg {
+  transition: transform 160ms ease;
+}
+
+.base-storage__toggle svg.is-expanded {
+  transform: rotate(180deg);
 }
 
 .guild-list {
@@ -663,7 +895,7 @@ onMounted(refreshGuilds)
 
 .guild-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   background: var(--ui-border);
   border-bottom: 1px solid var(--ui-border);
@@ -706,9 +938,82 @@ onMounted(refreshGuilds)
   font-size: 10px;
 }
 
+.guild-owner-select {
+  min-width: 0;
+  width: 100%;
+  height: 31px;
+  padding: 0 28px 0 8px;
+  color: var(--ui-text);
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  outline: 0;
+}
+
+.guild-owner-select:focus {
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 22%, transparent);
+}
+
+.guild-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 22px 0;
+  background: var(--ui-surface);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.guild-tabs button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: var(--ui-text-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.guild-tabs button:hover {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+}
+
+.guild-tabs button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -3px;
+}
+
+.guild-tabs button.is-active {
+  color: var(--ui-accent);
+  border-bottom-color: var(--ui-accent);
+}
+
+.guild-tabs button strong {
+  min-width: 20px;
+  padding: 2px 6px;
+  color: var(--ui-text-secondary);
+  text-align: center;
+  background: var(--ui-surface-raised);
+  border-radius: 999px;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.guild-tabs button.is-active strong {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
 .guild-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   padding: 20px 22px 22px;
 }
@@ -1174,6 +1479,28 @@ onMounted(refreshGuilds)
   font-weight: 500;
 }
 
+.member-role {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.member-role.is-owner {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: color-mix(in srgb, var(--ui-accent) 36%, var(--ui-border));
+}
+
+.member-role.is-muted {
+  color: var(--ui-text-muted);
+  font-weight: 500;
+}
+
 .icon-button {
   width: 28px;
   height: 28px;
@@ -1299,6 +1626,7 @@ button:disabled {
 
   .guild-card__header,
   .guild-metric,
+  .guild-tabs,
   .guild-content-grid {
     padding-right: 14px;
     padding-left: 14px;

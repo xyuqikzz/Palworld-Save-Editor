@@ -41,12 +41,23 @@ class NativeDialogApi:
             initial_directory = Config.path
 
         if self._platform_name == "win32":
-            return self._modern_folder_picker(initial_directory)
+            try:
+                return self._modern_folder_picker(initial_directory)
+            except Exception:
+                LOGGER.warning(
+                    "The Windows system folder picker failed; falling back "
+                    f"to the desktop dialog: {traceback.format_exc()}"
+                )
 
         windows = self._window_provider()
         if not windows:
-            return None
-        selected = windows[0].create_file_dialog(webview.FOLDER_DIALOG, directory=initial_directory)
+            raise RuntimeError(
+                "No desktop window is available for folder selection."
+            )
+        selected = windows[0].create_file_dialog(
+            webview.FOLDER_DIALOG,
+            directory=initial_directory,
+        )
         if not selected:
             return None
         return str(selected[0])

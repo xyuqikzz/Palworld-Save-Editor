@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+import re
 from typing import Any, Protocol
 from urllib.parse import quote
 import warnings
@@ -51,6 +54,27 @@ class RemoteBridgePort(Protocol):
         page: int,
         page_size: int,
     ) -> dict[str, Any]: ...
+
+    def create_snapshot(
+        self, connection: BridgeConnection
+    ) -> dict[str, Any]: ...
+
+    def snapshot(
+        self,
+        connection: BridgeConnection,
+        snapshot_id: str,
+    ) -> dict[str, Any]: ...
+
+    def download_snapshot_file(
+        self,
+        connection: BridgeConnection,
+        snapshot_id: str,
+        file_id: str,
+        destination: Path,
+        *,
+        expected_size: int,
+        expected_sha256: str,
+    ) -> None: ...
 
     def execute(
         self, connection: BridgeConnection, command: RemoteCommand
@@ -245,6 +269,176 @@ class HttpRemoteBridgeAdapter:
             raise _protocol_error("The bridge command response must be an object.")
         if payload.get("commandId") != command.command_id:
             raise _protocol_error("The bridge returned a different command ID.")
+        return payload
+
+    def create_snapshot(
+        self, connection: BridgeConnection
+    ) -> dict[str, Any]:
+        payload = self._request(
+            "POST",
+            f"{connection.base_url}/v1/snapshots",
+            token=connection.token,
+            json={"scope": "players"},
+        )
+        return self._snapshot_payload(payload)
+
+    def snapshot(
+        self,
+        connection: BridgeConnection,
+        snapshot_id: str,
+    ) -> dict[str, Any]:
+        normalized_snapshot_id = self._opaque_id(
+            snapshot_id, field="snapshot_id"
+        )
+        payload = self._request(
+            "GET",
+            (
+                f"{connection.base_url}/v1/snapshots/"
+                f"{normalized_snapshot_id}"
+            ),
+            token=connection.token,
+        )
+        return self._snapshot_payload(payload)
+
+    def download_snapshot_file(
+        self,
+        connection: BridgeConnection,
+        snapshot_id: str,
+        file_id: str,
+        destination: Path,
+        *,
+        expected_size: int,
+        expected_sha256: str,
+    ) -> None:
+        normalized_snapshot_id = self._opaque_id(
+            snapshot_id, field="snapshot_id"
+        )
+        normalized_file_id = self._opaque_id(file_id, field="file_id")
+        if (
+            not isinstance(expected_size, int)
+            or isinstance(expected_size, bool)
+            or expected_size < 0
+            or expected_size > 16 * 1024 * 1024 * 1024
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+        ):
+            raise _protocol_error(
+                "The bridge snapshot file metadata is invalid."
+            )
+        headers = {
+            "Accept": "application/octet-stream",
+            "Authorization": f"Bearer {connection.token}",
+        }
+        verify_tls = self._fingerprint is None
+        try:
+            with warnings.catch_warnings():
+                if not verify_tls:
+                    warnings.simplefilter("ignore", InsecureRequestWarning)
+                with self._session.get(
+                    (
+                        f"{connection.base_url}/v1/snapshots/"
+                        f"{normalized_snapshot_id}/files/"
+                        f"{normalized_file_id}"
+                    ),
+                    headers=headers,
+                    timeout=self._timeout_seconds,
+                    verify=verify_tls,
+                    stream=True,
+                ) as response:
+                    if response.status_code in {401, 403}:
+                        raise DomainError(
+                            code="REMOTE_AUTH_FAILED",
+                            message=(
+                                "The Palworld administrator credentials "
+                                "were rejected."
+                            ),
+                            retryable=False,
+                            http_status=401,
+                        )
+                    if not response.ok:
+                        raise DomainError(
+                            code="REMOTE_SNAPSHOT_DOWNLOAD_FAILED",
+                            message=(
+                                "The bridge snapshot file could not be "
+                                "downloaded."
+                            ),
+                            retryable=response.status_code >= 500,
+                            http_status=(
+                                response.status_code
+                                if 400 <= response.status_code <= 599
+                                else 502
+                            ),
+                        )
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    digest = hashlib.sha256()
+                    size = 0
+                    with destination.open("xb") as output:
+                        for chunk in response.iter_content(1024 * 1024):
+                            if not chunk:
+                                continue
+                            size += len(chunk)
+                            if size > expected_size:
+                                raise _protocol_error(
+                                    "The bridge snapshot file exceeded "
+                                    "its declared size."
+                                )
+                            digest.update(chunk)
+                            output.write(chunk)
+        except requests.exceptions.SSLError as error:
+            raise DomainError(
+                code="REMOTE_TLS_FAILED",
+                message=(
+                    "The remote bridge TLS certificate could not be verified."
+                ),
+                retryable=False,
+                http_status=502,
+            ) from error
+        except requests.exceptions.Timeout as error:
+            raise DomainError(
+                code="REMOTE_TIMEOUT",
+                message="The remote bridge did not respond in time.",
+                retryable=True,
+                http_status=504,
+            ) from error
+        except requests.exceptions.ConnectionError as error:
+            raise DomainError(
+                code="REMOTE_CONNECTION_FAILED",
+                message="The remote bridge could not be reached.",
+                retryable=True,
+                http_status=502,
+            ) from error
+        if size != expected_size or digest.hexdigest() != expected_sha256:
+            destination.unlink(missing_ok=True)
+            raise DomainError(
+                code="REMOTE_SNAPSHOT_HASH_MISMATCH",
+                message=(
+                    "The downloaded snapshot file did not match its "
+                    "declared SHA-256."
+                ),
+                retryable=True,
+                http_status=502,
+            )
+
+    @staticmethod
+    def _opaque_id(value: object, *, field: str) -> str:
+        if not isinstance(value, str) or not re.fullmatch(
+            r"[0-9a-f]{32}", value
+        ):
+            raise _protocol_error(
+                f"The bridge {field.replace('_', ' ')} is invalid."
+            )
+        return value
+
+    @staticmethod
+    def _snapshot_payload(payload: object) -> dict[str, Any]:
+        if (
+            not isinstance(payload, dict)
+            or not isinstance(payload.get("id"), str)
+            or not isinstance(payload.get("state"), str)
+            or not isinstance(payload.get("files"), list)
+        ):
+            raise _protocol_error(
+                "The bridge snapshot response is invalid."
+            )
         return payload
 
     def disconnect(self, connection: BridgeConnection) -> None:

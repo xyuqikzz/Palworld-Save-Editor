@@ -267,3 +267,32 @@ def test_remote_session_refreshes_capabilities_after_world_mode_change() -> None
             )
         )
     assert unsupported.value.code == "REMOTE_CAPABILITY_UNSUPPORTED"
+
+
+def test_remote_session_returns_partial_results_and_advances_revision() -> None:
+    class _PartialBridge(_FakeBridge):
+        def execute(self, connection, command):
+            return {
+                "commandId": command.command_id,
+                "state": "partial",
+                "revision": 1,
+                "message": "One field changed.",
+                "result": {"changed": 1, "failed": 1},
+            }
+
+    bridge = _PartialBridge()
+    session = RemoteServerSession(
+        connection=bridge.connect(_spec()),
+        bridge=bridge,
+    )
+    command = RemoteCommand.create(
+        operation="inventory.grant",
+        target={"player_uid": "player-1"},
+        payload={"item_id": "TestItem", "quantity": 1},
+        expected_revision=0,
+    )
+
+    result = session.execute(command)
+
+    assert result["state"] == "partial"
+    assert result["revision"] == 1

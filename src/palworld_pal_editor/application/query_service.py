@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from typing import Any, Iterable
 
 from palworld_pal_editor.core.character_index import CharacterIndex
+from palworld_pal_editor.core.group_data import GUILD_ROLE_VALUES
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.utils.data_provider import DataProvider
 
@@ -274,7 +275,14 @@ class SaveQueryService:
             )
             return None if value is None else str(value)
 
-        def member_summary(player_id: str, saved_name: str) -> dict[str, Any]:
+        def member_summary(
+            player_id: str,
+            saved_name: str,
+            role: int | None,
+            *,
+            is_owner: bool,
+        ) -> dict[str, Any]:
+            normalized_role = role if role in GUILD_ROLE_VALUES else None
             player = loaded_players.get(player_id)
             if player is None:
                 return {
@@ -283,6 +291,14 @@ class SaveQueryService:
                     "level": None,
                     "pal_count": None,
                     "details_loaded": False,
+                    "role": normalized_role,
+                    "role_status": (
+                        "available"
+                        if normalized_role is not None
+                        else "unavailable"
+                    ),
+                    "is_owner": is_owner,
+                    "owner_eligible": normalized_role is not None,
                 }
             return {
                 "player_id": player_id,
@@ -290,6 +306,14 @@ class SaveQueryService:
                 "level": player.Level if player.Level is not None else 1,
                 "pal_count": len(player._palbox),
                 "details_loaded": bool(getattr(player, "is_loaded", True)),
+                "role": normalized_role,
+                "role_status": (
+                    "available"
+                    if normalized_role is not None
+                    else "unavailable"
+                ),
+                "is_owner": is_owner,
+                "owner_eligible": normalized_role is not None,
             }
 
         def worker_summary(worker: Any) -> dict[str, Any]:
@@ -401,28 +425,79 @@ class SaveQueryService:
         result: list[dict[str, Any]] = []
         for group in groups:
             group_id = str(group.group_id)
-            saved_members = list(group.players or [])
+            saved_members = getattr(group, "guild_members", None)
+            if saved_members is None:
+                saved_members = [
+                    (player_uid, player_name, None)
+                    for player_uid, player_name in (
+                        getattr(group, "players", None) or []
+                    )
+                ]
+            saved_members = list(saved_members)
+            admin_player_uid = getattr(group, "admin_player_uid", None)
+            raw_owner_id = (
+                str(admin_player_uid)
+                if admin_player_uid is not None
+                else None
+            )
+            owner_player_id = (
+                raw_owner_id
+                if raw_owner_id
+                != "00000000-0000-0000-0000-000000000000"
+                else None
+            )
             members = []
             member_ids: set[str] = set()
-            for player_uid, saved_name in saved_members:
+            for player_uid, saved_name, role in saved_members:
                 player_id = str(player_uid)
                 if player_id in member_ids:
                     continue
                 member_ids.add(player_id)
-                members.append(member_summary(player_id, str(saved_name or "")))
+                members.append(
+                    member_summary(
+                        player_id,
+                        str(saved_name or ""),
+                        role,
+                        is_owner=player_id == owner_player_id,
+                    )
+                )
             for player_id, player in loaded_players.items():
                 if (
                     player_id not in member_ids
                     and player_group_id(player) == group_id
                 ):
                     member_ids.add(player_id)
-                    members.append(member_summary(player_id, ""))
+                    members.append(
+                        member_summary(
+                            player_id,
+                            "",
+                            None,
+                            is_owner=player_id == owner_player_id,
+                        )
+                    )
             members.sort(
                 key=lambda member: (
+                    member["role"] is None,
+                    (
+                        member["role"]
+                        if member["role"] is not None
+                        else 99
+                    ),
                     member["name"].casefold(),
                     member["player_id"],
                 )
             )
+            if (
+                getattr(group, "guild_format", None) != "1.0"
+                or admin_player_uid is None
+            ):
+                owner_status = "unavailable"
+            elif owner_player_id is None:
+                owner_status = "unassigned"
+            elif owner_player_id in member_ids:
+                owner_status = "available"
+            else:
+                owner_status = "member_missing"
 
             base_ids = [str(base_id) for base_id in (group.base_ids or [])]
             known_base_ids = set(base_ids)
@@ -451,6 +526,11 @@ class SaveQueryService:
                     "name": str(group.guild_name or ""),
                     "name_editable": isinstance(
                         group._group_param.get("guild_name"), str
+                    ),
+                    "owner_status": owner_status,
+                    "owner_player_id": owner_player_id,
+                    "owner_editable": bool(
+                        getattr(group, "guild_owner_editable", False)
                     ),
                     "base_camp_level_status": (
                         "available" if level is not None else "missing"

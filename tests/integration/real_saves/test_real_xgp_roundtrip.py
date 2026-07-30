@@ -172,6 +172,8 @@ def test_real_xgp_add_pal_creation_presets_save_and_reopen() -> None:
             )
         )
         added_pal_id = added["pal"]["pal_id"]
+        added_pal = CharacterIndex(session.manager).pals[added_pal_id]
+        assert added_pal.owner_container_type == "PAL_STORAGE"
         result = SaveWriter().save(session, None, session.revision)
         assert result.platform == "xgp"
         assert result.source_reloaded is True
@@ -194,6 +196,7 @@ def test_real_xgp_add_pal_creation_presets_save_and_reopen() -> None:
             manager=SaveManager.create_isolated(),
         )
         pal = CharacterIndex(reopened.manager).pals[added_pal_id]
+        assert pal.owner_container_type == "PAL_STORAGE"
         assert pal.IsHuman
         assert pal.FriendshipLevel == 10
         assert pal.Rank_CraftSpeed == Config.max_souls_level

@@ -227,12 +227,8 @@ class InventoryEditor:
         entry = self._session.apply_atomic(
             session_id=command.session_id,
             expected_revision=command.expected_revision,
-            command="UpdateItemCount",
-            target={
-                "player_id": str(player.PlayerUId),
-                "container_type": command.container_type.value,
-                "slot_index": command.slot_index,
-            },
+            command=self._change_command_name("UpdateItemCount"),
+            target=self._change_target(player, container, command),
             snapshot=lambda: container.snapshot_slot(command.slot_index),
             restore=lambda state: container.restore_slot(command.slot_index, state),
             before=lambda: container.slot_summary(command.slot_index),
@@ -424,13 +420,13 @@ class InventoryEditor:
         entry = self._session.apply_atomic(
             session_id=command.session_id,
             expected_revision=command.expected_revision,
-            command="PutItem",
-            target={
-                "player_id": str(player.PlayerUId),
-                "container_type": command.container_type.value,
-                "slot_index": command.slot_index,
-                "mode": command.mode,
-            },
+            command=self._change_command_name("PutItem"),
+            target=self._change_target(
+                player,
+                container,
+                command,
+                mode=command.mode,
+            ),
             snapshot=snapshot,
             restore=restore,
             before=lambda: before_summary,
@@ -499,12 +495,8 @@ class InventoryEditor:
             entry = self._session.apply_atomic(
                 session_id=command.session_id,
                 expected_revision=command.expected_revision,
-                command="ClearItemSlot",
-                target={
-                    "player_id": str(player.PlayerUId),
-                    "container_type": command.container_type.value,
-                    "slot_index": command.slot_index,
-                },
+                command=self._change_command_name("ClearItemSlot"),
+                target=self._change_target(player, container, command),
                 snapshot=lambda: container.snapshot_slot(command.slot_index),
                 restore=lambda state: container.restore_slot(command.slot_index, state),
                 before=lambda: container.slot_summary(command.slot_index),
@@ -574,13 +566,13 @@ class InventoryEditor:
             entry = self._session.apply_atomic(
                 session_id=command.session_id,
                 expected_revision=command.expected_revision,
-                command="ClearDynamicItemSlot",
-                target={
-                    "player_id": str(player.PlayerUId),
-                    "container_type": command.container_type.value,
-                    "slot_index": command.slot_index,
-                    "dynamic_kind": record.kind,
-                },
+                command=self._change_command_name("ClearDynamicItemSlot"),
+                target=self._change_target(
+                    player,
+                    container,
+                    command,
+                    dynamic_kind=record.kind,
+                ),
                 snapshot=snapshot,
                 restore=restore,
                 before=lambda: container.slot_summary(command.slot_index),
@@ -660,3 +652,16 @@ class InventoryEditor:
                 http_status=409,
             )
         return player, container
+
+    def _change_command_name(self, command: str) -> str:
+        return command
+
+    @staticmethod
+    def _change_target(player, container, command, **extra: Any) -> dict[str, Any]:
+        return {
+            "player_id": str(player.PlayerUId),
+            "container_id": str(container.id),
+            "container_type": command.container_type.value,
+            "slot_index": command.slot_index,
+            **extra,
+        }

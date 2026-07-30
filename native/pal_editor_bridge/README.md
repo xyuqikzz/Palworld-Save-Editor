@@ -17,14 +17,27 @@ The repository currently contains:
 - fail-closed runtime authority detection that exposes gameplay operations only
   for single-player and multiplayer-host instances;
 - a UE4SS C++ mod lifecycle entry point with no ImGui registration;
-- live server metadata and normal world-save requests through the official
-  Palworld REST API;
+- live server metadata, announcements, player kick/ban/unban, normal
+  world-save requests, and save-before-shutdown scheduling through the
+  official Palworld REST API;
 - online-player listing on the game thread through
-  `PalUtility:GetAllPlayerStates`, without calling the REST player endpoint;
+  `PalUtility:GetAllPlayerStates`; dedicated servers enrich matching runtime
+  rows with the REST player `userId` required by moderation without exposing
+  IP addresses;
 - loaded-guild, selected-player profile, inventory-container, and paged Palbox
   snapshots read lazily on the game thread, without the REST player endpoint;
+- dedicated-server read-only player snapshots that resolve the active world
+  from the process directory and authenticated `worldGuid`, copy `Level.sav`
+  and `Players/*.sav` only after size, timestamp, and SHA-256 stability checks,
+  and expose opaque file IDs for streamed download;
+- at most two read-only snapshots retained for ten minutes, with one capture
+  job at a time; snapshots are short-lived parser input and are not backups or
+  recovery sources;
 - live player-Pawn positions and guild associations exposed as one
-  game-thread map snapshot;
+  game-thread map snapshot, reusing the same player enumeration for both map
+  and guild data;
+- a bounded 64-command game-thread queue that processes at most four commands
+  or two milliseconds of work per engine tick and reports its current depth;
 - game-thread inventory/equipment grants and player experience grants through
   reflected server-authoritative Palworld functions;
 - server-authoritative Pal grants through
@@ -33,6 +46,10 @@ The repository currently contains:
   `PalPlayerState:OnCreatedGrantedIndividualHandle_ServerInternal` callback;
 - runtime signature checks that hide an operation when the installed game
   build no longer matches its expected reflected function contract;
+- a persistence coordinator that marks successful and partial gameplay
+  mutations dirty, coalesces the normal `world.save` path after two seconds,
+  forces a save within ten seconds of continuous edits, and reports
+  `clean`, `dirty`, `saving`, or `failed` without rolling mutations back;
 - independently buildable bridge-core tests.
 
 Dedicated servers must set `RESTAPIEnabled=True`. The official REST API must
@@ -127,7 +144,7 @@ an authorized local source build refreshes the verified DLL:
 ```
 
 The package is written to
-`mod/PalEditorBridge-UE4SS-Mod-0.6.0.zip`. It contains the required
+`mod/PalEditorBridge-UE4SS-Mod-0.6.1.zip`. It contains the required
 `PalEditorBridge/dlls/main.dll` layout, an `enabled.txt`, and Chinese
 installation instructions.
 
@@ -145,6 +162,9 @@ The bridge surface is deliberately small:
 - `GET /v1/player-details?playerId=...`
 - `GET /v1/player-inventory?playerId=...`
 - `GET /v1/player-pals?playerId=...&page=0&pageSize=12`
+- `POST /v1/snapshots`
+- `GET /v1/snapshots/{snapshotId}`
+- `GET /v1/snapshots/{snapshotId}/files/{fileId}`
 - `POST /v1/commands`
 
 Protocol capabilities are:
@@ -159,12 +179,31 @@ Protocol capabilities are:
 - `inventory.grant`
 - `player.experience.add`
 - `pal.grant`
+- `save.snapshot.read` (dedicated server only)
+- `player.directory.read` (dedicated server snapshot)
+- `player.saved.details` (dedicated server snapshot)
+- `inventory.saved.read` (dedicated server snapshot)
+- `pal.saved.list` (dedicated server snapshot)
+- `server.announce` (dedicated server only)
+- `player.kick` (dedicated server only)
+- `player.ban` (dedicated server only)
+- `player.unban` (dedicated server only)
 - `world.save`
+- `world.shutdown` (dedicated server only)
 
 Gameplay capabilities are advertised only when the current game build exposes
 the complete reflected signature expected by that operation. A build and
 static signature check do not replace separate dedicated-server,
 single-player, listen-server replication, save, restart, and reload tests.
+
+The dedicated-server administrator capabilities come from the official
+Palworld REST adapter and are not advertised by a local single-player or
+listen-server bridge. Kick and ban accept only a REST `userId` that is present
+in a freshly fetched online-player list. Unban uses a previously verified REST
+`userId` because banned players are no longer present in that list. The
+management UI sends no optional reason and requires a second confirmation for
+all three actions. `world.shutdown` calls `world.save` first and does not
+schedule shutdown if that save request fails.
 
 In a game-client process, the bridge continually determines whether the active
 world is `single_player`, `listen_server`, or `client`. A joining client
@@ -182,6 +221,21 @@ cannot be resolved, that section reports an unavailable or partial state
 instead of guessing offsets or returning save-file data. Guild discovery
 reflects only guild objects currently loaded in the running game; it is not an
 offline complete guild database.
+
+The desktop module merges runtime rows over the read-only snapshot by
+`PlayerUId`, so the online list is available immediately while saved online
+and offline profiles load in the background. Snapshot reads include profile,
+inventory, technology, missions, attributes, fast-travel summary, Party, and
+Palbox data. The desktop map keeps authoritative Pawn coordinates for online
+players and adds last-saved positions for offline players. Positive runtime
+levels remain authoritative; missing or zero runtime levels retain the saved
+value. Offline targets and unverified field-level mutations are explicitly
+capability-gated; the bridge does not queue changes for a later login.
+
+Live mutation never writes a running `Level.sav` or player `.sav` directly.
+There is no rollback, undo, pre-mutation backup, or automatic retry after a
+failed save. A failed coalesced save leaves the already-applied runtime values
+visible and reports them as not yet persisted.
 
 `pal.grant` supports up to four passive-skill IDs; the persistent HP,
 ranged-attack, and defense individual values; condensation rank; and HP,

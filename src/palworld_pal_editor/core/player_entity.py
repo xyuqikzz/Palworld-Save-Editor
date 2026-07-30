@@ -355,6 +355,13 @@ class PlayerEntity:
             return None
         return self._gvas_file, self._gvas_compression_times
 
+    @PlayerGVAS.setter
+    def PlayerGVAS(self, value: tuple[GvasFile, int]) -> None:
+        self._gvas_file, self._gvas_compression_times = value
+        self._player_save_data = self._gvas_file.properties.get(
+            "SaveData", {}
+        ).get("value", {})
+
     def add_pal(self, pal_entity: PalEntity) -> bool:
         """
         This method only inserts player's pals to `self.palbox`.\n

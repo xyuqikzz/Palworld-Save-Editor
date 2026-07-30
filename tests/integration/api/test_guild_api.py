@@ -10,14 +10,25 @@ from flask_jwt_extended import JWTManager, create_access_token
 from palworld_pal_editor.api.save import save_blueprint
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.application.save_session import SaveSession
+from palworld_pal_editor.core.base_storage_data import BaseStorageBinding
 from palworld_pal_editor.core.group_data import PalGroup
-from palworld_pal_editor.core.pal_objects import toUUID
+from palworld_pal_editor.core.item_container_data import ItemContainerData
+from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 
 
 GUILD_ID = toUUID("11111111-1111-1111-1111-111111111111")
 CHEST_CONTAINER_ID = toUUID("22222222-2222-2222-2222-222222222222")
 BASE_ID = toUUID("33333333-3333-3333-3333-333333333333")
 WORKER_CONTAINER_ID = toUUID("44444444-4444-4444-4444-444444444444")
+OWNER_ID = toUUID("aaaaaaaa-1111-2222-3333-444444444444")
+MEMBER_ID = toUUID("bbbbbbbb-1111-2222-3333-444444444444")
+BASE_STORAGE_CONTAINER_ID = toUUID(
+    "55555555-5555-5555-5555-555555555555"
+)
+BASE_STORAGE_OBJECT_ID = toUUID(
+    "66666666-6666-6666-6666-666666666666"
+)
+ZERO_ID = toUUID("00000000-0000-0000-0000-000000000000")
 
 
 class _Groups:
@@ -67,6 +78,57 @@ class _WorkerContainer:
         return self.size == capacity
 
 
+def _base_storage_item_data() -> ItemContainerData:
+    slot = {
+        "RawData": {
+            "value": {
+                "slot_index": 0,
+                "count": 5,
+                "item": {
+                    "static_id": "Stone",
+                    "dynamic_id": {
+                        "created_world_id": ZERO_ID,
+                        "local_id_in_created_world": ZERO_ID,
+                    },
+                },
+                "permission": {
+                    "type_a": [],
+                    "type_b": [],
+                    "item_static_ids": [],
+                },
+                "corruption_progress_value": 0.0,
+                "trailing_bytes": [0, 0, 0, 0],
+            }
+        }
+    }
+    gvas = SimpleNamespace(
+        properties={
+            "worldSaveData": {
+                "value": {
+                    "ItemContainerSaveData": {
+                        "value": [
+                            {
+                                "key": {
+                                    "ID": PalObjects.Guid(
+                                        BASE_STORAGE_CONTAINER_ID
+                                    )
+                                },
+                                "value": {
+                                    "SlotNum": PalObjects.IntProperty(1),
+                                    "Slots": {
+                                        "value": {"values": [slot]}
+                                    },
+                                },
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
+    return ItemContainerData(gvas)
+
+
 class GuildApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self.group = PalGroup(
@@ -80,7 +142,26 @@ class GuildApiTests(unittest.TestCase):
                             "individual_character_handle_ids": [],
                             "base_ids": [BASE_ID],
                             "base_camp_level": 14,
-                            "players": [],
+                            "guild_format": "1.0",
+                            "admin_player_uid": OWNER_ID,
+                            "players": [
+                                {
+                                    "player_uid": MEMBER_ID,
+                                    "player_info": {
+                                        "last_online_real_time": 5,
+                                        "player_name": "Member",
+                                        "role": 3,
+                                    },
+                                },
+                                {
+                                    "player_uid": OWNER_ID,
+                                    "player_info": {
+                                        "last_online_real_time": 10,
+                                        "player_name": "Owner",
+                                        "role": 1,
+                                    },
+                                },
+                            ],
                         }
                     }
                 }
@@ -88,6 +169,19 @@ class GuildApiTests(unittest.TestCase):
             "EPalGroupType::Guild",
         )
         self.guild_chest = _GuildChestContainer()
+        self.base_storage_items = _base_storage_item_data()
+        self.base_storage = self.base_storage_items.get(
+            BASE_STORAGE_CONTAINER_ID
+        )
+        self.base_storage_binding = BaseStorageBinding(
+            guild_id=GUILD_ID,
+            base_id=BASE_ID,
+            map_object_instance_id=BASE_STORAGE_OBJECT_ID,
+            map_object_type="ItemChest",
+            container_id=BASE_STORAGE_CONTAINER_ID,
+            usage_type=1,
+            location={"x": 1.0, "y": 2.0, "z": 3.0},
+        )
         self.worker_container = _WorkerContainer()
         self.camp = SimpleNamespace(
             id=BASE_ID,
@@ -141,11 +235,39 @@ class GuildApiTests(unittest.TestCase):
                 )
             ),
             guild_item_storage_error=None,
+            base_storage_data=SimpleNamespace(
+                complete=True,
+                issues=lambda: (),
+                get_base=lambda guild_id, base_id: (
+                    (self.base_storage_binding,)
+                    if (
+                        str(guild_id) == str(GUILD_ID)
+                        and str(base_id) == str(BASE_ID)
+                    )
+                    else ()
+                ),
+                resolve=lambda guild_id, base_id, container_id: (
+                    self.base_storage_binding
+                    if (
+                        str(guild_id) == str(GUILD_ID)
+                        and str(base_id) == str(BASE_ID)
+                        and str(container_id)
+                        == str(BASE_STORAGE_CONTAINER_ID)
+                    )
+                    else None
+                ),
+            ),
+            base_storage_error=None,
             item_container_data=SimpleNamespace(
                 get=lambda container_id: (
                     self.guild_chest
                     if str(container_id) == str(CHEST_CONTAINER_ID)
-                    else None
+                    else (
+                        self.base_storage
+                        if str(container_id)
+                        == str(BASE_STORAGE_CONTAINER_ID)
+                        else None
+                    )
                 )
             ),
         )
@@ -231,6 +353,36 @@ class GuildApiTests(unittest.TestCase):
         self.assertEqual("STALE_REVISION", stale.get_json()["error"]["code"])
         self.assertEqual(90, self.guild_chest.capacity)
 
+    def test_update_guild_owner_uses_session_revision_contract(self) -> None:
+        response = self.client.post(
+            f"/api/save/guilds/{GUILD_ID}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_guild_owner",
+                "player_id": str(MEMBER_ID),
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        payload = response.get_json()["data"]
+        self.assertEqual(1, payload["revision"])
+        self.assertEqual(
+            str(MEMBER_ID), payload["value"]["owner_player_id"]
+        )
+        self.assertEqual(str(MEMBER_ID), str(self.group.admin_player_uid))
+        self.assertEqual(
+            {
+                str(OWNER_ID): 2,
+                str(MEMBER_ID): 1,
+            },
+            {
+                str(player_uid): role
+                for player_uid, _name, role in self.group.guild_members
+            },
+        )
+
     def test_query_guilds_returns_all_saved_guild_details(self) -> None:
         response = self.client.get(
             f"/api/save/query/guilds?session_id={self.session.session_id}",
@@ -249,6 +401,16 @@ class GuildApiTests(unittest.TestCase):
         self.assertEqual(
             ["CraftSpeed_up1"],
             guild["bases"][0]["workers"][0]["passive_skills"],
+        )
+        self.assertEqual(str(OWNER_ID), guild["owner_player_id"])
+        self.assertTrue(guild["owner_editable"])
+        self.assertEqual(
+            [str(OWNER_ID), str(MEMBER_ID)],
+            [member["player_id"] for member in guild["members"]],
+        )
+        self.assertEqual(
+            [1, 3],
+            [member["role"] for member in guild["members"]],
         )
 
     def test_terminal_level_uses_revision_contract(self) -> None:
@@ -289,6 +451,95 @@ class GuildApiTests(unittest.TestCase):
         )
         self.assertEqual(14, self.worker_container.size)
         self.assertEqual(0, self.session.revision)
+
+    def test_base_storage_query_and_count_update_use_exact_scope(self) -> None:
+        query = self.client.get(
+            (
+                f"/api/save/guilds/{GUILD_ID}/bases/{BASE_ID}/storage"
+                f"?session_id={self.session.session_id}"
+            ),
+            headers=self.headers,
+        )
+
+        self.assertEqual(200, query.status_code, query.get_json())
+        data = query.get_json()["data"]
+        self.assertEqual("available", data["status"])
+        self.assertEqual(
+            str(BASE_STORAGE_CONTAINER_ID),
+            data["containers"][0]["container_id"],
+        )
+        self.assertEqual(
+            "Stone",
+            data["containers"][0]["slots"][0]["item"]["static_id"],
+        )
+
+        update = self.client.post(
+            (
+                f"/api/save/guilds/{GUILD_ID}/bases/{BASE_ID}"
+                "/storage/commands"
+            ),
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_item_count",
+                "container_id": str(BASE_STORAGE_CONTAINER_ID),
+                "slot_index": 0,
+                "expected_static_id": "Stone",
+                "count": 9,
+            },
+        )
+
+        self.assertEqual(200, update.status_code, update.get_json())
+        self.assertEqual(1, update.get_json()["data"]["revision"])
+        self.assertEqual(9, self.base_storage.get_occupied(0).count)
+        change = self.session.changes()[0]
+        self.assertEqual("UpdateBaseStorageItemCount", change["command"])
+        self.assertEqual(str(BASE_ID), change["target"]["base_id"])
+
+    def test_base_storage_rejects_arbitrary_container_and_fields(self) -> None:
+        url = (
+            f"/api/save/guilds/{GUILD_ID}/bases/{BASE_ID}"
+            "/storage/commands"
+        )
+        response = self.client.post(
+            url,
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_item_count",
+                "container_id": str(CHEST_CONTAINER_ID),
+                "slot_index": 0,
+                "expected_static_id": "Stone",
+                "count": 9,
+            },
+        )
+        self.assertEqual(409, response.status_code, response.get_json())
+        self.assertEqual(
+            "BASE_STORAGE_OWNERSHIP_VIOLATION",
+            response.get_json()["error"]["code"],
+        )
+
+        unknown = self.client.post(
+            url,
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_item_count",
+                "container_id": str(BASE_STORAGE_CONTAINER_ID),
+                "slot_index": 0,
+                "expected_static_id": "Stone",
+                "count": 9,
+                "raw_path": "not-allowed",
+            },
+        )
+        self.assertEqual(400, unknown.status_code, unknown.get_json())
+        self.assertEqual(
+            "UNSUPPORTED_COMMAND_FIELD",
+            unknown.get_json()["error"]["code"],
+        )
 
 
 if __name__ == "__main__":

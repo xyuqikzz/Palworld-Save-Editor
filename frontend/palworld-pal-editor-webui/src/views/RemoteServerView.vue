@@ -1,18 +1,32 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ItemIcon from '@/components/modules/ItemIcon.vue'
 import ItemPicker from '@/components/modules/ItemPicker.vue'
-import RemotePalGrantForm from '@/components/modules/RemotePalGrantForm.vue'
 import RemotePalCard from '@/components/modules/RemotePalCard.vue'
-import RemoteRuntimeMap from '@/components/modules/RemoteRuntimeMap.vue'
+import { palSpeciesCatalogKey } from '@/components/modules/pal-species-filter'
+import {
+  LIVE_PLAYER_TABS,
+  playerManagementId,
+  playerManagementName,
+} from '@/components/modules/player-management-model'
 import { formatRuntimeAttributes } from '@/components/modules/remote-runtime-values'
 import { usePalEditorStore } from '@/stores/paleditor'
 
+const RemotePalGrantForm = defineAsyncComponent(
+  () => import('@/components/modules/RemotePalGrantForm.vue'),
+)
+const RemoteRuntimeMap = defineAsyncComponent(
+  () => import('@/components/modules/RemoteRuntimeMap.vue'),
+)
 const palStore = usePalEditorStore()
 const router = useRouter()
 const selectedPlayerId = ref('')
+const playerFilter = ref('all')
+const playerSearch = ref('')
+const playerListScrollTop = ref(0)
+const workspaceTab = ref('overview')
 const activeTab = ref('overview')
 const palPageIndex = ref(0)
 const palCollection = ref('party')
@@ -21,9 +35,98 @@ const commandMessage = ref('')
 const selectedInventoryContainerType = ref('')
 const itemForm = reactive({ itemId: '', quantity: 1 })
 const experienceForm = reactive({ amount: 1000 })
+const announcementForm = reactive({ message: '' })
+const shutdownForm = reactive({ waitTime: 30, message: '' })
+const shutdownConfirmed = ref(false)
+const playerActionConfirmation = ref(null)
+const commandHistory = ref([])
+let operationCatalogPromise = null
+
+const playerActionDefinitions = Object.freeze({
+  'player.kick': {
+    labelKey: 'Remote_KickPlayer',
+    confirmKey: 'Remote_ConfirmKickPlayer',
+    icon: 'x',
+    tone: 'warning',
+  },
+  'player.ban': {
+    labelKey: 'Remote_BanPlayer',
+    confirmKey: 'Remote_ConfirmBanPlayer',
+    icon: 'shield',
+    tone: 'danger',
+  },
+  'player.unban': {
+    labelKey: 'Remote_UnbanPlayer',
+    confirmKey: 'Remote_ConfirmUnbanPlayer',
+    icon: 'refresh',
+    tone: 'safe',
+  },
+})
 
 const hasPlayers = computed(() => palStore.REMOTE_PLAYERS.length > 0)
+const filteredPlayers = computed(() => {
+  const needle = playerSearch.value.trim().toLocaleLowerCase()
+  return palStore.REMOTE_PLAYERS.filter(player => {
+    if (playerFilter.value === 'online' && player.online !== true) return false
+    if (playerFilter.value === 'offline' && player.online === true) return false
+    if (!needle) return true
+    return `${playerName(player)} ${playerId(player)}`
+      .toLocaleLowerCase()
+      .includes(needle)
+  })
+})
+const playerRowHeight = 57
+const virtualPlayerStart = computed(() => (
+  filteredPlayers.value.length > 500
+    ? Math.max(0, Math.floor(playerListScrollTop.value / playerRowHeight) - 8)
+    : 0
+))
+const virtualPlayers = computed(() => (
+  filteredPlayers.value.length > 500
+    ? filteredPlayers.value.slice(
+      virtualPlayerStart.value,
+      virtualPlayerStart.value + 28,
+    )
+    : filteredPlayers.value
+))
+const virtualPlayerTop = computed(() => (
+  virtualPlayerStart.value * playerRowHeight
+))
+const virtualPlayerBottom = computed(() => (
+  Math.max(
+    0,
+    (filteredPlayers.value.length
+      - virtualPlayerStart.value
+      - virtualPlayers.value.length) * playerRowHeight,
+  )
+))
+const directoryCounts = computed(() => (
+  palStore.REMOTE_PLAYER_DIRECTORY?.counts || {
+    all: palStore.REMOTE_PLAYERS.length,
+    online: palStore.REMOTE_PLAYERS.filter(player => player.online === true).length,
+    offline: palStore.REMOTE_PLAYERS.filter(player => player.online !== true).length,
+  }
+))
+const snapshotState = computed(() => palStore.REMOTE_PLAYER_DIRECTORY?.snapshot || null)
+const persistence = computed(() => palStore.REMOTE_STATUS?.persistence || null)
 const can = capability => palStore.REMOTE_CAPABILITIES.includes(capability)
+const hasPlayerCommands = computed(() => palStore.REMOTE_CAPABILITIES.some(
+  capability => [
+    'inventory.grant',
+    'player.experience.add',
+    'pal.grant',
+    'player.kick',
+    'player.ban',
+    'player.unban',
+  ].includes(capability) && canTarget(capability),
+))
+const hasServerCommands = computed(() => palStore.REMOTE_CAPABILITIES.some(
+  capability => [
+    'server.announce',
+    'world.save',
+    'world.shutdown',
+  ].includes(capability),
+))
 const grantablePals = computed(() => palStore.PAL_STATIC_DATA_LIST.filter(
   pal => !pal.Invalid && !pal.IsHuman,
 ))
@@ -32,6 +135,10 @@ const detailPlayer = computed(() => details.value?.player || null)
 const selectedPlayer = computed(() => palStore.REMOTE_PLAYERS.find(
   player => playerId(player) === selectedPlayerId.value,
 ) || null)
+const selectedPlayerOnline = computed(() => selectedPlayer.value?.online !== false)
+const selectedPlayerUserId = computed(() => (
+  selectedPlayer.value?.userId || selectedPlayer.value?.user_id || ''
+))
 const displayPlayer = computed(() => detailPlayer.value || selectedPlayer.value)
 const inventory = computed(() => details.value?.inventory || null)
 const runtimeAttributes = computed(() => formatRuntimeAttributes(
@@ -208,16 +315,25 @@ const selectedGuild = computed(() => {
 })
 
 function playerId(player) {
-  return player.player_uid
-    || player.playerUid
-    || player.playerId
-    || player.userId
-    || player.uid
-    || ''
+  return playerManagementId(player)
+}
+
+function canTarget(capability) {
+  const targetCapability = selectedPlayer.value?.capabilities?.[capability]
+  if (targetCapability && typeof targetCapability.supported === 'boolean') {
+    return targetCapability.supported
+  }
+  return selectedPlayer.value?.online !== false && can(capability)
+}
+
+function formatSnapshotTime(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
 function playerName(player) {
-  return player.name || player.nickname || playerId(player)
+  return playerManagementName(player)
 }
 
 function playerInitial(player) {
@@ -230,20 +346,72 @@ function guildId(guild) {
 
 function openMapPlayer(id) {
   selectedPlayerId.value = id
+  workspaceTab.value = 'players'
   activeTab.value = 'overview'
 }
 
-async function selectRemoteTab(tab) {
-  activeTab.value = tab
-  if (tab === 'inventory' && selectedPlayerId.value) {
-    await palStore.loadRemotePlayerInventory(selectedPlayerId.value)
+function openPlayerWorkspace(id = '') {
+  if (id) selectedPlayerId.value = id
+  workspaceTab.value = 'players'
+  activeTab.value = 'overview'
+  if (!selectedPlayerId.value && hasPlayers.value) {
+    selectedPlayerId.value = playerId(palStore.REMOTE_PLAYERS[0])
   }
-  if (tab === 'pals' && selectedPlayerId.value) {
-    await loadPalPage(palPageIndex.value)
+}
+
+async function selectWorkspaceTab(tab) {
+  workspaceTab.value = tab
+  commandMessage.value = ''
+  if (tab === 'players' && !selectedPlayerId.value && hasPlayers.value) {
+    selectedPlayerId.value = playerId(palStore.REMOTE_PLAYERS[0])
   }
   if (tab === 'map' && !can('map.read')) {
     await palStore.refreshRemoteStatus({ background: true })
   }
+}
+
+async function selectRemoteTab(tab) {
+  if (!LIVE_PLAYER_TABS.has(tab)) return
+  activeTab.value = tab
+  if (tab === 'inventory' && selectedPlayerId.value) {
+    await Promise.all([
+      ensureItemCatalog(),
+      palStore.loadRemotePlayerInventory(selectedPlayerId.value),
+    ])
+  }
+  if (tab === 'pals' && selectedPlayerId.value) {
+    await Promise.all([
+      ensurePalCatalog(),
+      loadPalPage(palPageIndex.value),
+    ])
+  }
+  if (tab === 'actions') {
+    await ensureOperationCatalogs()
+  }
+}
+
+function ensureItemCatalog() {
+  return palStore.ITEM_CATALOG_RESULTS.length
+    ? Promise.resolve()
+    : palStore.searchItemCatalog('')
+}
+
+function ensurePalCatalog() {
+  return palStore.PAL_STATIC_DATA_LIST.length
+    ? Promise.resolve()
+    : palStore.fetchStaticData()
+}
+
+function ensureOperationCatalogs() {
+  if (!operationCatalogPromise) {
+    operationCatalogPromise = Promise.all([
+      can('inventory.grant') ? ensureItemCatalog() : Promise.resolve(),
+      can('pal.grant') ? ensurePalCatalog() : Promise.resolve(),
+    ]).finally(() => {
+      operationCatalogPromise = null
+    })
+  }
+  return operationCatalogPromise
 }
 
 async function selectPalCollection(collection) {
@@ -319,7 +487,8 @@ function itemRarity(itemId) {
 }
 
 function palInfo(entry) {
-  return palStore.PAL_STATIC_DATA[entry.characterId] || {
+  const catalogKey = palSpeciesCatalogKey(entry, palStore.PAL_STATIC_DATA)
+  return palStore.PAL_STATIC_DATA[catalogKey] || {
     InternalName: entry.characterId,
     I18n: entry.characterId,
   }
@@ -344,12 +513,16 @@ async function refreshRemote({
       player => playerId(player) === selectedPlayerId.value,
     )
     if (!selectedStillOnline) {
-      selectedPlayerId.value = hasPlayers.value
+      selectedPlayerId.value = workspaceTab.value === 'players' && hasPlayers.value
         ? playerId(palStore.REMOTE_PLAYERS[0])
         : ''
     } else if (
       selectedBeforeRefresh
-      && can('player.details')
+      && workspaceTab.value === 'players'
+      && (
+        can('player.details')
+        || can('player.saved.details')
+      )
     ) {
       await palStore.loadRemotePlayerDetails(selectedBeforeRefresh)
       if (activeTab.value === 'inventory') {
@@ -366,21 +539,105 @@ async function refreshRemote({
 
 async function runCommand(operation, payload = {}, targetPlayer = true) {
   commandMessage.value = ''
+  const target = targetPlayer === true
+    ? { player_uid: selectedPlayerId.value }
+    : targetPlayer === false
+      ? {}
+      : targetPlayer
   const result = await palStore.executeRemoteCommand({
     operation,
-    target: targetPlayer ? { player_uid: selectedPlayerId.value } : {},
+    target,
     payload,
   })
-  if (!result) return
+  if (!result) return null
   commandMessage.value = palStore.getTranslatedText('Remote_CommandCompleted')
+  commandHistory.value.unshift({
+    id: result.command_id || `${Date.now()}-${operation}`,
+    operation,
+    time: new Date().toLocaleTimeString(),
+  })
+  commandHistory.value = commandHistory.value.slice(0, 12)
+
+  if (
+    operation === 'inventory.grant'
+    && workspaceTab.value === 'players'
+    && activeTab.value === 'inventory'
+  ) {
+    await palStore.loadRemotePlayerInventory(selectedPlayerId.value, { force: true })
+  } else if (
+    operation === 'pal.grant'
+    && workspaceTab.value === 'players'
+    && activeTab.value === 'pals'
+  ) {
+    await loadPalPage(palPageIndex.value, { force: true })
+  } else if (operation === 'player.experience.add' && can('player.details')) {
+    await palStore.loadRemotePlayerDetails(selectedPlayerId.value)
+  } else if (['player.kick', 'player.ban', 'player.unban'].includes(operation)) {
+    await refreshRemote({ clearCommandMessage: false, background: true })
+  }
+  return result
 }
 
 async function grantSelectedItem() {
   if (!itemForm.itemId || !selectedPlayerId.value) return
+  if (!canTarget('inventory.grant')) return
   await runCommand('inventory.grant', {
     item_id: itemForm.itemId,
     quantity: Number(itemForm.quantity),
   })
+}
+
+async function announceServer() {
+  const message = announcementForm.message.trim()
+  if (!message) return
+  if (await runCommand('server.announce', { message }, false)) {
+    announcementForm.message = ''
+  }
+}
+
+function openPlayerAction(operation) {
+  const definition = playerActionDefinitions[operation]
+  if (
+    !definition
+    || !selectedPlayer.value
+    || !selectedPlayerUserId.value
+    || !canTarget(operation)
+  ) return
+
+  playerActionConfirmation.value = {
+    ...definition,
+    operation,
+    playerId: selectedPlayerId.value,
+    playerName: playerName(selectedPlayer.value),
+    userId: selectedPlayerUserId.value,
+  }
+}
+
+function closePlayerAction() {
+  if (!palStore.REMOTE_LOADING) playerActionConfirmation.value = null
+}
+
+async function confirmPlayerAction() {
+  const action = playerActionConfirmation.value
+  if (!action || palStore.REMOTE_LOADING) return
+  const result = await runCommand(
+    action.operation,
+    {},
+    {
+      player_uid: action.playerId,
+      user_id: action.userId,
+    },
+  )
+  if (result) playerActionConfirmation.value = null
+}
+
+async function scheduleShutdown() {
+  if (!shutdownConfirmed.value) return
+  const result = await runCommand('world.shutdown', {
+    wait_time: Number(shutdownForm.waitTime),
+    message: shutdownForm.message.trim(),
+  }, false)
+  if (result) shutdownConfirmed.value = false
 }
 
 async function disconnect() {
@@ -391,7 +648,10 @@ async function disconnect() {
 
 watch(selectedPlayerId, async playerIdValue => {
   palPageIndex.value = 0
-  if (playerIdValue && can('player.details')) {
+  if (
+    playerIdValue
+    && (can('player.details') || can('player.saved.details'))
+  ) {
     await palStore.loadRemotePlayerDetails(playerIdValue)
     if (activeTab.value === 'inventory') {
       await palStore.loadRemotePlayerInventory(playerIdValue)
@@ -423,14 +683,6 @@ onMounted(async () => {
       return
     }
   }
-  await Promise.all([
-    palStore.ITEM_CATALOG_RESULTS.length
-      ? Promise.resolve()
-      : palStore.searchItemCatalog(''),
-    palStore.PAL_STATIC_DATA_LIST.length
-      ? Promise.resolve()
-      : palStore.fetchStaticData(),
-  ])
   await refreshRemote()
 })
 </script>
@@ -479,6 +731,23 @@ onMounted(async () => {
         </span>
         <code>v{{ palStore.REMOTE_STATUS?.bridgeVersion || '—' }}</code>
       </div>
+      <div
+        v-if="persistence"
+        :class="['persistence-state', `persistence-state--${persistence.state || 'clean'}`]"
+        role="status"
+      >
+        <span><AppIcon :name="persistence.state === 'failed' ? 'warning' : 'file'" :size="15" /></span>
+        <strong>{{ palStore.getTranslatedText(`Remote_Persistence_${persistence.state || 'clean'}`) }}</strong>
+        <small v-if="persistence.state === 'dirty' && persistence.dueAt">
+          {{ palStore.getTranslatedText('Remote_PersistenceScheduled') }}
+        </small>
+        <small v-else-if="persistence.state === 'failed'">
+          {{ persistence.lastError || palStore.getTranslatedText('Remote_PersistenceFailedHint') }}
+        </small>
+        <small v-else-if="persistence.lastSavedAt">
+          {{ formatSnapshotTime(persistence.lastSavedAt) }}
+        </small>
+      </div>
 
       <section class="remote-metrics" :aria-label="palStore.getTranslatedText('Remote_GameReady')">
         <article :class="{ 'is-positive': palStore.REMOTE_STATUS?.gameReady }">
@@ -505,7 +774,7 @@ onMounted(async () => {
         <article>
           <span class="remote-metrics__icon"><AppIcon name="user" :size="18" /></span>
           <div>
-            <strong>{{ palStore.REMOTE_PLAYERS.length }}</strong>
+            <strong>{{ directoryCounts.online }}</strong>
             <span>{{ palStore.getTranslatedText('Remote_OnlinePlayers') }}</span>
           </div>
         </article>
@@ -525,24 +794,92 @@ onMounted(async () => {
         </article>
       </section>
 
-      <div class="remote-workspace">
-        <aside class="remote-sidebar">
+      <nav
+        class="workspace-tabs"
+        role="tablist"
+        :aria-label="palStore.getTranslatedText('Remote_WorkspaceNavigation')"
+      >
+        <button
+          type="button"
+          role="tab"
+          :class="{ active: workspaceTab === 'overview' }"
+          :aria-selected="workspaceTab === 'overview'"
+          @click="selectWorkspaceTab('overview')"
+        >
+          <span><AppIcon name="overview" :size="18" /></span>
+          <span>
+            <strong>{{ palStore.getTranslatedText('Remote_WorkspaceOverview') }}</strong>
+            <small>{{ palStore.getTranslatedText('Remote_WorkspaceOverviewHint') }}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :class="{ active: workspaceTab === 'players' }"
+          :aria-selected="workspaceTab === 'players'"
+          @click="selectWorkspaceTab('players')"
+        >
+          <span><AppIcon name="user" :size="18" /></span>
+          <span>
+            <strong>{{ palStore.getTranslatedText('Remote_WorkspacePlayers') }}</strong>
+            <small>{{ palStore.getTranslatedText('Remote_WorkspacePlayersHint') }}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :class="{
+            active: workspaceTab === 'map',
+            'is-unavailable': !can('map.read'),
+          }"
+          :aria-selected="workspaceTab === 'map'"
+          @click="selectWorkspaceTab('map')"
+        >
+          <span><AppIcon name="map" :size="18" /></span>
+          <span>
+            <strong>{{ palStore.getTranslatedText('Remote_WorkspaceMap') }}</strong>
+            <small>{{ palStore.getTranslatedText('Remote_WorkspaceMapHint') }}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :class="{ active: workspaceTab === 'server' }"
+          :aria-selected="workspaceTab === 'server'"
+          @click="selectWorkspaceTab('server')"
+        >
+          <span><AppIcon name="settings" :size="18" /></span>
+          <span>
+            <strong>{{ palStore.getTranslatedText('Remote_WorkspaceServer') }}</strong>
+            <small>{{ palStore.getTranslatedText('Remote_WorkspaceServerHint') }}</small>
+          </span>
+        </button>
+      </nav>
+
+      <section v-if="workspaceTab === 'overview'" class="workspace-panel workspace-overview">
+        <header class="workspace-panel__heading">
+          <span><AppIcon name="activity" :size="20" /></span>
+          <div>
+            <p>{{ palStore.getTranslatedText('Remote_ServerScope') }}</p>
+            <h2>{{ palStore.getTranslatedText('Remote_ServerOverview') }}</h2>
+            <small>{{ palStore.getTranslatedText('Remote_ServerOverviewHint') }}</small>
+          </div>
+        </header>
+
+        <div class="overview-grid">
           <section class="remote-card remote-card--players">
             <header class="remote-card__heading">
               <div>
-                <p>{{ palStore.getTranslatedText('Remote_RuntimeDataReady') }}</p>
                 <h2>{{ palStore.getTranslatedText('Remote_Players') }}</h2>
               </div>
-              <span class="remote-card__count">{{ palStore.REMOTE_PLAYERS.length }}</span>
+              <span class="remote-card__count">{{ directoryCounts.all }}</span>
             </header>
             <div v-if="hasPlayers" class="player-list">
               <button
-                v-for="player in palStore.REMOTE_PLAYERS"
+                v-for="player in palStore.REMOTE_PLAYERS.slice(0, 12)"
                 :key="playerId(player)"
                 type="button"
-                :class="{ active: selectedPlayerId === playerId(player) }"
-                :aria-pressed="selectedPlayerId === playerId(player)"
-                @click="selectedPlayerId = playerId(player)"
+                @click="openPlayerWorkspace(playerId(player))"
               >
                 <span class="player-list__avatar">{{ playerInitial(player) }}</span>
                 <span class="player-list__copy">
@@ -551,6 +888,9 @@ onMounted(async () => {
                 </span>
                 <span class="player-list__level">
                   {{ player.level ? `${palStore.getTranslatedText('Common_LevelShort')}${player.level}` : '—' }}
+                </span>
+                <span :class="['player-presence', { 'is-online': player.online === true }]">
+                  {{ palStore.getTranslatedText(player.online === true ? 'Remote_FilterOnline' : 'Remote_FilterOffline') }}
                 </span>
                 <AppIcon name="forward" :size="14" />
               </button>
@@ -564,7 +904,6 @@ onMounted(async () => {
           <section class="remote-card">
             <header class="remote-card__heading">
               <div>
-                <p>{{ palStore.getTranslatedText('Remote_OnlinePlayers') }}</p>
                 <h2>{{ palStore.getTranslatedText('Remote_Guilds') }}</h2>
               </div>
               <span class="remote-card__count">{{ palStore.REMOTE_GUILDS.length }}</span>
@@ -581,7 +920,40 @@ onMounted(async () => {
             <p v-else class="empty-copy">{{ palStore.getTranslatedText('Remote_NoGuilds') }}</p>
           </section>
 
-          <details class="remote-card capability-card">
+          <section class="remote-card overview-actions">
+            <header class="remote-card__heading">
+              <div>
+                <p>{{ palStore.getTranslatedText('Remote_ServerScope') }}</p>
+                <h2>{{ palStore.getTranslatedText('Remote_QuickAccess') }}</h2>
+              </div>
+            </header>
+            <button type="button" @click="openPlayerWorkspace()">
+              <span><AppIcon name="user" :size="16" /></span>
+              <span>
+                <strong>{{ palStore.getTranslatedText('Remote_WorkspacePlayers') }}</strong>
+                <small>{{ palStore.getTranslatedText('Remote_WorkspacePlayersHint') }}</small>
+              </span>
+              <AppIcon name="forward" :size="14" />
+            </button>
+            <button type="button" @click="selectWorkspaceTab('map')">
+              <span><AppIcon name="map" :size="16" /></span>
+              <span>
+                <strong>{{ palStore.getTranslatedText('Remote_WorkspaceMap') }}</strong>
+                <small>{{ palStore.getTranslatedText('Remote_WorkspaceMapHint') }}</small>
+              </span>
+              <AppIcon name="forward" :size="14" />
+            </button>
+            <button type="button" @click="selectWorkspaceTab('server')">
+              <span><AppIcon name="settings" :size="16" /></span>
+              <span>
+                <strong>{{ palStore.getTranslatedText('Remote_WorkspaceServer') }}</strong>
+                <small>{{ palStore.getTranslatedText('Remote_WorkspaceServerHint') }}</small>
+              </span>
+              <AppIcon name="forward" :size="14" />
+            </button>
+          </section>
+
+          <details class="remote-card capability-card overview-capabilities">
             <summary>
               <span>
                 <AppIcon name="settings" :size="16" />
@@ -593,19 +965,144 @@ onMounted(async () => {
               <code v-for="capability in palStore.REMOTE_CAPABILITIES" :key="capability">{{ capability }}</code>
             </div>
           </details>
+        </div>
+      </section>
+
+      <div v-else-if="workspaceTab === 'players'" class="remote-workspace">
+        <aside class="remote-sidebar">
+          <section class="remote-card remote-card--players">
+            <header class="remote-card__heading">
+              <div>
+                <p>{{ palStore.getTranslatedText('Remote_RuntimeDataReady') }}</p>
+                <h2>{{ palStore.getTranslatedText('Remote_Players') }}</h2>
+              </div>
+              <span class="remote-card__count">{{ filteredPlayers.length }} / {{ directoryCounts.all }}</span>
+            </header>
+            <div class="player-directory-controls">
+              <label class="player-search">
+                <AppIcon name="search" :size="14" />
+                <input
+                  v-model="playerSearch"
+                  type="search"
+                  :placeholder="palStore.getTranslatedText('Remote_PlayerSearch')"
+                />
+              </label>
+              <div class="player-filters" role="group" :aria-label="palStore.getTranslatedText('Remote_PlayerFilter')">
+                <button
+                  v-for="filter in ['all', 'online', 'offline']"
+                  :key="filter"
+                  type="button"
+                  :class="{ active: playerFilter === filter }"
+                  @click="playerFilter = filter; playerListScrollTop = 0"
+                >
+                  {{ palStore.getTranslatedText(`Remote_Filter${filter[0].toUpperCase()}${filter.slice(1)}`) }}
+                  <b>{{ directoryCounts[filter] }}</b>
+                </button>
+              </div>
+              <p :class="['snapshot-note', `is-${snapshotState?.state || 'unsupported'}`]">
+                <AppIcon :name="snapshotState?.state === 'failed' ? 'warning' : 'file'" :size="13" />
+                <span v-if="snapshotState?.state === 'ready'">
+                  {{ palStore.getTranslatedText('Remote_SnapshotCaptured', [formatSnapshotTime(snapshotState.captured_at)]) }}
+                </span>
+                <span v-else>
+                  {{ palStore.getTranslatedText(`Remote_Snapshot_${snapshotState?.state || 'unsupported'}`) }}
+                </span>
+              </p>
+            </div>
+            <div
+              v-if="filteredPlayers.length"
+              class="player-list player-list--directory"
+              @scroll.passive="playerListScrollTop = $event.currentTarget.scrollTop"
+            >
+              <div v-if="virtualPlayerTop" :style="{ height: `${virtualPlayerTop}px` }" aria-hidden="true" />
+              <button
+                v-for="player in virtualPlayers"
+                :key="playerId(player)"
+                type="button"
+                :class="{ active: selectedPlayerId === playerId(player) }"
+                :aria-pressed="selectedPlayerId === playerId(player)"
+                @click="selectedPlayerId = playerId(player)"
+              >
+                <span class="player-list__avatar">{{ playerInitial(player) }}</span>
+                <span class="player-list__copy">
+                  <strong>{{ playerName(player) }}</strong>
+                  <small>
+                    {{ palStore.getTranslatedText(player.online === true ? 'Remote_FilterOnline' : 'Remote_FilterOffline') }}
+                    · {{ player.source || 'runtime' }}
+                  </small>
+                </span>
+                <span class="player-list__level">
+                  {{ player.level ? `${palStore.getTranslatedText('Common_LevelShort')}${player.level}` : '—' }}
+                </span>
+                <AppIcon name="forward" :size="14" />
+              </button>
+              <div v-if="virtualPlayerBottom" :style="{ height: `${virtualPlayerBottom}px` }" aria-hidden="true" />
+            </div>
+            <div v-else class="sidebar-empty">
+              <span><AppIcon name="user" :size="20" /></span>
+              <p>{{ palStore.getTranslatedText('Remote_NoMatchingPlayers') }}</p>
+            </div>
+          </section>
+
         </aside>
 
         <section class="remote-console">
           <header class="remote-console__heading">
             <span class="remote-console__avatar">{{ playerInitial(displayPlayer) }}</span>
             <div>
-              <p>{{ palStore.getTranslatedText('Remote_CommandCenter') }}</p>
+              <p>{{ palStore.getTranslatedText('Remote_PlayerScope') }}</p>
               <h2>{{ displayPlayer ? playerName(displayPlayer) : palStore.getTranslatedText('Remote_PlayerDetails') }}</h2>
               <code>{{ selectedPlayerId || '—' }}</code>
             </div>
-            <span v-if="displayPlayer" class="remote-console__level">
-              {{ palStore.getTranslatedText('Common_LevelShort') }}{{ valueOrDash(displayPlayer.level) }}
-            </span>
+            <div v-if="displayPlayer" class="remote-console__status">
+              <div class="remote-console__moderation-row">
+                <span class="remote-console__level">
+                  {{ palStore.getTranslatedText('Common_LevelShort') }}{{ valueOrDash(displayPlayer.level) }}
+                </span>
+                <div
+                  v-if="can('player.kick') || can('player.ban') || can('player.unban')"
+                  class="player-admin-actions"
+                  :aria-label="palStore.getTranslatedText('Remote_Moderation')"
+                >
+                  <button
+                    v-if="can('player.kick')"
+                    type="button"
+                    class="player-admin-action"
+                    :disabled="palStore.REMOTE_LOADING || !canTarget('player.kick') || !selectedPlayerUserId"
+                    @click="openPlayerAction('player.kick')"
+                  >
+                    <AppIcon name="x" :size="13" />
+                    {{ palStore.getTranslatedText('Remote_KickPlayer') }}
+                  </button>
+                  <button
+                    v-if="can('player.ban')"
+                    type="button"
+                    class="player-admin-action is-danger"
+                    :disabled="palStore.REMOTE_LOADING || !canTarget('player.ban') || !selectedPlayerUserId"
+                    @click="openPlayerAction('player.ban')"
+                  >
+                    <AppIcon name="shield" :size="13" />
+                    {{ palStore.getTranslatedText('Remote_BanPlayer') }}
+                  </button>
+                  <button
+                    v-if="can('player.unban')"
+                    type="button"
+                    class="player-admin-action is-safe"
+                    :disabled="palStore.REMOTE_LOADING || !canTarget('player.unban') || !selectedPlayerUserId"
+                    @click="openPlayerAction('player.unban')"
+                  >
+                    <AppIcon name="refresh" :size="13" />
+                    {{ palStore.getTranslatedText('Remote_UnbanPlayer') }}
+                  </button>
+                </div>
+              </div>
+              <span
+                v-if="selectedPlayer"
+                :class="['remote-console__presence', { 'is-online': selectedPlayerOnline }]"
+              >
+                {{ palStore.getTranslatedText(selectedPlayerOnline ? 'Remote_FilterOnline' : 'Remote_FilterOffline') }}
+              </span>
+            </div>
           </header>
 
           <nav class="remote-tabs" role="tablist" :aria-label="palStore.getTranslatedText('Remote_PlayerDetails')">
@@ -642,34 +1139,29 @@ onMounted(async () => {
             <button
               type="button"
               role="tab"
-              :class="{
-                active: activeTab === 'map',
-                'remote-tabs__unavailable': !can('map.read'),
-              }"
-              :aria-selected="activeTab === 'map'"
-              :title="!can('map.read') ? palStore.getTranslatedText('RemoteMap_CapabilityUnavailable') : undefined"
-              @click="selectRemoteTab('map')"
-            >
-              <AppIcon name="map" :size="16" />
-              {{ palStore.getTranslatedText('Remote_TabMap') }}
-              <span v-if="can('map.read')">{{ palStore.REMOTE_MAP_DATA?.players?.length || 0 }}</span>
-              <span v-else aria-hidden="true">!</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              :class="{ active: activeTab === 'operations' }"
-              :aria-selected="activeTab === 'operations'"
-              @click="selectRemoteTab('operations')"
+              :class="{ active: activeTab === 'actions' }"
+              :aria-selected="activeTab === 'actions'"
+              @click="selectRemoteTab('actions')"
             >
               <AppIcon name="settings" :size="16" />
-              {{ palStore.getTranslatedText('Remote_TabOperations') }}
+              {{ palStore.getTranslatedText('Remote_PlayerActions') }}
             </button>
           </nav>
 
           <p v-if="commandMessage" class="command-message" role="status">
             <AppIcon name="check" :size="16" />
             {{ commandMessage }}
+          </p>
+          <p
+            v-if="selectedPlayer && !selectedPlayerOnline"
+            class="offline-live-note"
+            role="status"
+          >
+            <AppIcon name="file" :size="16" />
+            <span>
+              <strong>{{ palStore.getTranslatedText('Remote_OfflineSnapshotTitle') }}</strong>
+              {{ palStore.getTranslatedText('Remote_OfflineSnapshotHint') }}
+            </span>
           </p>
           <p v-if="palStore.LAST_ERROR?.context?.startsWith('remote-')" class="command-error" role="alert">
             <AppIcon name="warning" :size="16" />
@@ -679,20 +1171,6 @@ onMounted(async () => {
           <div v-if="palStore.REMOTE_PLAYER_DETAILS_LOADING" class="detail-skeleton" aria-busy="true">
             <span v-for="index in 6" :key="index" />
           </div>
-
-          <div
-            v-else-if="activeTab === 'map' && !can('map.read')"
-            class="data-state data-state--map-unavailable"
-          >
-            <span><AppIcon name="warning" :size="24" /></span>
-            <strong>{{ palStore.getTranslatedText('RemoteMap_CapabilityUnavailable') }}</strong>
-            <p>{{ palStore.getTranslatedText('RemoteMap_CapabilityHint') }}</p>
-          </div>
-
-          <RemoteRuntimeMap
-            v-else-if="activeTab === 'map'"
-            @select-player="openMapPlayer"
-          />
 
           <div v-else-if="!selectedPlayerId" class="data-state">
             <span><AppIcon name="user" :size="26" /></span>
@@ -1091,23 +1569,26 @@ onMounted(async () => {
             </footer>
           </div>
 
-          <div v-else class="operation-grid">
+          <div v-else-if="activeTab === 'actions'" class="operation-grid">
             <form
               v-if="can('inventory.grant')"
               class="operation-card"
+              :class="{ 'is-target-disabled': !canTarget('inventory.grant') }"
+              :inert="canTarget('inventory.grant') ? undefined : ''"
+              :aria-disabled="!canTarget('inventory.grant')"
               @submit.prevent="grantSelectedItem"
             >
               <header class="operation-card__heading">
                 <span><AppIcon name="box" :size="18" /></span>
                 <div>
-                  <small>{{ palStore.getTranslatedText('Remote_TabOperations') }}</small>
+                  <small>{{ palStore.getTranslatedText('Remote_PlayerActions') }}</small>
                   <h3>{{ palStore.getTranslatedText('Remote_GrantItem') }}</h3>
                 </div>
               </header>
               <ItemPicker
                 v-model="itemForm.itemId"
                 :options="palStore.ITEM_CATALOG_RESULTS"
-                :disabled="palStore.REMOTE_LOADING"
+                :disabled="palStore.REMOTE_LOADING || !canTarget('inventory.grant')"
               />
               <label>
                 <span>{{ palStore.getTranslatedText('Remote_Quantity') }}</span>
@@ -1127,7 +1608,7 @@ onMounted(async () => {
               <header class="operation-card__heading">
                 <span><AppIcon name="activity" :size="18" /></span>
                 <div>
-                  <small>{{ palStore.getTranslatedText('Remote_TabOperations') }}</small>
+                  <small>{{ palStore.getTranslatedText('Remote_PlayerActions') }}</small>
                   <h3>{{ palStore.getTranslatedText('Remote_AddExperience') }}</h3>
                 </div>
               </header>
@@ -1135,7 +1616,7 @@ onMounted(async () => {
                 <span>{{ palStore.getTranslatedText('Remote_ExperienceAmount') }}</span>
                 <input v-model.number="experienceForm.amount" type="number" min="1" max="2000000000" required />
               </label>
-              <button class="remote-button remote-button--primary" :disabled="palStore.REMOTE_LOADING || !selectedPlayerId">
+              <button class="remote-button remote-button--primary" :disabled="palStore.REMOTE_LOADING || !canTarget('player.experience.add') || !selectedPlayerId">
                 <AppIcon name="plus" :size="15" />
                 {{ palStore.getTranslatedText('Remote_Execute') }}
               </button>
@@ -1148,33 +1629,13 @@ onMounted(async () => {
               :passive-options="palStore.PASSIVE_SKILLS_LIST"
               :level-maximum="palStore.MAX_LEVEL"
               :soul-maximum="palStore.MAX_SOULS_LEVEL || 60"
-              :disabled="palStore.REMOTE_LOADING"
-              :can-submit="Boolean(selectedPlayerId)"
+              :disabled="palStore.REMOTE_LOADING || !canTarget('pal.grant')"
+              :can-submit="Boolean(selectedPlayerId) && canTarget('pal.grant')"
               @submit="runCommand('pal.grant', $event)"
             />
 
-            <article v-if="can('world.save')" class="operation-card operation-card--world">
-              <header class="operation-card__heading">
-                <span><AppIcon name="file" :size="18" /></span>
-                <div>
-                  <small>{{ palStore.getTranslatedText('Remote_TabOperations') }}</small>
-                  <h3>{{ palStore.getTranslatedText('Remote_SaveWorld') }}</h3>
-                </div>
-              </header>
-              <p>{{ palStore.getTranslatedText('Remote_SaveWorldHint') }}</p>
-              <button
-                type="button"
-                class="remote-button remote-button--primary"
-                :disabled="palStore.REMOTE_LOADING"
-                @click="runCommand('world.save', {}, false)"
-              >
-                <AppIcon name="check" :size="15" />
-                {{ palStore.getTranslatedText('Remote_SaveNow') }}
-              </button>
-            </article>
-
             <article
-              v-if="!palStore.REMOTE_CAPABILITIES.some((capability) => ['inventory.grant', 'player.experience.add', 'pal.grant', 'world.save'].includes(capability))"
+              v-if="!hasPlayerCommands"
               class="operation-card operation-card--empty"
             >
               <span><AppIcon name="settings" :size="26" /></span>
@@ -1184,6 +1645,231 @@ onMounted(async () => {
           </div>
         </section>
       </div>
+
+      <section v-else-if="workspaceTab === 'map'" class="workspace-panel remote-map-workspace">
+        <header class="workspace-panel__heading">
+          <span><AppIcon name="map" :size="20" /></span>
+          <div>
+            <p>{{ palStore.getTranslatedText('Remote_ServerScope') }}</p>
+            <h2>{{ palStore.getTranslatedText('Remote_MapWorkspaceTitle') }}</h2>
+            <small>{{ palStore.getTranslatedText('Remote_MapWorkspaceHint') }}</small>
+          </div>
+        </header>
+
+        <div
+          v-if="!can('map.read')"
+          class="data-state data-state--map-unavailable"
+        >
+          <span><AppIcon name="warning" :size="24" /></span>
+          <strong>{{ palStore.getTranslatedText('RemoteMap_CapabilityUnavailable') }}</strong>
+          <p>{{ palStore.getTranslatedText('RemoteMap_CapabilityHint') }}</p>
+        </div>
+        <RemoteRuntimeMap
+          v-else
+          @select-player="openMapPlayer"
+        />
+      </section>
+
+      <section v-else class="workspace-panel server-control">
+        <header class="workspace-panel__heading workspace-panel__heading--server">
+          <span><AppIcon name="settings" :size="20" /></span>
+          <div>
+            <p>{{ palStore.getTranslatedText('Remote_ServerScope') }}</p>
+            <h2>{{ palStore.getTranslatedText('Remote_ServerControlTitle') }}</h2>
+            <small>{{ palStore.getTranslatedText('Remote_ServerControlHint') }}</small>
+          </div>
+          <span class="scope-badge">
+            <AppIcon name="building" :size="14" />
+            {{ palStore.getTranslatedText('Remote_AppliesToServer') }}
+          </span>
+        </header>
+
+        <p v-if="commandMessage" class="command-message" role="status">
+          <AppIcon name="check" :size="16" />
+          {{ commandMessage }}
+        </p>
+        <p v-if="palStore.LAST_ERROR?.context?.startsWith('remote-')" class="command-error" role="alert">
+          <AppIcon name="warning" :size="16" />
+          {{ palStore.LAST_ERROR.message }}
+        </p>
+
+        <div class="operation-grid server-operation-grid">
+          <form
+            v-if="can('server.announce')"
+            class="operation-card operation-card--announcement"
+            @submit.prevent="announceServer"
+          >
+            <header class="operation-card__heading">
+              <span><AppIcon name="forward" :size="18" /></span>
+              <div>
+                <small>{{ palStore.getTranslatedText('Remote_AppliesToServer') }}</small>
+                <h3>{{ palStore.getTranslatedText('Remote_Announcement') }}</h3>
+              </div>
+            </header>
+            <p>{{ palStore.getTranslatedText('Remote_AnnouncementHint') }}</p>
+            <label>
+              <span>{{ palStore.getTranslatedText('Remote_AnnouncementMessage') }}</span>
+              <textarea
+                v-model="announcementForm.message"
+                maxlength="512"
+                rows="4"
+                required
+              />
+            </label>
+            <button
+              class="remote-button remote-button--primary"
+              :disabled="palStore.REMOTE_LOADING || !announcementForm.message.trim()"
+            >
+              <AppIcon name="forward" :size="15" />
+              {{ palStore.getTranslatedText('Remote_SendAnnouncement') }}
+            </button>
+          </form>
+
+          <article v-if="can('world.save')" class="operation-card operation-card--world">
+            <header class="operation-card__heading">
+              <span><AppIcon name="file" :size="18" /></span>
+              <div>
+                <small>{{ palStore.getTranslatedText('Remote_AppliesToServer') }}</small>
+                <h3>{{ palStore.getTranslatedText('Remote_SaveWorld') }}</h3>
+              </div>
+            </header>
+            <p>{{ palStore.getTranslatedText('Remote_SaveWorldHint') }}</p>
+            <button
+              type="button"
+              class="remote-button remote-button--primary"
+              :disabled="palStore.REMOTE_LOADING"
+              @click="runCommand('world.save', {}, false)"
+            >
+              <AppIcon name="check" :size="15" />
+              {{ palStore.getTranslatedText('Remote_SaveNow') }}
+            </button>
+          </article>
+
+          <form
+            v-if="can('world.shutdown')"
+            class="operation-card operation-card--danger"
+            @submit.prevent="scheduleShutdown"
+          >
+            <header class="operation-card__heading">
+              <span><AppIcon name="warning" :size="18" /></span>
+              <div>
+                <small>{{ palStore.getTranslatedText('Remote_AppliesToServer') }}</small>
+                <h3>{{ palStore.getTranslatedText('Remote_Shutdown') }}</h3>
+              </div>
+            </header>
+            <p>{{ palStore.getTranslatedText('Remote_ShutdownHint') }}</p>
+            <label>
+              <span>{{ palStore.getTranslatedText('Remote_ShutdownWait') }}</span>
+              <input v-model.number="shutdownForm.waitTime" type="number" min="5" max="3600" required />
+            </label>
+            <label>
+              <span>{{ palStore.getTranslatedText('Remote_ShutdownMessage') }}</span>
+              <textarea v-model="shutdownForm.message" maxlength="512" rows="2" />
+            </label>
+            <label class="operation-confirmation">
+              <input v-model="shutdownConfirmed" type="checkbox" />
+              <span>{{ palStore.getTranslatedText('Remote_ConfirmShutdown') }}</span>
+            </label>
+            <button
+              class="remote-button remote-button--danger"
+              :disabled="palStore.REMOTE_LOADING || !shutdownConfirmed"
+            >
+              {{ palStore.getTranslatedText('Remote_ScheduleShutdown') }}
+            </button>
+          </form>
+
+          <article class="operation-card operation-card--history">
+            <header class="operation-card__heading">
+              <span><AppIcon name="activity" :size="18" /></span>
+              <div>
+                <small>{{ palStore.getTranslatedText('Remote_ServerScope') }}</small>
+                <h3>{{ palStore.getTranslatedText('Remote_CommandHistory') }}</h3>
+              </div>
+            </header>
+            <ol v-if="commandHistory.length" class="operation-history">
+              <li v-for="entry in commandHistory" :key="entry.id">
+                <code>{{ entry.operation }}</code>
+                <time>{{ entry.time }}</time>
+              </li>
+            </ol>
+            <p v-else class="operation-history__empty">
+              {{ palStore.getTranslatedText('Remote_CommandHistoryEmpty') }}
+            </p>
+          </article>
+
+          <article
+            v-if="!hasServerCommands"
+            class="operation-card operation-card--empty"
+          >
+            <span><AppIcon name="settings" :size="26" /></span>
+            <h3>{{ palStore.getTranslatedText('Remote_NoServerCommands') }}</h3>
+            <p>{{ palStore.getTranslatedText('Remote_DevelopmentOnly') }}</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div
+      v-if="playerActionConfirmation"
+      class="player-action-backdrop"
+      @click.self="closePlayerAction"
+    >
+      <section
+        class="player-action-dialog"
+        :class="`is-${playerActionConfirmation.tone}`"
+        role="alertdialog"
+        aria-modal="true"
+        :aria-labelledby="`player-action-${playerActionConfirmation.operation}`"
+      >
+        <header>
+          <span><AppIcon :name="playerActionConfirmation.icon" :size="20" /></span>
+          <div>
+            <small>{{ palStore.getTranslatedText('Remote_SecondConfirmation') }}</small>
+            <h2 :id="`player-action-${playerActionConfirmation.operation}`">
+              {{ palStore.getTranslatedText(playerActionConfirmation.labelKey) }}
+            </h2>
+          </div>
+        </header>
+        <p>
+          {{ palStore.getTranslatedText(
+            playerActionConfirmation.confirmKey,
+            [playerActionConfirmation.playerName],
+          ) }}
+        </p>
+        <dl>
+          <div>
+            <dt>{{ palStore.getTranslatedText('Remote_SelectedPlayer') }}</dt>
+            <dd>{{ playerActionConfirmation.playerName }}</dd>
+          </div>
+          <div>
+            <dt>{{ palStore.getTranslatedText('Remote_SelectedUserId') }}</dt>
+            <dd><code>{{ playerActionConfirmation.userId }}</code></dd>
+          </div>
+        </dl>
+        <footer>
+          <button
+            type="button"
+            class="remote-button"
+            :disabled="palStore.REMOTE_LOADING"
+            @click="closePlayerAction"
+          >
+            {{ palStore.getTranslatedText('Common_Cancel') }}
+          </button>
+          <button
+            type="button"
+            :class="[
+              'remote-button',
+              playerActionConfirmation.tone === 'safe'
+                ? 'remote-button--primary'
+                : 'remote-button--danger',
+            ]"
+            :disabled="palStore.REMOTE_LOADING"
+            @click="confirmPlayerAction"
+          >
+            {{ palStore.getTranslatedText('Remote_ConfirmAction') }}
+          </button>
+        </footer>
+      </section>
     </div>
   </main>
 </template>
@@ -1224,10 +1910,10 @@ onMounted(async () => {
 
 .remote-heading h1 {
   margin: 0;
-  font-size: clamp(28px, 3vw, 42px);
+  font-size: 34px;
   line-height: 1.08;
   font-weight: 760;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
@@ -1345,6 +2031,40 @@ onMounted(async () => {
   font: 10px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
+.persistence-state {
+  display: grid;
+  min-height: 38px;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 14px;
+  padding: 8px 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  font-size: 10px;
+}
+
+.persistence-state > span {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: var(--ui-success);
+  background: oklch(0.25 0.05 158);
+  border-radius: 6px;
+}
+.persistence-state strong { color: var(--ui-text); font-size: 10px; }
+.persistence-state small { color: var(--ui-text-muted); }
+.persistence-state--dirty > span,
+.persistence-state--saving > span { color: var(--ui-warning); background: oklch(0.26 0.05 80); }
+.persistence-state--failed {
+  border-color: oklch(0.45 0.08 24);
+  background: var(--ui-danger-soft);
+}
+.persistence-state--failed > span { color: var(--ui-danger); background: oklch(0.26 0.06 24); }
+
 .remote-metrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1408,11 +2128,232 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.workspace-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  padding: 6px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.workspace-tabs button {
+  display: grid;
+  min-width: 0;
+  min-height: 62px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  color: var(--ui-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  text-align: left;
+}
+
+.workspace-tabs button > span:first-child {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: 9px;
+}
+
+.workspace-tabs button > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.workspace-tabs strong,
+.workspace-tabs small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tabs strong {
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.workspace-tabs small {
+  color: var(--ui-text-muted);
+  font-size: 9px;
+}
+
+.workspace-tabs button:hover {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+}
+
+.workspace-tabs button.active {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: oklch(0.52 0.09 246);
+  box-shadow: 0 1px 2px oklch(0.05 0.02 252 / 0.24);
+}
+
+.workspace-tabs button.active strong { color: var(--ui-text); }
+.workspace-tabs button.active > span:first-child {
+  color: var(--ui-accent);
+  border-color: oklch(0.52 0.09 246);
+}
+.workspace-tabs button.is-unavailable > span:first-child { color: var(--ui-warning); }
+
+.workspace-panel {
+  min-width: 0;
+  min-height: 560px;
+  margin-top: 14px;
+  padding: 20px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.workspace-panel__heading {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.workspace-panel__heading > span:first-child {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border: 1px solid oklch(0.5 0.08 246);
+  border-radius: 11px;
+}
+
+.workspace-panel__heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.workspace-panel__heading p,
+.workspace-panel__heading h2,
+.workspace-panel__heading small { margin: 0; }
+.workspace-panel__heading p {
+  color: var(--ui-accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.workspace-panel__heading h2 {
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+.workspace-panel__heading small {
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-panel__heading--server {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.scope-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1.1fr .9fr 1.1fr;
+  align-items: start;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.overview-grid .remote-card { height: 100%; }
+.overview-capabilities { grid-column: 1 / -1; height: auto !important; }
+
+.overview-actions {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.overview-actions .remote-card__heading { margin-bottom: 5px; }
+.overview-actions > button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  text-align: left;
+}
+
+.overview-actions > button:hover {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-border-strong);
+}
+
+.overview-actions > button > span:first-child {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--ui-accent);
+  background: var(--ui-canvas);
+  border-radius: 8px;
+}
+
+.overview-actions > button > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.overview-actions strong,
+.overview-actions small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview-actions strong { font-size: 11px; }
+.overview-actions small { color: var(--ui-text-muted); font-size: 8px; }
+
 .remote-workspace {
   display: grid;
   grid-template-columns: minmax(292px, 326px) minmax(0, 1fr);
   align-items: start;
   gap: 14px;
+  margin-top: 14px;
 }
 
 .remote-sidebar { display: flex; flex-direction: column; gap: 14px; }
@@ -1462,11 +2403,97 @@ onMounted(async () => {
   padding-right: 2px;
 }
 
+.player-directory-controls {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.player-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 9px;
+  color: var(--ui-text-muted);
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+.player-search:focus-within {
+  color: var(--ui-accent);
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.12);
+}
+.player-search input {
+  min-width: 0;
+  height: 34px;
+  color: var(--ui-text);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 10px;
+}
+
+.player-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.player-filters button {
+  display: flex;
+  min-width: 0;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 6px;
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-raised);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 9px;
+}
+.player-filters button b {
+  min-width: 17px;
+  padding: 1px 4px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-canvas);
+  border-radius: 99px;
+  font-size: 8px;
+}
+.player-filters button.active {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+  border-color: oklch(0.5 0.08 246);
+}
+
+.snapshot-note {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 8px;
+  color: var(--ui-text-muted);
+  background: var(--ui-canvas);
+  border-radius: 7px;
+  font-size: 8px;
+  line-height: 1.5;
+  text-align: left;
+}
+.snapshot-note .app-icon { flex: 0 0 auto; margin-top: 1px; }
+.snapshot-note.is-ready { color: var(--ui-success); }
+.snapshot-note.is-failed { color: var(--ui-danger); }
+
 .player-list button {
   display: grid;
   min-width: 0;
   min-height: 58px;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 9px;
   padding: 7px 8px;
@@ -1475,6 +2502,9 @@ onMounted(async () => {
   border: 1px solid transparent;
   border-radius: var(--ui-radius-sm);
   text-align: left;
+}
+.player-list--directory button {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
 }
 
 .player-list button:hover {
@@ -1528,6 +2558,28 @@ onMounted(async () => {
   font-size: 9px;
   font-weight: 650;
 }
+
+.player-presence,
+.remote-console__presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ui-text-muted);
+  font-size: 8px;
+  font-weight: 700;
+}
+.player-presence::before,
+.remote-console__presence::before {
+  width: 6px;
+  height: 6px;
+  background: var(--ui-text-muted);
+  border-radius: 50%;
+  content: "";
+}
+.player-presence.is-online,
+.remote-console__presence.is-online { color: var(--ui-success); }
+.player-presence.is-online::before,
+.remote-console__presence.is-online::before { background: var(--ui-success); }
 .player-list button > .app-icon { color: var(--ui-text-muted); }
 .player-list button.active > .app-icon { color: var(--ui-accent); }
 
@@ -1687,7 +2739,22 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.remote-console__status {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.remote-console__moderation-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .remote-console__level {
+  display: inline-flex;
   padding: 7px 10px;
   color: var(--ui-accent);
   background: var(--ui-accent-soft);
@@ -1695,6 +2762,55 @@ onMounted(async () => {
   border-radius: var(--ui-radius-sm);
   font-size: 12px;
   font-weight: 750;
+}
+.remote-console__presence { padding-inline: 2px; }
+
+.player-admin-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-admin-action {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background-color 140ms ease;
+}
+
+.player-admin-action:hover:not(:disabled),
+.player-admin-action:focus-visible {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-accent);
+  outline: none;
+}
+
+.player-admin-action.is-danger {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  border-color: color-mix(in srgb, var(--ui-danger) 46%, var(--ui-border));
+}
+
+.player-admin-action.is-safe {
+  color: var(--ui-success);
+  border-color: color-mix(in srgb, var(--ui-success) 38%, var(--ui-border));
+}
+
+.player-admin-action:disabled {
+  opacity: .38;
+  cursor: not-allowed;
 }
 
 .remote-tabs {
@@ -1762,6 +2878,22 @@ onMounted(async () => {
 }
 .command-message { color: var(--ui-success); background: oklch(0.25 0.055 158); border-color: oklch(0.42 0.07 158); }
 .command-error { color: var(--ui-danger); background: var(--ui-danger-soft); border-color: oklch(0.45 0.08 24); }
+
+.offline-live-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  color: var(--ui-warning);
+  background: oklch(0.25 0.04 80 / .66);
+  border: 1px solid oklch(0.48 0.07 80);
+  border-radius: var(--ui-radius-sm);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.offline-live-note > span { display: grid; gap: 2px; }
+.offline-live-note strong { color: var(--ui-text); }
 
 .detail-panel { margin-top: 16px; }
 .detail-skeleton {
@@ -2461,6 +3593,13 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
+.server-operation-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  gap: 12px;
+}
+
+.remote-map-workspace .remote-runtime-map { margin-top: 16px; }
+
 .operation-card {
   display: flex;
   min-width: 0;
@@ -2472,6 +3611,7 @@ onMounted(async () => {
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-sm);
 }
+.operation-card.is-target-disabled { opacity: .58; }
 
 .operation-card__heading {
   display: grid;
@@ -2497,7 +3637,8 @@ onMounted(async () => {
 .operation-card h3 { font-size: 14px; letter-spacing: -0.01em; }
 .operation-card p { color: var(--ui-text-muted); font-size: 11px; line-height: 1.65; }
 .operation-card label { display: grid; gap: 5px; color: var(--ui-text-muted); font-size: 10px; }
-.operation-card input {
+.operation-card input,
+.operation-card textarea {
   width: 100%;
   min-height: 38px;
   padding: 0 10px;
@@ -2507,8 +3648,22 @@ onMounted(async () => {
   border-radius: var(--ui-radius-sm);
   font: inherit;
 }
-.operation-card input:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.14); outline: 0; }
+.operation-card textarea {
+  min-height: 72px;
+  padding-block: 9px;
+  resize: vertical;
+}
+.operation-card input:focus,
+.operation-card textarea:focus { border-color: var(--ui-accent); box-shadow: 0 0 0 3px oklch(0.72 0.14 246 / 0.14); outline: 0; }
 .operation-card .remote-button { align-self: flex-start; margin-top: auto; }
+.operation-card--wide { grid-column: 1 / -1; }
+.operation-card--announcement {
+  min-height: 260px;
+  background:
+    linear-gradient(135deg, oklch(0.27 0.05 246 / 0.54), transparent 72%),
+    var(--ui-surface-raised);
+  border-color: oklch(0.43 0.065 246);
+}
 .operation-card--world {
   background:
     linear-gradient(135deg, oklch(0.27 0.045 158 / 0.56), transparent 70%),
@@ -2516,6 +3671,195 @@ onMounted(async () => {
   border-color: oklch(0.42 0.06 158);
 }
 .operation-card--world .operation-card__heading > span { color: var(--ui-success); background: oklch(0.25 0.05 158); }
+.operation-card--danger {
+  border-color: oklch(0.45 0.08 24);
+  background:
+    linear-gradient(135deg, oklch(0.27 0.06 24 / 0.42), transparent 70%),
+    var(--ui-surface-raised);
+}
+.operation-card--danger .operation-card__heading > span {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.player-action-backdrop {
+  position: fixed;
+  z-index: 5000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgb(2 8 13 / 76%);
+  backdrop-filter: blur(5px);
+}
+
+.player-action-dialog {
+  display: grid;
+  width: min(440px, 100%);
+  gap: 16px;
+  padding: 20px;
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: 0 26px 80px rgb(0 0 0 / 52%);
+}
+
+.player-action-dialog.is-danger,
+.player-action-dialog.is-warning {
+  border-color: color-mix(in srgb, var(--ui-danger) 55%, var(--ui-border));
+}
+
+.player-action-dialog.is-safe {
+  border-color: color-mix(in srgb, var(--ui-success) 48%, var(--ui-border));
+}
+
+.player-action-dialog header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+}
+
+.player-action-dialog header > span {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  border-radius: 10px;
+}
+
+.player-action-dialog.is-safe header > span {
+  color: var(--ui-success);
+  background: color-mix(in srgb, var(--ui-success) 12%, transparent);
+}
+
+.player-action-dialog small {
+  color: var(--ui-text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .08em;
+}
+
+.player-action-dialog h2 {
+  margin: 2px 0 0;
+  font-size: 19px;
+}
+
+.player-action-dialog > p {
+  margin: 0;
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.player-action-dialog dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.player-action-dialog dl div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.player-action-dialog dt {
+  color: var(--ui-text-muted);
+  font-size: 10px;
+}
+
+.player-action-dialog dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-action-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.operation-target {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.operation-target div {
+  display: grid;
+  grid-template-columns: minmax(110px, .4fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.operation-target dt { color: var(--ui-text-muted); font-size: 10px; }
+.operation-target dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.operation-card label.operation-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text-secondary);
+}
+.operation-confirmation input {
+  width: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+}
+.operation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+.operation-actions .remote-button { margin-top: 0; }
+.operation-card--history { min-height: 0; }
+.operation-history {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.operation-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+}
+.operation-history code { color: var(--ui-text-secondary); font-size: 11px; }
+.operation-history time { color: var(--ui-text-muted); font-size: 10px; }
+.operation-history__empty {
+  display: grid;
+  min-height: 88px;
+  place-items: center;
+  padding: 14px;
+  background: var(--ui-surface);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  text-align: center;
+}
 .operation-card--empty {
   grid-column: 1 / -1;
   min-height: 240px;
@@ -2538,10 +3882,13 @@ onMounted(async () => {
   .remote-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .remote-metrics article:nth-child(4) { border-left: 0; }
   .remote-metrics article:nth-child(n + 4) { border-top: 1px solid var(--ui-border); }
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-actions { grid-column: 1 / -1; }
   .remote-workspace { grid-template-columns: minmax(270px, 300px) minmax(0, 1fr); }
 }
 
 @media (max-width: 920px) {
+  .workspace-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .remote-workspace { grid-template-columns: minmax(0, 1fr); }
   .remote-sidebar {
     display: grid;
@@ -2549,6 +3896,7 @@ onMounted(async () => {
   }
   .remote-card--players { grid-row: span 2; }
   .player-list { max-height: 360px; }
+  .server-operation-grid { grid-template-columns: minmax(0, 1fr); }
   .inventory-layout {
     grid-template-columns: minmax(300px, .9fr) minmax(360px, 1.1fr);
   }
@@ -2569,6 +3917,12 @@ onMounted(async () => {
   .remote-metrics article:nth-child(n) { border-top: 0; border-left: 0; }
   .remote-metrics article:nth-child(even) { border-left: 1px solid var(--ui-border); }
   .remote-metrics article:nth-child(n + 3) { border-top: 1px solid var(--ui-border); }
+  .workspace-panel { padding: 13px; }
+  .workspace-panel__heading--server { grid-template-columns: auto minmax(0, 1fr); }
+  .scope-badge { grid-column: 1 / -1; justify-self: start; }
+  .overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .overview-actions { grid-column: auto; }
+  .overview-capabilities { grid-column: auto; }
   .remote-sidebar { grid-template-columns: minmax(0, 1fr); }
   .remote-card--players { grid-row: auto; }
   .remote-console { padding: 13px; }
@@ -2589,11 +3943,35 @@ onMounted(async () => {
 
 @media (max-width: 480px) {
   .remote-heading h1 { font-size: 27px; }
-  .remote-metrics { grid-template-columns: minmax(0, 1fr); }
-  .remote-metrics article:nth-child(n) { border-left: 0; border-top: 1px solid var(--ui-border); }
-  .remote-metrics article:first-child { border-top: 0; }
+  .workspace-tabs button {
+    min-height: 52px;
+    gap: 8px;
+    padding: 7px;
+  }
+  .workspace-tabs button > span:first-child {
+    width: 32px;
+    height: 32px;
+  }
+  .workspace-tabs small { display: none; }
   .remote-console__heading { grid-template-columns: auto minmax(0, 1fr); }
-  .remote-console__level { display: none; }
+  .remote-console__status {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-items: stretch;
+  }
+  .remote-console__moderation-row { justify-content: flex-start; }
+  .player-admin-actions {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .player-admin-action { flex: 1 1 0; }
+  .remote-console__presence { justify-self: start; }
+  .player-action-dialog dl div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .player-action-dialog footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .persistence-state {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .persistence-state small { grid-column: 1 / -1; }
   .profile-card__hero { grid-template-columns: auto minmax(0, 1fr); }
   .profile-card__hero > strong { grid-column: 2; font-size: 16px; }
   .inventory-slot-grid {

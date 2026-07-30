@@ -4,6 +4,11 @@ export const PAL_LIST_SORT_MODES = Object.freeze({
   LEVEL: 'level',
 })
 
+export const PAL_CONTAINER_TYPES = Object.freeze({
+  PARTY: 'PARTY',
+  PAL_STORAGE: 'PAL_STORAGE',
+})
+
 function palSlotIndex(pal) {
   if (pal?.SlotIndex === null || pal?.SlotIndex === undefined || pal?.SlotIndex === '') {
     return Number.POSITIVE_INFINITY
@@ -30,4 +35,24 @@ export function sortPalList(pals, mode = PAL_LIST_SORT_MODES.CONTAINER) {
       return difference || left.index - right.index
     })
     .map(({ pal }) => pal)
+}
+
+export function groupPalList(pals, mode = PAL_LIST_SORT_MODES.CONTAINER) {
+  const groups = {
+    party: [],
+    palbox: [],
+    other: [],
+  }
+
+  for (const pal of sortPalList(pals, mode)) {
+    if (pal?.ContainerType === PAL_CONTAINER_TYPES.PARTY) {
+      groups.party.push(pal)
+    } else if (pal?.ContainerType === PAL_CONTAINER_TYPES.PAL_STORAGE) {
+      groups.palbox.push(pal)
+    } else {
+      groups.other.push(pal)
+    }
+  }
+
+  return groups
 }

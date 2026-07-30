@@ -13,6 +13,8 @@ from palworld_pal_editor.remote.session import REMOTE_SESSION_RUNTIME
 
 
 class _FakeBridge:
+    executed_commands = []
+
     def connect(self, spec):
         return BridgeConnection(
             base_url=spec.base_url,
@@ -33,6 +35,11 @@ class _FakeBridge:
                     "pal.list",
                     "map.read",
                     "inventory.grant",
+                    "player.ban",
+                    "player.kick",
+                    "player.unban",
+                    "server.announce",
+                    "world.shutdown",
                 }
             ),
         )
@@ -52,11 +59,22 @@ class _FakeBridge:
                 "pal.list",
                 "map.read",
                 "inventory.grant",
+                "player.ban",
+                "player.kick",
+                "player.unban",
+                "server.announce",
+                "world.shutdown",
             ],
         }
 
     def players(self, connection):
-        return [{"player_uid": "player-1", "name": "One"}]
+        return [
+            {
+                "player_uid": "player-1",
+                "name": "One",
+                "userId": "steam_test",
+            }
+        ]
 
     def guilds(self, connection):
         return [
@@ -110,10 +128,15 @@ class _FakeBridge:
         }
 
     def execute(self, connection, command):
+        type(self).executed_commands.append(command)
         return {
             "commandId": command.command_id,
             "state": "completed",
-            "result": {"granted": 1},
+            "result": {
+                "granted": 1,
+                "operation": command.operation,
+                "target": command.target,
+            },
         }
 
     def disconnect(self, connection):
@@ -145,6 +168,7 @@ class _FakeLocalDiscovery:
 
 
 def _client(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    _FakeBridge.executed_commands.clear()
     REMOTE_SESSION_RUNTIME.replace_bridge_factory_for_tests(_FakeBridge)
     profile_store = RemoteConnectionProfileStore(
         tmp_path / "remote-connection.json",
@@ -307,6 +331,77 @@ def test_remote_api_connects_persists_resumes_and_executes(
     result = response.get_json()["data"]
     assert result["revision"] == 1
     assert result["result"]["granted"] == 1
+
+    response = client.post(
+        "/api/remote/commands",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "expected_revision": 1,
+            "operation": "server.announce",
+            "target": {},
+            "payload": {"message": "Maintenance soon"},
+        },
+    )
+    assert response.status_code == 200
+    assert response.get_json()["data"]["revision"] == 2
+
+    response = client.post(
+        "/api/remote/commands",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "expected_revision": 2,
+            "operation": "player.kick",
+            "target": {"user_id": "steam_test"},
+            "payload": {"message": "Administrator action"},
+        },
+    )
+    assert response.status_code == 200
+    kick_result = response.get_json()["data"]
+    assert kick_result["revision"] == 3
+    assert kick_result["result"]["target"]["user_id"] == "steam_test"
+
+    response = client.post(
+        "/api/remote/commands",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "expected_revision": 3,
+            "operation": "player.unban",
+            "target": {"user_id": "steam_test"},
+            "payload": {},
+        },
+    )
+    assert response.status_code == 200
+    unban_result = response.get_json()["data"]
+    assert unban_result["revision"] == 4
+    assert unban_result["result"]["target"]["user_id"] == "steam_test"
+
+    response = client.post(
+        "/api/remote/commands",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "expected_revision": 4,
+            "operation": "world.shutdown",
+            "target": {},
+            "payload": {
+                "wait_time": 30,
+                "message": "Restarting",
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert response.get_json()["data"]["revision"] == 5
+    assert [
+        command.operation for command in _FakeBridge.executed_commands[-4:]
+    ] == [
+        "server.announce",
+        "player.kick",
+        "player.unban",
+        "world.shutdown",
+    ]
 
 
 def test_remote_api_accepts_public_plain_http_and_rejects_unknown_fields(

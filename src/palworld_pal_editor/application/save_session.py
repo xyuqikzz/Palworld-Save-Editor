@@ -379,6 +379,10 @@ class SaveSession:
     def compatibility(self) -> SaveCompatibility:
         return self._compatibility
 
+    def refresh_compatibility(self) -> SaveCompatibility:
+        self._compatibility = self._inspect_compatibility()
+        return self._compatibility
+
     def changes(self) -> list[dict[str, Any]]:
         return self._changes.view()
 
@@ -498,15 +502,6 @@ class SaveSession:
             )
         if expected_revision != self._revision:
             raise stale_revision(expected_revision, self._revision)
-        if self._raw_json_pending and not allow_raw_json:
-            raise DomainError(
-                code="RAW_JSON_SAVE_REQUIRED",
-                message=(
-                    "Save or discard the pending JSON changes before using "
-                    "another editor."
-                ),
-                http_status=409,
-            )
 
     def apply_atomic(
         self,
@@ -634,6 +629,7 @@ class SaveSession:
         if expected_revision != self._revision:
             raise stale_revision(expected_revision, self._revision)
         self._changes.mark_saved(expected_revision)
+        self._raw_json_pending = False
         self._dynamic_item_issue_baseline = (
             self._snapshot_dynamic_item_issue_fingerprints()
         )
@@ -787,6 +783,52 @@ class SaveSession:
                 ),
             ),
         }
+        base_storage = getattr(self._manager, "base_storage_data", None)
+        base_storage_error = getattr(
+            self._manager, "base_storage_error", None
+        )
+        base_storage_readable = (
+            base_storage is not None and base_storage_error is None
+        )
+        base_storage_complete = bool(
+            base_storage_readable and base_storage.complete
+        )
+        if base_storage is not None:
+            warnings.extend(
+                issue.to_dict() for issue in base_storage.issues()
+            )
+        capabilities["base_storage.read"] = Capability(
+            readable=base_storage_readable,
+            writable=False,
+            reason=(
+                None
+                if base_storage_readable
+                else "BASE_STORAGE_UNSUPPORTED"
+            ),
+            evidence=(
+                "selective-map-object-item-container-index"
+                if base_storage_readable
+                else None
+            ),
+        )
+        capabilities["base_storage.write.static"] = Capability(
+            readable=base_storage_readable,
+            writable=base_storage_complete,
+            reason=(
+                None
+                if base_storage_complete
+                else (
+                    "BASE_STORAGE_INDEX_INCOMPLETE"
+                    if base_storage_readable
+                    else "BASE_STORAGE_UNSUPPORTED"
+                )
+            ),
+            evidence=(
+                "guild-base-container-binding-and-item-catalog"
+                if base_storage_complete
+                else None
+            ),
+        )
         dynamic_items = getattr(self._manager, "dynamic_item_data", None)
         if dynamic_items is not None:
             dynamic_issues = [
@@ -824,6 +866,54 @@ class SaveSession:
                     "complete-dynamic-reference-index"
                     if dynamic_items.reference_scope_complete
                     else "item-container-reference-index-only"
+                ),
+            )
+            capabilities["base_storage.write.dynamic.count"] = Capability(
+                readable=base_storage_readable,
+                writable=base_storage_complete and dynamic_consistent,
+                reason=(
+                    None
+                    if base_storage_complete and dynamic_consistent
+                    else (
+                        "DYNAMIC_ITEM_INVARIANT_FAILED"
+                        if base_storage_complete
+                        else "BASE_STORAGE_INDEX_INCOMPLETE"
+                    )
+                ),
+                evidence=(
+                    "base-container-slot-record-identity-check"
+                    if base_storage_complete and dynamic_consistent
+                    else None
+                ),
+            )
+            capabilities["base_storage.write.dynamic.delete"] = Capability(
+                readable=base_storage_readable,
+                writable=(
+                    base_storage_complete
+                    and dynamic_consistent
+                    and dynamic_items.reference_scope_complete
+                ),
+                reason=(
+                    None
+                    if (
+                        base_storage_complete
+                        and dynamic_consistent
+                        and dynamic_items.reference_scope_complete
+                    )
+                    else (
+                        "BASE_STORAGE_INDEX_INCOMPLETE"
+                        if not base_storage_complete
+                        else "DYNAMIC_ITEM_REFERENCE_SCOPE_UNVERIFIED"
+                    )
+                ),
+                evidence=(
+                    "complete-dynamic-reference-index"
+                    if (
+                        base_storage_complete
+                        and dynamic_consistent
+                        and dynamic_items.reference_scope_complete
+                    )
+                    else None
                 ),
             )
         return SaveCompatibility(

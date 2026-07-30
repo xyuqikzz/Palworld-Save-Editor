@@ -2,7 +2,10 @@
 import { computed, nextTick, ref } from 'vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
-import { palSpeciesIconKey } from '@/components/modules/pal-species-filter'
+import {
+  palRuntimeDisplayName,
+  palSpeciesIconKey,
+} from '@/components/modules/pal-species-filter'
 import { usePalEditorStore } from '@/stores/paleditor'
 
 const props = defineProps({
@@ -16,12 +19,10 @@ const trigger = ref(null)
 const detailOpen = ref(false)
 const detailPosition = ref({ top: 8, left: 8 })
 
-const name = computed(() => (
-  props.entry.nickname
-  || props.pal.I18n
-  || props.pal.Name
-  || props.entry.characterId
-  || palStore.getTranslatedText('Remote_PalUnknown')
+const name = computed(() => palRuntimeDisplayName(
+  props.entry,
+  props.pal,
+  palStore.getTranslatedText('Remote_PalUnknown'),
 ))
 const portraitSource = computed(() => (
   props.entry.characterId

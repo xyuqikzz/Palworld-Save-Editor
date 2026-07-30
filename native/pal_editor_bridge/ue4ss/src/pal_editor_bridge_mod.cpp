@@ -50,6 +50,35 @@ namespace pal_editor_bridge::ue4ss
 #endif
         }
 
+        std::filesystem::path dedicated_save_games_root()
+        {
+            const auto executable = executable_path();
+            auto directory = executable.parent_path();
+            for (auto depth = 0; depth < 8 && !directory.empty(); ++depth)
+            {
+                auto name = directory.filename().wstring();
+                std::ranges::transform(
+                    name,
+                    name.begin(),
+                    [](wchar_t character) {
+                        return static_cast<wchar_t>(
+                            std::towlower(character)
+                        );
+                    }
+                );
+                if (name == L"pal")
+                {
+                    return directory / "Saved" / "SaveGames" / "0";
+                }
+                directory = directory.parent_path();
+            }
+            return executable.parent_path()
+                / "Pal"
+                / "Saved"
+                / "SaveGames"
+                / "0";
+        }
+
         std::string utf8(const std::wstring& value)
         {
 #ifdef _WIN32
@@ -708,6 +737,11 @@ namespace pal_editor_bridge::ue4ss
     nlohmann::json GamePort::status()
     {
         const auto runtime_status = m_runtime.status();
+        std::size_t queue_depth = 0;
+        {
+            std::lock_guard lock(m_queue_mutex);
+            queue_depth = m_queue.size();
+        }
         return {
             {"gameReady", ready()},
             {"instanceMode", m_runtime.instance_mode()},
@@ -733,6 +767,15 @@ namespace pal_editor_bridge::ue4ss
             {
                 "runtime",
                 runtime_status,
+            },
+            {
+                "gameThreadQueue",
+                {
+                    {"depth", queue_depth},
+                    {"capacity", max_pending_commands},
+                    {"maxCommandsPerTick", max_commands_per_tick},
+                    {"budgetMs", game_thread_budget.count()},
+                },
             },
         };
     }
@@ -919,6 +962,13 @@ namespace pal_editor_bridge::ue4ss
                     {"message", "The bridge is shutting down."},
                 };
             }
+            if (m_queue.size() >= max_pending_commands)
+            {
+                return {
+                    {"state", "failed"},
+                    {"message", "The Palworld game-thread queue is full. Retry after the current requests finish."},
+                };
+            }
             m_queue.push_back(pending);
         }
         if (result.wait_for(5s) != std::future_status::ready)
@@ -945,13 +995,48 @@ namespace pal_editor_bridge::ue4ss
 
     void GamePort::drain_game_thread()
     {
+        const auto tick_started_at = std::chrono::steady_clock::now();
         std::deque<std::shared_ptr<PendingCommand>> pending;
         {
             std::lock_guard lock(m_queue_mutex);
             pending.swap(m_queue);
+            while (pending.size() > max_commands_per_tick)
+            {
+                m_queue.push_front(std::move(pending.back()));
+                pending.pop_back();
+            }
         }
-        for (const auto& item : pending)
+        if (pending.empty())
         {
+            if (
+                ready()
+                && !runtime_signatures_ready()
+                && ++m_ticks_until_runtime_refresh >= 300
+            )
+            {
+                refresh_runtime_capabilities();
+                m_ticks_until_runtime_refresh = 0;
+            }
+            if (
+                ready()
+                && ++m_ticks_until_authority_refresh >= 60
+            )
+            {
+                refresh_authority_capabilities();
+                m_ticks_until_authority_refresh = 0;
+            }
+            return;
+        }
+
+        std::size_t processed = 0;
+        while (processed < max_commands_per_tick)
+        {
+            if (pending.empty())
+            {
+                break;
+            }
+            auto item = std::move(pending.front());
+            pending.pop_front();
             auto expected = PendingState::queued;
             if (!item->state.compare_exchange_strong(
                     expected,
@@ -967,6 +1052,7 @@ namespace pal_editor_bridge::ue4ss
                 }
                 continue;
             }
+            ++processed;
             const auto started_at = std::chrono::steady_clock::now();
             try
             {
@@ -1006,28 +1092,22 @@ namespace pal_editor_bridge::ue4ss
                     {"message", "The game command failed unexpectedly."},
                 });
             }
+            if (
+                std::chrono::steady_clock::now() - tick_started_at
+                >= game_thread_budget
+            )
+            {
+                break;
+            }
         }
-
         if (!pending.empty())
         {
-            return;
-        }
-        if (
-            ready()
-            && !runtime_signatures_ready()
-            && ++m_ticks_until_runtime_refresh >= 300
-        )
-        {
-            refresh_runtime_capabilities();
-            m_ticks_until_runtime_refresh = 0;
-        }
-        if (
-            ready()
-            && ++m_ticks_until_authority_refresh >= 60
-        )
-        {
-            refresh_authority_capabilities();
-            m_ticks_until_authority_refresh = 0;
+            std::lock_guard lock(m_queue_mutex);
+            while (!pending.empty())
+            {
+                m_queue.push_front(std::move(pending.back()));
+                pending.pop_back();
+            }
         }
     }
 
@@ -1256,7 +1336,7 @@ namespace pal_editor_bridge::ue4ss
           m_game(m_dedicated_process)
     {
         ModName = STR("PalEditorBridge");
-        ModVersion = STR("0.6.0");
+        ModVersion = STR("0.6.1");
         ModDescription =
             STR("Headless bridge for Palworld Pal Editor live management.");
         ModAuthors = STR("Palworld-Pal-Editor");
@@ -1270,6 +1350,7 @@ namespace pal_editor_bridge::ue4ss
         {
             server.name = "Palworld Dedicated Server";
             server.instance_kind = "dedicated_server";
+            config.save_games_root = dedicated_save_games_root();
             verifier =
                 std::make_unique<PalworldRestCredentialVerifier>(config);
         }

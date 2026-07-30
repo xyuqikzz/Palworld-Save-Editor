@@ -210,14 +210,14 @@ watch(
             </div>
             <button @click="palStore.LAST_ERROR = null" :aria-label="palStore.getTranslatedText('Common_DismissError')">×</button>
         </aside>
-        <section v-if="palStore.RAW_JSON_PENDING" class="raw-json-lock">
+        <section v-if="palStore.RAW_JSON_PENDING" class="raw-json-notice">
             <strong>{{ palStore.getTranslatedText('JsonEditor_RawLockTitle') }}</strong>
             <p>{{ palStore.getTranslatedText('JsonEditor_RawLockText') }}</p>
             <button type="button" @click="router.push({ name: 'JsonEditor' })">
                 {{ palStore.getTranslatedText('TopBar_Btn_JsonEditor') }}
             </button>
         </section>
-        <div v-else id="EditorMain">
+        <div id="EditorMain">
             <aside :class="['selection-column', `selection-column--${editorMode}`]">
                 <PlayerList :mode="editorMode"></PlayerList>
                 <PalList
@@ -318,27 +318,28 @@ div#EditorMain {
 
 .editor-empty p { margin: 0; }
 
-.raw-json-lock {
-    display: grid;
-    min-height: var(--sub-height);
-    max-width: 720px;
-    place-content: center;
-    justify-items: center;
+.raw-json-notice {
+    position: fixed;
+    z-index: 15;
+    top: calc(var(--editor-top-offset) + 4px);
+    left: 50%;
+    display: flex;
+    width: min(760px, calc(100vw - 28px));
+    align-items: center;
     gap: 10px;
-    margin: var(--editor-top-offset) auto 0;
-    padding: 28px;
+    padding: 9px 12px;
     color: var(--ui-text-secondary);
-    text-align: center;
     background: var(--ui-surface);
     border: 1px solid oklch(0.48 0.1 72);
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--ui-radius-sm);
+    box-shadow: var(--ui-shadow-md);
+    transform: translateX(-50%);
 }
 
-.raw-json-lock strong { color: oklch(0.82 0.12 78); font-size: 18px; }
-.raw-json-lock p { max-width: 56ch; margin: 0; color: var(--ui-text-muted); line-height: 1.6; }
-.raw-json-lock button {
+.raw-json-notice strong { color: oklch(0.82 0.12 78); font-size: 12px; }
+.raw-json-notice p { flex: 1; margin: 0; color: var(--ui-text-muted); font-size: 11px; }
+.raw-json-notice button {
     min-height: 36px;
-    margin-top: 6px;
     padding: 0 13px;
     color: oklch(0.16 0.025 252);
     background: var(--ui-accent);

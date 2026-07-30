@@ -60,6 +60,9 @@ test('JSON editor ships Monaco only and keeps the explicit safety boundary', () 
   assert.match(view, /MonacoJsonEditor/)
   assert.match(view, /JsonEditor_Acknowledge/)
   assert.match(view, /JsonEditor_ConfirmApply/)
+  assert.match(view, /LAST_ERROR\?\.context === 'apply-json-document'/)
+  assert.match(view, /class="editor-error editor-error--apply"/)
+  assert.match(view, /@click="palStore\.LAST_ERROR = null"/)
   assert.match(view, /RISK_ACKNOWLEDGEMENT_STORAGE_KEY/)
   assert.match(view, /const acknowledged = ref\(hasAcknowledgedRisk\(\)\)/)
   assert.match(view, /localStorage\?\.setItem\(RISK_ACKNOWLEDGEMENT_STORAGE_KEY, 'true'\)/)
@@ -95,6 +98,25 @@ test('JSON editor waits for a file click and locks navigation while it loads', (
   assert.match(view, /class="editor-loading"/)
   assert.match(view, /loadFiles\(\{ clearSelection: true \}\)/)
   assert.equal(activeBindings.length, 2)
+})
+
+test('pending raw JSON does not lock structured editing or page navigation', () => {
+  const topBar = readFileSync(sourcePath('components/TopBar.vue'), 'utf8')
+  const editor = readFileSync(sourcePath('views/EditorView.vue'), 'utf8')
+  const guilds = readFileSync(sourcePath('views/GuildView.vue'), 'utf8')
+  const overview = readFileSync(sourcePath('views/OverviewView.vue'), 'utf8')
+  const expeditions = readFileSync(
+    sourcePath('views/ExpeditionView.vue'),
+    'utf8',
+  )
+
+  assert.doesNotMatch(topBar, /LOADING_FLAG\s*\|\|\s*palStore\.RAW_JSON_PENDING/)
+  assert.match(editor, /class="raw-json-notice"/)
+  assert.match(editor, /<div id="EditorMain">/)
+  assert.doesNotMatch(editor, /<div v-else id="EditorMain">/)
+  assert.doesNotMatch(guilds, /writesDisabled[\s\S]{0,180}RAW_JSON_PENDING/)
+  assert.doesNotMatch(overview, /:disabled="palStore\.RAW_JSON_PENDING"/)
+  assert.doesNotMatch(expeditions, /RAW_JSON_PENDING/)
 })
 
 test('JSON editor store reads raw text and applies it with the shared revision', async () => {

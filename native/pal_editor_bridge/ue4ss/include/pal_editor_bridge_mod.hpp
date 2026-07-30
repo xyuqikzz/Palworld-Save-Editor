@@ -65,6 +65,10 @@ namespace pal_editor_bridge::ue4ss
             };
         };
 
+        static constexpr std::size_t max_pending_commands = 64;
+        static constexpr std::size_t max_commands_per_tick = 4;
+        static constexpr std::chrono::milliseconds game_thread_budget{2};
+
         nlohmann::json execute_on_game_thread(
             const nlohmann::json& command
         );

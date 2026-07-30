@@ -67,6 +67,9 @@ const LOCALIZED_SAVE_ERROR_CODES = new Set([
     "SAVE_TARGET_CHANGED",
     "NETWORK_NO_RESPONSE",
     "CLIENT_REQUEST_FAILED",
+    "CHARACTER_INDEX_INVARIANT_FAILED",
+    "CHARACTER_REFERENCE_REPAIR_FAILED",
+    "CHARACTER_REFERENCE_REPAIR_UNAVAILABLE",
 ]);
 const SAVE_ERROR_ACTION_KEYS = Object.freeze({
     BACKUP_FAILED: "Save_Backup_Failure_Action",
@@ -191,6 +194,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.IsFaintedPal = obj.IsFaintedPal;
             this.Is_Unref_Pal = obj.Is_Unref_Pal;
             this.in_owner_palbox = obj.in_owner_palbox;
+            this.ContainerType = obj.ContainerType ?? "OTHER";
 
             this.IsHuman = obj.IsHuman;
             this.NpcDefaultWeapon = obj.NpcDefaultWeapon ?? null;
@@ -652,6 +656,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const GUILD_TREE = ref([]);
     const GUILD_LIST = ref([]);
     const GUILD_LOADING = ref(false);
+    const BASE_STORAGE_BY_BASE = ref({});
+    const BASE_STORAGE_LOADING = ref({});
     const PAL_PASSIVE_SELECTED_ITEM = ref("");
     const PAL_ACTIVE_SELECTED_ITEM = ref("");
 
@@ -723,6 +729,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const REMOTE_SERVER = ref(null);
     const REMOTE_STATUS = ref(null);
     const REMOTE_PLAYERS = ref([]);
+    const REMOTE_PLAYER_DIRECTORY = ref(null);
     const REMOTE_GUILDS = ref([]);
     const REMOTE_PLAYER_DETAILS = ref(null);
     const REMOTE_PLAYER_DETAILS_LOADING = ref(false);
@@ -734,6 +741,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     let remotePlayerDetailsLoading = false;
     let remotePlayerInventoryLoading = false;
     let remotePlayerPalsLoading = false;
+    let remotePlayerDirectoryPollTimer = null;
     const REMOTE_CAPABILITIES = ref([]);
     const REMOTE_LOADING = ref(false);
     const REMOTE_CONNECTED = computed(() => Boolean(REMOTE_SESSION_ID.value));
@@ -750,6 +758,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         return String(
             details?.player?.playerId
             || details?.player?.player_uid
+            || details?.player?.player_id
             || "",
         ).trim();
     }
@@ -795,6 +804,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const SAVE_COMPATIBILITY = ref(null);
     const LAST_ERROR = ref(null);
     const LAST_SAVE_RESULT = ref(null);
+    const MIGRATION_LOADING = ref(false);
+    const MIGRATION_STAGE = ref(null);
+    const MIGRATION_PLAN = ref(null);
+    const MIGRATION_RESULT = ref(null);
     const ITEM_CATALOG_RESULTS = ref([]);
     let lastItemCatalogSearch = null;
     const ITEM_CLIPBOARD = ref(null);
@@ -972,6 +985,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             const errorCode = response?.error?.code || "REQUEST_FAILED";
             const messageKey = (
                 errorCode.startsWith("WGS_")
+                || errorCode.startsWith("MIGRATION_")
                 || LOCALIZED_SAVE_ERROR_CODES.has(errorCode)
             ) ? errorCode : null;
             const actionKey = SAVE_ERROR_ACTION_KEYS[errorCode] || null;
@@ -1058,6 +1072,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         REMOTE_SERVER.value = null;
         REMOTE_STATUS.value = null;
         REMOTE_PLAYERS.value = [];
+        REMOTE_PLAYER_DIRECTORY.value = null;
         REMOTE_GUILDS.value = [];
         REMOTE_PLAYER_DETAILS.value = null;
         REMOTE_PLAYER_DETAILS_LOADING.value = false;
@@ -1069,6 +1084,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         remotePlayerDetailsLoading = false;
         remotePlayerInventoryLoading = false;
         remotePlayerPalsLoading = false;
+        if (remotePlayerDirectoryPollTimer) {
+            clearTimeout(remotePlayerDirectoryPollTimer);
+            remotePlayerDirectoryPollTimer = null;
+        }
         REMOTE_CAPABILITIES.value = [];
     }
 
@@ -1191,7 +1210,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
         const activeSessionId = REMOTE_SESSION_ID.value;
         const sessionId = encodeURIComponent(activeSessionId);
-        const response = await GET(`/api/remote/players?session_id=${sessionId}`);
+        const response = await GET(
+            `/api/remote/player-directory?session_id=${sessionId}`
+        );
         if (REMOTE_SESSION_ID.value !== activeSessionId) return false;
         if (!acceptRemoteResponse(response, "remote-players")) return false;
         if (
@@ -1203,6 +1224,22 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         REMOTE_PLAYERS.value = Array.isArray(response.data?.players)
             ? response.data.players
             : [];
+        REMOTE_PLAYER_DIRECTORY.value = {
+            counts: response.data?.counts || null,
+            snapshot: response.data?.snapshot || null,
+        };
+        if (remotePlayerDirectoryPollTimer) {
+            clearTimeout(remotePlayerDirectoryPollTimer);
+            remotePlayerDirectoryPollTimer = null;
+        }
+        if (response.data?.snapshot?.state === "capturing") {
+            remotePlayerDirectoryPollTimer = setTimeout(() => {
+                remotePlayerDirectoryPollTimer = null;
+                if (REMOTE_SESSION_ID.value === activeSessionId) {
+                    void loadRemotePlayers();
+                }
+            }, 500);
+        }
         if (Number.isInteger(response.data?.revision)) {
             REMOTE_SESSION_REVISION.value = response.data.revision;
         }
@@ -1277,7 +1314,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (
             !REMOTE_SESSION_ID.value
             || !normalizedPlayerId
-            || !REMOTE_CAPABILITIES.value.includes("player.details")
+            || !(
+                REMOTE_CAPABILITIES.value.includes("player.details")
+                || REMOTE_CAPABILITIES.value.includes("player.saved.details")
+            )
         ) {
             REMOTE_PLAYER_DETAILS.value = null;
             remotePlayerDetailsLoading = false;
@@ -1343,7 +1383,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (
             !REMOTE_SESSION_ID.value
             || !normalizedPlayerId
-            || !REMOTE_CAPABILITIES.value.includes("inventory.read")
+            || !(
+                REMOTE_CAPABILITIES.value.includes("inventory.read")
+                || REMOTE_CAPABILITIES.value.includes("inventory.saved.read")
+            )
         ) {
             remotePlayerInventoryLoading = false;
             syncRemotePlayerDetailsLoading();
@@ -1416,7 +1459,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (
             !REMOTE_SESSION_ID.value
             || !normalizedPlayerId
-            || !REMOTE_CAPABILITIES.value.includes("pal.list")
+            || !(
+                REMOTE_CAPABILITIES.value.includes("pal.list")
+                || REMOTE_CAPABILITIES.value.includes("pal.saved.list")
+            )
         ) {
             remotePlayerPalsLoading = false;
             syncRemotePlayerDetailsLoading();
@@ -1500,6 +1546,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (!acceptRemoteResponse(response, "remote-command")) return false;
             if (Number.isInteger(response.data?.revision)) {
                 REMOTE_SESSION_REVISION.value = response.data.revision;
+            }
+            if (response.data?.persistence) {
+                REMOTE_STATUS.value = {
+                    ...(REMOTE_STATUS.value || {}),
+                    persistence: response.data.persistence,
+                };
             }
             return response.data;
         } finally {
@@ -1868,6 +1920,16 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     refreshes.push(loadPlayerMissions(SELECTED_PLAYER_ID.value));
                 }
                 if (OVERVIEW_DATA.value) refreshes.push(loadOverview());
+                for (const storage of Object.values(
+                    BASE_STORAGE_BY_BASE.value
+                )) {
+                    if (storage?.guild_id && storage?.base_id) {
+                        refreshes.push(loadBaseStorage(
+                            storage.guild_id,
+                            storage.base_id
+                        ));
+                    }
+                }
             }
             if (lastItemCatalogSearch !== null) {
                 refreshes.push(searchItemCatalog(
@@ -2049,6 +2111,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         GUILD_TREE.value = [];
         GUILD_LIST.value = [];
         GUILD_LOADING.value = false;
+        BASE_STORAGE_BY_BASE.value = {};
+        BASE_STORAGE_LOADING.value = {};
         PAL_PASSIVE_SELECTED_ITEM.value = "";
         PAL_ACTIVE_SELECTED_ITEM.value = "";
 
@@ -3071,6 +3135,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             GUILD_LIST.value = Array.isArray(response.data?.guilds)
                 ? response.data.guilds
                 : [];
+            BASE_STORAGE_BY_BASE.value = {};
+            BASE_STORAGE_LOADING.value = {};
             return true;
         } finally {
             GUILD_LOADING.value = false;
@@ -3575,6 +3641,154 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
     }
 
+    function baseStorageKey(guildId, baseId) {
+        return `${String(guildId)}:${String(baseId)}`;
+    }
+
+    function getBaseStorage(guildId, baseId) {
+        return BASE_STORAGE_BY_BASE.value[baseStorageKey(guildId, baseId)] || null;
+    }
+
+    function isBaseStorageLoading(guildId, baseId) {
+        return Boolean(
+            BASE_STORAGE_LOADING.value[baseStorageKey(guildId, baseId)]
+        );
+    }
+
+    async function loadBaseStorage(guildId, baseId) {
+        if (!SESSION_ID.value || !guildId || !baseId) return false;
+        const key = baseStorageKey(guildId, baseId);
+        BASE_STORAGE_LOADING.value = {
+            ...BASE_STORAGE_LOADING.value,
+            [key]: true,
+        };
+        try {
+            const params = new URLSearchParams({
+                session_id: SESSION_ID.value,
+            });
+            const response = await GET(
+                `/api/save/guilds/${encodeURIComponent(guildId)}` +
+                `/bases/${encodeURIComponent(baseId)}/storage?${params.toString()}`
+            );
+            if (!acceptResponse(response, "load-base-storage")) return false;
+            BASE_STORAGE_BY_BASE.value = {
+                ...BASE_STORAGE_BY_BASE.value,
+                [key]: response.data,
+            };
+            return response.data;
+        } finally {
+            BASE_STORAGE_LOADING.value = {
+                ...BASE_STORAGE_LOADING.value,
+                [key]: false,
+            };
+        }
+    }
+
+    async function executeBaseStorageCommand(guildId, baseId, values) {
+        if (
+            !SESSION_ID.value
+            || !guildId
+            || !baseId
+            || !values?.container_id
+            || !Number.isInteger(Number(values?.slot_index))
+        ) {
+            return false;
+        }
+        const key = baseStorageKey(guildId, baseId);
+        BASE_STORAGE_LOADING.value = {
+            ...BASE_STORAGE_LOADING.value,
+            [key]: true,
+        };
+        try {
+            const response = await POST(
+                `/api/save/guilds/${encodeURIComponent(guildId)}` +
+                `/bases/${encodeURIComponent(baseId)}/storage/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    ...values,
+                    slot_index: Number(values.slot_index),
+                }
+            );
+            if (
+                !acceptResponse(
+                    response,
+                    "base-storage-command",
+                    { command: true }
+                )
+            ) {
+                return false;
+            }
+        } finally {
+            BASE_STORAGE_LOADING.value = {
+                ...BASE_STORAGE_LOADING.value,
+                [key]: false,
+            };
+        }
+        return loadBaseStorage(guildId, baseId);
+    }
+
+    function updateBaseStorageItemCount(guildId, baseId, container, slot, count) {
+        const normalizedCount = Number(count);
+        if (
+            slot?.state !== "occupied"
+            || !Number.isInteger(normalizedCount)
+            || normalizedCount < 1
+            || normalizedCount > 2147483647
+        ) {
+            return false;
+        }
+        return executeBaseStorageCommand(guildId, baseId, {
+            command: "update_item_count",
+            container_id: container.container_id,
+            slot_index: slot.slot_index,
+            expected_static_id: slot.item.static_id,
+            count: normalizedCount,
+        });
+    }
+
+    function putBaseStorageItem(
+        guildId,
+        baseId,
+        container,
+        slot,
+        staticId,
+        count = 1,
+        mode = "empty_only",
+        dynamicInit = null,
+    ) {
+        const normalizedCount = Number(count);
+        if (
+            !staticId
+            || !Number.isInteger(normalizedCount)
+            || normalizedCount < 1
+            || !["empty_only", "replace"].includes(mode)
+        ) {
+            return false;
+        }
+        const command = {
+            command: "put_item",
+            container_id: container.container_id,
+            slot_index: slot.slot_index,
+            static_id: staticId,
+            count: normalizedCount,
+            mode,
+        };
+        if (dynamicInit !== null) command.dynamic_init = dynamicInit;
+        return executeBaseStorageCommand(guildId, baseId, command);
+    }
+
+    function clearBaseStorageItem(guildId, baseId, container, slot) {
+        if (slot?.state !== "occupied") return false;
+        return executeBaseStorageCommand(guildId, baseId, {
+            command: "clear_item_slot",
+            container_id: container.container_id,
+            slot_index: slot.slot_index,
+            expected_static_id: slot.item.static_id,
+            expected_dynamic_id: slot.item.dynamic_id,
+        });
+    }
+
     async function updateGuildName(guildId, name) {
         if (!SESSION_ID.value || !guildId) return false;
         const normalizedName = typeof name === "string" ? name.trim() : "";
@@ -3600,6 +3814,66 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     guild.name = response.data.value?.name ?? normalizedName;
                 }
             );
+            return true;
+        } finally {
+            if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function updateGuildOwner(guildId, playerId) {
+        if (!SESSION_ID.value || !guildId || !playerId) return false;
+        const ownsLoadingFlag = !LOADING_FLAG.value;
+        if (ownsLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/save/guilds/${encodeURIComponent(guildId)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_guild_owner",
+                    player_id: playerId,
+                }
+            );
+            if (
+                !acceptResponse(
+                    response,
+                    "update-guild-owner",
+                    { command: true }
+                )
+            ) {
+                return false;
+            }
+            const updatedMembers = new Map(
+                (response.data.value?.members || []).map(
+                    member => [String(member.player_id), member]
+                )
+            );
+            updateGuildCollections(guildId, guild => {
+                guild.owner_player_id =
+                    response.data.value?.owner_player_id ?? playerId;
+                guild.owner_status = "available";
+                for (const member of guild.members || []) {
+                    const updated = updatedMembers.get(
+                        String(member.player_id)
+                    );
+                    if (updated) {
+                        member.role = updated.role;
+                        member.role_status = "available";
+                    }
+                    member.is_owner =
+                        String(member.player_id)
+                        === String(guild.owner_player_id);
+                }
+                guild.members?.sort((left, right) => (
+                    (left.role ?? 99) - (right.role ?? 99)
+                    || String(left.name || "").localeCompare(
+                        String(right.name || "")
+                    )
+                    || String(left.player_id).localeCompare(
+                        String(right.player_id)
+                    )
+                ));
+            });
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -3774,12 +4048,64 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (SAVE_PLATFORM.value !== "xgp") {
                 savePayload.WritePath = PAL_WRITE_BACK_PATH.value;
             }
-            const response = await POST(
+            let response = await POST(
                 "/api/save/save",
                 savePayload,
                 { errorContext: "save" },
             );
             if (response === false) return false;
+
+            const repair = response?.error?.details?.repair;
+            const repairCount = repair?.repair_count;
+            const canRepairMissingGuildHandles = (
+                response?.error?.code === "CHARACTER_INDEX_INVARIANT_FAILED"
+                && repair?.available === true
+                && repair?.kind === "missing_guild_handles"
+                && Number.isInteger(repairCount)
+                && repairCount > 0
+            );
+            if (canRepairMissingGuildHandles) {
+                const confirmed = window.confirm(
+                    getTranslatedText(
+                        "Confirm_CharacterReferenceRepair",
+                        [repairCount],
+                    )
+                );
+                if (!confirmed) {
+                    acceptResponse(response, "save");
+                    return false;
+                }
+                const repairResponse = await POST(
+                    "/api/save/repair-character-references",
+                    {
+                        session_id: SESSION_ID.value,
+                        expected_revision: SESSION_REVISION.value,
+                    },
+                    { errorContext: "save-repair" },
+                );
+                if (repairResponse === false) return false;
+                if (
+                    !acceptResponse(
+                        repairResponse,
+                        "save-repair",
+                        { command: true },
+                    )
+                ) {
+                    alert(LAST_ERROR.value?.message || repairResponse.msg);
+                    return false;
+                }
+                if (repairResponse.data?.saveCapabilities) {
+                    SAVE_CAPABILITIES.value =
+                        repairResponse.data.saveCapabilities;
+                }
+                savePayload.expected_revision = SESSION_REVISION.value;
+                response = await POST(
+                    "/api/save/save",
+                    savePayload,
+                    { errorContext: "save" },
+                );
+                if (response === false) return false;
+            }
 
             if (response.status == 0) {
                 LAST_SAVE_RESULT.value = response.data;
@@ -3792,6 +4118,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     SESSION_REVISION.value = response.data.revision;
                     PENDING_CHANGE_COUNT.value = 0;
                 }
+                RAW_JSON_PENDING.value = Boolean(
+                    response.data.session?.raw_json_pending
+                    ?? response.data.raw_json_pending
+                );
                 LAST_ERROR.value = null;
                 if (SAVE_PLATFORM.value === "xgp") XGP_SAVE_CONFIRMED.value = true;
                 const Alert_Successful_Save = SAVE_PLATFORM.value === "xgp"
@@ -3815,6 +4145,124 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             return retval;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
+    async function pickMigrationPath(currentPath = "") {
+        const nativePicker = window.pywebview?.api?.select_save_directory;
+        if (typeof nativePicker === "function") {
+            try {
+                const selected = await nativePicker(
+                    currentPath || PAL_GAME_SAVE_PATH.value
+                );
+                if (typeof selected === "string" && selected.trim()) {
+                    return selected.trim();
+                }
+                if (selected === null) return null;
+                console.warn(
+                    "Native migration directory picker returned no usable path."
+                );
+            } catch (error) {
+                console.error("Native migration directory picker failed.", error);
+            }
+        }
+        const systemResponse = await POST("/api/save/select-directory", {
+            path: currentPath || PAL_GAME_SAVE_PATH.value || undefined,
+        });
+        if (systemResponse?.status === 0) {
+            const selected = systemResponse.data?.path;
+            if (systemResponse.data?.cancelled === true || selected === null) {
+                return null;
+            }
+            if (typeof selected === "string" && selected.trim()) {
+                return selected.trim();
+            }
+        }
+        return window.prompt(
+            getTranslatedText("Migration_PathPrompt"),
+            currentPath || PAL_GAME_SAVE_PATH.value || "",
+        );
+    }
+
+    async function pickMigrationWgsDirectory() {
+        const selected = await pickMigrationPath(XGP_WGS_PATH.value || "");
+        if (!selected) return false;
+        return discoverXgpSources(selected);
+    }
+
+    async function analyzeMigration(requestPayload) {
+        MIGRATION_LOADING.value = true;
+        MIGRATION_STAGE.value = "analyzing";
+        MIGRATION_PLAN.value = null;
+        MIGRATION_RESULT.value = null;
+        LAST_ERROR.value = null;
+        try {
+            const response = await POST(
+                "/api/migration/analyze",
+                requestPayload,
+                { errorContext: "migration" },
+            );
+            if (!acceptResponse(response, "migration")) return false;
+            MIGRATION_PLAN.value = response.data;
+            MIGRATION_STAGE.value = response.data.blockers?.length
+                ? "failed"
+                : "analyzed";
+            return response.data;
+        } finally {
+            MIGRATION_LOADING.value = false;
+        }
+    }
+
+    function clearMigrationAnalysis() {
+        if (MIGRATION_LOADING.value) return;
+        MIGRATION_STAGE.value = null;
+        MIGRATION_PLAN.value = null;
+        MIGRATION_RESULT.value = null;
+        if (LAST_ERROR.value?.context === "migration") {
+            LAST_ERROR.value = null;
+        }
+    }
+
+    async function executeMigration(payload) {
+        MIGRATION_LOADING.value = true;
+        MIGRATION_STAGE.value = "backing_up";
+        MIGRATION_RESULT.value = null;
+        LAST_ERROR.value = null;
+        let statusRequestInFlight = false;
+        const pollStatus = async () => {
+            if (statusRequestInFlight) return;
+            statusRequestInFlight = true;
+            try {
+                const response = await POST("/api/migration/status", {
+                    plan_id: payload.plan_id,
+                    operation_id: payload.confirmation?.operation_id || "",
+                });
+                if (response?.status === 0 && response.data?.stage) {
+                    MIGRATION_STAGE.value = response.data.stage;
+                }
+            } finally {
+                statusRequestInFlight = false;
+            }
+        };
+        let statusTimer = null;
+        try {
+            const execution = POST(
+                "/api/migration/execute",
+                payload,
+                { errorContext: "migration" },
+            );
+            statusTimer = setInterval(pollStatus, 250);
+            const response = await execution;
+            if (!acceptResponse(response, "migration")) {
+                MIGRATION_STAGE.value = "failed";
+                return false;
+            }
+            MIGRATION_RESULT.value = response.data;
+            MIGRATION_STAGE.value = response.data.status;
+            return response.data;
+        } finally {
+            if (statusTimer !== null) clearInterval(statusTimer);
+            MIGRATION_LOADING.value = false;
         }
     }
 
@@ -4401,7 +4849,17 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const visiblePals = Array.from(PAL_MAP.value.values()).filter(
             (pal) => !isFilteredPal(pal)
         );
-        return sortPalList(visiblePals, PAL_LIST_SORT_MODES.CONTAINER)[0]?.InstanceId;
+        const sortedPals = sortPalList(
+            visiblePals,
+            PAL_LIST_SORT_MODES.CONTAINER
+        );
+        if (!BASE_PAL_BTN_CLK_FLAG.value) {
+            const partyPal = sortedPals.find(
+                (pal) => pal.ContainerType === "PARTY"
+            );
+            if (partyPal) return partyPal.InstanceId;
+        }
+        return sortedPals[0]?.InstanceId;
     }
 
     function getNextElement(map, currKey) {
@@ -4637,6 +5095,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         GUILD_TREE,
         GUILD_LIST,
         GUILD_LOADING,
+        BASE_STORAGE_BY_BASE,
+        BASE_STORAGE_LOADING,
         PAL_MAP,
         EXPEDITION_DATA,
         EXPEDITION_LOADING,
@@ -4689,6 +5149,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         REMOTE_SERVER,
         REMOTE_STATUS,
         REMOTE_PLAYERS,
+        REMOTE_PLAYER_DIRECTORY,
         REMOTE_GUILDS,
         REMOTE_PLAYER_DETAILS,
         REMOTE_PLAYER_DETAILS_LOADING,
@@ -4711,6 +5172,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         SAVE_COMPATIBILITY,
         LAST_ERROR,
         LAST_SAVE_RESULT,
+        MIGRATION_LOADING,
+        MIGRATION_STAGE,
+        MIGRATION_PLAN,
+        MIGRATION_RESULT,
         ITEM_CATALOG_RESULTS,
         ITEM_CLIPBOARD,
         PLAYER_MISSIONS,
@@ -4775,6 +5240,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         resumeCurrentSession,
         queryPlayers,
         loadGuilds,
+        getBaseStorage,
+        isBaseStorageLoading,
+        loadBaseStorage,
         loadOverview,
         loadExpeditions,
         loadArenaLeaderboard,
@@ -4792,8 +5260,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         loadJsonDocument,
         applyJsonDocument,
         updateGuildName,
+        updateGuildOwner,
         updateGuildChestCapacity,
         updateGuildBaseCampLevel,
+        updateBaseStorageItemCount,
+        putBaseStorageItem,
+        clearBaseStorageItem,
         queryPals,
         clearPalQuery,
         selectPlayer,
@@ -4830,6 +5302,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         cancelSelectedPalExpedition,
         refreshSessionMetadata,
         writeSave,
+        pickMigrationPath,
+        pickMigrationWgsDirectory,
+        analyzeMigration,
+        clearMigrationAnalysis,
+        executeMigration,
         exportSteamCopy,
         discoverXgpSources,
         fetch_config,

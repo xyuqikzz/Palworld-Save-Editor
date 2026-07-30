@@ -41,6 +41,11 @@ const formatting = ref(false)
 const loadError = ref('')
 const staged = ref(false)
 const cursor = ref({ line: 1, column: 1 })
+const applyError = computed(() => (
+  palStore.LAST_ERROR?.context === 'apply-json-document'
+    ? palStore.LAST_ERROR
+    : null
+))
 const validation = ref({ state: 'idle', message: '', line: null, column: null })
 const byteSize = ref(0)
 const worker = new Worker(
@@ -403,6 +408,21 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </header>
+
+          <div v-if="applyError" class="editor-error editor-error--apply" role="alert">
+            <AppIcon name="warning" :size="17" />
+            <span>
+              <strong>{{ applyError.code }}</strong>
+              {{ applyError.message }}
+            </span>
+            <button
+              type="button"
+              :aria-label="t('Common_DismissError')"
+              @click="palStore.LAST_ERROR = null"
+            >
+              ×
+            </button>
+          </div>
 
           <div v-if="documentLoading" class="editor-loading" role="status">
             <span class="editor-loading__spinner" />
@@ -772,6 +792,17 @@ onBeforeUnmount(() => {
   border: 0;
   text-decoration: underline;
 }
+
+.editor-error--apply {
+  justify-content: flex-start;
+  padding: 9px 12px;
+  border-bottom: 1px solid oklch(0.45 0.08 24);
+  font-size: 11px;
+}
+
+.editor-error--apply span { flex: 1; }
+.editor-error--apply strong { margin-right: 6px; }
+.editor-error--apply button { font-size: 18px; text-decoration: none; }
 
 .status-bar {
   display: flex;

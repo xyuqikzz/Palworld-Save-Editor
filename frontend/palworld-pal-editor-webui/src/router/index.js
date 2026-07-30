@@ -3,7 +3,6 @@ import EntryView from '../views/EntryView.vue'
 import OverviewView from '../views/OverviewView.vue'
 import EditorView from '../views/EditorView.vue'
 import ArenaLeaderboardView from '../views/ArenaLeaderboardView.vue'
-import RemoteServerView from '../views/RemoteServerView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -14,9 +13,14 @@ const router = createRouter({
       component: EntryView
     },
     {
+      path: '/save-migration',
+      name: 'SaveMigration',
+      component: () => import('../views/SaveMigrationView.vue')
+    },
+    {
       path: '/remote',
       name: 'RemoteServer',
-      component: RemoteServerView,
+      component: () => import('../views/RemoteServerView.vue'),
       meta: { requiresRemoteSession: true }
     },
     {

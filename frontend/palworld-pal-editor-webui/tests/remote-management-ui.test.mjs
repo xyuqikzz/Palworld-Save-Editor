@@ -12,12 +12,30 @@ const storePath = fileURLToPath(
 const remotePalCardPath = fileURLToPath(
   new URL('../src/components/modules/RemotePalCard.vue', import.meta.url),
 )
+const routerPath = fileURLToPath(
+  new URL('../src/router/index.js', import.meta.url),
+)
+const runtimeSourcePath = fileURLToPath(
+  new URL('../../../native/pal_editor_bridge/ue4ss/src/palworld_runtime.cpp', import.meta.url),
+)
+const modHeaderPath = fileURLToPath(
+  new URL('../../../native/pal_editor_bridge/ue4ss/include/pal_editor_bridge_mod.hpp', import.meta.url),
+)
+const modSourcePath = fileURLToPath(
+  new URL('../../../native/pal_editor_bridge/ue4ss/src/pal_editor_bridge_mod.cpp', import.meta.url),
+)
+const playerManagementModelPath = fileURLToPath(
+  new URL('../src/components/modules/player-management-model.js', import.meta.url),
+)
 
 test('remote item and Pal grants reuse the editor catalog modules', () => {
   const source = readFileSync(remoteViewPath, 'utf8')
 
   assert.match(source, /import ItemPicker from '@\/components\/modules\/ItemPicker\.vue'/)
-  assert.match(source, /import RemotePalGrantForm from '@\/components\/modules\/RemotePalGrantForm\.vue'/)
+  assert.match(
+    source,
+    /defineAsyncComponent\(\s*\(\) => import\('@\/components\/modules\/RemotePalGrantForm\.vue'\)/,
+  )
   assert.match(
     source,
     /<ItemPicker[\s\S]*?v-model="itemForm\.itemId"[\s\S]*?:options="palStore\.ITEM_CATALOG_RESULTS"/,
@@ -110,18 +128,29 @@ test('the store exposes static data loading to remote-only sessions', () => {
   assert.match(source, /return\s*\{[\s\S]*?\bfetchStaticData,[\s\S]*?\bloadSave,/)
 })
 
-test('remote commands do not trigger an automatic player-data refresh', () => {
+test('remote commands refresh only the data affected by the operation', () => {
   const viewSource = readFileSync(remoteViewPath, 'utf8')
   const storeSource = readFileSync(storePath, 'utf8')
   const runCommandSource = viewSource.match(
     /async function runCommand\([\s\S]*?\n\}/,
   )?.[0] || ''
 
-  assert.doesNotMatch(runCommandSource, /refreshRemote\(/)
-  assert.doesNotMatch(runCommandSource, /loadRemotePlayerDetails\(/)
-  assert.doesNotMatch(runCommandSource, /loadRemotePlayerInventory\(/)
-  assert.doesNotMatch(runCommandSource, /loadRemotePlayerPals\(/)
-  assert.doesNotMatch(runCommandSource, /await refreshRemote\(/)
+  assert.match(
+    runCommandSource,
+    /operation === 'inventory\.grant'[\s\S]*?loadRemotePlayerInventory\([^)]*\{ force: true \}/,
+  )
+  assert.match(
+    runCommandSource,
+    /operation === 'pal\.grant'[\s\S]*?loadPalPage\([^)]*\{ force: true \}/,
+  )
+  assert.match(
+    runCommandSource,
+    /operation === 'player\.experience\.add'[\s\S]*?loadRemotePlayerDetails/,
+  )
+  assert.match(
+    runCommandSource,
+    /\['player\.kick', 'player\.ban', 'player\.unban'\]\.includes\(operation\)[\s\S]*?refreshRemote\(\{ clearCommandMessage: false, background: true \}\)/,
+  )
   assert.match(
     storeSource,
     /async function refreshRemoteStatus\(\{ background = false \} = \{\}\)/,
@@ -135,6 +164,7 @@ test('remote commands do not trigger an automatic player-data refresh', () => {
 test('runtime guild, inventory, Party Pal, and Pal Terminal data use selected-player lazy reads', () => {
   const viewSource = readFileSync(remoteViewPath, 'utf8')
   const storeSource = readFileSync(storePath, 'utf8')
+  const palCardSource = readFileSync(remotePalCardPath, 'utf8')
 
   assert.match(storeSource, /const REMOTE_GUILDS = ref\(\[\]\)/)
   assert.match(storeSource, /const REMOTE_PLAYER_DETAILS = ref\(null\)/)
@@ -195,7 +225,43 @@ test('runtime guild, inventory, Party Pal, and Pal Terminal data use selected-pl
   assert.match(viewSource, /Remote_PalCollectionParty/)
   assert.match(viewSource, /Remote_PalCollectionTerminal/)
   assert.match(viewSource, /<RemotePalCard/)
+  assert.match(viewSource, /palSpeciesCatalogKey\(entry, palStore\.PAL_STATIC_DATA\)/)
+  assert.match(palCardSource, /palRuntimeDisplayName\(/)
   assert.doesNotMatch(viewSource, /class="inventory-items"/)
+})
+
+test('live player directory separates presence, virtualizes large worlds, and exposes persistence without undo', () => {
+  const viewSource = readFileSync(remoteViewPath, 'utf8')
+  const storeSource = readFileSync(storePath, 'utf8')
+  const modelSource = readFileSync(playerManagementModelPath, 'utf8')
+  const offlinePlayerSource = readFileSync(
+    fileURLToPath(new URL('../src/components/PlayerEditor.vue', import.meta.url)),
+    'utf8',
+  )
+
+  assert.match(modelSource, /class PlayerManagementModel/)
+  assert.match(modelSource, /static fromOffline\(player\)/)
+  assert.match(modelSource, /static fromLive\(player\)/)
+  assert.match(offlinePlayerSource, /PlayerManagementModel\.fromOffline/)
+  assert.match(viewSource, /playerManagementId/)
+  assert.match(viewSource, /LIVE_PLAYER_TABS/)
+  assert.match(storeSource, /const REMOTE_PLAYER_DIRECTORY = ref\(null\)/)
+  assert.match(storeSource, /\/api\/remote\/player-directory\?session_id=/)
+  assert.match(viewSource, /const playerFilter = ref\('all'\)/)
+  assert.match(viewSource, /playerFilter\.value === 'online'/)
+  assert.match(viewSource, /playerFilter\.value === 'offline'/)
+  assert.match(viewSource, /filteredPlayers\.value\.length > 500/)
+  assert.match(viewSource, /virtualPlayerStart/)
+  assert.match(viewSource, /virtualPlayerStart\.value \+ 28/)
+  assert.match(viewSource, /snapshotState/)
+  assert.match(viewSource, /class="offline-live-note"/)
+  assert.match(viewSource, /function canTarget\(capability\)/)
+  assert.match(viewSource, /:inert="canTarget\('inventory\.grant'\) \? undefined : ''"/)
+  assert.match(viewSource, /persistence-state--dirty/)
+  assert.match(viewSource, /persistence-state--saving/)
+  assert.match(viewSource, /persistence-state--failed/)
+  assert.match(viewSource, /@media \(max-width: 480px\)/)
+  assert.doesNotMatch(viewSource, /\bundo\b|\brollback\b/i)
 })
 
 test('live Pal tabs hide counts and reveal real details only on hover or focus', () => {
@@ -262,7 +328,7 @@ test('runtime PascalCase inventory container IDs resolve to known labels', () =>
   assert.equal(mapping.FoodEquip, 'Inventory_Container_FoodEquipment')
 })
 
-test('live map uses the runtime bridge snapshot and the save-editor map assets', () => {
+test('map merges live and saved players and labels their presence', () => {
   const mapPath = fileURLToPath(
     new URL('../src/components/modules/RemoteRuntimeMap.vue', import.meta.url),
   )
@@ -270,10 +336,13 @@ test('live map uses the runtime bridge snapshot and the save-editor map assets',
   const storeSource = readFileSync(storePath, 'utf8')
   const mapSource = readFileSync(mapPath, 'utf8')
 
-  assert.match(viewSource, /import RemoteRuntimeMap/)
+  assert.match(
+    viewSource,
+    /defineAsyncComponent\(\s*\(\) => import\('@\/components\/modules\/RemoteRuntimeMap\.vue'\)/,
+  )
   assert.match(viewSource, /can\('map\.read'\)/)
-  assert.match(viewSource, /activeTab === 'map'/)
-  assert.match(viewSource, /selectRemoteTab\('map'\)/)
+  assert.match(viewSource, /workspaceTab === 'map'/)
+  assert.match(viewSource, /selectWorkspaceTab\('map'\)/)
   assert.match(viewSource, /RemoteMap_CapabilityUnavailable/)
   assert.doesNotMatch(
     viewSource,
@@ -291,7 +360,124 @@ test('live map uses the runtime bridge snapshot and the save-editor map assets',
   assert.match(mapSource, /REFRESH_INTERVAL_MS = 3000/)
   assert.match(mapSource, /guildFilter/)
   assert.match(mapSource, /player\.guildId \|\| player\.guild_id/)
+  assert.match(mapSource, /RemoteMap_PlayerOnline/)
+  assert.match(mapSource, /RemoteMap_PlayerOffline/)
+  assert.match(mapSource, /player\.online === true/)
+  assert.match(mapSource, /positionSource/)
   assert.match(mapSource, /emit\('select-player'/)
+  assert.doesNotMatch(mapSource, /RemoteMap_Live/)
+})
+
+test('dedicated-server administration uses advertised capabilities and verified user IDs', () => {
+  const source = readFileSync(remoteViewPath, 'utf8')
+  const heading = source.match(
+    /<header class="remote-console__heading">[\s\S]*?<\/header>/,
+  )?.[0] || ''
+
+  assert.match(source, /can\('server\.announce'\)/)
+  assert.match(source, /runCommand\('server\.announce', \{ message \}, false\)/)
+  assert.match(heading, /openPlayerAction\('player\.kick'\)/)
+  assert.match(heading, /openPlayerAction\('player\.ban'\)/)
+  assert.match(heading, /openPlayerAction\('player\.unban'\)/)
+  assert.match(source, /selectedPlayer\.value\?\.userId \|\| selectedPlayer\.value\?\.user_id/)
+  assert.match(source, /role="alertdialog"/)
+  assert.match(source, /async function confirmPlayerAction\(\)/)
+  assert.match(
+    source,
+    /const result = await runCommand\(\s*action\.operation,\s*\{\},/,
+  )
+  assert.doesNotMatch(source, /moderationForm|moderationConfirmed|Remote_ModerationMessage/)
+  assert.match(source, /can\('world\.shutdown'\)/)
+  assert.match(source, /v-model="shutdownConfirmed"/)
+  assert.match(source, /wait_time: Number\(shutdownForm\.waitTime\)/)
+  assert.match(source, /class="operation-history"/)
+})
+
+test('server-level tasks are structurally separate from selected-player actions', () => {
+  const source = readFileSync(remoteViewPath, 'utf8')
+  const playerWorkspaceStart = source.indexOf(
+    '<div v-else-if="workspaceTab === \'players\'" class="remote-workspace">',
+  )
+  const mapWorkspaceStart = source.indexOf(
+    '<section v-else-if="workspaceTab === \'map\'"',
+  )
+  const serverWorkspaceStart = source.indexOf(
+    '<section v-else class="workspace-panel server-control">',
+  )
+  const templateEnd = source.indexOf('<style scoped>')
+
+  assert.ok(playerWorkspaceStart >= 0)
+  assert.ok(mapWorkspaceStart > playerWorkspaceStart)
+  assert.ok(serverWorkspaceStart > mapWorkspaceStart)
+  assert.ok(templateEnd > serverWorkspaceStart)
+
+  const playerWorkspace = source.slice(playerWorkspaceStart, mapWorkspaceStart)
+  const serverWorkspace = source.slice(serverWorkspaceStart, templateEnd)
+
+  assert.match(source, /class="workspace-tabs"/)
+  assert.match(source, /Remote_WorkspaceOverview/)
+  assert.match(source, /Remote_WorkspacePlayers/)
+  assert.match(source, /Remote_WorkspaceMap/)
+  assert.match(source, /Remote_WorkspaceServer/)
+  assert.match(playerWorkspace, /activeTab === 'actions'/)
+  assert.match(playerWorkspace, /openPlayerAction\('player\.kick'\)/)
+  assert.match(playerWorkspace, /openPlayerAction\('player\.unban'\)/)
+  assert.doesNotMatch(playerWorkspace, /can\('server\.announce'\)/)
+  assert.doesNotMatch(playerWorkspace, /can\('world\.save'\)/)
+  assert.doesNotMatch(playerWorkspace, /can\('world\.shutdown'\)/)
+  assert.match(serverWorkspace, /can\('server\.announce'\)/)
+  assert.match(serverWorkspace, /can\('world\.save'\)/)
+  assert.match(serverWorkspace, /can\('world\.shutdown'\)/)
+  assert.match(serverWorkspace, /Remote_AppliesToServer/)
+  assert.doesNotMatch(serverWorkspace, /selectedPlayerId/)
+  assert.doesNotMatch(serverWorkspace, /selectedPlayerUserId/)
+})
+
+test('remote catalogs and large management panels load only when their tab needs them', () => {
+  const source = readFileSync(remoteViewPath, 'utf8')
+  const routerSource = readFileSync(routerPath, 'utf8')
+  const mountedSource = source.match(/onMounted\(async \(\) => \{[\s\S]*?\n\}\)/)?.[0] || ''
+
+  assert.doesNotMatch(mountedSource, /searchItemCatalog/)
+  assert.doesNotMatch(mountedSource, /fetchStaticData/)
+  assert.match(source, /function ensureOperationCatalogs\(\)/)
+  assert.match(source, /tab === 'actions'[\s\S]*?ensureOperationCatalogs\(\)/)
+  assert.match(source, /tab === 'inventory'[\s\S]*?ensureItemCatalog\(\)/)
+  assert.match(source, /tab === 'pals'[\s\S]*?ensurePalCatalog\(\)/)
+  assert.doesNotMatch(routerSource, /import RemoteServerView from/)
+  assert.match(
+    routerSource,
+    /component: \(\) => import\('\.\.\/views\/RemoteServerView\.vue'\)/,
+  )
+})
+
+test('UE4SS snapshots reuse player scans and game-thread work is bounded', () => {
+  const runtimeSource = readFileSync(runtimeSourcePath, 'utf8')
+  const modHeader = readFileSync(modHeaderPath, 'utf8')
+  const modSource = readFileSync(modSourcePath, 'utf8')
+  const playerList = runtimeSource.match(
+    /nlohmann::json players\(\)[\s\S]*?\n        nlohmann::json guilds_for_players/,
+  )?.[0] || ''
+  const mapSnapshot = runtimeSource.match(
+    /nlohmann::json map_snapshot\(\)[\s\S]*?\n        \}/,
+  )?.[0] || ''
+
+  assert.match(playerList, /individual_parameter_for_actor/)
+  assert.match(playerList, /character_snapshot/)
+  assert.match(playerList, /runtime_level/)
+  assert.match(mapSnapshot, /const auto online_players = players\(\)/)
+  assert.match(mapSnapshot, /guilds_for_players\(online_players\)/)
+  assert.doesNotMatch(mapSnapshot, /\{"players", players\(\)\}/)
+  assert.match(modHeader, /max_pending_commands = 64/)
+  assert.match(modHeader, /max_commands_per_tick = 4/)
+  assert.match(modHeader, /game_thread_budget\{2\}/)
+  assert.match(modSource, /m_queue\.size\(\) >= max_pending_commands/)
+  assert.match(modSource, /while \(processed < max_commands_per_tick\)/)
+  assert.match(
+    modSource,
+    /steady_clock::now\(\) - tick_started_at[\s\S]*?>= game_thread_budget/,
+  )
+  assert.match(modSource, /"gameThreadQueue"/)
 })
 
 test('remote management uses the save-editor workspace design language', () => {
@@ -300,6 +486,8 @@ test('remote management uses the save-editor workspace design language', () => {
   assert.match(source, /class="remote-shell"/)
   assert.match(source, /class="remote-source"/)
   assert.match(source, /class="remote-metrics"/)
+  assert.match(source, /class="workspace-tabs"/)
+  assert.match(source, /class="workspace-panel/)
   assert.match(source, /class="remote-workspace"/)
   assert.match(source, /class="remote-console"/)
   assert.match(source, /class="detail-skeleton"/)
@@ -309,4 +497,8 @@ test('remote management uses the save-editor workspace design language', () => {
   assert.match(source, /border-radius: var\(--ui-radius-lg\)/)
   assert.match(source, /box-shadow: var\(--ui-shadow-sm\)/)
   assert.doesNotMatch(source, /class="remote-page__actions"/)
+  assert.equal(
+    source.match(/getTranslatedText\('Remote_OnlinePlayers'\)/g)?.length,
+    1,
+  )
 })

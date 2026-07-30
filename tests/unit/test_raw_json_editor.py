@@ -18,7 +18,8 @@ from palworld_pal_editor.application.raw_json_editor import RawJsonEditor
 from palworld_pal_editor.application.runtime import SessionRuntime
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.application.save_writer import SaveWriter
-from palworld_pal_editor.core.pal_objects import PalObjects, UUID2HexStr
+from palworld_pal_editor.core.lazy_player_entity import LazyPlayerEntity
+from palworld_pal_editor.core.pal_objects import PalObjects, UUID2HexStr, toUUID
 from palworld_pal_editor.core.save_manager import (
     MAIN_SKIP_PROPERTIES,
     PLAYER_SKIP_PROPERTIES,
@@ -32,6 +33,11 @@ from tests.unit.test_save_writer import (
     read_locker_character_ids,
     read_start_point_ids,
 )
+
+PLAYER_ID = toUUID("11111111-2222-3333-4444-555555555555")
+PLAYER_INSTANCE_ID = toUUID("99999999-aaaa-bbbb-cccc-dddddddddddd")
+PLAYER_GROUP_ID = toUUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+REPLACEMENT_PLAYER_ID = toUUID("aaaaaaaa-1111-2222-3333-bbbbbbbbbbbb")
 
 
 def _gvas(counter: int) -> GvasFile:
@@ -70,6 +76,87 @@ def _gvas(counter: int) -> GvasFile:
     return gvas
 
 
+def _player_object() -> dict:
+    value = PalObjects.PalSaveParameter(
+        PLAYER_INSTANCE_ID,
+        PLAYER_ID,
+        PalObjects.EMPTY_UUID,
+        0,
+        PLAYER_GROUP_ID,
+    )
+    value["key"]["PlayerUId"] = PalObjects.Guid(PLAYER_ID)
+    parameter = value["value"]["RawData"]["value"]["object"]["SaveParameter"][
+        "value"
+    ]
+    parameter["IsPlayer"] = PalObjects.BoolProperty(True)
+    parameter["NickName"] = PalObjects.StrProperty("JSON Player")
+    parameter["Level"] = PalObjects.ByteProperty(20)
+    return value
+
+
+def _player_gvas(counter: int = 10) -> GvasFile:
+    gvas = _gvas(counter)
+    gvas.properties["SaveData"] = {
+        "struct_type": "PalWorldPlayerSaveData",
+        "struct_id": PalObjects.EMPTY_UUID,
+        "id": None,
+        "type": "StructProperty",
+        "value": {
+            "IndividualId": {
+                "struct_type": "PalInstanceID",
+                "struct_id": PalObjects.EMPTY_UUID,
+                "id": None,
+                "type": "StructProperty",
+                "value": {
+                    "PlayerUId": PalObjects.Guid(PLAYER_ID),
+                    "InstanceId": PalObjects.Guid(PLAYER_INSTANCE_ID),
+                },
+            },
+        },
+    }
+    return gvas
+
+
+def _lazy_player_session(
+    root: Path,
+) -> tuple[SaveSession, LazyPlayerEntity, Path]:
+    players_root = root / "Players"
+    players_root.mkdir()
+    level = _gvas(1)
+    player_gvas = _player_gvas()
+    player_path = players_root / f"{UUID2HexStr(PLAYER_ID)}.sav"
+    (root / "Level.sav").write_bytes(
+        compress_gvas_to_sav(
+            level.write(MAIN_SKIP_PROPERTIES),
+            0x32,
+            zlib=True,
+        )
+    )
+    player_path.write_bytes(
+        compress_gvas_to_sav(
+            player_gvas.write(PLAYER_SKIP_PROPERTIES),
+            0x32,
+            zlib=True,
+        )
+    )
+    player = LazyPlayerEntity(
+        PLAYER_GROUP_ID,
+        _player_object(),
+        {},
+        lambda: (player_gvas, 0x32),
+    )
+    manager = SimpleNamespace(
+        gvas_file=level,
+        _compression_times=0x32,
+        player_mapping={str(PLAYER_ID): player},
+        item_container_data=SimpleNamespace(container_map={}),
+        get_player=lambda value: (
+            player if str(value) == str(PLAYER_ID) else None
+        ),
+    )
+    return SaveSession.from_loaded_manager(manager, root), player, player_path
+
+
 def _session(root: Path) -> SaveSession:
     level = _gvas(1)
     (root / "Level.sav").write_bytes(
@@ -97,7 +184,9 @@ def _counter(path: Path) -> int:
     ).properties["Counter"]["value"]
 
 
-def test_raw_json_level_roundtrip_stays_pending_until_verified_save() -> None:
+def test_raw_json_level_roundtrip_stays_unrestricted_until_verified_save(
+    monkeypatch,
+) -> None:
     with TemporaryDirectory() as temp:
         root = Path(temp)
         session = _session(root)
@@ -132,12 +221,23 @@ def test_raw_json_level_roundtrip_stays_pending_until_verified_save() -> None:
         assert result["changed"] is True
         assert result["revision"] == 1
         assert session.raw_json_pending is True
-        with pytest.raises(DomainError) as blocked:
-            session.require_command(session.session_id, 1)
-        assert blocked.value.code == "RAW_JSON_SAVE_REQUIRED"
+        session.require_command(session.session_id, 1)
 
+        session.manager.dynamic_item_data = SimpleNamespace(
+            assert_no_new_issues=lambda _baseline: (_ for _ in ()).throw(
+                AssertionError("raw JSON must bypass domain validation")
+            ),
+        )
+        monkeypatch.setattr(
+            "palworld_pal_editor.application.save_writer."
+            "inspect_decoded_character_graph",
+            lambda _gvas: (_ for _ in ()).throw(
+                AssertionError("raw JSON must bypass reload semantics")
+            ),
+        )
         saved = SaveWriter().save(session, root, 1)
         assert _counter(root / "Level.sav") == 2
+        assert session.raw_json_pending is False
         assert Path(saved.backup_path).is_dir()
         assert _counter(Path(saved.backup_path) / "files" / "Level.sav") == 1
 
@@ -324,6 +424,52 @@ def test_raw_json_player_file_is_listed_loaded_and_saved() -> None:
 
         assert result.written_files == (f"Players/{player_path.name}",)
         assert _counter(player_path) == 11
+
+
+def test_raw_json_real_player_entity_allows_identity_replacement() -> None:
+    with TemporaryDirectory() as temp:
+        root = Path(temp)
+        session, player, player_path = _lazy_player_session(root)
+        editor = RawJsonEditor()
+        relative_path = f"Players/{player_path.name}"
+
+        document = json.loads(editor.read_document(session, relative_path)["text"])
+        document["properties"]["Counter"]["value"] = 11
+        document["properties"]["SaveData"]["value"]["IndividualId"]["value"][
+            "PlayerUId"
+        ]["value"] = str(REPLACEMENT_PLAYER_ID)
+        result = editor.apply_document(
+            session,
+            session_id=session.session_id,
+            expected_revision=0,
+            relative_path=relative_path,
+            text=json.dumps(document),
+        )
+
+        details = player.load_details()
+        assert result["changed"] is True
+        assert details._player_save_data is details.PlayerGVAS[0].properties[
+            "SaveData"
+        ]["value"]
+        assert str(
+            details._player_save_data["IndividualId"]["value"]["PlayerUId"][
+                "value"
+            ]
+        ) == str(REPLACEMENT_PLAYER_ID)
+
+        SaveWriter().save(session, root, 1)
+        raw, _compression = decompress_sav_to_gvas(player_path.read_bytes())
+        saved = GvasFile.read(
+            raw,
+            PALWORLD_TYPE_HINTS,
+            PLAYER_SKIP_PROPERTIES,
+        )
+        assert saved.properties["Counter"]["value"] == 11
+        assert str(
+            saved.properties["SaveData"]["value"]["IndividualId"]["value"][
+                "PlayerUId"
+            ]["value"]
+        ) == str(REPLACEMENT_PLAYER_ID)
 
 
 def test_raw_json_pending_session_can_still_be_explicitly_discarded() -> None:

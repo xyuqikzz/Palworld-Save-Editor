@@ -650,6 +650,7 @@ def get_player_pals():
                 # "Talent_Defense": pal.Talent_Defense or 0,
                 "Is_Unref_Pal": pal.is_unreferenced_pal,
                 "in_owner_palbox": pal.in_owner_palbox,
+                "ContainerType": pal.owner_container_type,
             }
             for pal in pals
         ],

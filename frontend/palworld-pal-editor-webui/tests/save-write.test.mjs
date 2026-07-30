@@ -141,6 +141,265 @@ test('WGS save cancellation preserves pending changes and releases its loading s
   }
 })
 
+test('repairable missing guild handles prompt, repair, and retry the save', async () => {
+  const store = makeLoadedDirtyStore()
+  const previousConfirm = window.confirm
+  const confirmations = []
+  const requests = []
+  let saveAttempts = 0
+  window.confirm = message => {
+    confirmations.push(message)
+    return true
+  }
+  axios.post = async (url, data) => {
+    requests.push({ url, data: structuredClone(data) })
+    if (url === '/api/save/repair-character-references') {
+      return {
+        data: {
+          status: 0,
+          data: {
+            revision: 8,
+            repair: {
+              kind: 'missing_guild_handles',
+              repair_count: 1,
+              guild_count: 1,
+              remaining_hard_issue_count: 0,
+            },
+            saveCapabilities: {
+              writeBack: true,
+              exportSteamCopy: true,
+            },
+          },
+        },
+      }
+    }
+    assert.equal(url, '/api/save/save')
+    saveAttempts += 1
+    if (saveAttempts === 1) {
+      return {
+        data: {
+          status: 1,
+          msg: 'Character records and their references are inconsistent.',
+          error: {
+            code: 'CHARACTER_INDEX_INVARIANT_FAILED',
+            details: {
+              repair: {
+                available: true,
+                kind: 'missing_guild_handles',
+                repair_count: 1,
+                guild_count: 1,
+              },
+            },
+            retryable: true,
+          },
+        },
+      }
+    }
+    return {
+      data: {
+        status: 0,
+        data: {
+          revision: 8,
+          backup_path: 'D:/verified-backup',
+          written_files: ['Level.sav'],
+        },
+      },
+    }
+  }
+
+  try {
+    assert.equal(await store.writeSave(), true)
+    assert.equal(confirmations.length, 1)
+    assert.match(confirmations[0], /Saving failed/i)
+    assert.match(confirmations[0], /1 Pal record/i)
+    assert.match(confirmations[0], /complete backup/i)
+    assert.deepEqual(requests, [
+      {
+        url: '/api/save/save',
+        data: {
+          WritePath: 'D:/synthetic-save',
+          session_id: 'session-1',
+          expected_revision: 7,
+        },
+      },
+      {
+        url: '/api/save/repair-character-references',
+        data: {
+          session_id: 'session-1',
+          expected_revision: 7,
+        },
+      },
+      {
+        url: '/api/save/save',
+        data: {
+          WritePath: 'D:/synthetic-save',
+          session_id: 'session-1',
+          expected_revision: 8,
+        },
+      },
+    ])
+    assert.equal(store.SESSION_REVISION, 8)
+    assert.equal(store.PENDING_CHANGE_COUNT, 0)
+    assert.equal(store.LAST_ERROR, null)
+    assert.equal(store.LOADING_FLAG, false)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('a backup failure after character reference repair keeps the repair pending', async () => {
+  const store = makeLoadedDirtyStore()
+  const previousConfirm = window.confirm
+  let saveAttempts = 0
+  window.confirm = () => true
+  axios.post = async url => {
+    if (url === '/api/save/repair-character-references') {
+      return {
+        data: {
+          status: 0,
+          data: {
+            revision: 8,
+            repair: {
+              kind: 'missing_guild_handles',
+              repair_count: 1,
+              guild_count: 1,
+              remaining_hard_issue_count: 0,
+            },
+          },
+        },
+      }
+    }
+    assert.equal(url, '/api/save/save')
+    saveAttempts += 1
+    if (saveAttempts === 1) {
+      return {
+        data: {
+          status: 1,
+          msg: 'repairable character references',
+          error: {
+            code: 'CHARACTER_INDEX_INVARIANT_FAILED',
+            details: {
+              repair: {
+                available: true,
+                kind: 'missing_guild_handles',
+                repair_count: 1,
+              },
+            },
+            retryable: true,
+          },
+        },
+      }
+    }
+    return {
+      data: {
+        status: 1,
+        msg: 'backup failed',
+        error: {
+          code: 'BACKUP_FAILED',
+          details: {
+            phase: 'copy_file',
+            failed_file: 'Level.sav',
+            os_error_category: 'disk_space',
+          },
+          retryable: true,
+        },
+      },
+    }
+  }
+
+  try {
+    assert.equal(await store.writeSave(), false)
+    assert.equal(saveAttempts, 2)
+    assert.equal(store.SESSION_REVISION, 8)
+    assert.equal(store.PENDING_CHANGE_COUNT, 3)
+    assert.equal(store.LAST_ERROR.code, 'BACKUP_FAILED')
+    assert.equal(store.LAST_ERROR.details.failed_file, 'Level.sav')
+    assert.equal(store.LOADING_FLAG, false)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('declining character reference repair preserves the failed save state', async () => {
+  const store = makeLoadedDirtyStore()
+  const previousConfirm = window.confirm
+  let requestCount = 0
+  window.confirm = () => false
+  axios.post = async url => {
+    requestCount += 1
+    assert.equal(url, '/api/save/save')
+    return {
+      data: {
+        status: 1,
+        msg: 'generic backend message',
+        error: {
+          code: 'CHARACTER_INDEX_INVARIANT_FAILED',
+          details: {
+            repair: {
+              available: true,
+              kind: 'missing_guild_handles',
+              repair_count: 1,
+              guild_count: 1,
+            },
+          },
+          retryable: true,
+        },
+      },
+    }
+  }
+
+  try {
+    assert.equal(await store.writeSave(), false)
+    assert.equal(requestCount, 1)
+    assert.equal(store.LAST_ERROR.code, 'CHARACTER_INDEX_INVARIANT_FAILED')
+    assert.match(store.LAST_ERROR.message, /not written/i)
+    assert.equal(store.SESSION_REVISION, 7)
+    assert.equal(store.PENDING_CHANGE_COUNT, 2)
+    assert.equal(store.LOADING_FLAG, false)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
+test('unsafe character reference failures never offer automatic repair', async () => {
+  const store = makeLoadedDirtyStore()
+  const previousConfirm = window.confirm
+  let confirmationCount = 0
+  window.confirm = () => {
+    confirmationCount += 1
+    return true
+  }
+  axios.post = async url => {
+    assert.equal(url, '/api/save/save')
+    return {
+      data: {
+        status: 1,
+        msg: 'unsafe character references',
+        error: {
+          code: 'CHARACTER_INDEX_INVARIANT_FAILED',
+          details: {
+            repair: {
+              available: false,
+              kind: 'missing_guild_handles',
+              repair_count: 0,
+            },
+          },
+          retryable: false,
+        },
+      },
+    }
+  }
+
+  try {
+    assert.equal(await store.writeSave(), false)
+    assert.equal(confirmationCount, 0)
+    assert.equal(store.LAST_ERROR.code, 'CHARACTER_INDEX_INVARIANT_FAILED')
+    assert.equal(store.PENDING_CHANGE_COUNT, 2)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
 for (const { platform, code } of [
   { platform: 'steam', code: 'BACKUP_FAILED' },
   { platform: 'xgp', code: 'WGS_BACKUP_FAILED' },

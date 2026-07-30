@@ -6,17 +6,18 @@ import ItemCard from '@/components/modules/TechCard.vue'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import InventoryEditor from '@/components/InventoryEditor.vue'
 import MissionEditor from '@/components/MissionEditor.vue'
+import {
+    OFFLINE_PLAYER_TABS,
+    PlayerManagementModel,
+} from '@/components/modules/player-management-model'
 
 const palStore = usePalEditorStore()
 const route = useRoute()
 const router = useRouter()
-const playerEditorTabs = new Set([
-    'inventory',
-    'technology',
-    'missions',
-    'map-progress',
-    'attributes',
-])
+const playerEditorTabs = OFFLINE_PLAYER_TABS
+const playerModel = computed(() => (
+    PlayerManagementModel.fromOffline(palStore.SELECTED_PLAYER_DATA)
+))
 
 const fogClearCapability = computed(() => (
     palStore.SAVE_CAPABILITIES?.fogOfWarClear || {
@@ -184,8 +185,8 @@ const formatAttributeEffect = (value) => {
             <header class="player-summary-heading">
                 <h2>{{ palStore.getTranslatedText("Editor_Basic_Info") }}</h2>
                 <div class="player-summary-identity">
-                    <strong>{{ palStore.SELECTED_PLAYER_DATA.NickName }}</strong>
-                    <span>{{ palStore.getTranslatedText('Common_LevelWithValue', [palStore.SELECTED_PLAYER_DATA.Level]) }}</span>
+                    <strong>{{ playerModel.name }}</strong>
+                    <span>{{ palStore.getTranslatedText('Common_LevelWithValue', [playerModel.level]) }}</span>
                 </div>
             </header>
             <div class="player-basic-grid">

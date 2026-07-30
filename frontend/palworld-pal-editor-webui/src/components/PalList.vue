@@ -4,7 +4,11 @@ import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
 import VariantBadge from '@/components/modules/VariantBadge.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
-import { PAL_LIST_SORT_MODES, sortPalList } from '@/components/modules/pal-list-sort'
+import {
+    groupPalList,
+    PAL_LIST_SORT_MODES,
+    sortPalList,
+} from '@/components/modules/pal-list-sort'
 import {
     createDefaultPassivePresets,
     loadPassivePresets,
@@ -19,6 +23,7 @@ const palListContainer = ref(null);
 const addSpeciesPicker = ref(null)
 const newSpecies = ref('SheepBall')
 const palListSortMode = ref(PAL_LIST_SORT_MODES.CONTAINER)
+const expandedPalGroups = ref(new Set(['party']))
 const addPalPassivePresets = ref([])
 const selectedPassivePresetId = ref('')
 const addMaxPal = ref(false)
@@ -73,7 +78,45 @@ function updateAddMaxWork(selected) {
     if (selected) addMaxPal.value = false
 }
 
-watch(async () => palStore.SELECTED_PLAYER_ID, async () => {
+function palGroupKey(pal) {
+    if (pal?.ContainerType === 'PARTY') return 'party'
+    if (pal?.ContainerType === 'PAL_STORAGE') return 'palbox'
+    return 'other'
+}
+
+function setPalGroupExpanded(groupKey, expanded = true) {
+    const next = new Set(expandedPalGroups.value)
+    if (expanded) next.add(groupKey)
+    else next.delete(groupKey)
+    expandedPalGroups.value = next
+}
+
+function togglePalGroup(groupKey) {
+    setPalGroupExpanded(groupKey, !expandedPalGroups.value.has(groupKey))
+}
+
+function isPalGroupExpanded(group) {
+    if (group.key === 'base') return true
+    return expandedPalGroups.value.has(group.key)
+}
+
+function expandSelectedPalGroup(palId) {
+    if (!palId || palStore.BASE_PAL_BTN_CLK_FLAG) return
+    const pal = palStore.PAL_MAP.get(palId)
+    if (pal) setPalGroupExpanded(palGroupKey(pal))
+}
+
+function expandFirstPopulatedGroup() {
+    if (palStore.BASE_PAL_BTN_CLK_FLAG || palStore.PAL_LIST_SEARCH_KEYWORD) return
+    if (visiblePalGroups.value.some(group => (
+        group.pals.length && expandedPalGroups.value.has(group.key)
+    ))) return
+    const firstGroup = visiblePalGroups.value.find(group => group.pals.length)
+    if (firstGroup) setPalGroupExpanded(firstGroup.key)
+}
+
+watch(() => palStore.SELECTED_PLAYER_ID, async () => {
+    expandFirstPopulatedGroup()
     await nextTick();
     if (palStore.SHOW_PLAYER_EDIT_FLAG && !palStore.BASE_PAL_BTN_CLK_FLAG) {
         return
@@ -82,7 +125,7 @@ watch(async () => palStore.SELECTED_PLAYER_ID, async () => {
         if (palStore.BASE_PAL_BTN_CLK_FLAG == false) {
             return
         }
-        const button = palListContainer.value?.querySelector('button:not(:disabled)');
+        const button = palListContainer.value?.querySelector('button.pal:not(:disabled)');
         if (button) {
             button.click();
         }
@@ -103,7 +146,8 @@ watch(async () => palStore.SELECTED_PLAYER_ID, async () => {
 //     }
 // })
 
-watch(async () => palStore.UPDATE_PAL_RESELECT_CTR, async () => {
+watch(() => palStore.UPDATE_PAL_RESELECT_CTR, async () => {
+    expandSelectedPalGroup(palStore.SELECTED_PAL_ID)
     await nextTick();
     try {
         const button = palListContainer.value?.querySelector(`button[value="${palStore.SELECTED_PAL_ID}"]`);
@@ -117,7 +161,8 @@ watch(async () => palStore.UPDATE_PAL_RESELECT_CTR, async () => {
     }
 })
 
-watch(async () => palStore.SELECTED_PAL_ID, async () => {
+watch(() => palStore.SELECTED_PAL_ID, async palId => {
+    expandSelectedPalGroup(palId)
     await nextTick();
     if (palStore.SHOW_PLAYER_EDIT_FLAG && !palStore.BASE_PAL_BTN_CLK_FLAG) {
         return
@@ -139,6 +184,7 @@ watch(async () => palStore.SELECTED_PAL_ID, async () => {
 
 onMounted(async () => {
     if (route.name === 'PlayerPalEditor' || route.name === 'BasePalEditor') return;
+    expandFirstPopulatedGroup()
     await nextTick();
     // TODO Note: this is just a temp fix for pal selection when pal list is refreshed by updatePlayer
     await nextTick();
@@ -146,16 +192,56 @@ onMounted(async () => {
     if (palStore.SHOW_PLAYER_EDIT_FLAG && !palStore.BASE_PAL_BTN_CLK_FLAG) {
         return
     }
-    const button = palListContainer.value?.querySelector('button:not(:disabled)');
+    const button = palListContainer.value?.querySelector('button.pal:not(:disabled)');
     if (button) {
         button.click();
     }
 });
 
-function get_filtered_pal_list() {
-    const pals = Array.from(palStore.PAL_MAP.values()).filter(pal => !palStore.isFilteredPal(pal))
-    return sortPalList(pals, palListSortMode.value)
-}
+const filteredPalList = computed(() => (
+    Array.from(palStore.PAL_MAP.values()).filter(pal => !palStore.isFilteredPal(pal))
+))
+
+const visiblePalGroups = computed(() => {
+    if (palStore.BASE_PAL_BTN_CLK_FLAG) {
+        return [{
+            key: 'base',
+            label: '',
+            pals: sortPalList(filteredPalList.value, palListSortMode.value),
+        }]
+    }
+
+    const groups = groupPalList(filteredPalList.value, palListSortMode.value)
+    const visibleGroups = [
+        {
+            key: 'party',
+            label: palStore.getTranslatedText('PalList_Group_Party'),
+            pals: groups.party,
+        },
+        {
+            key: 'palbox',
+            label: palStore.getTranslatedText('PalList_Group_Palbox'),
+            pals: groups.palbox,
+        },
+    ]
+    if (groups.other.length) {
+        visibleGroups.push({
+            key: 'other',
+            label: palStore.getTranslatedText('PalList_Group_Other'),
+            pals: groups.other,
+        })
+    }
+    return visibleGroups
+})
+
+watch(() => palStore.PAL_LIST_SEARCH_KEYWORD, keyword => {
+    if (!keyword) return
+    const next = new Set(expandedPalGroups.value)
+    next.add('party')
+    next.add('palbox')
+    next.add('other')
+    expandedPalGroups.value = next
+})
 
 function displayNameWithoutVariantEmoji(displayName) {
     return displayName?.replace(/^[👑✨🗼]+/u, '') || ''
@@ -180,7 +266,7 @@ function expeditionStatusTooltipKey(pal) {
         <div class="title panel-title">
             <div>
                 <p>{{ palStore.getTranslatedText("PalList_Text") }}</p>
-                <span>{{ get_filtered_pal_list().length }}</span>
+                <span>{{ filteredPalList.length }}</span>
             </div>
             <div class="panel-actions">
                 <button class="add_pal" v-if="!palStore.BASE_PAL_BTN_CLK_FLAG"
@@ -212,35 +298,57 @@ function expeditionStatusTooltipKey(pal) {
         </div>
 
         <div class="overflow-list" ref="palListContainer">
-            <div class="overflow-container" v-for="pal in get_filtered_pal_list()" :key="pal.InstanceId">
-                <button
-                    :class="['pal', { 'male': pal.displayGender() == '♂️', 'female': pal.displayGender() == '♀️', 'unref': pal.Is_Unref_Pal, 'out_of_container': !pal.in_owner_palbox }]"
-                    :value="pal.InstanceId" @click="palStore.selectPal(pal.InstanceId)"
-                    :disabled="palStore.SELECTED_PAL_ID == pal.InstanceId || palStore.LOADING_FLAG"
-                    :selected="palStore.SELECTED_PAL_ID == pal.InstanceId"
-                    :aria-current="palStore.SELECTED_PAL_ID == pal.InstanceId ? 'true' : undefined"
-                    >
-                    <img :class="['palIcon']" :src="`/image/pals/${pal.IconAccessKey}`" alt="">
-                    <span class="pal-label">
-                        <VariantBadge v-if="pal.IsTower" kind="tower" :size="14" />
-                        <ElementIcon v-for="element in palStore.PAL_STATIC_DATA[pal.DataAccessKey]?.Elements || []"
-                            :key="element" :element="element" :size="14" />
-                        <span class="pal-name">{{ displayNameWithoutVariantEmoji(pal.DisplayName) }}</span>
-                    </span>
-                    <span v-if="pal.IsAwakened" class="pal-awakened-label">
-                        {{ palStore.getTranslatedText('PalList_AwakenedMarker') }}
-                    </span>
-                    <span v-if="pal.IsBOSS || pal.IsRarePal || pal.IsExpeditionPal" class="pal-variants">
-                        <span v-if="pal.IsBOSS" class="pal-variant-label is-boss">{{ palStore.getTranslatedText('Variant_Boss') }}</span>
-                        <span v-if="pal.IsRarePal" class="pal-variant-label">{{ palStore.getTranslatedText('Variant_Rare') }}</span>
-                        <span v-if="pal.IsExpeditionPal"
-                            :class="['pal-expedition-label', `is-${pal.ExpeditionAssignmentStatus || 'unknown'}`]"
-                            :title="palStore.getTranslatedText(expeditionStatusTooltipKey(pal), [pal.ExpeditionInstanceId || '-'])">
-                            {{ palStore.getTranslatedText(expeditionStatusKey(pal)) }}
-                        </span>
-                    </span>
-                </button>
-            </div>
+            <section v-for="group in visiblePalGroups" :key="group.key" class="pal-list-group">
+                <header v-if="group.label" class="pal-list-group__header">
+                    <button type="button" class="pal-list-group__toggle"
+                        :aria-expanded="isPalGroupExpanded(group)"
+                        :aria-controls="`pal-list-group-${group.key}`"
+                        @click="togglePalGroup(group.key)">
+                        <AppIcon
+                            :class="['pal-list-group__chevron', { expanded: isPalGroupExpanded(group) }]"
+                            name="chevron-down"
+                            :size="15"
+                        />
+                        <span class="pal-list-group__name">{{ group.label }}</span>
+                        <span class="pal-list-group__count">{{ group.pals.length }}</span>
+                    </button>
+                </header>
+                <div v-if="isPalGroupExpanded(group)" :id="`pal-list-group-${group.key}`"
+                    class="pal-list-group__content">
+                    <p v-if="!group.pals.length" class="pal-list-group__empty">
+                        {{ palStore.getTranslatedText('PalList_Group_Empty') }}
+                    </p>
+                    <div class="overflow-container" v-for="pal in group.pals" :key="pal.InstanceId">
+                        <button
+                            :class="['pal', { 'male': pal.displayGender() == '♂️', 'female': pal.displayGender() == '♀️', 'unref': pal.Is_Unref_Pal, 'out_of_container': !pal.in_owner_palbox }]"
+                            :value="pal.InstanceId" @click="palStore.selectPal(pal.InstanceId)"
+                            :disabled="palStore.SELECTED_PAL_ID == pal.InstanceId || palStore.LOADING_FLAG"
+                            :selected="palStore.SELECTED_PAL_ID == pal.InstanceId"
+                            :aria-current="palStore.SELECTED_PAL_ID == pal.InstanceId ? 'true' : undefined"
+                            >
+                            <img :class="['palIcon']" :src="`/image/pals/${pal.IconAccessKey}`" alt="">
+                            <span class="pal-label">
+                                <VariantBadge v-if="pal.IsTower" kind="tower" :size="14" />
+                                <ElementIcon v-for="element in palStore.PAL_STATIC_DATA[pal.DataAccessKey]?.Elements || []"
+                                    :key="element" :element="element" :size="14" />
+                                <span class="pal-name">{{ displayNameWithoutVariantEmoji(pal.DisplayName) }}</span>
+                            </span>
+                            <span v-if="pal.IsAwakened" class="pal-awakened-label">
+                                {{ palStore.getTranslatedText('PalList_AwakenedMarker') }}
+                            </span>
+                            <span v-if="pal.IsBOSS || pal.IsRarePal || pal.IsExpeditionPal" class="pal-variants">
+                                <span v-if="pal.IsBOSS" class="pal-variant-label is-boss">{{ palStore.getTranslatedText('Variant_Boss') }}</span>
+                                <span v-if="pal.IsRarePal" class="pal-variant-label">{{ palStore.getTranslatedText('Variant_Rare') }}</span>
+                                <span v-if="pal.IsExpeditionPal"
+                                    :class="['pal-expedition-label', `is-${pal.ExpeditionAssignmentStatus || 'unknown'}`]"
+                                    :title="palStore.getTranslatedText(expeditionStatusTooltipKey(pal), [pal.ExpeditionInstanceId || '-'])">
+                                    {{ palStore.getTranslatedText(expeditionStatusKey(pal)) }}
+                                </span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </section>
         </div>
         <PalSpeciesPicker
             ref="addSpeciesPicker"
@@ -375,12 +483,94 @@ function expeditionStatusTooltipKey(pal) {
     .add-pal-max-options { grid-template-columns: minmax(0, 1fr); }
 }
 
-.overflow-list {
+#EditorMain .pal-panel .overflow-list {
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow-y: auto;
+    gap: 8px;
+    padding: 8px 6px 10px;
+    scrollbar-gutter: stable;
+}
+
+.pal-list-group {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 0;
+    gap: 4px;
+}
+
+.pal-list-group__header {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    min-width: 0;
+    background: var(--ui-surface-raised);
+    border-radius: var(--ui-radius-sm);
+}
+
+.pal-list-group__toggle {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    color: var(--ui-text-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+}
+
+.pal-list-group__toggle:hover {
+    color: var(--ui-text);
+    background: var(--ui-surface-hover);
+}
+
+.pal-list-group__chevron {
+    flex: 0 0 auto;
+    transform: rotate(-90deg);
+    transition: transform 140ms ease-out;
+}
+
+.pal-list-group__chevron.expanded {
+    transform: rotate(0deg);
+}
+
+.pal-list-group__name {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pal-list-group__count {
+    flex: 0 0 auto;
+    color: var(--ui-text-muted);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.pal-list-group__content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
     gap: 3px;
+    padding-top: 2px;
+}
+
+.pal-list-group__empty {
+    margin: 0;
+    padding: 12px 10px;
+    color: var(--ui-text-muted);
+    font-size: 11px;
+    text-align: center;
 }
 
 .overflow-container {
@@ -472,4 +662,8 @@ button.pal .pal-variant-label.is-boss { color: var(--ui-danger); }
 button.pal .pal-expedition-label.is-valid { color: var(--ui-success); }
 button.pal .pal-expedition-label.is-invalid { color: var(--ui-danger); }
 button.pal .pal-expedition-label.is-unknown { color: var(--ui-text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+    .pal-list-group__chevron { transition: none; }
+}
 </style>

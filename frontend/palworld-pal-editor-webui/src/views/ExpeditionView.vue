@@ -26,7 +26,7 @@ onMounted(() => {
             <button
               class="operation-button operation-button--primary"
               type="button"
-              :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING || palStore.COMPLETABLE_EXPEDITION_COUNT === 0"
+              :disabled="palStore.LOADING_FLAG || palStore.COMPLETABLE_EXPEDITION_COUNT === 0"
               @click="palStore.completeActiveExpeditions"
             >
               {{ palStore.getTranslatedText(
@@ -47,7 +47,7 @@ onMounted(() => {
             <button
               class="operation-button"
               type="button"
-              :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING || palStore.EXPEDITION_PAL_COUNT === 0"
+              :disabled="palStore.LOADING_FLAG || palStore.EXPEDITION_PAL_COUNT === 0"
               @click="palStore.unlockExpeditionPals"
             >
               {{ palStore.getTranslatedText(
@@ -114,7 +114,7 @@ onMounted(() => {
               <button
                 class="operation-button operation-button--primary"
                 type="button"
-                :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING || !expedition.can_complete"
+                :disabled="palStore.LOADING_FLAG || !expedition.can_complete"
                 @click="palStore.completeExpedition(expedition.expedition_id)"
               >
                 {{ palStore.getTranslatedText(

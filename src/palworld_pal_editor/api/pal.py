@@ -640,6 +640,7 @@ def _pal_data(pal: PalEntity):
         "IsFaintedPal": pal.IsFaintedPal,
         "Is_Unref_Pal": pal.is_unreferenced_pal,
         "in_owner_palbox": pal.in_owner_palbox,
+        "ContainerType": pal.owner_container_type,
         "IsHuman": pal.IsHuman,
         "NpcDefaultWeapon": (
             DataProvider.get_npc_default_weapon(pal.CharacterID)

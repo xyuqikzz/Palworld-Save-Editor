@@ -3151,15 +3151,46 @@ namespace pal_editor_bridge::ue4ss
                             }
                         }
                     }
-                    assign_optional(
-                        player,
-                        "level",
-                        optional_integer(
-                            state->GetClassPrivate(),
-                            state,
-                            {STR("Level"), STR("PlayerLevel")}
-                        )
+                    auto runtime_level = optional_integer(
+                        state->GetClassPrivate(),
+                        state,
+                        {STR("Level"), STR("PlayerLevel")}
                     );
+                    if (runtime_level && *runtime_level > 0)
+                    {
+                        player["level"] = *runtime_level;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            auto* controller = player_controller(uid);
+                            auto* pawn = object_property(
+                                controller,
+                                {
+                                    STR("Pawn"),
+                                    STR("AcknowledgedPawn"),
+                                    STR("Character"),
+                                }
+                            );
+                            const auto character = character_snapshot(
+                                individual_parameter_for_actor(pawn)
+                            );
+                            if (
+                                character.contains("level")
+                                && character["level"].is_number_integer()
+                                && character["level"].get<std::int64_t>() > 0
+                            )
+                            {
+                                runtime_level =
+                                    character["level"].get<std::int64_t>();
+                                player["level"] = *runtime_level;
+                            }
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
                     if (player_location_available)
                     {
                         try
@@ -3217,7 +3248,9 @@ namespace pal_editor_bridge::ue4ss
             return result;
         }
 
-        nlohmann::json guilds()
+        nlohmann::json guilds_for_players(
+            const nlohmann::json& online_players
+        )
         {
             if (!guild_list_available)
             {
@@ -3227,15 +3260,15 @@ namespace pal_editor_bridge::ue4ss
             }
 
             std::unordered_map<std::string, nlohmann::json> guild_by_id;
-            std::vector<UObject*> loaded_guilds;
+            std::vector<UObject*> loaded_guild_objects;
             UObjectGlobals::FindAllOf(
                 std::string_view{"PalGroupGuildBase"},
-                loaded_guilds
+                loaded_guild_objects
             );
             constexpr std::string_view zero_guid{
                 "00000000000000000000000000000000"
             };
-            for (auto* guild : loaded_guilds)
+            for (auto* guild : loaded_guild_objects)
             {
                 if (!guild || !UObject::IsReal(guild))
                 {
@@ -3291,7 +3324,6 @@ namespace pal_editor_bridge::ue4ss
                 );
             }
 
-            const auto online_players = players();
             for (const auto& player : online_players)
             {
                 const auto guild_id = player.value("guildId", "");
@@ -3346,6 +3378,11 @@ namespace pal_editor_bridge::ue4ss
             return nlohmann::json(result);
         }
 
+        nlohmann::json guilds()
+        {
+            return guilds_for_players(players());
+        }
+
         nlohmann::json map_snapshot()
         {
             if (!map_read_available)
@@ -3354,13 +3391,15 @@ namespace pal_editor_bridge::ue4ss
                     "The live map capability is unavailable for this game build."
                 );
             }
+            const auto online_players = players();
+            const auto loaded_guilds = guilds_for_players(online_players);
             return {
                 {"live", true},
                 {"authoritative", instance_authoritative.load()},
                 {"instanceMode", instance_mode()},
                 {"coordinateSystem", "UnrealWorld"},
-                {"players", players()},
-                {"guilds", guilds()},
+                {"players", online_players},
+                {"guilds", loaded_guilds},
                 {
                     "source",
                     {

@@ -124,7 +124,6 @@ onMounted(() => {
             :title="palStore.getTranslatedText('Overview_HealAllPals_Tooltip')"
             :disabled="
               palStore.LOADING_FLAG
-              || palStore.RAW_JSON_PENDING
               || !Number(totals.pals)
             "
             @click="palStore.healAllPalsInSave"
@@ -135,7 +134,6 @@ onMounted(() => {
           <button
             class="overview-button overview-button--primary"
             type="button"
-            :disabled="palStore.RAW_JSON_PENDING"
             @click="navigate('Editor')"
           >
             {{ palStore.getTranslatedText('Overview_OpenEditor') }}

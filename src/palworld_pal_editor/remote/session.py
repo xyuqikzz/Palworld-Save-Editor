@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from collections.abc import Callable
 from threading import RLock
 from typing import Any
@@ -9,6 +10,9 @@ from palworld_pal_editor.domain.errors import DomainError, stale_revision
 from palworld_pal_editor.remote.gateway import (
     HttpRemoteBridgeAdapter,
     RemoteBridgePort,
+)
+from palworld_pal_editor.remote.live_player_management import (
+    LivePlayerManagement,
 )
 from palworld_pal_editor.remote.models import (
     BridgeConnection,
@@ -34,9 +38,15 @@ class RemoteServerSession:
         self._revision = connection.revision
         self._capabilities = set(connection.capabilities)
         self._lock = RLock()
-        self._completed_commands: dict[
+        self._completed_commands: OrderedDict[
             str, tuple[RemoteCommand, dict[str, Any]]
-        ] = {}
+        ] = OrderedDict()
+        self._live_players = LivePlayerManagement(
+            bridge=bridge,
+            connection=connection,
+            revision=lambda: self._revision,
+            execute_command=self.execute,
+        )
 
     @property
     def session_id(self) -> str:
@@ -45,6 +55,10 @@ class RemoteServerSession:
     @property
     def revision(self) -> int:
         return self._revision
+
+    @property
+    def live_players(self) -> LivePlayerManagement:
+        return self._live_players
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -75,16 +89,17 @@ class RemoteServerSession:
         ):
             with self._lock:
                 self._capabilities = set(capabilities)
+                self._live_players.update_capabilities(self._capabilities)
         return {
             **result,
             "session": self.summary(),
         }
 
     def players(self) -> dict[str, Any]:
+        result = self._live_players.query({"query": "player.directory"})
         return {
             "session_id": self._session_id,
-            "revision": self._revision,
-            "players": self._bridge.players(self._connection),
+            **result,
         }
 
     def guilds(self) -> dict[str, Any]:
@@ -101,31 +116,34 @@ class RemoteServerSession:
             "session_id": self._session_id,
             "revision": self._revision,
             "sampled_at": utc_now_iso(),
-            **self._bridge.map_snapshot(self._connection),
+            **self._live_players.query({"query": "map.read"}),
         }
 
     def player_details(self, player_id: object) -> dict[str, Any]:
         normalized_player_id = self._player_id(player_id)
-        self._require_capability("player.details")
         return {
             "session_id": self._session_id,
             "revision": self._revision,
-            **self._bridge.player_details(
-                self._connection,
-                normalized_player_id,
+            **self._live_players.query(
+                {
+                    "query": "player.details",
+                    "player_id": normalized_player_id,
+                }
             ),
         }
 
     def player_inventory(self, player_id: object) -> dict[str, Any]:
         normalized_player_id = self._player_id(player_id)
-        self._require_capability("inventory.read")
+        result = self._live_players.query(
+            {
+                "query": "inventory.read",
+                "player_id": normalized_player_id,
+            }
+        )
         return {
             "session_id": self._session_id,
             "revision": self._revision,
-            "inventory": self._bridge.inventory(
-                self._connection,
-                normalized_player_id,
-            ),
+            "inventory": result["inventory"],
         }
 
     def player_pals(
@@ -161,17 +179,19 @@ class RemoteServerSession:
                 field="page",
                 http_status=400,
             )
-        self._require_capability("pal.list")
+        result = self._live_players.query(
+            {
+                "query": "pal.list",
+                "player_id": normalized_player_id,
+                "collection": collection,
+                "page": page,
+                "page_size": page_size,
+            }
+        )
         return {
             "session_id": self._session_id,
             "revision": self._revision,
-            "pals": self._bridge.pals(
-                self._connection,
-                normalized_player_id,
-                page=page,
-                page_size=page_size,
-                collection=collection,
-            ),
+            "pals": result["pals"],
         }
 
     def execute(self, command: RemoteCommand) -> dict[str, Any]:
@@ -197,7 +217,7 @@ class RemoteServerSession:
 
             result = self._bridge.execute(self._connection, command)
             state = result.get("state")
-            if state != "completed":
+            if state not in {"completed", "partial"}:
                 raise DomainError(
                     code="REMOTE_COMMAND_FAILED",
                     message=str(
@@ -225,9 +245,12 @@ class RemoteServerSession:
                 "revision": self._revision,
             }
             self._completed_commands[command.command_id] = (command, response)
+            while len(self._completed_commands) > 1024:
+                self._completed_commands.popitem(last=False)
             return response
 
     def close(self) -> None:
+        self._live_players.close()
         self._bridge.disconnect(self._connection)
 
     def _require_revision(self, expected_revision: int) -> None:

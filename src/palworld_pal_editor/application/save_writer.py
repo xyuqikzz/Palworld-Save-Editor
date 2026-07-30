@@ -30,6 +30,7 @@ from palworld_pal_editor.domain.models import (
 )
 
 from .local_data import LOCAL_DATA_RELATIVE_PATH, LocalDataDocument
+from .character_reference_repair import CharacterReferenceRepairer
 from .fast_travel import PlayerFastTravelData
 from .save_session import SaveSession
 
@@ -231,6 +232,8 @@ class SaveWriter:
         return sorted(files)
 
     def _validate_global_invariants(self, session: SaveSession) -> None:
+        if session.raw_json_pending:
+            return
         manager = session.manager
         containers = getattr(manager, "item_container_data", None)
         if containers is not None:
@@ -270,14 +273,20 @@ class SaveWriter:
                 "_dangling_pals",
             )
         ):
-            issues = CharacterIndex(manager).hard_issues()
+            index = CharacterIndex(manager)
+            issues = index.hard_issues()
             if issues:
+                repair = CharacterReferenceRepairer(session).preview(
+                    index=index
+                )
                 raise DomainError(
                     code="CHARACTER_INDEX_INVARIANT_FAILED",
                     message="Character records and their references are inconsistent.",
                     details={
-                        "issues": [issue.to_dict() for issue in issues]
+                        "issues": [issue.to_dict() for issue in issues],
+                        "repair": repair,
                     },
+                    retryable=bool(repair["available"]),
                     http_status=409,
                 )
 
@@ -340,7 +349,7 @@ class SaveWriter:
                     if session is not None
                     else self._reload_file(path, relative_path)
                 )
-            if session is not None:
+            if session is not None and not session.raw_json_pending:
                 self._verify_change_postconditions(session, reloaded)
         except Exception as error:
             raise DomainError(
@@ -357,7 +366,9 @@ class SaveWriter:
     ) -> None:
         chest_expected: dict[str, int] = {}
         level_expected: dict[str, int] = {}
+        owner_expected: dict[str, tuple[str, dict[str, int]]] = {}
         player_inventory_expected: dict[str, int] = {}
+        item_slot_expected: dict[tuple[str, int], dict[str, Any]] = {}
         for change in session.changes():
             command = change.get("command")
             target = change.get("target", {})
@@ -381,6 +392,32 @@ class SaveWriter:
                 ):
                     raise ValueError("Invalid base camp level postcondition")
                 level_expected[guild_id] = level
+            elif command == "UpdateGuildOwner":
+                owner_player_id = after.get("owner_player_id")
+                members = after.get("members")
+                if (
+                    not isinstance(guild_id, str)
+                    or not isinstance(owner_player_id, str)
+                    or not isinstance(members, list)
+                ):
+                    raise ValueError("Invalid guild owner change postcondition")
+                roles = {}
+                for member in members:
+                    if (
+                        not isinstance(member, dict)
+                        or not isinstance(member.get("player_id"), str)
+                        or isinstance(member.get("role"), bool)
+                        or not isinstance(member.get("role"), int)
+                        or member["role"] not in range(1, 5)
+                        or member["player_id"] in roles
+                    ):
+                        raise ValueError(
+                            "Invalid guild member role postcondition"
+                        )
+                    roles[member["player_id"]] = member["role"]
+                if roles.get(owner_player_id) != 1:
+                    raise ValueError("Guild owner must retain the leader role")
+                owner_expected[guild_id] = (owner_player_id, roles)
             elif command == "UpdatePlayerInventoryCapacity":
                 container_id = target.get("container_id")
                 capacity = after.get("capacity")
@@ -393,10 +430,34 @@ class SaveWriter:
                         "Invalid player inventory capacity postcondition"
                     )
                 player_inventory_expected[container_id] = capacity
+            elif command in {
+                "UpdateItemCount",
+                "PutItem",
+                "ClearItemSlot",
+                "ClearDynamicItemSlot",
+                "UpdateBaseStorageItemCount",
+                "PutBaseStorageItem",
+                "ClearBaseStorageItemSlot",
+                "ClearBaseStorageDynamicItemSlot",
+            }:
+                container_id = target.get("container_id")
+                slot_index = target.get("slot_index")
+                if (
+                    not isinstance(container_id, str)
+                    or isinstance(slot_index, bool)
+                    or not isinstance(slot_index, int)
+                    or not isinstance(after, dict)
+                ):
+                    raise ValueError(
+                        "Invalid item slot change postcondition"
+                    )
+                item_slot_expected[(container_id, slot_index)] = dict(after)
         if not (
             chest_expected
             or level_expected
+            or owner_expected
             or player_inventory_expected
+            or item_slot_expected
         ):
             return
 
@@ -429,6 +490,27 @@ class SaveWriter:
                     raise ValueError(
                         "Reloaded player inventory capacity does not match staging"
                     )
+        if item_slot_expected:
+            item_containers = ItemContainerData(level)
+            for (container_id, slot_index), expected in (
+                item_slot_expected.items()
+            ):
+                container = item_containers.get(container_id)
+                if container is None:
+                    raise ValueError(
+                        "Reloaded item slot container is missing"
+                    )
+                if expected.get("state") == "empty":
+                    if not container.is_empty(slot_index):
+                        raise ValueError(
+                            "Reloaded item slot is not empty"
+                        )
+                    continue
+                actual = container.slot_summary(slot_index)
+                if actual != expected:
+                    raise ValueError(
+                        "Reloaded item slot does not match staging"
+                    )
         if level_expected:
             groups = GroupData(level)
             for guild_id, expected_level in level_expected.items():
@@ -440,6 +522,29 @@ class SaveWriter:
                     raise ValueError(
                         "Reloaded base camp level does not match staging"
                     )
+        if owner_expected:
+            groups = GroupData(level)
+            for guild_id, (expected_owner, expected_roles) in (
+                owner_expected.items()
+            ):
+                group = groups.get_group(guild_id)
+                reloaded_roles = (
+                    {
+                        str(player_uid): role
+                        for player_uid, _name, role in group.guild_members
+                    }
+                    if group is not None
+                    else {}
+                )
+                if (
+                    group is None
+                    or str(group.admin_player_uid) != expected_owner
+                    or reloaded_roles != expected_roles
+                ):
+                    raise ValueError(
+                        "Reloaded guild owner does not match staging"
+                    )
+
     def _reload_session_file(
         self,
         session: SaveSession,
@@ -453,12 +558,15 @@ class SaveWriter:
             if relative_path == "Level.sav"
             else ()
         )
+        validate_semantics = not session.raw_json_pending
         reloaded = self._reload_file(
             path,
             relative_path,
             allowed_dynamic_item_issues=allowed_dynamic_item_issues,
+            validate_semantics=validate_semantics,
         )
-        self._verify_fast_travel_reload(session, relative_path, reloaded)
+        if validate_semantics:
+            self._verify_fast_travel_reload(session, relative_path, reloaded)
         return reloaded
 
     @staticmethod
@@ -495,6 +603,7 @@ class SaveWriter:
         relative_path: str,
         *,
         allowed_dynamic_item_issues: tuple[str, ...] = (),
+        validate_semantics: bool = True,
     ) -> GvasFile:
         if relative_path == LOCAL_DATA_RELATIVE_PATH:
             document = LocalDataDocument.open_file(path)
@@ -505,7 +614,7 @@ class SaveWriter:
         raw, _compression = decompress_sav_to_gvas(path.read_bytes())
         properties = MAIN_SKIP_PROPERTIES if relative_path == "Level.sav" else PLAYER_SKIP_PROPERTIES
         gvas = GvasFile.read(raw, PALWORLD_TYPE_HINTS, properties)
-        if relative_path == "Level.sav":
+        if relative_path == "Level.sav" and validate_semantics:
             world = gvas.properties.get("worldSaveData")
             if world is not None:
                 containers = ItemContainerData(gvas)

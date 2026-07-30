@@ -738,6 +738,79 @@ class SessionApiTests(unittest.TestCase):
             finally:
                 Config.path = original
 
+    def test_local_web_directory_picker_uses_the_native_system_dialog(self) -> None:
+        with TemporaryDirectory() as temp, patch(
+            "palworld_pal_editor.api.save._select_native_directory",
+            return_value=temp,
+        ) as select_directory:
+            response = self.client.post(
+                "/api/save/select-directory",
+                json={"path": temp},
+                headers=self.headers,
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "path": str(Path(temp).resolve()),
+                "cancelled": False,
+            },
+            response.get_json()["data"],
+        )
+        select_directory.assert_called_once_with(str(Path(temp).resolve()))
+
+    def test_local_web_directory_picker_preserves_native_cancellation(self) -> None:
+        with patch(
+            "palworld_pal_editor.api.save._select_native_directory",
+            return_value=None,
+        ):
+            response = self.client.post(
+                "/api/save/select-directory",
+                json={},
+                headers=self.headers,
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {"path": None, "cancelled": True},
+            response.get_json()["data"],
+        )
+
+    def test_remote_web_client_cannot_open_a_dialog_on_the_server(self) -> None:
+        with patch(
+            "palworld_pal_editor.api.save._select_native_directory",
+        ) as select_directory:
+            response = self.client.post(
+                "/api/save/select-directory",
+                json={},
+                headers=self.headers,
+                environ_base={"REMOTE_ADDR": "192.0.2.10"},
+            )
+
+        self.assertEqual(403, response.status_code)
+        self.assertEqual(
+            "NATIVE_DIALOG_LOCAL_ONLY",
+            response.get_json()["error"]["code"],
+        )
+        select_directory.assert_not_called()
+
+    def test_local_web_directory_picker_reports_system_api_failure(self) -> None:
+        with patch(
+            "palworld_pal_editor.api.save._select_native_directory",
+            side_effect=OSError("injected native picker failure"),
+        ):
+            response = self.client.post(
+                "/api/save/select-directory",
+                json={},
+                headers=self.headers,
+            )
+
+        self.assertEqual(503, response.status_code)
+        self.assertEqual(
+            "NATIVE_DIALOG_UNAVAILABLE",
+            response.get_json()["error"]["code"],
+        )
+
     def test_query_and_performance_endpoints_are_session_scoped(self) -> None:
         response = self.client.get(
             f"/api/save/query/players?session_id={self.session.session_id}",

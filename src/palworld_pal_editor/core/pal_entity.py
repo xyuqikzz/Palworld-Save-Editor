@@ -120,12 +120,30 @@ class PalEntity:
         # base pal, no owner
         if not self.owner_player_entity:
             return True
+        return self.owner_container_type in {"PARTY", "PAL_STORAGE"}
+
+    @property
+    def owner_container_type(self) -> str:
+        owner = self.owner_player_entity
+        container_id = self.ContainerId
+        if owner is None or container_id is None:
+            return "OTHER"
+
+        party_container_id = getattr(owner, "OtomoCharacterContainerId", None)
         if (
-            self.ContainerId == self.owner_player_entity.OtomoCharacterContainerId
-            or self.ContainerId == self.owner_player_entity.PalStorageContainerId
+            party_container_id is not None
+            and container_id == party_container_id
         ):
-            return True
-        return False
+            return "PARTY"
+
+        storage_container_id = getattr(owner, "PalStorageContainerId", None)
+        if (
+            storage_container_id is not None
+            and container_id == storage_container_id
+        ):
+            return "PAL_STORAGE"
+
+        return "OTHER"
 
     @property
     def group_id(self) -> Optional[UUID]:

@@ -43,6 +43,7 @@ defineProps({
     <template v-else-if="name === 'id'"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8" cy="11" r="2" /><path d="M5.5 16c.8-1.6 4.2-1.6 5 0M13 10h5M13 14h5" /></template>
     <template v-else-if="name === 'box'"><path d="m3 7 9-4 9 4-9 4-9-4ZM3 7v10l9 4 9-4V7M12 11v10" /></template>
     <template v-else-if="name === 'building'"><path d="M4 21V5l8-3v19M12 8h8v13M7 9h2M7 13h2M15 12h2M15 16h2" /></template>
+    <template v-else-if="name === 'computer'"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></template>
     <template v-else-if="name === 'user'"><circle cx="12" cy="8" r="3" /><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6" /></template>
     <template v-else-if="name === 'pill'"><path d="m8 5 11 11a4.2 4.2 0 0 1-6 6L2 11a4.2 4.2 0 0 1 6-6Z" /><path d="m6 13 6-6" /></template>
     <template v-else-if="name === 'medical'"><path d="M12 4v16M4 12h16" /></template>

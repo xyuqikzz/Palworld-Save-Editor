@@ -62,7 +62,18 @@ def _raise_for_hresult(hresult: int, operation: str) -> None:
         raise OSError(f"{operation} failed with HRESULT 0x{hresult & 0xFFFFFFFF:08X}")
 
 
-def _choose_folder_on_sta_thread(initial_directory: str) -> str | None:
+def _foreground_window_handle() -> int | None:
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.GetForegroundWindow.argtypes = []
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    handle = user32.GetForegroundWindow()
+    return int(handle) if handle else None
+
+
+def _choose_folder_on_sta_thread(
+    initial_directory: str,
+    owner_window: int | None,
+) -> str | None:
     ole32 = ctypes.WinDLL("ole32")
     shell32 = ctypes.WinDLL("shell32")
 
@@ -130,7 +141,8 @@ def _choose_folder_on_sta_thread(initial_directory: str) -> str | None:
                 finally:
                     _release(folder)
 
-        show_result = _com_method(dialog, 3, wintypes.HWND)(dialog, None)
+        owner = wintypes.HWND(owner_window) if owner_window else None
+        show_result = _com_method(dialog, 3, wintypes.HWND)(dialog, owner)
         if _cancelled(show_result):
             return None
         _raise_for_hresult(show_result, "IFileDialog.Show")
@@ -168,10 +180,14 @@ def choose_folder(initial_directory: str = "") -> str | None:
 
     result: dict[str, str | None] = {}
     error: list[BaseException] = []
+    owner_window = _foreground_window_handle()
 
     def worker() -> None:
         try:
-            result["path"] = _choose_folder_on_sta_thread(initial_directory)
+            result["path"] = _choose_folder_on_sta_thread(
+                initial_directory,
+                owner_window,
+            )
         except BaseException as exception:
             error.append(exception)
 

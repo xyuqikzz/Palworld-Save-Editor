@@ -2,11 +2,18 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
+#include <condition_variable>
 #include <deque>
+#include <filesystem>
 #include <format>
+#include <fstream>
+#include <iomanip>
 #include <random>
 #include <ranges>
+#include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 #include <unordered_map>
 
 #include <httplib.h>
@@ -143,6 +150,128 @@ namespace pal_editor_bridge
             }
         }
 
+        std::string string_field(
+            const json& value,
+            std::initializer_list<const char*> names
+        )
+        {
+            if (!value.is_object())
+            {
+                return {};
+            }
+            for (const auto* name : names)
+            {
+                const auto match = value.find(name);
+                if (match != value.end() && match->is_string())
+                {
+                    return match->get<std::string>();
+                }
+            }
+            return {};
+        }
+
+        std::string normalize_player_id(std::string value)
+        {
+            value.erase(
+                std::remove_if(
+                    value.begin(),
+                    value.end(),
+                    [](unsigned char character) {
+                        return character == '-'
+                            || character == '{'
+                            || character == '}'
+                            || std::isspace(character);
+                    }
+                ),
+                value.end()
+            );
+            std::ranges::transform(
+                value,
+                value.begin(),
+                [](unsigned char character) {
+                    return static_cast<char>(std::tolower(character));
+                }
+            );
+            return value;
+        }
+
+        void merge_administrator_player_metadata(
+            json& runtime_players,
+            const json& administrator_players
+        )
+        {
+            if (
+                !runtime_players.is_array()
+                || !administrator_players.is_array()
+            )
+            {
+                return;
+            }
+            std::unordered_map<std::string, const json*> administrator_by_id;
+            for (const auto& player : administrator_players)
+            {
+                const auto player_id = normalize_player_id(
+                    string_field(
+                        player,
+                        {"playerId", "playerid", "player_uid"}
+                    )
+                );
+                if (!player_id.empty())
+                {
+                    administrator_by_id.emplace(player_id, &player);
+                }
+            }
+            for (auto& player : runtime_players)
+            {
+                const auto player_id = normalize_player_id(
+                    string_field(
+                        player,
+                        {"playerId", "player_uid", "playerUid"}
+                    )
+                );
+                const auto match = administrator_by_id.find(player_id);
+                if (match == administrator_by_id.end())
+                {
+                    continue;
+                }
+                const auto& administrator = *match->second;
+                const auto user_id = string_field(
+                    administrator,
+                    {"userId", "userid", "user_id"}
+                );
+                if (!user_id.empty())
+                {
+                    player["userId"] = user_id;
+                    player["user_id"] = user_id;
+                }
+                const auto account_name = string_field(
+                    administrator,
+                    {"accountName", "accountname", "account_name"}
+                );
+                if (!account_name.empty())
+                {
+                    player["accountName"] = account_name;
+                }
+                if (
+                    const auto ping = administrator.find("ping");
+                    ping != administrator.end() && ping->is_number()
+                )
+                {
+                    player["ping"] = *ping;
+                }
+                if (
+                    const auto buildings =
+                        administrator.find("building_count");
+                    buildings != administrator.end()
+                    && buildings->is_number_integer()
+                )
+                {
+                    player["buildingCount"] = *buildings;
+                }
+                player["administratorMetadata"] = "available";
+            }
+        }
+
         std::vector<std::string> combined_capabilities(
             const CredentialVerifier& administrator,
             const GameCommandPort& game
@@ -181,6 +310,715 @@ namespace pal_editor_bridge
                 difference |= left_value ^ right_value;
             }
             return difference == 0;
+        }
+
+        std::string utc_timestamp(
+            std::chrono::system_clock::time_point value
+        )
+        {
+            const auto timestamp =
+                std::chrono::system_clock::to_time_t(value);
+            std::tm utc{};
+#ifdef _WIN32
+            gmtime_s(&utc, &timestamp);
+#else
+            gmtime_r(&timestamp, &utc);
+#endif
+            std::ostringstream stream;
+            stream << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ");
+            return stream.str();
+        }
+
+        std::string random_identifier()
+        {
+            std::array<unsigned char, 16> bytes{};
+#ifdef _WIN32
+            const auto status = BCryptGenRandom(
+                nullptr,
+                bytes.data(),
+                static_cast<ULONG>(bytes.size()),
+                BCRYPT_USE_SYSTEM_PREFERRED_RNG
+            );
+            if (status < 0)
+            {
+                throw std::runtime_error("BCryptGenRandom failed");
+            }
+#else
+            std::random_device random;
+            std::ranges::generate(bytes, [&random]() {
+                return static_cast<unsigned char>(random());
+            });
+#endif
+            std::string value;
+            value.reserve(bytes.size() * 2);
+            for (const auto byte : bytes)
+            {
+                value += std::format("{:02x}", byte);
+            }
+            return value;
+        }
+
+        std::string sha256_file(const std::filesystem::path& path)
+        {
+#ifdef _WIN32
+            BCRYPT_ALG_HANDLE algorithm = nullptr;
+            BCRYPT_HASH_HANDLE hash = nullptr;
+            DWORD object_size = 0;
+            DWORD hash_size = 0;
+            DWORD result_size = 0;
+            std::vector<unsigned char> object;
+            std::vector<unsigned char> digest;
+            const auto close = [&]() {
+                if (hash)
+                {
+                    BCryptDestroyHash(hash);
+                    hash = nullptr;
+                }
+                if (algorithm)
+                {
+                    BCryptCloseAlgorithmProvider(algorithm, 0);
+                    algorithm = nullptr;
+                }
+            };
+            try
+            {
+                if (
+                    BCryptOpenAlgorithmProvider(
+                        &algorithm,
+                        BCRYPT_SHA256_ALGORITHM,
+                        nullptr,
+                        0
+                    ) < 0
+                    || BCryptGetProperty(
+                        algorithm,
+                        BCRYPT_OBJECT_LENGTH,
+                        reinterpret_cast<PUCHAR>(&object_size),
+                        sizeof(object_size),
+                        &result_size,
+                        0
+                    ) < 0
+                    || BCryptGetProperty(
+                        algorithm,
+                        BCRYPT_HASH_LENGTH,
+                        reinterpret_cast<PUCHAR>(&hash_size),
+                        sizeof(hash_size),
+                        &result_size,
+                        0
+                    ) < 0
+                )
+                {
+                    throw std::runtime_error(
+                        "The snapshot SHA-256 provider is unavailable."
+                    );
+                }
+                object.resize(object_size);
+                digest.resize(hash_size);
+                if (
+                    BCryptCreateHash(
+                        algorithm,
+                        &hash,
+                        object.data(),
+                        static_cast<ULONG>(object.size()),
+                        nullptr,
+                        0,
+                        0
+                    ) < 0
+                )
+                {
+                    throw std::runtime_error(
+                        "The snapshot SHA-256 state could not be created."
+                    );
+                }
+                std::ifstream input(path, std::ios::binary);
+                if (!input)
+                {
+                    throw std::runtime_error(
+                        "A snapshot source file could not be opened."
+                    );
+                }
+                std::vector<char> buffer(1024 * 1024);
+                while (input)
+                {
+                    input.read(buffer.data(), buffer.size());
+                    const auto count = input.gcount();
+                    if (
+                        count > 0
+                        && BCryptHashData(
+                            hash,
+                            reinterpret_cast<PUCHAR>(buffer.data()),
+                            static_cast<ULONG>(count),
+                            0
+                        ) < 0
+                    )
+                    {
+                        throw std::runtime_error(
+                            "A snapshot file could not be hashed."
+                        );
+                    }
+                }
+                if (
+                    !input.eof()
+                    || BCryptFinishHash(
+                        hash,
+                        digest.data(),
+                        static_cast<ULONG>(digest.size()),
+                        0
+                    ) < 0
+                )
+                {
+                    throw std::runtime_error(
+                        "A snapshot file could not be hashed."
+                    );
+                }
+                close();
+                std::string value;
+                value.reserve(digest.size() * 2);
+                for (const auto byte : digest)
+                {
+                    value += std::format("{:02x}", byte);
+                }
+                return value;
+            }
+            catch (...)
+            {
+                close();
+                throw;
+            }
+#else
+            throw std::runtime_error(
+                "Save snapshots are supported only on Windows."
+            );
+#endif
+        }
+
+        std::string normalized_world_guid(std::string value)
+        {
+            value.erase(
+                std::remove_if(
+                    value.begin(),
+                    value.end(),
+                    [](unsigned char character) {
+                        return character == '-'
+                            || character == '{'
+                            || character == '}';
+                    }
+                ),
+                value.end()
+            );
+            if (
+                value.size() != 32
+                || !std::ranges::all_of(
+                    value,
+                    [](unsigned char character) {
+                        return std::isxdigit(character) != 0;
+                    }
+                )
+            )
+            {
+                return {};
+            }
+            std::ranges::transform(
+                value,
+                value.begin(),
+                [](unsigned char character) {
+                    return static_cast<char>(std::tolower(character));
+                }
+            );
+            return value;
+        }
+
+        class SnapshotBusyError final : public std::runtime_error
+        {
+          public:
+            SnapshotBusyError()
+                : std::runtime_error(
+                      "Another save snapshot is already being captured."
+                  )
+            {
+            }
+        };
+
+        class SnapshotManager final
+        {
+          public:
+            SnapshotManager(
+                std::filesystem::path cache_root,
+                std::chrono::minutes ttl
+            )
+                : m_cache_root(
+                      (
+                          cache_root.empty()
+                          ? std::filesystem::temp_directory_path()
+                              / "PalEditorBridge"
+                              / "snapshots"
+                          : std::move(cache_root)
+                      ) / random_identifier()
+                  ),
+                  m_ttl(ttl)
+            {
+            }
+
+            ~SnapshotManager()
+            {
+                if (m_worker.joinable())
+                {
+                    m_worker.request_stop();
+                    m_worker.join();
+                }
+                std::error_code error;
+                std::filesystem::remove_all(m_cache_root, error);
+            }
+
+            json create(
+                const std::filesystem::path& save_games_root,
+                const std::string& world_guid
+            )
+            {
+                const auto save_directory = resolve_save_directory(
+                    save_games_root,
+                    world_guid
+                );
+                std::lock_guard lock(m_mutex);
+                cleanup_locked();
+                if (m_capture_in_progress)
+                {
+                    throw SnapshotBusyError{};
+                }
+                while (m_order.size() >= 2)
+                {
+                    erase_locked(m_order.front());
+                }
+                auto record = std::make_shared<SnapshotRecord>();
+                record->id = random_identifier();
+                record->state = "capturing";
+                record->created_at = std::chrono::system_clock::now();
+                m_records.emplace(record->id, record);
+                m_order.push_back(record->id);
+                m_capture_in_progress = true;
+                const auto record_id = record->id;
+                m_worker = std::jthread(
+                    [this, record_id, save_directory](
+                        std::stop_token stop_token
+                    ) {
+                        capture(record_id, save_directory, stop_token);
+                    }
+                );
+                return serialize(*record);
+            }
+
+            std::optional<json> get(const std::string& snapshot_id)
+            {
+                std::lock_guard lock(m_mutex);
+                cleanup_locked();
+                const auto match = m_records.find(snapshot_id);
+                if (match == m_records.end())
+                {
+                    return std::nullopt;
+                }
+                return serialize(*match->second);
+            }
+
+            struct DownloadFile
+            {
+                std::filesystem::path path;
+                std::uintmax_t size{0};
+                std::string sha256;
+                std::string name;
+            };
+
+            std::optional<DownloadFile> file(
+                const std::string& snapshot_id,
+                const std::string& file_id
+            )
+            {
+                std::lock_guard lock(m_mutex);
+                cleanup_locked();
+                const auto match = m_records.find(snapshot_id);
+                if (
+                    match == m_records.end()
+                    || match->second->state != "ready"
+                )
+                {
+                    return std::nullopt;
+                }
+                const auto file_match = std::ranges::find_if(
+                    match->second->files,
+                    [&file_id](const SnapshotFile& file) {
+                        return file.id == file_id;
+                    }
+                );
+                if (file_match == match->second->files.end())
+                {
+                    return std::nullopt;
+                }
+                return DownloadFile{
+                    file_match->path,
+                    file_match->size,
+                    file_match->sha256,
+                    file_match->name,
+                };
+            }
+
+          private:
+            struct SnapshotFile
+            {
+                std::string id;
+                std::string name;
+                std::filesystem::path path;
+                std::uintmax_t size{0};
+                std::string sha256;
+            };
+
+            struct SnapshotRecord
+            {
+                std::string id;
+                std::string state;
+                std::chrono::system_clock::time_point created_at;
+                std::optional<
+                    std::chrono::system_clock::time_point
+                > captured_at;
+                std::vector<SnapshotFile> files;
+                std::string error;
+            };
+
+            struct SourceMetadata
+            {
+                std::uintmax_t size;
+                std::filesystem::file_time_type modified_at;
+                std::string sha256;
+            };
+
+            static std::filesystem::path resolve_save_directory(
+                const std::filesystem::path& save_games_root,
+                const std::string& world_guid
+            )
+            {
+                const auto normalized = normalized_world_guid(world_guid);
+                if (normalized.empty())
+                {
+                    throw std::runtime_error(
+                        "The server did not report a valid world GUID."
+                    );
+                }
+                std::error_code error;
+                const auto root = std::filesystem::weakly_canonical(
+                    save_games_root,
+                    error
+                );
+                if (
+                    error || root.empty()
+                    || !std::filesystem::is_directory(root)
+                )
+                {
+                    throw std::runtime_error(
+                        "The dedicated-server save root is unavailable."
+                    );
+                }
+                std::vector<std::filesystem::path> matches;
+                for (const auto& entry :
+                     std::filesystem::directory_iterator(root))
+                {
+                    if (
+                        entry.is_directory()
+                        && normalized_world_guid(
+                               entry.path().filename().string()
+                           ) == normalized
+                    )
+                    {
+                        matches.push_back(
+                            std::filesystem::weakly_canonical(entry.path())
+                        );
+                    }
+                }
+                if (matches.size() != 1)
+                {
+                    throw std::runtime_error(
+                        matches.empty()
+                            ? "The active world save directory was not found."
+                            : "The active world save directory is ambiguous."
+                    );
+                }
+                const auto relative = matches.front().lexically_relative(root);
+                if (
+                    relative.empty() || relative.is_absolute()
+                    || *relative.begin() == ".."
+                )
+                {
+                    throw std::runtime_error(
+                        "The active world save directory escaped the configured root."
+                    );
+                }
+                return matches.front();
+            }
+
+            static SourceMetadata inspect_source(
+                const std::filesystem::path& path
+            )
+            {
+                return {
+                    std::filesystem::file_size(path),
+                    std::filesystem::last_write_time(path),
+                    sha256_file(path),
+                };
+            }
+
+            static SnapshotFile copy_stable_file(
+                const std::filesystem::path& source,
+                const std::filesystem::path& destination,
+                std::string name
+            )
+            {
+                std::filesystem::create_directories(
+                    destination.parent_path()
+                );
+                for (auto attempt = 0; attempt < 3; ++attempt)
+                {
+                    const auto before = inspect_source(source);
+                    std::filesystem::copy_file(
+                        source,
+                        destination,
+                        std::filesystem::copy_options::overwrite_existing
+                    );
+                    const auto after = inspect_source(source);
+                    const auto copied_hash = sha256_file(destination);
+                    if (
+                        before.size == after.size
+                        && before.modified_at == after.modified_at
+                        && before.sha256 == after.sha256
+                        && copied_hash == after.sha256
+                        && std::filesystem::file_size(destination)
+                            == after.size
+                    )
+                    {
+                        return {
+                            random_identifier(),
+                            std::move(name),
+                            destination,
+                            after.size,
+                            after.sha256,
+                        };
+                    }
+                }
+                throw std::runtime_error(
+                    "The save changed while the snapshot was captured."
+                );
+            }
+
+            void capture(
+                const std::string& record_id,
+                const std::filesystem::path& save_directory,
+                std::stop_token stop_token
+            )
+            {
+                const auto snapshot_directory =
+                    m_cache_root / record_id;
+                try
+                {
+                    if (stop_token.stop_requested())
+                    {
+                        throw std::runtime_error(
+                            "The snapshot capture was stopped."
+                        );
+                    }
+                    const auto level = save_directory / "Level.sav";
+                    if (!std::filesystem::is_regular_file(level))
+                    {
+                        throw std::runtime_error(
+                            "The active Level.sav file was not found."
+                        );
+                    }
+                    std::vector<
+                        std::pair<std::filesystem::path, std::string>
+                    > sources{{level, "Level.sav"}};
+                    const auto players_directory =
+                        save_directory / "Players";
+                    if (
+                        std::filesystem::is_directory(players_directory)
+                    )
+                    {
+                        for (const auto& entry :
+                             std::filesystem::directory_iterator(
+                                 players_directory
+                             ))
+                        {
+                            if (
+                                entry.is_regular_file()
+                                && entry.path().extension() == ".sav"
+                                && !normalized_world_guid(
+                                        entry.path().stem().string()
+                                    ).empty()
+                            )
+                            {
+                                sources.emplace_back(
+                                    entry.path(),
+                                    "Players/"
+                                        + entry.path().filename().string()
+                                );
+                                if (sources.size() > 10000)
+                                {
+                                    throw std::runtime_error(
+                                        "The player snapshot contains too many files."
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    std::ranges::sort(
+                        sources,
+                        {},
+                        [](const auto& source) {
+                            return source.second;
+                        }
+                    );
+                    std::vector<SnapshotFile> files;
+                    files.reserve(sources.size());
+                    for (const auto& [source, name] : sources)
+                    {
+                        if (stop_token.stop_requested())
+                        {
+                            throw std::runtime_error(
+                                "The snapshot capture was stopped."
+                            );
+                        }
+                        files.push_back(
+                            copy_stable_file(
+                                source,
+                                snapshot_directory
+                                    / std::filesystem::path(name),
+                                name
+                            )
+                        );
+                    }
+                    std::lock_guard lock(m_mutex);
+                    const auto match = m_records.find(record_id);
+                    if (match != m_records.end())
+                    {
+                        match->second->files = std::move(files);
+                        match->second->captured_at =
+                            std::chrono::system_clock::now();
+                        match->second->state = "ready";
+                    }
+                    m_capture_in_progress = false;
+                }
+                catch (const std::exception& error)
+                {
+                    std::error_code remove_error;
+                    std::filesystem::remove_all(
+                        snapshot_directory,
+                        remove_error
+                    );
+                    std::lock_guard lock(m_mutex);
+                    const auto match = m_records.find(record_id);
+                    if (match != m_records.end())
+                    {
+                        match->second->state = "failed";
+                        match->second->error = error.what();
+                    }
+                    m_capture_in_progress = false;
+                }
+            }
+
+            static json serialize(const SnapshotRecord& record)
+            {
+                json files = json::array();
+                for (const auto& file : record.files)
+                {
+                    files.push_back(
+                        {
+                            {"fileId", file.id},
+                            {"name", file.name},
+                            {"size", file.size},
+                            {"sha256", file.sha256},
+                        }
+                    );
+                }
+                json value{
+                    {"id", record.id},
+                    {"scope", "players"},
+                    {"state", record.state},
+                    {"createdAt", utc_timestamp(record.created_at)},
+                    {"files", std::move(files)},
+                };
+                value["capturedAt"] = record.captured_at
+                    ? json(utc_timestamp(*record.captured_at))
+                    : json(nullptr);
+                value["error"] = record.error.empty()
+                    ? json(nullptr)
+                    : json(record.error);
+                return value;
+            }
+
+            void cleanup_locked()
+            {
+                const auto cutoff =
+                    std::chrono::system_clock::now() - m_ttl;
+                for (auto iterator = m_order.begin();
+                     iterator != m_order.end();)
+                {
+                    const auto match = m_records.find(*iterator);
+                    if (
+                        match != m_records.end()
+                        && match->second->state != "capturing"
+                        && match->second->created_at < cutoff
+                    )
+                    {
+                        const auto id = *iterator;
+                        iterator = m_order.erase(iterator);
+                        erase_record_locked(id);
+                    }
+                    else
+                    {
+                        ++iterator;
+                    }
+                }
+            }
+
+            void erase_locked(const std::string& id)
+            {
+                std::erase(m_order, id);
+                erase_record_locked(id);
+            }
+
+            void erase_record_locked(const std::string& id)
+            {
+                m_records.erase(id);
+                std::error_code error;
+                std::filesystem::remove_all(m_cache_root / id, error);
+            }
+
+            std::filesystem::path m_cache_root;
+            std::chrono::minutes m_ttl;
+            std::mutex m_mutex;
+            std::unordered_map<
+                std::string,
+                std::shared_ptr<SnapshotRecord>
+            > m_records;
+            std::deque<std::string> m_order;
+            bool m_capture_in_progress{false};
+            std::jthread m_worker;
+        };
+
+        bool operation_requires_persistence(std::string_view operation)
+        {
+            static const std::unordered_set<std::string> operations{
+                "inventory.grant",
+                "inventory.item.count.update",
+                "inventory.item.put",
+                "inventory.item.dynamic.update",
+                "pal.grant",
+                "pal.identity.update",
+                "pal.progression.update",
+                "pal.skills.update",
+                "pal.enhancement.update",
+                "player.attributes.update",
+                "player.experience.add",
+                "player.fast_travel.update",
+                "player.identity.update",
+                "player.missions.update",
+                "player.progression.update",
+                "player.technology.update",
+            };
+            return operations.contains(std::string(operation));
         }
     } // namespace
 
@@ -281,7 +1119,14 @@ namespace pal_editor_bridge
     std::vector<std::string>
     PalworldRestCredentialVerifier::capabilities() const
     {
-        return {"world.save"};
+        return {
+            "player.ban",
+            "player.kick",
+            "player.unban",
+            "server.announce",
+            "world.save",
+            "world.shutdown",
+        };
     }
 
     nlohmann::json PalworldRestCredentialVerifier::players(
@@ -329,36 +1174,200 @@ namespace pal_editor_bridge
         const nlohmann::json& command
     )
     {
-        if (command.value("operation", "") != "world.save")
+        try
         {
+            const auto operation = command.value("operation", "");
+            const auto& payload = command.at("payload");
+            const auto& target = command.at("target");
+            const auto required_string =
+                [](const json& object,
+                   std::initializer_list<const char*> names,
+                   std::size_t maximum,
+                   const char* message)
+            {
+                const auto value = string_field(object, names);
+                if (value.empty() || value.size() > maximum)
+                {
+                    throw std::runtime_error(message);
+                }
+                return value;
+            };
+            const auto optional_message = [](const json& object)
+            {
+                if (!object.contains("message") || object["message"].is_null())
+                {
+                    return std::string{};
+                }
+                if (!object["message"].is_string())
+                {
+                    throw std::runtime_error(
+                        "The administrator message must be a string.");
+                }
+                const auto value = object["message"].get<std::string>();
+                if (value.size() > 512)
+                {
+                    throw std::runtime_error("The administrator message must "
+                                             "not exceed 512 characters.");
+                }
+                return value;
+            };
+            const auto post = [this, &credentials](const char* path,
+                                                   const json& body,
+                                                   const char* failure)
+            {
+                httplib::Client client(m_config.rest_host, m_config.rest_port);
+                client.set_connection_timeout(3, 0);
+                client.set_read_timeout(10, 0);
+                client.set_basic_auth(credentials.username,
+                                      credentials.admin_password);
+                const auto response =
+                    client.Post(path,
+                                body.is_null() ? std::string{} : body.dump(),
+                                "application/json");
+                if (!response || response->status != 200)
+                {
+                    throw std::runtime_error(failure);
+                }
+            };
+
+            if (operation == "world.save")
+            {
+                post("/v1/api/save",
+                     nullptr,
+                     "The Palworld REST API world save request failed.");
+                return {
+                    {"state", "completed"},
+                    {"result", {{"saved", true}}},
+                };
+            }
+            if (operation == "server.announce")
+            {
+                const auto message =
+                    required_string(payload,
+                                    {"message"},
+                                    512,
+                                    "An announcement between 1 and 512 "
+                                    "characters is required.");
+                post("/v1/api/announce",
+                     {{"message", message}},
+                     "The Palworld REST API announcement request failed.");
+                return {
+                    {"state", "completed"},
+                    {"result", {{"announced", true}}},
+                };
+            }
+            if (operation == "player.unban")
+            {
+                const auto user_id = required_string(
+                    target,
+                    {"user_id", "userId"},
+                    128,
+                    "A valid administrator user ID is required.");
+                post("/v1/api/unban",
+                     {{"userid", user_id}},
+                     "The Palworld REST API unban request failed.");
+                return {
+                    {"state", "completed"},
+                    {"result",
+                     {
+                         {"unbanned", true},
+                         {"userId", user_id},
+                     }},
+                };
+            }
+            if (operation == "player.kick" || operation == "player.ban")
+            {
+                const auto user_id = required_string(
+                    target,
+                    {"user_id", "userId"},
+                    128,
+                    "A valid administrator user ID is required.");
+                const auto administrator_players = players(credentials);
+                const auto online = std::ranges::any_of(
+                    administrator_players,
+                    [&user_id](const auto& player)
+                    {
+                        return string_field(player,
+                                            {"userId", "userid", "user_id"}) ==
+                               user_id;
+                    });
+                if (!online)
+                {
+                    throw std::runtime_error(
+                        "The selected administrator user ID is not online.");
+                }
+                const auto message = optional_message(payload);
+                const auto path =
+                    operation == "player.kick" ? "/v1/api/kick" : "/v1/api/ban";
+                const auto failure =
+                    operation == "player.kick"
+                        ? "The Palworld REST API kick request failed."
+                        : "The Palworld REST API ban request failed.";
+                json body = {{"userid", user_id}};
+                if (!message.empty())
+                {
+                    body["message"] = message;
+                }
+                post(path, body, failure);
+                return {
+                    {"state", "completed"},
+                    {"result",
+                     {
+                         {operation == "player.kick" ? "kicked" : "banned",
+                          true},
+                         {"userId", user_id},
+                     }},
+                };
+            }
+            if (operation == "world.shutdown")
+            {
+                const auto wait_time_match = payload.find("wait_time");
+                if (wait_time_match == payload.end() ||
+                    !wait_time_match->is_number_integer())
+                {
+                    throw std::runtime_error(
+                        "A shutdown wait time is required.");
+                }
+                const auto wait_time = wait_time_match->get<std::int64_t>();
+                if (wait_time < 5 || wait_time > 3600)
+                {
+                    throw std::runtime_error("The shutdown wait time must be "
+                                             "between 5 and 3600 seconds.");
+                }
+                const auto message = optional_message(payload);
+                post("/v1/api/save",
+                     nullptr,
+                     "The Palworld REST API world save request failed; "
+                     "shutdown was "
+                     "not scheduled.");
+                post("/v1/api/shutdown",
+                     {
+                         {"waittime", wait_time},
+                         {"message", message},
+                     },
+                     "The Palworld REST API shutdown request failed.");
+                return {
+                    {"state", "completed"},
+                    {"result",
+                     {
+                         {"saved", true},
+                         {"shutdownScheduled", true},
+                         {"waitTime", wait_time},
+                     }},
+                };
+            }
             return {
                 {"state", "failed"},
                 {"message", "The administrator command is not supported."},
             };
         }
-        httplib::Client client(m_config.rest_host, m_config.rest_port);
-        client.set_connection_timeout(3, 0);
-        client.set_read_timeout(10, 0);
-        client.set_basic_auth(
-            credentials.username,
-            credentials.admin_password
-        );
-        const auto response = client.Post(
-            "/v1/api/save",
-            "",
-            "application/json"
-        );
-        if (!response || response->status != 200)
+        catch (const std::exception& error)
         {
             return {
                 {"state", "failed"},
-                {"message", "The Palworld REST API world save request failed."},
+                {"message", error.what()},
             };
         }
-        return {
-            {"state", "completed"},
-            {"result", {{"saved", true}}},
-        };
     }
 
     LocalCredentialVerifier::LocalCredentialVerifier(
@@ -526,7 +1535,11 @@ namespace pal_editor_bridge
               m_server(std::move(server)),
               m_credential_verifier(std::move(credential_verifier)),
               m_game(game),
-              m_sessions(m_config.token_ttl)
+              m_sessions(m_config.token_ttl),
+              m_snapshots(
+                  m_config.snapshot_cache_root,
+                  m_config.snapshot_ttl
+              )
         {
             if (!m_credential_verifier)
             {
@@ -534,13 +1547,26 @@ namespace pal_editor_bridge
                     "credential_verifier must not be null"
                 );
             }
+            if (
+                m_config.save_debounce <= std::chrono::milliseconds::zero()
+                || m_config.save_max_delay < m_config.save_debounce
+            )
+            {
+                throw std::invalid_argument(
+                    "The save timing configuration is invalid."
+                );
+            }
             m_server_impl.set_payload_max_length(64 * 1024);
             configure_routes();
+            m_persistence_thread = std::thread([this]() {
+                persistence_loop();
+            });
         }
 
         ~Impl()
         {
             stop();
+            stop_persistence();
         }
 
         std::uint16_t start()
@@ -587,6 +1613,7 @@ namespace pal_editor_bridge
                 m_thread.join();
             }
             m_sessions.clear();
+            stop_persistence();
         }
 
         bool running() const
@@ -612,6 +1639,250 @@ namespace pal_editor_bridge
                 return false;
             }
             return true;
+        }
+
+        ServerDescriptor current_server()
+        {
+            std::lock_guard lock(m_server_mutex);
+            return m_server;
+        }
+
+        bool snapshot_available()
+        {
+            const auto server = current_server();
+            return (
+                server.instance_kind == "dedicated_server"
+                && !m_config.save_games_root.empty()
+            );
+        }
+
+        std::vector<std::string> capabilities()
+        {
+            auto result = combined_capabilities(
+                *m_credential_verifier,
+                m_game
+            );
+            if (snapshot_available())
+            {
+                for (const auto* capability : {
+                         "inventory.saved.read",
+                         "pal.saved.list",
+                         "player.directory.read",
+                         "player.saved.details",
+                         "save.snapshot.read",
+                     })
+                {
+                    if (
+                        std::ranges::find(result, capability)
+                        == result.end()
+                    )
+                    {
+                        result.emplace_back(capability);
+                    }
+                }
+                std::ranges::sort(result);
+            }
+            return result;
+        }
+
+        json persistence_status()
+        {
+            std::lock_guard lock(m_persistence_mutex);
+            json value{
+                {"state", m_persistence.state},
+                {"dirtyRevision", m_persistence.dirty_revision},
+                {"savedRevision", m_persistence.saved_revision},
+                {"lastError", m_persistence.last_error.empty()
+                    ? json(nullptr)
+                    : json(m_persistence.last_error)},
+            };
+            value["dueAt"] = m_persistence.due_at_system
+                ? json(utc_timestamp(*m_persistence.due_at_system))
+                : json(nullptr);
+            value["lastSavedAt"] = m_persistence.last_saved_at
+                ? json(utc_timestamp(*m_persistence.last_saved_at))
+                : json(nullptr);
+            return value;
+        }
+
+        void mark_dirty(
+            std::uint64_t revision,
+            const AdminCredentials& credentials
+        )
+        {
+            const auto now = std::chrono::steady_clock::now();
+            const auto now_system = std::chrono::system_clock::now();
+            std::lock_guard lock(m_persistence_mutex);
+            if (
+                m_persistence.state == "clean"
+                || m_persistence.state == "failed"
+            )
+            {
+                m_persistence.dirty_since = now;
+            }
+            m_persistence.state = "dirty";
+            m_persistence.dirty_revision = revision;
+            m_persistence.last_error.clear();
+            m_persistence.credentials = credentials;
+            const auto due = std::min(
+                now + m_config.save_debounce,
+                m_persistence.dirty_since
+                    + m_config.save_max_delay
+            );
+            m_persistence.due_at = due;
+            m_persistence.due_at_system =
+                now_system
+                + std::chrono::duration_cast<
+                    std::chrono::system_clock::duration
+                >(due - now);
+            m_persistence_condition.notify_all();
+        }
+
+        void mark_saved(std::uint64_t revision)
+        {
+            std::lock_guard lock(m_persistence_mutex);
+            m_persistence.state = "clean";
+            m_persistence.saved_revision = std::max(
+                m_persistence.saved_revision,
+                revision
+            );
+            m_persistence.dirty_revision = revision;
+            m_persistence.due_at.reset();
+            m_persistence.due_at_system.reset();
+            m_persistence.last_saved_at =
+                std::chrono::system_clock::now();
+            m_persistence.last_error.clear();
+            m_persistence.credentials.reset();
+            m_persistence_condition.notify_all();
+        }
+
+        void persistence_loop()
+        {
+            std::unique_lock lock(m_persistence_mutex);
+            while (!m_persistence_stop)
+            {
+                if (
+                    m_persistence.state != "dirty"
+                    || !m_persistence.due_at
+                    || !m_persistence.credentials
+                )
+                {
+                    m_persistence_condition.wait(
+                        lock,
+                        [this]() {
+                            return m_persistence_stop
+                                || (
+                                    m_persistence.state == "dirty"
+                                    && m_persistence.due_at.has_value()
+                                    && m_persistence.credentials.has_value()
+                                );
+                        }
+                    );
+                    continue;
+                }
+                const auto due = *m_persistence.due_at;
+                if (
+                    m_persistence_condition.wait_until(
+                        lock,
+                        due,
+                        [this, due]() {
+                            return m_persistence_stop
+                                || m_persistence.state != "dirty"
+                                || !m_persistence.due_at
+                                || *m_persistence.due_at != due;
+                        }
+                    )
+                )
+                {
+                    continue;
+                }
+                const auto credentials = *m_persistence.credentials;
+                const auto saving_revision =
+                    m_persistence.dirty_revision;
+                m_persistence.state = "saving";
+                m_persistence.due_at.reset();
+                m_persistence.due_at_system.reset();
+                lock.unlock();
+                json save_result;
+                try
+                {
+                    save_result = m_credential_verifier->execute(
+                        credentials,
+                        {
+                            {"operation", "world.save"},
+                            {"target", json::object()},
+                            {"payload", json::object()},
+                        }
+                    );
+                }
+                catch (const std::exception& error)
+                {
+                    save_result = {
+                        {"state", "failed"},
+                        {"message", error.what()},
+                    };
+                }
+                lock.lock();
+                if (
+                    save_result.value("state", "") == "completed"
+                    && m_persistence.dirty_revision == saving_revision
+                )
+                {
+                    m_persistence.state = "clean";
+                    m_persistence.saved_revision = saving_revision;
+                    m_persistence.last_saved_at =
+                        std::chrono::system_clock::now();
+                    m_persistence.last_error.clear();
+                    m_persistence.credentials.reset();
+                }
+                else if (
+                    save_result.value("state", "") == "completed"
+                    && m_persistence.dirty_revision > saving_revision
+                )
+                {
+                    m_persistence.state = "dirty";
+                    m_persistence.saved_revision = saving_revision;
+                    const auto now = std::chrono::steady_clock::now();
+                    const auto due_next = std::min(
+                        now + m_config.save_debounce,
+                        m_persistence.dirty_since
+                            + m_config.save_max_delay
+                    );
+                    m_persistence.due_at = due_next;
+                    m_persistence.due_at_system =
+                        std::chrono::system_clock::now()
+                        + std::chrono::duration_cast<
+                            std::chrono::system_clock::duration
+                        >(due_next - now);
+                }
+                else
+                {
+                    m_persistence.state = "failed";
+                    m_persistence.last_error = save_result.value(
+                        "message",
+                        "The Palworld world save request failed."
+                    );
+                    m_persistence.due_at.reset();
+                    m_persistence.due_at_system.reset();
+                }
+            }
+        }
+
+        void stop_persistence()
+        {
+            {
+                std::lock_guard lock(m_persistence_mutex);
+                if (m_persistence_stop)
+                {
+                    return;
+                }
+                m_persistence_stop = true;
+            }
+            m_persistence_condition.notify_all();
+            if (m_persistence_thread.joinable())
+            {
+                m_persistence_thread.join();
+            }
         }
 
         void configure_routes()
@@ -691,6 +1962,8 @@ namespace pal_editor_bridge
                             m_credential_verifier->server_descriptor(credentials))
                     {
                         server = *current;
+                        std::lock_guard server_lock(m_server_mutex);
+                        m_server = server;
                     }
                     std::uint64_t revision = 0;
                     {
@@ -717,10 +1990,7 @@ namespace pal_editor_bridge
                             },
                             {
                                 "capabilities",
-                                combined_capabilities(
-                                    *m_credential_verifier,
-                                    m_game
-                                ),
+                                capabilities(),
                             },
                         }
                     );
@@ -756,11 +2026,149 @@ namespace pal_editor_bridge
                     result["ready"] = m_game.ready();
                     result["protocolVersion"] = protocol_version;
                     result["bridgeVersion"] = bridge_version;
-                    result["capabilities"] = combined_capabilities(
-                        *m_credential_verifier,
-                        m_game
-                    );
+                    result["capabilities"] = capabilities();
+                    result["persistence"] = persistence_status();
                     json_response(response, 200, result);
+                }
+            );
+
+            m_server_impl.Post(
+                "/v1/snapshots",
+                [this](
+                    const httplib::Request& request,
+                    httplib::Response& response
+                ) {
+                    if (!authorize(request, response))
+                    {
+                        return;
+                    }
+                    if (!snapshot_available())
+                    {
+                        error_response(
+                            response,
+                            409,
+                            "REMOTE_CAPABILITY_UNSUPPORTED",
+                            "Read-only save snapshots are unavailable."
+                        );
+                        return;
+                    }
+                    const auto body = parse_object(request, response);
+                    if (!body)
+                    {
+                        return;
+                    }
+                    if (
+                        body->size() != 1
+                        || body->value("scope", "") != "players"
+                    )
+                    {
+                        error_response(
+                            response,
+                            400,
+                            "REMOTE_SNAPSHOT_SCOPE_INVALID",
+                            "The snapshot scope must be players."
+                        );
+                        return;
+                    }
+                    try
+                    {
+                        const auto server = current_server();
+                        json_response(
+                            response,
+                            202,
+                            m_snapshots.create(
+                                m_config.save_games_root,
+                                server.world_guid
+                            )
+                        );
+                    }
+                    catch (const SnapshotBusyError& error)
+                    {
+                        error_response(
+                            response,
+                            409,
+                            "REMOTE_SNAPSHOT_BUSY",
+                            error.what()
+                        );
+                    }
+                    catch (const std::exception& error)
+                    {
+                        error_response(
+                            response,
+                            409,
+                            "REMOTE_SNAPSHOT_UNAVAILABLE",
+                            error.what()
+                        );
+                    }
+                }
+            );
+
+            m_server_impl.Get(
+                R"(/v1/snapshots/([0-9a-f]{32}))",
+                [this](
+                    const httplib::Request& request,
+                    httplib::Response& response
+                ) {
+                    if (!authorize(request, response))
+                    {
+                        return;
+                    }
+                    const auto snapshot =
+                        m_snapshots.get(request.matches[1].str());
+                    if (!snapshot)
+                    {
+                        error_response(
+                            response,
+                            404,
+                            "REMOTE_SNAPSHOT_NOT_FOUND",
+                            "The requested snapshot was not found."
+                        );
+                        return;
+                    }
+                    json_response(response, 200, *snapshot);
+                }
+            );
+
+            m_server_impl.Get(
+                R"(/v1/snapshots/([0-9a-f]{32})/files/([0-9a-f]{32}))",
+                [this](
+                    const httplib::Request& request,
+                    httplib::Response& response
+                ) {
+                    if (!authorize(request, response))
+                    {
+                        return;
+                    }
+                    const auto file = m_snapshots.file(
+                        request.matches[1].str(),
+                        request.matches[2].str()
+                    );
+                    if (!file)
+                    {
+                        error_response(
+                            response,
+                            404,
+                            "REMOTE_SNAPSHOT_FILE_NOT_FOUND",
+                            "The requested snapshot file was not found."
+                        );
+                        return;
+                    }
+                    response.set_header(
+                        "X-Content-SHA256",
+                        file->sha256
+                    );
+                    response.set_header(
+                        "Content-Disposition",
+                        "attachment; filename=\""
+                            + std::filesystem::path(file->name)
+                                  .filename()
+                                  .string()
+                            + "\""
+                    );
+                    response.set_file_content(
+                        file->path.string(),
+                        "application/octet-stream"
+                    );
                 }
             );
 
@@ -786,13 +2194,50 @@ namespace pal_editor_bridge
                     }
                     try
                     {
+                        auto runtime_players = m_game.players();
+                        if (
+                            has_capability(
+                                *m_credential_verifier,
+                                "player.kick"
+                            )
+                            || has_capability(
+                                *m_credential_verifier,
+                                "player.ban"
+                            )
+                        )
+                        {
+                            const auto token = bearer_token(request);
+                            const auto credentials = token
+                                ? m_sessions.credentials(*token)
+                                : std::nullopt;
+                            if (credentials)
+                            {
+                                try
+                                {
+                                    merge_administrator_player_metadata(
+                                        runtime_players,
+                                        m_credential_verifier->players(
+                                            *credentials
+                                        )
+                                    );
+                                }
+                                catch (...)
+                                {
+                                    for (auto& player : runtime_players)
+                                    {
+                                        player["administratorMetadata"] =
+                                            "unavailable";
+                                    }
+                                }
+                            }
+                        }
                         json_response(
                             response,
                             200,
                             {
                                 {
                                     "players",
-                                    m_game.players(),
+                                    std::move(runtime_players),
                                 },
                             }
                         );
@@ -1255,11 +2700,41 @@ namespace pal_editor_bridge
                         result = m_game.execute(*body);
                     }
                     result["commandId"] = command_id;
-                    if (result.value("state", "") == "completed")
+                    const auto result_state =
+                        result.value("state", "");
+                    if (
+                        result_state == "completed"
+                        || result_state == "partial"
+                    )
                     {
                         ++m_revision;
                     }
                     result["revision"] = m_revision;
+                    if (
+                        (
+                            result_state == "completed"
+                            || result_state == "partial"
+                        )
+                        && operation_requires_persistence(operation)
+                    )
+                    {
+                        const auto token = bearer_token(request);
+                        const auto credentials = token
+                            ? m_sessions.credentials(*token)
+                            : std::nullopt;
+                        if (credentials)
+                        {
+                            mark_dirty(m_revision, *credentials);
+                        }
+                    }
+                    else if (
+                        result_state == "completed"
+                        && operation == "world.save"
+                    )
+                    {
+                        mark_saved(m_revision);
+                    }
+                    result["persistence"] = persistence_status();
                     remember_command(command_id, *body, result);
                     json_response(response, 200, result);
                 }
@@ -1291,11 +2766,32 @@ namespace pal_editor_bridge
             json response;
         };
 
+        struct PersistenceRecord
+        {
+            std::string state{"clean"};
+            std::uint64_t dirty_revision{0};
+            std::uint64_t saved_revision{0};
+            std::chrono::steady_clock::time_point dirty_since{
+                std::chrono::steady_clock::now()
+            };
+            std::optional<std::chrono::steady_clock::time_point> due_at;
+            std::optional<
+                std::chrono::system_clock::time_point
+            > due_at_system;
+            std::optional<
+                std::chrono::system_clock::time_point
+            > last_saved_at;
+            std::string last_error;
+            std::optional<AdminCredentials> credentials;
+        };
+
         BridgeConfig m_config;
         ServerDescriptor m_server;
+        std::mutex m_server_mutex;
         std::unique_ptr<CredentialVerifier> m_credential_verifier;
         GameCommandPort& m_game;
         SessionRegistry m_sessions;
+        SnapshotManager m_snapshots;
         httplib::Server m_server_impl;
         std::thread m_thread;
         std::uint16_t m_bound_port{0};
@@ -1303,6 +2799,11 @@ namespace pal_editor_bridge
         std::uint64_t m_revision{0};
         std::deque<std::string> m_command_order;
         std::unordered_map<std::string, CachedCommand> m_completed_commands;
+        std::mutex m_persistence_mutex;
+        std::condition_variable m_persistence_condition;
+        PersistenceRecord m_persistence;
+        bool m_persistence_stop{false};
+        std::thread m_persistence_thread;
     };
 
     BridgeHost::BridgeHost(

@@ -1,4 +1,5 @@
 import os
+from ipaddress import ip_address
 from pathlib import Path
 import traceback
 from flask import Blueprint, request
@@ -15,6 +16,9 @@ from palworld_pal_editor.config import (
 )
 from palworld_pal_editor.core import SaveManager
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
+from palworld_pal_editor.application.character_reference_repair import (
+    CharacterReferenceRepairer,
+)
 from palworld_pal_editor.domain.models import SavePlatform
 from palworld_pal_editor.storage.discovery import SOURCE_CATALOG
 from palworld_pal_editor.application.save_writer import SaveWriter
@@ -24,17 +28,23 @@ from palworld_pal_editor.application.expedition_editor import ExpeditionEditor
 from palworld_pal_editor.application.guild_base_editor import GuildBaseEditor
 from palworld_pal_editor.application.guild_editor import GuildEditor
 from palworld_pal_editor.application.guild_chest_editor import GuildChestEditor
+from palworld_pal_editor.application.base_storage_editor import BaseStorageEditor
 from palworld_pal_editor.application.fog_of_war_editor import FogOfWarEditor
 from palworld_pal_editor.domain.commands import (
     ClearFogOfWar,
     CompleteActiveExpeditions,
     CompleteExpedition,
     HealAllPals,
+    RepairMissingGuildHandles,
     ResetFogOfWar,
     UnlockAllExpeditionPals,
     UpdateGuildBaseCampLevel,
     UpdateGuildChestCapacity,
     UpdateGuildName,
+    UpdateGuildOwner,
+    ClearBaseStorageItemSlot,
+    PutBaseStorageItem,
+    UpdateBaseStorageItemCount,
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.utils import LOGGER, DataProvider
@@ -56,6 +66,34 @@ _SAVE_DIAGNOSTIC_ERROR_CODES = frozenset(
         "WRITE_FAILED",
     }
 )
+
+
+def _request_is_loopback() -> bool:
+    try:
+        return ip_address(request.remote_addr or "").is_loopback
+    except ValueError:
+        return False
+
+
+def _select_native_directory(initial_directory: str) -> str | None:
+    if os.name != "nt":
+        raise OSError("The native Windows folder picker is unavailable.")
+    from palworld_pal_editor.windows_dialog import choose_folder
+
+    return choose_folder(initial_directory)
+
+
+def _native_picker_initial_directory(requested_path: object) -> str:
+    for candidate in (requested_path, Config.path, PROGRAM_PATH):
+        if not isinstance(candidate, (str, os.PathLike)):
+            continue
+        try:
+            resolved = Path(candidate).resolve(strict=True)
+        except (OSError, RuntimeError, ValueError):
+            continue
+        if resolved.is_dir():
+            return str(resolved)
+    return ""
 
 
 def _default_steam_save_path() -> str | None:
@@ -214,6 +252,53 @@ def browse_directory():
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
 
+@save_blueprint.route("/select-directory", methods=["POST"])
+@jwt_required()
+def select_directory():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="The request body must be a JSON object.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    if not _request_is_loopback():
+        error = DomainError(
+            code="NATIVE_DIALOG_LOCAL_ONLY",
+            message="The system directory picker is only available to local clients.",
+            http_status=403,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+    initial_directory = _native_picker_initial_directory(payload.get("path"))
+    try:
+        selected = _select_native_directory(initial_directory)
+        if selected is None:
+            return reply(0, {"path": None, "cancelled": True})
+        selected_path = Path(selected).resolve(strict=True)
+        if not selected_path.is_dir():
+            raise OSError("The native picker returned a non-directory path.")
+        return reply(
+            0,
+            {
+                "path": str(selected_path),
+                "cancelled": False,
+            },
+        )
+    except (OSError, RuntimeError, ValueError):
+        LOGGER.warning(
+            "The local web system directory picker failed; the client may "
+            f"use its fallback: {traceback.format_exc()}"
+        )
+        error = DomainError(
+            code="NATIVE_DIALOG_UNAVAILABLE",
+            message="The system directory picker is unavailable.",
+            http_status=503,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
 @save_blueprint.route("/session", methods=["GET"])
 @jwt_required()
 def get_session():
@@ -331,6 +416,7 @@ def execute_guild_command(guild_id: str):
     command_name = payload.get("command")
     command_fields = {
         "update_guild_name": {"name"},
+        "update_guild_owner": {"player_id"},
         "update_guild_chest_capacity": {"capacity"},
         "update_base_camp_level": {"level"},
     }
@@ -368,6 +454,15 @@ def execute_guild_command(guild_id: str):
                     name=payload.get("name"),
                 )
             )
+        elif command_name == "update_guild_owner":
+            result = GuildEditor(session).execute(
+                UpdateGuildOwner(
+                    session_id=payload.get("session_id"),
+                    expected_revision=payload.get("expected_revision"),
+                    guild_id=guild_id,
+                    player_id=payload.get("player_id"),
+                )
+            )
         elif command_name == "update_guild_chest_capacity":
             result = GuildChestEditor(session).execute(
                 UpdateGuildChestCapacity(
@@ -389,6 +484,141 @@ def execute_guild_command(guild_id: str):
         return reply(0, result)
     except DomainError as error:
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route(
+    "/guilds/<guild_id>/bases/<base_id>/storage",
+    methods=["GET"],
+)
+@jwt_required()
+def get_base_storage(guild_id: str, base_id: str):
+    try:
+        session = SESSION_RUNTIME.get(request.args.get("session_id"))
+        return reply(
+            0,
+            BaseStorageEditor(
+                session,
+                locale=Config.i18n,
+            ).get_storage(guild_id, base_id),
+        )
+    except DomainError as error:
+        return reply(
+            1, msg=error.message, error=error.to_dict()
+        ), error.http_status
+
+
+@save_blueprint.route(
+    "/guilds/<guild_id>/bases/<base_id>/storage/commands",
+    methods=["POST"],
+)
+@jwt_required()
+def execute_base_storage_command(guild_id: str, base_id: str):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(
+            1, msg=error.message, error=error.to_dict()
+        ), error.http_status
+    command_name = payload.get("command")
+    common_fields = {
+        "session_id",
+        "expected_revision",
+        "command",
+        "container_id",
+        "slot_index",
+    }
+    command_fields = {
+        "update_item_count": {"expected_static_id", "count"},
+        "put_item": {
+            "static_id",
+            "count",
+            "mode",
+            "dynamic_init",
+        },
+        "clear_item_slot": {
+            "expected_static_id",
+            "expected_dynamic_id",
+        },
+    }
+    if command_name not in command_fields:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND",
+            message="Unsupported base storage command.",
+            field="command",
+            http_status=400,
+        )
+        return reply(
+            1, msg=error.message, error=error.to_dict()
+        ), error.http_status
+    unknown = sorted(
+        set(payload) - common_fields - command_fields[command_name]
+    )
+    if unknown:
+        error = DomainError(
+            code="UNSUPPORTED_COMMAND_FIELD",
+            message="The request contains unsupported fields.",
+            details={"fields": unknown},
+            http_status=400,
+        )
+        return reply(
+            1, msg=error.message, error=error.to_dict()
+        ), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        common = {
+            "session_id": payload.get("session_id"),
+            "expected_revision": payload.get("expected_revision"),
+            "guild_id": guild_id,
+            "base_id": base_id,
+            "container_id": payload.get("container_id"),
+            "slot_index": payload.get("slot_index"),
+        }
+        if command_name == "update_item_count":
+            command = UpdateBaseStorageItemCount(
+                **common,
+                expected_static_id=payload.get("expected_static_id"),
+                count=payload.get("count"),
+            )
+        elif command_name == "put_item":
+            command = PutBaseStorageItem(
+                **common,
+                static_id=payload.get("static_id"),
+                count=payload.get("count"),
+                mode=payload.get("mode", "empty_only"),
+                dynamic_init=payload.get("dynamic_init"),
+            )
+        else:
+            command = ClearBaseStorageItemSlot(
+                **common,
+                expected_static_id=payload.get("expected_static_id"),
+                expected_dynamic_id=payload.get("expected_dynamic_id"),
+            )
+        return reply(
+            0,
+            BaseStorageEditor(
+                session,
+                locale=Config.i18n,
+            ).execute(command),
+        )
+    except (TypeError, ValueError) as error:
+        domain_error = DomainError(
+            code="INVALID_REQUEST",
+            message=str(error),
+            http_status=400,
+        )
+        return reply(
+            1,
+            msg=domain_error.message,
+            error=domain_error.to_dict(),
+        ), domain_error.http_status
+    except DomainError as error:
+        return reply(
+            1, msg=error.message, error=error.to_dict()
+        ), error.http_status
 
 
 @save_blueprint.route("/expeditions/commands", methods=["POST"])
@@ -783,13 +1013,24 @@ def save():
             payload.get("expected_revision", session.revision),
         )
         data = result.to_dict()
+        data["raw_json_pending"] = session.raw_json_pending
         if raw_json_pending:
-            if session.platform is SavePlatform.XGP:
-                reloaded = SESSION_RUNTIME.open_source(session.source_id)
+            try:
+                if session.platform is SavePlatform.XGP:
+                    reloaded = SESSION_RUNTIME.open_source(session.source_id)
+                else:
+                    reloaded = SESSION_RUNTIME.open(target or session.source)
+            except Exception:
+                LOGGER.warning(
+                    "Raw JSON save was committed, but the structured editor "
+                    "could not reopen the user-modified document.\n"
+                    f"{traceback.format_exc()}"
+                )
+                data["editor_session_reloaded"] = False
             else:
-                reloaded = SESSION_RUNTIME.open(target or session.source)
-            data["session"] = reloaded.summary().to_dict()
-            data["compatibility"] = reloaded.compatibility().to_dict()
+                data["editor_session_reloaded"] = True
+                data["session"] = reloaded.summary().to_dict()
+                data["compatibility"] = reloaded.compatibility().to_dict()
         return reply(0, data)
     except DomainError as error:
         if error.code in _SAVE_DIAGNOSTIC_ERROR_CODES:
@@ -807,6 +1048,30 @@ def save():
             f"{traceback.format_exc()}"
         )
         return reply(1, msg="Unexpected error while saving; see the local debug log."), 500
+
+
+@save_blueprint.route("/repair-character-references", methods=["POST"])
+@jwt_required()
+def repair_character_references():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        error = DomainError(
+            code="INVALID_REQUEST",
+            message="A JSON object is required.",
+            http_status=400,
+        )
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+    try:
+        session = SESSION_RUNTIME.get(payload.get("session_id"))
+        result = CharacterReferenceRepairer(session).execute(
+            RepairMissingGuildHandles(
+                session_id=payload.get("session_id"),
+                expected_revision=payload.get("expected_revision"),
+            )
+        )
+        return reply(0, result)
+    except DomainError as error:
+        return reply(1, msg=error.message, error=error.to_dict()), error.http_status
 
 
 @save_blueprint.route("/export-steam", methods=["POST"])

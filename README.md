@@ -47,7 +47,8 @@ Screenshots show the packaged Windows EXE with a local test save and a local sin
 ## Support scope
 
 - Steam-format directories and locally selected Xbox Game Pass WGS folders are supported directly. Game Pass writes are locked to the opened slot and create a verified backup outside WGS first.
-- Offline save editing and live management are separate workflows. Live management is a Windows beta that requires PalEditorBridge through UE4SS on the Steam client or Windows dedicated server; in single-player or co-op, it must run on the host. A client joined to another host is rejected.
+- Two-save migration can read Steam or WGS sources, but the current workflow only writes to a separate Steam-format target. Full-world and selected-character migration use analysis-bound plans, verified target backups, staging, conflict checks, atomic replacement, reopen validation, and verified recovery; WGS targets are explicitly blocked.
+- Offline save editing and live management are separate workflows. The first live-save-management release target is Windows dedicated servers through PalEditorBridge and UE4SS. Single-player, listen servers, joined clients, and WGS live management are not declared supported in this phase.
 - Synthetic fixtures and a copied, user-authorized WGS sample have passed open, edit, commit, and reopen tests. Loading the result in the game and Xbox cloud synchronization have not been verified.
 - The packaged EXE has connected to and displayed data from a local Windows Steam single-player session. Each live command still requires its own in-game effect, client replication, save, restart, and reload verification; a successful protocol response alone is not sufficient.
 - The current data and compatibility baseline targets Palworld 1.0 / Steam build 24088745.
@@ -70,15 +71,22 @@ For Game Pass, exit Palworld and wait for local synchronization, then choose eit
 - Browse players, Pals, guilds, bases, world containers, items, and last-saved map locations.
 - Edit player names, levels, technology points, attributes, missions, and supported inventories.
 - Edit item quantities and supported dynamic attributes; copy, move, replace, or clear slots; expand verified ordinary backpacks and guild chests without shrinking them.
+- Inspect and edit verified persistent item storage for a selected guild base. Incomplete or ambiguous base-storage mappings remain read-only.
 - Review the world-local arena leaderboard with the game build 24088745 NPC baseline, edit player RP, explicitly create a missing verified `ArenaRankPoint` field, or reset existing supported player records.
 - Edit Pal species, variants, names, gender, trust, level, IVs, condensation, souls, work suitability, active skills, passive skills, custom/mod passive entries, and reusable presets.
-- Add, duplicate, delete, and reorganize Pals across supported containers, with previews and reference checks for destructive operations.
-- Rename supported guilds, increase verified Palbox levels and guild-chest capacities, and inspect bases, members, working Pals, skills, and conditions.
+- Add, duplicate, delete, and reorganize Pals across supported containers, with previews and reference checks for destructive operations; group player-owned Pals by Party, Palbox, and other locations with collapsible sections and container, Paldeck, or level sorting.
+- Rename supported guilds, inspect role-sorted members, safely transfer Guild Master ownership on known layouts, increase verified Palbox levels and guild-chest capacities, and inspect bases, working Pals, skills, and conditions.
+- Analyze two independent saves and perform full-world or selected-character migration into a Steam-format target, including supported player files, inventories, Party/Palbox data, and dimensional Pal storage. Unknown identities, opaque references, version mismatches, and changed sources or targets fail closed.
+- Offer a narrowly scoped, backup-protected repair only when a failed save proves that valid guild-linked Pal records are missing their matching guild character handles; ambiguous or mixed structural damage remains blocked.
 - Use the packaged open-world and World Tree maps to inspect players, guild bases, and verified fast-travel points; unlock supported player fast-travel flags, or explicitly clear or restore `LocalData.sav` fog-of-war masks.
 - Review expedition assignments, quick-complete supported expeditions for normal in-game settlement, release Pals from invalid assignments, and run atomic Pal maintenance operations.
 - Edit supported mission progress through preview tokens and explicit pending changes.
 - Use the advanced Monaco JSON editor for `Level.sav` and `Players/*.sav`; only JSON syntax and supported document structure are checked, so incorrect values can still corrupt a save.
-- Connect through PalEditorBridge to inspect advertised live players, guilds, inventories, Pals, and map data, and expose only operations reported by the current bridge capabilities.
+- Connect through PalEditorBridge to show online players first, then merge a short-lived read-only player snapshot by `PlayerUId`; filter all, online, and offline players and lazily inspect the selected player's profile, inventory, technology, missions, attributes, map progress, Party, and Palbox.
+- Open the live-management map to combine authoritative online Pawn positions with last-saved offline player positions; every marker is labeled with the player's online or offline state, and invalid runtime levels fall back to the snapshot value.
+- On dedicated servers, place kick, ban, and unban controls beside the selected player's level. These administrator actions send no optional reason, require a second confirmation, and are enabled only when the bridge has a verified REST `userId`; unban remains available for a player banned during the current connection.
+- Expose authoritative mutations only for online targets and only when the current game build advertises them. The verified paths are granting an existing item, adding experience, and granting a Pal; unverified identity, slot replacement, mission/technology/fast-travel, and existing-Pal mutation paths remain explicitly disabled.
+- Live mutations never write directly to an active `.sav` file and provide no rollback, undo, pre-change backup, or deferred offline queue. Successful changes coalesce a normal world save after two seconds, force one within ten seconds of continuous editing, and report `clean`, `dirty`, `saving`, or `failed` persistence state.
 - Review revision-bound pending changes and save explicitly through temporary files, validation, verified backups, conflict detection, replacement, and reopen checks, preserving recovery information on failure.
 - Use the UI in English, French, Japanese, Korean, or Simplified Chinese.
 
@@ -92,14 +100,14 @@ Version-specific new features, bug fixes, and other changes are documented in Gi
 
 ### Live management on Windows
 
-Live management is separate from offline save editing and requires the Windows desktop EXE:
+Live save management is separate from offline save editing and requires the Windows desktop EXE. The first release acceptance target is Windows dedicated servers only:
 
-1. Install a UE4SS release compatible with the current Palworld version in the Steam client or Windows dedicated-server `Win64` directory.
+1. Install a UE4SS release compatible with the current Palworld version in the Windows dedicated-server `Win64` directory.
 2. On the source-selection screen, open **Live management**, download the bundled PalEditorBridge package, and copy its complete folder into the UE4SS `Mods` directory.
-3. For single-player or co-op, install the mod on the host. For a dedicated server, also enable the administrator REST API and configure its password in `PalWorldSettings.ini`.
+3. Enable the administrator REST API and configure its password in `PalWorldSettings.ini`.
 4. Fully restart the game or server, connect from the editor, and use only capabilities reported by the bridge.
 
-Do not expose Palworld or bridge ports directly to the public internet. Keep non-TLS access on loopback and place remote access behind an HTTPS reverse proxy. Verify every state-changing command in the game before relying on it.
+Do not expose Palworld or bridge ports directly to the public internet. Keep non-TLS access on loopback and place remote access behind an HTTPS reverse proxy. A client installation may be used for later compatibility testing, but single-player and listen servers are outside this phase's declared release support. Verify every state-changing command in the game before relying on it.
 
 ### Run from source
 

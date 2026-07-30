@@ -43,7 +43,7 @@ test('overview statistics use the session-scoped read-only endpoint', () => {
 test('overview exposes an atomic whole-save heal action', () => {
   assert.match(
     overviewSource,
-    /Overview_HealAllPals_Tooltip[\s\S]*?palStore\.RAW_JSON_PENDING[\s\S]*?!Number\(totals\.pals\)[\s\S]*?@click="palStore\.healAllPalsInSave"[\s\S]*?name="medical"[\s\S]*?Overview_HealAllPals/,
+    /Overview_HealAllPals_Tooltip[\s\S]*?!Number\(totals\.pals\)[\s\S]*?@click="palStore\.healAllPalsInSave"[\s\S]*?name="medical"[\s\S]*?Overview_HealAllPals/,
   )
   assert.match(
     storeSource,

@@ -78,23 +78,40 @@ def make_steam_source(path: str | Path) -> SaveSource:
     )
 
 
-def _iter_steam_source_files(root: Path) -> Iterator[Path]:
+def _iter_steam_source_files(
+    root: Path,
+    *,
+    reject_symlinks: bool = False,
+) -> Iterator[Path]:
     for directory, subdirectories, filenames in os.walk(root, topdown=True):
-        subdirectories[:] = sorted(
-            name
-            for name in subdirectories
-            if name.casefold() not in _STEAM_BACKUP_DIRECTORY_NAMES
-        )
+        included_directories: list[str] = []
+        for name in sorted(subdirectories):
+            if name.casefold() in _STEAM_BACKUP_DIRECTORY_NAMES:
+                continue
+            path = Path(directory) / name
+            if reject_symlinks and path.is_symlink():
+                raise OSError("Symbolic links are not allowed in a Steam source tree")
+            included_directories.append(name)
+        subdirectories[:] = included_directories
         for filename in sorted(filenames):
             path = Path(directory) / filename
+            if reject_symlinks and path.is_symlink():
+                raise OSError("Symbolic links are not allowed in a Steam source tree")
             if path.is_file():
                 yield path
 
 
-def _snapshot_steam_source(root: Path) -> StorageSnapshot:
+def snapshot_active_steam_tree(
+    root: Path,
+    *,
+    reject_symlinks: bool = False,
+) -> StorageSnapshot:
     files: list[StorageFileSnapshot] = []
     if root.is_dir():
-        for path in _iter_steam_source_files(root):
+        for path in _iter_steam_source_files(
+            root,
+            reject_symlinks=reject_symlinks,
+        ):
             stat = path.stat()
             files.append(
                 StorageFileSnapshot(
@@ -107,6 +124,10 @@ def _snapshot_steam_source(root: Path) -> StorageSnapshot:
                 )
             )
     return StorageSnapshot(files=tuple(files))
+
+
+def _snapshot_steam_source(root: Path) -> StorageSnapshot:
+    return snapshot_active_steam_tree(root)
 
 
 def _first_snapshot_difference(

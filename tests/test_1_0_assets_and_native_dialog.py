@@ -463,7 +463,7 @@ class NativeDialogTests(unittest.TestCase):
 
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
-            package = root / "PalEditorBridge-UE4SS-Mod-0.6.0.zip"
+            package = root / "PalEditorBridge-UE4SS-Mod-0.6.1.zip"
             package.write_bytes(b"bridge-package")
             download_root = root / "downloads"
             download_root.mkdir()
@@ -488,7 +488,7 @@ class NativeDialogTests(unittest.TestCase):
 
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
-            package = root / "PalEditorBridge-UE4SS-Mod-0.6.0.zip"
+            package = root / "PalEditorBridge-UE4SS-Mod-0.6.1.zip"
             package.write_bytes(b"new-package")
             download_root = root / "downloads"
             download_root.mkdir()
@@ -528,6 +528,73 @@ class NativeDialogTests(unittest.TestCase):
         )
         self.assertEqual(r"D:\PalSave", api.select_save_directory())
         self.assertEqual([""], received)
+
+    def test_system_folder_picker_is_owned_by_the_foreground_window(self) -> None:
+        from palworld_pal_editor.windows_dialog import choose_folder
+
+        with (
+            patch(
+                "palworld_pal_editor.windows_dialog._foreground_window_handle",
+                return_value=4242,
+            ),
+            patch(
+                "palworld_pal_editor.windows_dialog._choose_folder_on_sta_thread",
+                return_value=r"D:\PalSave",
+            ) as picker,
+        ):
+            self.assertEqual(r"D:\PalSave", choose_folder())
+
+        picker.assert_called_once_with("", 4242)
+
+    def test_windows_falls_back_to_pywebview_when_system_picker_fails(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+        from tempfile import TemporaryDirectory
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (r"D:\FallbackSave",)
+
+        def fail_system_picker(_initial_directory):
+            raise OSError("system folder picker unavailable")
+
+        with TemporaryDirectory() as initial_directory:
+            window = FakeWindow()
+            api = NativeDialogApi(
+                window_provider=lambda: [window],
+                modern_folder_picker=fail_system_picker,
+                platform_name="win32",
+            )
+
+            self.assertEqual(
+                r"D:\FallbackSave",
+                api.select_save_directory(initial_directory),
+            )
+            self.assertEqual(webview.FOLDER_DIALOG, window.calls[0][0])
+            self.assertEqual(
+                str(Path(initial_directory).resolve()),
+                window.calls[1]["directory"],
+            )
+
+    def test_windows_system_picker_cancellation_does_not_open_fallback(self) -> None:
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        fallback_opened = False
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                nonlocal fallback_opened
+                fallback_opened = True
+                return (r"D:\Unexpected",)
+
+        api = NativeDialogApi(
+            window_provider=lambda: [FakeWindow()],
+            modern_folder_picker=lambda _initial_directory: None,
+            platform_name="win32",
+        )
+
+        self.assertIsNone(api.select_save_directory())
+        self.assertFalse(fallback_opened)
 
     def test_native_picker_accepts_the_game_pass_starting_folder(self) -> None:
         from tempfile import TemporaryDirectory

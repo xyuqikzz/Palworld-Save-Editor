@@ -1,11 +1,17 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePalEditorStore } from '@/stores/paleditor';
 import { useRouter } from 'vue-router';
 import AppIcon from '@/components/modules/AppIcon.vue';
 
 const palStore = usePalEditorStore();
 const router = useRouter();
+const lastOfflineSourceMode = ref(
+  palStore.SAVE_SOURCE_MODE === 'xgp' ? 'xgp' : 'steam',
+);
+const entryEditMode = computed(() => (
+  palStore.SAVE_SOURCE_MODE === 'remote' ? 'online' : 'offline'
+));
 const remoteAdminPassword = ref('');
 const modInstallDialog = ref(null);
 const bridgeModDownloadAvailable = ref(false);
@@ -17,6 +23,23 @@ const windowsServerUe4ssPath = String.raw`…\steamapps\common\PalServer\Pal\Bin
 const bridgeModPrimaryPath = String.raw`Pal\Binaries\Win64\ue4ss\Mods\PalEditorBridge`;
 const bridgeModFallbackPath = String.raw`Pal\Binaries\Win64\Mods\PalEditorBridge`;
 const serverRestConfiguration = 'RESTAPIEnabled=True · RESTAPIPort=8212 · AdminPassword=…';
+
+function selectEntryEditMode(mode) {
+  if (mode === 'online') {
+    if (palStore.SAVE_SOURCE_MODE === 'steam' || palStore.SAVE_SOURCE_MODE === 'xgp') {
+      lastOfflineSourceMode.value = palStore.SAVE_SOURCE_MODE;
+    }
+    palStore.SAVE_SOURCE_MODE = 'remote';
+    return;
+  }
+
+  palStore.SAVE_SOURCE_MODE = lastOfflineSourceMode.value;
+}
+
+function selectOfflineSourceMode(mode) {
+  lastOfflineSourceMode.value = mode;
+  palStore.SAVE_SOURCE_MODE = mode;
+}
 
 function refreshBridgeModDownloadAvailability() {
   bridgeModDownloadAvailable.value = Boolean(
@@ -106,38 +129,86 @@ onBeforeUnmount(() => {
 
       <div class="entry-workspace">
         <div class="source-switch" role="radiogroup" :aria-label="palStore.getTranslatedText('Entry_Source_Label')">
-          <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'steam' }">
-            <input type="radio" v-model="palStore.SAVE_SOURCE_MODE" value="steam" />
-            <span class="source-icon" aria-hidden="true">
-              <img src="@/assets/steam.svg" alt="" width="26" height="26" />
+          <label :class="{ active: entryEditMode === 'offline' }">
+            <input
+              type="radio"
+              name="entry-edit-mode"
+              value="offline"
+              :checked="entryEditMode === 'offline'"
+              @change="selectEntryEditMode('offline')"
+            />
+            <span class="source-icon source-icon--offline" aria-hidden="true">
+              <AppIcon name="folder" :size="26" />
             </span>
             <span class="source-label-text">
-              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Steam') }}</span>
+              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Offline') }}</span>
             </span>
           </label>
-          <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'xgp' }">
-            <input type="radio" v-model="palStore.SAVE_SOURCE_MODE" value="xgp" />
-            <span class="source-icon" aria-hidden="true">
-              <img src="@/assets/xbox.svg" alt="" width="26" height="26" />
+          <label :class="{ active: entryEditMode === 'online' }">
+            <input
+              type="radio"
+              name="entry-edit-mode"
+              value="online"
+              :checked="entryEditMode === 'online'"
+              @change="selectEntryEditMode('online')"
+            />
+            <span class="source-icon source-icon--remote" aria-hidden="true">
+              <AppIcon name="computer" :size="26" />
             </span>
             <span class="source-label-text">
-              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Xgp') }}</span>
+              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Online') }}</span>
               <span class="beta-badge">{{ palStore.getTranslatedText('Entry_Source_Beta') }}</span>
             </span>
           </label>
-          <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'remote' }">
-            <input type="radio" v-model="palStore.SAVE_SOURCE_MODE" value="remote" />
-            <span class="source-icon source-icon--remote" aria-hidden="true">
-              <AppIcon name="building" :size="26" />
+          <label>
+            <input
+              type="radio"
+              name="entry-edit-mode"
+              value="migration"
+              @change="router.push({ name: 'SaveMigration' })"
+            />
+            <span class="source-icon source-icon--migration" aria-hidden="true">
+              <AppIcon name="forward" :size="26" />
             </span>
             <span class="source-label-text">
-              <span class="source-name">{{ palStore.getTranslatedText('Entry_Source_Remote') }}</span>
+              <span class="source-name">{{ palStore.getTranslatedText('Migration_Entry') }}</span>
               <span class="beta-badge">{{ palStore.getTranslatedText('Entry_Source_Beta') }}</span>
             </span>
           </label>
         </div>
 
         <section class="entry-panel" aria-labelledby="save-path-heading">
+          <div
+            v-if="entryEditMode === 'offline'"
+            class="offline-platform-switch"
+            role="radiogroup"
+            :aria-label="palStore.getTranslatedText('Entry_Platform_Label')"
+          >
+            <span>{{ palStore.getTranslatedText('Entry_Platform_Label') }}</span>
+            <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'steam' }">
+              <input
+                type="radio"
+                name="offline-save-platform"
+                value="steam"
+                :checked="palStore.SAVE_SOURCE_MODE === 'steam'"
+                @change="selectOfflineSourceMode('steam')"
+              />
+              <img src="@/assets/steam.svg" alt="" width="18" height="18" />
+              {{ palStore.getTranslatedText('Entry_Platform_Steam') }}
+            </label>
+            <label :class="{ active: palStore.SAVE_SOURCE_MODE === 'xgp' }">
+              <input
+                type="radio"
+                name="offline-save-platform"
+                value="xgp"
+                :checked="palStore.SAVE_SOURCE_MODE === 'xgp'"
+                @change="selectOfflineSourceMode('xgp')"
+              />
+              <img src="@/assets/xbox.svg" alt="" width="18" height="18" />
+              {{ palStore.getTranslatedText('Entry_Platform_Xgp') }}
+            </label>
+          </div>
+
           <div class="panel-heading">
             <h2 id="save-path-heading">
               {{ palStore.getTranslatedText(palStore.SAVE_SOURCE_MODE === 'remote' ? 'Remote_Title' : 'EntryView_Save_Path') }}
@@ -567,6 +638,8 @@ h1 {
   border-radius: 50%;
 }
 .source-icon img { display: block; opacity: .88; }
+.source-icon--offline,
+.source-icon--migration,
 .source-icon--remote { color: var(--ui-accent-strong); }
 .source-label-text { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .source-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 620; }
@@ -589,6 +662,66 @@ h1 {
   overflow-y: auto;
   padding: 28px 28px 26px;
 }
+
+.offline-platform-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.offline-platform-switch > span {
+  margin-right: auto;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .04em;
+}
+
+.offline-platform-switch label {
+  position: relative;
+  display: inline-flex;
+  min-width: 104px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: var(--ui-text-muted);
+  background: var(--ui-canvas);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.offline-platform-switch label:hover:not(.active) {
+  color: var(--ui-text-secondary);
+  border-color: var(--ui-border-strong);
+}
+
+.offline-platform-switch label.active {
+  color: var(--ui-text);
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+}
+
+.offline-platform-switch label:has(input:focus-visible) {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+.offline-platform-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.offline-platform-switch img { display: block; opacity: .9; }
 
 .panel-heading h2 {
   color: var(--ui-text);
@@ -987,10 +1120,26 @@ h1 {
     border-right: 0;
     border-bottom: 1px solid var(--ui-border);
   }
-  .source-switch label { min-height: 58px; padding-inline: 10px; }
+  .source-switch label { min-height: 64px; padding-inline: 6px; }
   .source-icon { display: none; }
   .source-switch label { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .source-switch .source-label-text {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+  .source-switch .source-name {
+    overflow: visible;
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+  .source-switch .beta-badge { padding: 1px 4px; font-size: 8px; }
   .entry-panel { min-height: 360px; padding: 22px 20px; }
+  .offline-platform-switch { flex-wrap: wrap; margin-top: 0; }
+  .offline-platform-switch > span { flex: 1 0 100%; }
+  .offline-platform-switch label { flex: 1 1 0; }
   .save-path-row { grid-template-columns: 1fr; }
   .remote-mod-notice { grid-template-columns: 38px minmax(0, 1fr); }
   .remote-mod-download { grid-column: 1 / -1; width: 100%; }
@@ -1004,6 +1153,7 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .button,
+  .offline-platform-switch label,
   .source-switch label { transition: none; }
 }
 </style>

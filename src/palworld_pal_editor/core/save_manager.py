@@ -22,6 +22,7 @@ from palworld_pal_editor.core.character_index import CharacterIndex
 from palworld_pal_editor.core.item_container_data import ItemContainerData
 from palworld_pal_editor.core.dynamic_item_data import DynamicItemData
 from palworld_pal_editor.core.guild_item_storage_data import GuildItemStorageData
+from palworld_pal_editor.core.base_storage_data import BaseStorageData
 
 from palworld_pal_editor.core.pal_objects import PalObjects, UUID2HexStr, toUUID
 from palworld_pal_editor.core.player_entity import PlayerEntity
@@ -152,6 +153,8 @@ class SaveManager:
     dynamic_item_data: Optional[DynamicItemData]
     guild_item_storage_data: Optional[GuildItemStorageData]
     guild_item_storage_error: Optional[str]
+    base_storage_data: Optional[BaseStorageData]
+    base_storage_error: Optional[str]
     group_data: Optional[GroupData]
     camp_data: Optional[BaseCampData]
 
@@ -613,6 +616,8 @@ class SaveManager:
         self.reset_expedition_index()
         self.guild_item_storage_data = None
         self.guild_item_storage_error = None
+        self.base_storage_data = None
+        self.base_storage_error = None
         self.player_file_load_count = 0
         self.player_file_load_seconds = {}
         self._lazy_players = lazy_players
@@ -678,6 +683,12 @@ class SaveManager:
             except Exception as e:
                 LOGGER.error(f"Error parsing item container data: {e}")
                 return None
+
+            try:
+                self.base_storage_data = BaseStorageData(self.gvas_file)
+            except Exception as e:
+                self.base_storage_error = type(e).__name__
+                LOGGER.warning(f"Unable to index base item storage: {e}")
 
             try:
                 self.guild_item_storage_data = GuildItemStorageData(

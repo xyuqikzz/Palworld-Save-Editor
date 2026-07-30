@@ -30,12 +30,26 @@ def player_info_writer_1_0(writer: FArchiveWriter, p: dict[str, Any]) -> None:
     writer.byte(p["player_info"]["role"])
 
 
+def role_permission_reader(reader: FArchiveReader) -> dict[str, Any]:
+    return {
+        "role": reader.byte(),
+        "permissions": reader.tarray(lambda archive: archive.byte()),
+    }
+
+
+def role_permission_writer(writer: FArchiveWriter, p: dict[str, Any]) -> None:
+    writer.byte(p["role"])
+    writer.tarray(
+        lambda archive, permission: archive.byte(permission),
+        p["permissions"],
+    )
+
+
 def decode_guild_tail(
     parent_reader: FArchiveReader, raw_tail: bytes
 ) -> dict[str, Any]:
     # Palworld 1.0 added guild markers/chest roles, per-player roles, and role
-    # permissions around the existing player array. Keep the post-player data
-    # opaque so fields unknown to this library survive a save unchanged.
+    # permissions around the existing player array.
     # FVector changed from three float32 values to float64 with UE5 LWC. Try
     # the current 60-byte marker first, then the legacy-width 48-byte form.
     for marker_size in (60, 48):
@@ -48,24 +62,43 @@ def decode_guild_tail(
             if len(marker_data) != marker_count * marker_size:
                 raise ValueError("truncated guild marker data")
             allowed_roles = reader.tarray(lambda archive: archive.byte())
-            if not 0 < len(allowed_roles) <= 16:
+            if (
+                not 0 < len(allowed_roles) <= 16
+                or any(role not in range(1, 5) for role in allowed_roles)
+            ):
                 raise ValueError("not a Palworld 1.0 guild role array")
+            unknown_i32 = reader.i32()
             admin_player_uid = reader.guid()
-            unknown_2 = reader.i32()
             players = reader.tarray(player_info_reader_1_0)
             if not players or any(
-                not player["player_info"]["player_name"] for player in players
+                not player["player_info"]["player_name"]
+                or player["player_info"]["role"] not in range(1, 5)
+                for player in players
             ):
                 raise ValueError("not a Palworld 1.0 guild player array")
+            role_permissions = reader.tarray(role_permission_reader)
+            if (
+                not 0 < len(role_permissions) <= 16
+                or any(
+                    permission["role"] not in range(1, 5)
+                    or len(permission["permissions"]) > 128
+                    for permission in role_permissions
+                )
+            ):
+                raise ValueError("not a Palworld 1.0 guild permission array")
+            trailing_bytes = reader.read(4)
+            if len(trailing_bytes) != 4 or not reader.eof():
+                raise ValueError("unexpected Palworld 1.0 guild trailing data")
             return {
                 "guild_format": "1.0",
                 "guild_marker_count": marker_count,
                 "guild_marker_data": list(marker_data),
                 "guild_chest_allowed_roles": allowed_roles,
+                "unknown_i32": unknown_i32,
                 "admin_player_uid": admin_player_uid,
-                "unknown_2": unknown_2,
                 "players": players,
-                "trailing_bytes": list(reader.read_to_end()),
+                "role_permissions": role_permissions,
+                "trailing_bytes": list(trailing_bytes),
             }
         except (EOFError, IndexError, struct.error, UnicodeError, ValueError):
             pass
@@ -202,9 +235,10 @@ def encode_bytes(p: dict[str, Any]) -> bytes:
                 lambda archive, role: archive.byte(role),
                 p["guild_chest_allowed_roles"],
             )
+            writer.i32(p["unknown_i32"])
             writer.guid(p["admin_player_uid"])
-            writer.i32(p["unknown_2"])
             writer.tarray(player_info_writer_1_0, p["players"])
+            writer.tarray(role_permission_writer, p["role_permissions"])
             writer.write(bytes(p["trailing_bytes"]))
         elif p.get("guild_format") == "legacy":
             writer.write(bytes(p["unknown_2"]))

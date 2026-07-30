@@ -21,7 +21,7 @@ function installStorage(initialValues = {}) {
   return values
 }
 
-test('first launch defaults to Steam and records the selection', () => {
+test('first launch defaults to offline Steam editing and records the platform', () => {
   const values = installStorage()
   setActivePinia(createPinia())
 
@@ -29,6 +29,36 @@ test('first launch defaults to Steam and records the selection', () => {
 
   assert.equal(store.SAVE_SOURCE_MODE, 'steam')
   assert.equal(values.get('PAL_SAVE_SOURCE_MODE'), 'steam')
+})
+
+test('entry page separates editing mode from the offline platform switch and keeps migration in the left tabs', async () => {
+  const source = await readFile(
+    new URL('../src/views/EntryView.vue', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(source, /Entry_Source_Offline/)
+  assert.match(source, /Entry_Source_Online/)
+  assert.match(source, /entryEditMode === 'offline'/)
+  assert.match(source, /class="offline-platform-switch"/)
+  assert.match(source, /selectOfflineSourceMode\('steam'\)/)
+  assert.match(source, /selectOfflineSourceMode\('xgp'\)/)
+  assert.match(source, /@\/assets\/steam\.svg/)
+  assert.match(source, /@\/assets\/xbox\.svg/)
+  assert.match(
+    source,
+    /value="migration"[\s\S]*Migration_Entry[\s\S]*Entry_Source_Beta/,
+  )
+
+  const safetyFooter = source.match(/<footer class="entry-safety">([\s\S]*?)<\/footer>/)?.[1]
+  assert.ok(safetyFooter)
+  assert.doesNotMatch(safetyFooter, /Migration_Entry/)
+
+  const zhCn = await readFile(
+    new URL('../src/i18n/zh-CN.js', import.meta.url),
+    'utf8',
+  )
+  assert.match(zhCn, /Entry_Platform_Xgp:\s*"Game Pass"/)
 })
 
 test('later launches restore the previously selected source', async () => {

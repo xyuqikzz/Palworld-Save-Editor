@@ -52,6 +52,43 @@ export const palSpeciesIconKey = pal => {
   return tower?.[1] || key
 }
 
+export const palSpeciesCatalogKey = (entry, catalog = {}) => {
+  const dataAccessKey = String(
+    entry?.dataAccessKey || entry?.DataAccessKey || '',
+  ).trim()
+  const characterId = String(
+    entry?.characterId || entry?.CharacterID || '',
+  ).trim()
+  const candidates = [...new Set([dataAccessKey, characterId].filter(Boolean))]
+
+  for (const candidate of candidates) {
+    if (catalog[candidate]) return candidate
+  }
+  for (const candidate of candidates) {
+    const baseKey = palSpeciesIconKey({
+      InternalName: candidate,
+      IsHuman: false,
+    })
+    if (catalog[baseKey]) return baseKey
+  }
+
+  return characterId || dataAccessKey
+}
+
+export const palRuntimeDisplayName = (entry, pal, fallback = '') => {
+  const nickname = String(entry?.nickname || entry?.NickName || '').trim()
+  const internalIds = new Set([
+    entry?.characterId,
+    entry?.CharacterID,
+    entry?.dataAccessKey,
+    entry?.DataAccessKey,
+    pal?.InternalName,
+  ].filter(Boolean).map(value => String(value).trim()))
+
+  if (nickname && !internalIds.has(nickname)) return nickname
+  return pal?.I18n || pal?.Name || entry?.characterId || fallback
+}
+
 export const elementTranslationKey = element => (
   ELEMENT_TRANSLATION_KEYS[element] || 'Element_Unknown'
 )

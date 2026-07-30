@@ -27,6 +27,7 @@ app.register_blueprint(preset_blueprint, url_prefix='/api/preset')
 app.register_blueprint(arena_blueprint, url_prefix='/api/arena')
 app.register_blueprint(remote_blueprint, url_prefix='/api/remote')
 app.register_blueprint(json_editor_blueprint, url_prefix='/api/json-editor')
+app.register_blueprint(migration_blueprint, url_prefix='/api/migration')
 
 
 def configure_runtime_security():

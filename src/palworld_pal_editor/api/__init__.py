@@ -7,3 +7,4 @@ from palworld_pal_editor.api.preset import preset_blueprint
 from palworld_pal_editor.api.arena import arena_blueprint
 from palworld_pal_editor.api.remote import remote_blueprint
 from palworld_pal_editor.api.json_editor import json_editor_blueprint
+from palworld_pal_editor.api.migration import migration_blueprint

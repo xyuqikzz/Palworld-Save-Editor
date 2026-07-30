@@ -255,6 +255,7 @@ def get_remote_status():
 
 
 @remote_blueprint.route("/players", methods=["GET"])
+@remote_blueprint.route("/player-directory", methods=["GET"])
 @jwt_required()
 def get_remote_players():
     try:
@@ -365,7 +366,7 @@ def execute_remote_command():
             payload=payload.get("payload", {}),
             expected_revision=payload.get("expected_revision"),
         )
-        return reply(0, session.execute(command))
+        return reply(0, session.live_players.execute(command))
     except DomainError as error:
         return _domain_error(error)
 

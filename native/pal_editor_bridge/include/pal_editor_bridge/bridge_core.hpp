@@ -3,6 +3,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -16,7 +17,7 @@
 namespace pal_editor_bridge
 {
     inline constexpr std::int32_t protocol_version = 1;
-    inline constexpr const char* bridge_version = "0.6.0";
+    inline constexpr const char* bridge_version = "0.6.1";
 
     struct BridgeConfig
     {
@@ -26,6 +27,11 @@ namespace pal_editor_bridge
         std::uint16_t rest_port{8212};
         std::string rest_username{"admin"};
         std::chrono::seconds token_ttl{std::chrono::minutes(30)};
+        std::filesystem::path save_games_root;
+        std::filesystem::path snapshot_cache_root;
+        std::chrono::milliseconds save_debounce{std::chrono::seconds(2)};
+        std::chrono::milliseconds save_max_delay{std::chrono::seconds(10)};
+        std::chrono::minutes snapshot_ttl{std::chrono::minutes(10)};
     };
 
     struct ServerDescriptor

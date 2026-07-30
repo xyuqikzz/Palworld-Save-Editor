@@ -146,6 +146,80 @@ test('renaming a guild sends a revision-bound command and updates the tree item'
   assert.equal(store.PENDING_CHANGE_COUNT, 1)
 })
 
+test('changing a guild owner updates member roles and keeps role order', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 3
+  const guild = {
+    guild_id: 'guild-1',
+    owner_player_id: 'player-owner',
+    owner_status: 'available',
+    owner_editable: true,
+    members: [
+      {
+        player_id: 'player-member',
+        name: 'Member',
+        role: 3,
+        role_status: 'available',
+        owner_eligible: true,
+        is_owner: false,
+      },
+      {
+        player_id: 'player-owner',
+        name: 'Owner',
+        role: 1,
+        role_status: 'available',
+        owner_eligible: true,
+        is_owner: true,
+      },
+    ],
+  }
+  store.GUILD_LIST = [structuredClone(guild)]
+  store.GUILD_TREE = [structuredClone(guild)]
+  let request
+  axios.post = async (url, data) => {
+    request = { url, data: structuredClone(data) }
+    return { data: { status: 0, data: {
+      revision: 4,
+      value: {
+        guild_id: 'guild-1',
+        owner_player_id: 'player-member',
+        members: [
+          { player_id: 'player-owner', role: 2 },
+          { player_id: 'player-member', role: 1 },
+        ],
+      },
+    } } }
+  }
+
+  assert.equal(
+    await store.updateGuildOwner('guild-1', 'player-member'),
+    true,
+  )
+  assert.deepEqual(request, {
+    url: '/api/save/guilds/guild-1/commands',
+    data: {
+      session_id: 'session-1',
+      expected_revision: 3,
+      command: 'update_guild_owner',
+      player_id: 'player-member',
+    },
+  })
+  assert.equal(store.GUILD_LIST[0].owner_player_id, 'player-member')
+  assert.deepEqual(
+    store.GUILD_LIST[0].members.map(member => [
+      member.player_id,
+      member.role,
+      member.is_owner,
+    ]),
+    [
+      ['player-member', 1, true],
+      ['player-owner', 2, false],
+    ],
+  )
+  assert.equal(store.SESSION_REVISION, 4)
+  assert.equal(store.PENDING_CHANGE_COUNT, 1)
+})
+
 test('expanding a guild chest sends a revision-bound command and updates its capacity', async () => {
   const store = makeStore()
   store.SESSION_REVISION = 4
@@ -223,6 +297,81 @@ test('terminal level uses a dedicated revision-bound command', async () => {
   assert.equal(store.SESSION_REVISION, 7)
 })
 
+test('base storage is loaded lazily and item count writes keep guild-base scope', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 4
+  const calls = []
+  let count = 5
+  axios.get = async url => {
+    calls.push({ method: 'get', url })
+    return { data: { status: 0, data: {
+      revision: store.SESSION_REVISION,
+      guild_id: 'guild-1',
+      base_id: 'base-1',
+      status: 'available',
+      write_status: 'available',
+      containers: [{
+        container_id: 'container-1',
+        status: 'available',
+        capacity: 1,
+        slots: [{
+          slot_index: 0,
+          state: 'occupied',
+          item: { static_id: 'Stone', count, dynamic_id: null },
+        }],
+      }],
+    } } }
+  }
+  axios.post = async (url, data) => {
+    calls.push({ method: 'post', url, data: structuredClone(data) })
+    count = data.count
+    return { data: { status: 0, data: {
+      revision: 5,
+      container_id: 'container-1',
+      slot: {
+        slot_index: 0,
+        static_id: 'Stone',
+        count,
+        dynamic_id: null,
+      },
+    } } }
+  }
+
+  const loaded = await store.loadBaseStorage('guild-1', 'base-1')
+  assert.equal(loaded.containers[0].slots[0].item.count, 5)
+
+  const container = loaded.containers[0]
+  const slot = container.slots[0]
+  const updated = await store.updateBaseStorageItemCount(
+    'guild-1',
+    'base-1',
+    container,
+    slot,
+    9,
+  )
+
+  assert.equal(updated.containers[0].slots[0].item.count, 9)
+  assert.deepEqual(calls[1], {
+    method: 'post',
+    url: '/api/save/guilds/guild-1/bases/base-1/storage/commands',
+    data: {
+      session_id: 'session-1',
+      expected_revision: 4,
+      command: 'update_item_count',
+      container_id: 'container-1',
+      slot_index: 0,
+      expected_static_id: 'Stone',
+      count: 9,
+    },
+  })
+  assert.equal(store.SESSION_REVISION, 5)
+  assert.equal(
+    store.getBaseStorage('guild-1', 'base-1')
+      .containers[0].slots[0].item.count,
+    9,
+  )
+})
+
 test('the player panel renders guilds as the first tree level', () => {
   const source = fs.readFileSync(new URL('../src/components/PlayerList.vue', import.meta.url), 'utf8')
 
@@ -243,15 +392,51 @@ test('the guild page owns guild, chest, terminal, read-only base capacity, and m
   assert.match(source, /v-for="guild in palStore\.GUILD_LIST"/)
   assert.match(source, /palStore\.loadGuilds\(\)/)
   assert.match(source, /palStore\.updateGuildName/)
+  assert.match(source, /palStore\.updateGuildOwner/)
   assert.match(source, /palStore\.updateGuildChestCapacity/)
   assert.match(source, /palStore\.updateGuildBaseCampLevel/)
   assert.doesNotMatch(source, /updateBaseWorkerCapacity|saveEdit\('workers'|startEdit\('workers'/)
   assert.doesNotMatch(storeSource, /updateBaseWorkerCapacity|update_base_worker_capacity/)
   assert.match(source, /v-for="\(base, index\) in guild\.bases"/)
   assert.match(source, /v-for="member in guild\.members"/)
+  assert.match(source, /memberRoleLabel\(member\)/)
+  assert.match(source, /Guild_Owner/)
   assert.match(source, /Guild_WorkerCapacityValue/)
+  assert.match(source, /BaseStoragePanel/)
+  assert.match(source, /Guild_BaseStorage/)
+  assert.match(source, /:aria-expanded="isStorageExpanded\(guild, base\)"/)
+  assert.match(source, /role="tablist"/)
+  assert.match(source, /role="tab"/)
+  assert.match(source, /role="tabpanel"/)
+  assert.match(source, /activeGuildTab\(guild\) === 'bases'/)
+  assert.match(source, /activeGuildTab\(guild\) === 'members'/)
   assert.doesNotMatch(source, /Guild_EditWorkerCapacity|Guild_WorkerCapacityHelp/)
   assert.doesNotMatch(source, /Guild_Page(?:Eyebrow|Title|Description)/)
+})
+
+test('the base storage panel exposes add, replace, count, and clear actions', () => {
+  const source = fs.readFileSync(
+    new URL('../src/components/modules/BaseStoragePanel.vue', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(source, /palStore\.loadBaseStorage/)
+  assert.match(source, /palStore\.putBaseStorageItem/)
+  assert.match(source, /palStore\.updateBaseStorageItemCount/)
+  assert.match(source, /palStore\.clearBaseStorageItem/)
+  assert.match(source, /'empty_only'/)
+  assert.match(source, /'replace'/)
+  assert.match(source, /ItemPicker/)
+  assert.match(source, /dynamicRecordStaticId/)
+  assert.match(source, /BASE_STORAGE/)
+  assert.match(source, /container\.building_name/)
+  assert.doesNotMatch(source, /container\.map_object_type/)
+  assert.match(source, /class="storage-container-list"/)
+  assert.match(source, /class="storage-slot-grid"/)
+  assert.match(source, /class="storage-slot-editor"/)
+  assert.match(source, /Inventory_Max/)
+  assert.match(source, /@click\.self="clearSlotSelection"/)
+  assert.match(source, /grid-template-columns:\s*repeat\(auto-fill,\s*72px\)/)
 })
 
 test('each guild base renders its working Pals with hover and keyboard details', () => {

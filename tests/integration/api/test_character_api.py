@@ -13,7 +13,7 @@ from palworld_pal_editor.api.player import player_blueprint, player_to_dict
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.config import Config
-from palworld_pal_editor.core.pal_objects import PalObjects
+from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 from palworld_pal_editor.core.save_manager import SaveManager
 from tests.unit.test_character_editor import _Player, make_pal
 
@@ -232,6 +232,29 @@ class CharacterApiTests(unittest.TestCase):
             custom_payload["DisplayName"],
         )
 
+    def test_offline_boss_species_use_localized_names(self) -> None:
+        original_i18n = Config.i18n
+        try:
+            Config.i18n = "zh-CN"
+            for internal_name, expected_name in (
+                ("BOSS_IceHorse", "唤冬兽"),
+                ("BOSS_DomeArmorDragon", "磐甲龙"),
+            ):
+                with self.subTest(internal_name=internal_name):
+                    PalObjects.set_BaseType(
+                        self.pal._pal_param["CharacterID"],
+                        internal_name,
+                    )
+                    self.pal._pal_param.pop("NickName", None)
+                    self.pal._display_name_cache.clear()
+
+                    pal_payload = _pal_data(self.pal)
+
+                    self.assertEqual(expected_name, pal_payload["I18nName"])
+                    self.assertEqual(f"👑{expected_name}", pal_payload["DisplayName"])
+        finally:
+            Config.i18n = original_i18n
+
     def test_initial_pal_list_includes_variant_flags(self) -> None:
         PalObjects.set_BaseType(
             self.pal._pal_param["CharacterID"],
@@ -254,6 +277,46 @@ class CharacterApiTests(unittest.TestCase):
         self.assertFalse(pal_payload["IsTower"])
         self.assertEqual(10, pal_payload["Level"])
         self.assertEqual(self.pal.SlotIndex, pal_payload["SlotIndex"])
+
+    def test_pal_list_and_detail_expose_semantic_container_type(self) -> None:
+        party_container_id = toUUID(
+            "44444444-5555-6666-7777-888888888888"
+        )
+        palbox_container_id = toUUID(
+            "55555555-6666-7777-8888-999999999999"
+        )
+        owner = SimpleNamespace(
+            NickName="Owner",
+            OtomoCharacterContainerId=party_container_id,
+            PalStorageContainerId=palbox_container_id,
+        )
+        self.pal.set_owner_player_entity(owner)
+        self.pal.SlotId = (party_container_id, 1)
+        self.player.get_sorted_pals = lambda: [self.pal]
+        SaveManager().player_mapping[self.player.PlayerUId] = self.player
+
+        response = self.client.post(
+            "/api/player/player_pals",
+            headers=self.headers,
+            json={"PlayerUId": self.player.PlayerUId},
+        )
+
+        self.assertEqual(200, response.status_code)
+        summary = response.get_json()["data"][0]
+        self.assertEqual("PARTY", summary["ContainerType"])
+        self.assertNotIn("ContainerId", summary)
+        self.assertEqual("PARTY", _pal_data(self.pal)["ContainerType"])
+
+        self.pal.SlotId = (palbox_container_id, 2)
+        self.assertEqual("PAL_STORAGE", _pal_data(self.pal)["ContainerType"])
+        self.assertTrue(self.pal.in_owner_palbox)
+
+        self.pal.SlotId = (
+            toUUID("66666666-7777-8888-9999-aaaaaaaaaaaa"),
+            0,
+        )
+        self.assertEqual("OTHER", _pal_data(self.pal)["ContainerType"])
+        self.assertFalse(self.pal.in_owner_palbox)
 
     def test_initial_pal_list_and_detail_include_awakening_state(self) -> None:
         self.pal._pal_param["bIsAwakening"] = PalObjects.BoolProperty(True)

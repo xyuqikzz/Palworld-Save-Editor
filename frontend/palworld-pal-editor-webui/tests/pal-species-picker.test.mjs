@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 import {
   availablePalElements,
   filterSpeciesOptions,
+  palRuntimeDisplayName,
+  palSpeciesCatalogKey,
   palSpeciesIconKey,
 } from '../src/components/modules/pal-species-filter.js'
 
@@ -67,6 +69,43 @@ test('boss-only otomo species use the base Pal portrait', () => {
   assert.equal(
     palSpeciesIconKey({ InternalName: 'SalesPerson', IsHuman: true, HasIcon: false }),
     'Human',
+  )
+})
+
+test('runtime boss records resolve to their localized catalog species', () => {
+  const catalog = {
+    IceHorse: { InternalName: 'IceHorse', I18n: 'Frostallion' },
+    DomeArmorDragon: { InternalName: 'DomeArmorDragon', I18n: 'Aegidron' },
+  }
+
+  assert.equal(
+    palSpeciesCatalogKey(
+      { characterId: 'BOSS_IceHorse', dataAccessKey: 'IceHorse' },
+      catalog,
+    ),
+    'IceHorse',
+  )
+  assert.equal(
+    palSpeciesCatalogKey({ characterId: 'BOSS_DomeArmorDragon' }, catalog),
+    'DomeArmorDragon',
+  )
+  assert.equal(
+    palSpeciesCatalogKey({ characterId: 'BOSS_UnknownPal' }, catalog),
+    'BOSS_UnknownPal',
+  )
+  assert.equal(
+    palRuntimeDisplayName(
+      { characterId: 'BOSS_IceHorse', nickname: 'BOSS_IceHorse' },
+      catalog.IceHorse,
+    ),
+    'Frostallion',
+  )
+  assert.equal(
+    palRuntimeDisplayName(
+      { characterId: 'BOSS_DomeArmorDragon', nickname: 'Guardian' },
+      catalog.DomeArmorDragon,
+    ),
+    'Guardian',
   )
 })
 

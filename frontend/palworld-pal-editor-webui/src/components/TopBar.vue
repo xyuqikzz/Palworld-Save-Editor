@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isOverview }]"
         type="button"
         :aria-current="isOverview ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Overview')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Overview') }}
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isPalEditor }]"
         type="button"
         :aria-current="isPalEditor ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Editor')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Pals') }}
@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isPlayerEditor }]"
         type="button"
         :aria-current="isPlayerEditor ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Players')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Players') }}
@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isMap }]"
         type="button"
         :aria-current="isMap ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Map')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Map') }}
@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isGuilds }]"
         type="button"
         :aria-current="isGuilds ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Guilds')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Guilds') }}
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isArenaLeaderboard }]"
         type="button"
         :aria-current="isArenaLeaderboard ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('ArenaLeaderboard')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Arena') }}
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
         :class="['nav-item', { 'nav-item--active': isExpeditions }]"
         type="button"
         :aria-current="isExpeditions ? 'page' : undefined"
-        :disabled="palStore.LOADING_FLAG || palStore.RAW_JSON_PENDING"
+        :disabled="palStore.LOADING_FLAG"
         @click="navigate('Expeditions')"
       >
         {{ palStore.getTranslatedText('TopBar_Page_Expeditions') }}

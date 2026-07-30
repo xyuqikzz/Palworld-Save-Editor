@@ -1320,6 +1320,11 @@ class RealSaveRoundTripTests(unittest.TestCase):
                     reloaded = self._open(work)
                     index = CharacterIndex(reloaded.manager)
                 self.assertEqual([], index.hard_issues())
+                moved_pal = index.pals[command.pal_id]
+                self.assertEqual(
+                    command.container_type.value,
+                    moved_pal.owner_container_type,
+                )
                 references = index.container_references[command.pal_id]
                 self.assertEqual(1, len(references))
                 self.assertEqual(target_id, references[0].container_id)

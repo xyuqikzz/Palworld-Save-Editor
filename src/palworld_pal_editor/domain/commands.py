@@ -13,6 +13,11 @@ class SessionCommand:
 
 
 @dataclass(frozen=True, kw_only=True)
+class RepairMissingGuildHandles(SessionCommand):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
 class ResetFogOfWar(SessionCommand):
     confirmation: str
 
@@ -38,6 +43,12 @@ class UpdatePlayerInventoryCapacity(SessionCommand):
 class UpdateGuildName(SessionCommand):
     guild_id: str
     name: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdateGuildOwner(SessionCommand):
+    guild_id: str
+    player_id: str
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -76,6 +87,38 @@ class PutItem(SessionCommand):
 class ClearItemSlot(SessionCommand):
     player_id: str
     container_type: ItemContainerType
+    slot_index: int
+    expected_static_id: str
+    expected_dynamic_id: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdateBaseStorageItemCount(SessionCommand):
+    guild_id: str
+    base_id: str
+    container_id: str
+    slot_index: int
+    expected_static_id: str
+    count: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class PutBaseStorageItem(SessionCommand):
+    guild_id: str
+    base_id: str
+    container_id: str
+    slot_index: int
+    static_id: str
+    count: int
+    mode: Literal["empty_only", "replace"] = "empty_only"
+    dynamic_init: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class ClearBaseStorageItemSlot(SessionCommand):
+    guild_id: str
+    base_id: str
+    container_id: str
     slot_index: int
     expected_static_id: str
     expected_dynamic_id: str | None = None

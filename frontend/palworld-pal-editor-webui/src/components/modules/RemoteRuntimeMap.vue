@@ -121,6 +121,25 @@ function positionFor(player) {
   return { x, y, z: Number.isFinite(z) ? z : null }
 }
 
+function playerPresenceKey(player) {
+  return player.online === true
+    ? 'RemoteMap_PlayerOnline'
+    : 'RemoteMap_PlayerOffline'
+}
+
+function playerLabel(player) {
+  const id = playerId(player)
+  const name = player.name || player.nickname || id
+  const status = palStore.getTranslatedText(playerPresenceKey(player))
+  return `${name}${palStore.getTranslatedText('RemoteMap_PlayerLabelOpen')}${status}${palStore.getTranslatedText('RemoteMap_PlayerLabelClose')}`
+}
+
+function positionSourceKey(player) {
+  return player.positionSource === 'save_last_transform'
+    ? 'RemoteMap_SavedSource'
+    : 'RemoteMap_PawnSource'
+}
+
 const guildById = computed(() => new Map(
   rawGuilds.value
     .map(guild => [guildId(guild), guild])
@@ -152,7 +171,7 @@ const playerMarkers = computed(() => rawPlayers.value.flatMap(player => {
     ...position,
     id: `player:${id}`,
     playerId: id,
-    label: player.name || player.nickname || id,
+    label: playerLabel(player),
     guildId: linkedGuildId,
     guildName: player.guildName || (guild ? guildName(guild) : ''),
     kind: 'player',
@@ -423,7 +442,7 @@ onBeforeUnmount(() => {
       <div>
         <span class="runtime-map-header__icon"><AppIcon name="map" :size="19" /></span>
         <div>
-          <small>{{ palStore.getTranslatedText('RemoteMap_Live') }}</small>
+          <small>{{ palStore.getTranslatedText('RemoteMap_DataScope') }}</small>
           <h3>{{ palStore.getTranslatedText('Remote_TabMap') }}</h3>
         </div>
       </div>
@@ -473,7 +492,10 @@ onBeforeUnmount(() => {
           >
             <button
               class="runtime-marker"
-              :class="{ selected: selectedMarkerId === marker.id }"
+              :class="{
+                selected: selectedMarkerId === marker.id,
+                'is-offline': marker.online !== true,
+              }"
               type="button"
               :aria-label="marker.label"
               @pointerdown.stop
@@ -505,9 +527,12 @@ onBeforeUnmount(() => {
         </nav>
 
         <div class="runtime-map-status">
-          <span><i />{{ palStore.getTranslatedText('RemoteMap_Live') }}</span>
-          <b>{{ activePlayerMarkers.length }}</b>
-          {{ palStore.getTranslatedText('Map_Player') }}
+          <span><i />{{ palStore.getTranslatedText('RemoteMap_PlayerOnline') }}</span>
+          <b>{{ mapData.presence?.online ?? 0 }}</b>
+          <span class="is-offline">
+            <i />{{ palStore.getTranslatedText('RemoteMap_PlayerOffline') }}
+          </span>
+          <b>{{ mapData.presence?.offline ?? 0 }}</b>
         </div>
 
         <div v-if="palStore.REMOTE_MAP_LOADING && !palStore.REMOTE_MAP_DATA" class="runtime-map-state">
@@ -554,7 +579,7 @@ onBeforeUnmount(() => {
             </div>
             <div>
               <dt>{{ palStore.getTranslatedText('RemoteMap_PositionSource') }}</dt>
-              <dd>{{ palStore.getTranslatedText('RemoteMap_PawnSource') }}</dd>
+              <dd>{{ palStore.getTranslatedText(positionSourceKey(selectedMarker)) }}</dd>
             </div>
           </dl>
           <button type="button" class="runtime-map-detail__primary" @click="emit('select-player', selectedMarker.playerId)">
@@ -799,6 +824,12 @@ onBeforeUnmount(() => {
   content: '';
   animation: marker-pulse 1.4s ease-in-out infinite;
 }
+.runtime-marker.is-offline img {
+  opacity: .72;
+  filter:
+    grayscale(.76)
+    drop-shadow(0 calc(2px * var(--marker-inverse-scale)) calc(3px * var(--marker-inverse-scale)) #000);
+}
 
 .runtime-marker span {
   position: absolute;
@@ -882,6 +913,11 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: #43d68c;
   box-shadow: 0 0 9px #43d68c;
+}
+.runtime-map-status span.is-offline { color: #a8b6bc; }
+.runtime-map-status span.is-offline i {
+  background: #76868d;
+  box-shadow: none;
 }
 .runtime-map-status b { color: white; }
 

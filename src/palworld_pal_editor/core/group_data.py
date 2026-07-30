@@ -7,6 +7,9 @@ from palworld_pal_editor.core.pal_objects import PalObjects
 from palworld_pal_editor.utils import LOGGER
 
 
+GUILD_ROLE_VALUES = frozenset({1, 2, 3, 4})
+
+
 class PalGroup:
     def __init__(self, group_obj: dict, group_type: str):
         self._group_obj: dict = group_obj
@@ -105,6 +108,68 @@ class PalGroup:
         if not isinstance(current, str):
             raise ValueError("Guild name field is unavailable")
         self._group_param["guild_name"] = name
+
+    @property
+    def admin_player_uid(self) -> Optional[UUID]:
+        value = self._group_param.get("admin_player_uid")
+        return value if isinstance(value, UUID) else None
+
+    @property
+    def guild_members(self) -> list[tuple[UUID, str, int | None]]:
+        if self.group_type == "EPalGroupType::IndependentGuild":
+            return [
+                (player_uid, player_name, None)
+                for player_uid, player_name in (self.players or [])
+            ]
+        result = []
+        for player_data in self._group_param.get("players") or []:
+            player_info = player_data.get("player_info") or {}
+            role = player_info.get("role")
+            result.append(
+                (
+                    player_data["player_uid"],
+                    player_info.get("player_name") or "",
+                    (
+                        role
+                        if isinstance(role, int)
+                        and not isinstance(role, bool)
+                        and role in GUILD_ROLE_VALUES
+                        else None
+                    ),
+                )
+            )
+        return result
+
+    @property
+    def guild_owner_editable(self) -> bool:
+        members = self.guild_members
+        return (
+            self.guild_format == "1.0"
+            and self.admin_player_uid is not None
+            and bool(members)
+            and all(role in GUILD_ROLE_VALUES for _, _, role in members)
+        )
+
+    def set_admin_player_uid(self, player_uid: UUID | str) -> None:
+        if not self.guild_owner_editable:
+            raise ValueError("Guild owner field is unavailable")
+        target = next(
+            (
+                member
+                for member in self._group_param.get("players") or []
+                if str(member.get("player_uid")) == str(player_uid)
+            ),
+            None,
+        )
+        if target is None:
+            raise ValueError("Guild member does not exist")
+        for member in self._group_param["players"]:
+            player_info = member["player_info"]
+            if member is target:
+                player_info["role"] = 1
+            elif player_info["role"] == 1:
+                player_info["role"] = 2
+        self._group_param["admin_player_uid"] = target["player_uid"]
 
     @property
     def group_type(self) -> str:
