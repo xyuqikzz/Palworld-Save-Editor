@@ -395,6 +395,7 @@ export default {
     NETWORK_NO_RESPONSE: "Le service local de l'éditeur ne répond pas. Il ne s'agit pas d'un échec de sauvegarde confirmé.",
     CLIENT_REQUEST_FAILED: "L'interface n'a pas pu envoyer la demande d'enregistrement.",
     Save_Backup_Failure_Action: "Vérifiez l'espace disque, les droits du dossier de sauvegarde, le logiciel de sécurité et si Palworld ou la synchronisation Xbox utilise encore les fichiers. Conservez le dossier de sauvegarde en échec pour le diagnostic.",
+    Save_Backup_Path_Too_Long_Action: "Le chemin de sauvegarde reste trop long pour Windows. Déplacez la sauvegarde du jeu vers un chemin local plus court, puis réessayez ; aucune donnée n’a été écrite.",
     Save_Wgs_Running_Action: "Fermez Palworld et attendez que la synchronisation cloud Xbox soit inactive avant de réessayer.",
     Save_Source_Changed_Action: "Rechargez la source et vérifiez les modifications en attente avant de réessayer.",
     Save_Network_No_Response_Action: "Vérifiez que le service local fonctionne et consultez les journaux avant de réessayer ; le résultat est inconnu.",

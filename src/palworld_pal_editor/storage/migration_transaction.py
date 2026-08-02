@@ -22,6 +22,7 @@ from palworld_pal_editor.storage.steam import (
 
 _PRESERVED_BACKUP_DIRECTORY_NAMES = frozenset(
     {
+        ".pwe-backup",
         "backup",
         "palworld-pal-editor-backup",
         ".palworld-pal-editor-backup",

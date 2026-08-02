@@ -253,15 +253,17 @@ def test_tree_transaction_excludes_backup_files_beyond_max_path(
             shutil.rmtree(extended_backup)
 
 
+@pytest.mark.parametrize("backup_directory_name", ["backup", ".pwe-backup"])
 def test_tree_transaction_preserves_internal_backup_without_copying_it(
     tmp_path: Path,
+    backup_directory_name: str,
 ) -> None:
     target = tmp_path / "target"
     staged = tmp_path / "staged"
     target.mkdir()
     staged.mkdir()
     (target / "Level.sav").write_bytes(b"target")
-    history = target / "backup" / "world" / "Level.sav"
+    history = target / backup_directory_name / "world" / "Level.sav"
     history.parent.mkdir(parents=True)
     history.write_bytes(b"historical")
     (staged / "Level.sav").write_bytes(b"staged")
@@ -278,7 +280,7 @@ def test_tree_transaction_preserves_internal_backup_without_copying_it(
     assert not (
         Path(result.backup_path)
         / "files"
-        / "backup"
+        / backup_directory_name
         / "world"
         / "Level.sav"
     ).exists()

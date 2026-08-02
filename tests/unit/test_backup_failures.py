@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import errno
 import json
+import os
 from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 
@@ -11,6 +12,7 @@ from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.models import StorageCommitRequest
 from palworld_pal_editor.storage import steam as steam_module
 from palworld_pal_editor.storage import xgp as xgp_module
+from palworld_pal_editor.storage.backup_diagnostics import os_error_diagnostic
 from palworld_pal_editor.storage.discovery import XgpSourceCatalog
 from palworld_pal_editor.storage.steam import (
     SteamDirectoryAdapter,
@@ -122,6 +124,18 @@ def _assert_backup_diagnostics(
     assert error.details["retryable"] is True
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows error-code regression")
+def test_windows_path_too_long_error_is_not_reported_as_source_missing() -> None:
+    error = OSError(
+        errno.ENOENT,
+        "The filename or extension is too long",
+        "C:\\long-path",
+        206,
+    )
+
+    assert os_error_diagnostic(error) == (206, "path_too_long")
+
+
 def test_steam_backup_covers_complete_source_and_reloads_verified_manifest(
     backup_test_root: Path,
 ) -> None:
@@ -141,11 +155,129 @@ def test_steam_backup_covers_complete_source_and_reloads_verified_manifest(
         assert sha256_file(backup_file) == snapshot.sha256
 
 
+def test_steam_backup_uses_compact_path_for_deep_source_files(
+    backup_test_root: Path,
+) -> None:
+    source_root = backup_test_root / ("A" * 32)
+    (source_root / "Players").mkdir(parents=True)
+    (source_root / "Level.sav").write_bytes(b"steam-before")
+    old_operation = (
+        "20260720T171349.927412Z-"
+        "9f2ae431-6743-4c17-aa5e-429d58e9866f"
+    )
+    relative = (
+        PurePosixPath(old_operation)
+        / "files"
+        / "Players"
+        / f"{'C' * 32}.sav"
+    )
+    nested_file = source_root / Path(relative.as_posix())
+    nested_file.parent.mkdir(parents=True)
+    nested_file.write_bytes(b"nested-backup-shaped-file")
+    adapter = SteamDirectoryAdapter()
+    opened = adapter.open(make_steam_source(source_root))
+    stage = backup_test_root / "steam-stage"
+    stage.mkdir()
+    (stage / "Level.sav").write_bytes(b"steam-after")
+    request = StorageCommitRequest(
+        opened=opened,
+        staged_workspace=stage,
+        changed_files=(PurePosixPath("Level.sav"),),
+        expected_revision=1,
+        verify_file=lambda _path, _relative: None,
+    )
+
+    result = adapter.commit(request)
+
+    assert result.backup_path is not None
+    compact_root = source_root.parent / ".pwe-backup"
+    compact_parts = result.backup_path.relative_to(compact_root).parts
+    assert len(compact_parts) == 2
+    assert len(compact_parts[0]) == 12
+    assert (
+        result.backup_path / "files" / Path(relative.as_posix())
+    ).read_bytes() == b"nested-backup-shaped-file"
+    assert (source_root / "Level.sav").read_bytes() == b"steam-after"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows long-path regression")
+def test_steam_backup_and_recovery_support_paths_beyond_max_path(
+    backup_test_root: Path,
+) -> None:
+    source_root = backup_test_root / ("A" * 32)
+    source_root.mkdir()
+    operation_placeholder = "20260101T000000Z-" + "0" * 32
+    projected_files_root = (
+        source_root.parent
+        / ".pwe-backup"
+        / ("0" * 12)
+        / operation_placeholder
+        / "files"
+    )
+    filename = f"{'C' * 32}.sav"
+    projected_without_padding = projected_files_root / filename
+    padding_length = 270 - len(str(projected_without_padding)) - 1
+    assert padding_length > 0
+    relative = PurePosixPath("x" * padding_length) / filename
+    source_file = source_root / Path(relative.as_posix())
+    projected_backup_file = projected_files_root / Path(relative.as_posix())
+    assert len(str(source_file)) < 260
+    assert len(str(projected_backup_file)) == 270
+    source_file.parent.mkdir(parents=True)
+    source_file.write_bytes(b"steam-before")
+    adapter = SteamDirectoryAdapter()
+    opened = adapter.open(make_steam_source(source_root))
+    stage = backup_test_root / "steam-stage"
+    staged_file = stage / Path(relative.as_posix())
+    staged_file.parent.mkdir(parents=True)
+    staged_file.write_bytes(b"steam-after")
+
+    def fail_after_replace(stage_name: str, _context: dict[str, object]) -> None:
+        if stage_name == "after_replace":
+            raise OSError("injected failure after long-path replace")
+
+    request = StorageCommitRequest(
+        opened=opened,
+        staged_workspace=stage,
+        changed_files=(relative,),
+        expected_revision=1,
+        verify_file=lambda _path, _relative: None,
+        failure_hook=fail_after_replace,
+    )
+
+    backup_root = source_root.parent / ".pwe-backup"
+    try:
+        with pytest.raises(DomainError) as raised:
+            adapter.commit(request)
+
+        assert raised.value.code == "WRITE_FAILED"
+        assert raised.value.details["recovery_status"] == "restored"
+        assert not str(raised.value.details["backup_path"]).startswith(
+            "\\\\?\\"
+        )
+        backup_file = (
+            Path(str(raised.value.details["backup_path"]))
+            / "files"
+            / Path(relative.as_posix())
+        )
+        assert len(str(backup_file)) == 270
+        assert (
+            steam_module._native_path(backup_file).read_bytes()
+            == b"steam-before"
+        )
+        assert source_file.read_bytes() == b"steam-before"
+    finally:
+        native_backup_root = steam_module._native_path(backup_root)
+        if native_backup_root.exists():
+            steam_module.shutil.rmtree(native_backup_root)
+
+
 @pytest.mark.parametrize(
     "backup_directory_name",
     [
         "Palworld-Pal-Editor-Backup",
         ".Palworld-Pal-Editor-Backup",
+        ".pwe-backup",
     ],
 )
 def test_steam_backup_excludes_editor_backup_directories(
@@ -223,6 +355,7 @@ def test_backup_directory_creation_failure_is_diagnostic_and_precommit(
         (errno.ENOSPC, "disk_space"),
         (errno.EACCES, "permission"),
         (errno.EBUSY, "file_busy"),
+        (errno.ENAMETOOLONG, "path_too_long"),
     ],
 )
 @pytest.mark.parametrize(

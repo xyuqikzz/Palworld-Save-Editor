@@ -80,6 +80,9 @@ const SAVE_ERROR_ACTION_KEYS = Object.freeze({
     NETWORK_NO_RESPONSE: "Save_Network_No_Response_Action",
     CLIENT_REQUEST_FAILED: "Save_Client_Request_Failed_Action",
 });
+const SAVE_ERROR_CATEGORY_ACTION_KEYS = Object.freeze({
+    path_too_long: "Save_Backup_Path_Too_Long_Action",
+});
 
 function getInitialSaveSourceMode() {
     const mode = localStorage.getItem(SAVE_SOURCE_MODE_STORAGE_KEY);
@@ -983,12 +986,19 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     function acceptResponse(response, context, { command = false } = {}) {
         if (!response || response.status !== 0) {
             const errorCode = response?.error?.code || "REQUEST_FAILED";
+            const errorDetails = response?.error?.details || {};
             const messageKey = (
                 errorCode.startsWith("WGS_")
                 || errorCode.startsWith("MIGRATION_")
                 || LOCALIZED_SAVE_ERROR_CODES.has(errorCode)
             ) ? errorCode : null;
-            const actionKey = SAVE_ERROR_ACTION_KEYS[errorCode] || null;
+            const actionKey = (
+                SAVE_ERROR_CATEGORY_ACTION_KEYS[
+                    errorDetails.os_error_category
+                ]
+                || SAVE_ERROR_ACTION_KEYS[errorCode]
+                || null
+            );
             const localizedMessage = messageKey
                 ? getTranslatedText(messageKey)
                 : response?.msg || "The operation failed.";
@@ -999,7 +1009,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 action: actionKey ? getTranslatedText(actionKey) : null,
                 actionKey,
                 code: errorCode,
-                details: response?.error?.details || {},
+                details: errorDetails,
                 retryable: Boolean(response?.error?.retryable),
             };
             return false;

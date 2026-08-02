@@ -441,6 +441,33 @@ for (const { platform, code } of [
   })
 }
 
+test('path-too-long backup failures surface a specific recovery action', async () => {
+  const store = makeLoadedDirtyStore({ platform: 'steam' })
+  axios.post = async () => ({
+    data: {
+      status: 1,
+      msg: 'backup path too long',
+      error: {
+        code: 'BACKUP_FAILED',
+        details: {
+          backup_path: 'D:/failed-backup',
+          phase: 'copy_file',
+          failed_file: 'Players/player.sav',
+          os_error_code: 206,
+          os_error_category: 'path_too_long',
+          retryable: true,
+        },
+        retryable: true,
+      },
+    },
+  })
+
+  assert.equal(await store.writeSave(), false)
+  assert.equal(store.LAST_ERROR.code, 'BACKUP_FAILED')
+  assert.match(store.LAST_ERROR.action, /shorter local path/i)
+  assert.equal(store.PENDING_CHANGE_COUNT, 2)
+})
+
 for (const { platform, code, messagePattern, actionPattern } of [
   {
     platform: 'xgp',

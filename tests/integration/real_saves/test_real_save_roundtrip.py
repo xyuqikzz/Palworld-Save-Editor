@@ -227,6 +227,7 @@ class RealSaveRoundTripTests(unittest.TestCase):
             source,
             destination,
             ignore=shutil.ignore_patterns(
+                ".pwe-backup",
                 ".Palworld-Pal-Editor-Backup",
                 "Palworld-Pal-Editor-Backup",
                 "backup",

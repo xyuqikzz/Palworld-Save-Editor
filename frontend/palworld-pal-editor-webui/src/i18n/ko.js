@@ -395,6 +395,7 @@ export default {
     NETWORK_NO_RESPONSE: "편집기 로컬 백엔드가 응답하지 않습니다. 확인된 백업 실패가 아닙니다.",
     CLIENT_REQUEST_FAILED: "화면에서 저장 요청을 보내지 못했습니다.",
     Save_Backup_Failure_Action: "디스크 여유 공간, 백업 폴더 권한, 보안 소프트웨어 차단, Palworld 또는 Xbox 클라우드 동기화의 파일 사용 여부를 확인하세요. 진단을 위해 실패한 백업 폴더를 보관하세요.",
+    Save_Backup_Path_Too_Long_Action: "백업 경로가 여전히 Windows에서 지원하는 길이를 초과합니다. 저장 파일을 더 짧은 로컬 경로로 옮긴 후 다시 시도하세요. 저장 데이터는 기록되지 않았습니다.",
     Save_Wgs_Running_Action: "Palworld를 완전히 종료하고 Xbox 클라우드 동기화가 멈춘 뒤 다시 시도하세요.",
     Save_Source_Changed_Action: "저장 원본을 다시 불러오고 보류 중인 변경을 확인한 뒤 저장하세요.",
     Save_Network_No_Response_Action: "로컬 백엔드가 실행 중인지 확인하고 다시 시도하기 전에 로컬 로그를 확인하세요. 저장 결과는 알 수 없습니다.",

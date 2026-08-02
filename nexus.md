@@ -168,6 +168,7 @@ The advanced Monaco JSON editor can open [b]Level.sav[/b] and [b]Players/*.sav[/
 [*]Stage writes through temporary files before replacing save data
 [*]Validate and reopen supported saves before completing a transaction
 [*]Create verified backups for supported save operations
+[*]Support extended-length Windows paths during save staging, Steam backup creation, and reopen verification; paths that still exceed platform limits are blocked before save data is written and report a specific recovery action
 [*]Detect source changes and reject stale writes
 [*]Preserve recovery information when a write fails
 [*]Keep WGS writes locked to the original selected slot

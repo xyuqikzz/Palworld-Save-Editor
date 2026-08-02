@@ -28,10 +28,11 @@ from palworld_pal_editor.domain.models import (
     SaveResult,
     StorageCommitRequest,
 )
+from palworld_pal_editor.storage.steam import _native_path
 
-from .local_data import LOCAL_DATA_RELATIVE_PATH, LocalDataDocument
 from .character_reference_repair import CharacterReferenceRepairer
 from .fast_travel import PlayerFastTravelData
+from .local_data import LOCAL_DATA_RELATIVE_PATH, LocalDataDocument
 from .save_session import SaveSession
 
 
@@ -103,9 +104,15 @@ class SaveWriter:
         try:
             if session.platform is SavePlatform.STEAM:
                 if target_path == session.source.resolve():
-                    staging_path.mkdir(parents=False, exist_ok=False)
+                    _native_path(staging_path).mkdir(
+                        parents=False,
+                        exist_ok=False,
+                    )
                 else:
-                    shutil.copytree(session.workspace, staging_path)
+                    shutil.copytree(
+                        _native_path(session.workspace),
+                        _native_path(staging_path),
+                    )
             self._serialize_to_staging(session, staging_path, files)
             self._verify_staged(staging_path, files, session=session)
             commit = session.storage.commit(
@@ -137,8 +144,9 @@ class SaveWriter:
             raise
 
         session.mark_saved(expected_revision)
-        if staging_path.exists():
-            shutil.rmtree(staging_path)
+        native_staging_path = _native_path(staging_path)
+        if native_staging_path.exists():
+            shutil.rmtree(native_staging_path)
         return SaveResult(
             revision=session.revision,
             backup_path=str(commit.backup_path) if commit.backup_path else None,
@@ -168,7 +176,10 @@ class SaveWriter:
         if expected_revision != session.revision:
             raise stale_revision(expected_revision, session.revision)
         target_path = Path(target).resolve()
-        if target_path.exists() or not target_path.parent.is_dir():
+        if (
+            _native_path(target_path).exists()
+            or not _native_path(target_path.parent).is_dir()
+        ):
             raise DomainError(
                 code="INVALID_SAVE_TARGET",
                 message="The Steam export target must be a new directory with an existing parent.",
@@ -177,21 +188,25 @@ class SaveWriter:
             )
         staging = target_path.parent / f".{target_path.name}.steam-export-{uuid.uuid4()}"
         try:
-            shutil.copytree(session.workspace, staging)
+            shutil.copytree(
+                _native_path(session.workspace),
+                _native_path(staging),
+            )
             files = self._modified_files(session) if session.changes() else []
             if files:
                 self._validate_global_invariants(session)
                 self._serialize_to_staging(session, staging, files)
                 self._verify_staged(staging, files, session=session)
-            os.replace(staging, target_path)
+            os.replace(_native_path(staging), _native_path(target_path))
             self._verify_staged(
                 target_path,
                 files or ["Level.sav"],
                 session=session if files else None,
             )
         except Exception as error:
-            if staging.exists():
-                shutil.rmtree(staging, ignore_errors=True)
+            native_staging = _native_path(staging)
+            if native_staging.exists():
+                shutil.rmtree(native_staging, ignore_errors=True)
             if isinstance(error, DomainError):
                 raise
             raise DomainError(
@@ -297,7 +312,8 @@ class SaveWriter:
         try:
             for relative_path in files:
                 output = staging_path / Path(relative_path)
-                output.parent.mkdir(parents=True, exist_ok=True)
+                native_output = _native_path(output)
+                native_output.parent.mkdir(parents=True, exist_ok=True)
                 if relative_path == "Level.sav":
                     gvas = deepcopy(manager.gvas_file)
                     data = compress_gvas_to_sav(
@@ -322,7 +338,7 @@ class SaveWriter:
                         deepcopy(player_gvas).write(PLAYER_SKIP_PROPERTIES),
                         compression_times,
                     )
-                with output.open("wb") as stream:
+                with native_output.open("wb") as stream:
                     stream.write(data)
                 self._fail("after_serialize", {"path": relative_path})
         except Exception as error:
@@ -552,7 +568,9 @@ class SaveWriter:
         relative_path: str,
     ) -> GvasFile:
         if relative_path == LOCAL_DATA_RELATIVE_PATH:
-            return session.local_data.verify_reloaded_file(path)
+            return session.local_data.verify_reloaded_file(
+                _native_path(path)
+            )
         allowed_dynamic_item_issues = (
             session.dynamic_item_issue_baseline
             if relative_path == "Level.sav"
@@ -605,6 +623,7 @@ class SaveWriter:
         allowed_dynamic_item_issues: tuple[str, ...] = (),
         validate_semantics: bool = True,
     ) -> GvasFile:
+        path = _native_path(path)
         if relative_path == LOCAL_DATA_RELATIVE_PATH:
             document = LocalDataDocument.open_file(path)
             document.require_resettable()

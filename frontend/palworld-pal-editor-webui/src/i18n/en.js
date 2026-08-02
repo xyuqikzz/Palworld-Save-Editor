@@ -395,6 +395,7 @@ export default {
     NETWORK_NO_RESPONSE: "The editor backend did not respond. This is not a confirmed backup failure.",
     CLIENT_REQUEST_FAILED: "The save request could not be sent by the interface.",
     Save_Backup_Failure_Action: "Check free disk space, backup-directory permissions, security software interference, and whether Palworld or Xbox cloud sync still has files open. Keep the failed backup directory for diagnosis, then retry.",
+    Save_Backup_Path_Too_Long_Action: "The backup path is still too long for Windows. Move the save to a shorter local path and retry; no save data was written.",
     Save_Wgs_Running_Action: "Close Palworld and wait for Xbox cloud synchronization to become idle before retrying.",
     Save_Source_Changed_Action: "Reload the save source and review pending changes before attempting another save.",
     Save_Network_No_Response_Action: "Check that the local editor backend is running and reachable. Inspect local logs before retrying; the save result is unknown.",

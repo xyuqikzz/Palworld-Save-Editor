@@ -28,16 +28,27 @@ from palworld_pal_editor.storage.backup_diagnostics import (
 
 _STEAM_BACKUP_DIRECTORY_NAMES = frozenset(
     {
+        ".pwe-backup",
         "backup",
         "palworld-pal-editor-backup",
         ".palworld-pal-editor-backup",
     }
 )
+_STEAM_BACKUP_ROOT_NAME = ".pwe-backup"
+
+
+def _native_path(path: str | Path) -> Path:
+    value = os.path.abspath(path)
+    if os.name != "nt" or value.startswith("\\\\?\\"):
+        return Path(value)
+    if value.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + value[2:])
+    return Path("\\\\?\\" + value)
 
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as stream:
+    with _native_path(path).open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -45,19 +56,25 @@ def sha256_file(path: Path) -> str:
 
 def snapshot_tree(root: Path, *, reject_symlinks: bool = False) -> StorageSnapshot:
     files: list[StorageFileSnapshot] = []
-    if root.is_dir():
-        for path in sorted(root.rglob("*")):
+    native_root = _native_path(root)
+    if native_root.is_dir():
+        for path in sorted(native_root.rglob("*")):
             if reject_symlinks and path.is_symlink():
                 raise OSError("Symbolic links are not allowed in a WGS source tree")
             if not path.is_file():
                 continue
             stat = path.stat()
+            relative_path = PurePosixPath(
+                path.relative_to(native_root).as_posix()
+            )
             files.append(
                 StorageFileSnapshot(
-                    relative_path=PurePosixPath(path.relative_to(root).as_posix()),
+                    relative_path=relative_path,
                     size=stat.st_size,
                     mtime_ns=stat.st_mtime_ns,
-                    sha256=sha256_file(path),
+                    sha256=sha256_file(
+                        root / Path(relative_path.as_posix())
+                    ),
                 )
             )
     return StorageSnapshot(files=tuple(files))
@@ -75,6 +92,26 @@ def make_steam_source(path: str | Path) -> SaveSource:
         canonical_path=resolved,
         source_id="steam-" + digest,
         display_name=resolved.name or "Steam save",
+    )
+
+
+def _new_steam_backup_path(
+    source: SaveSource,
+    operation_time: datetime,
+    operation_id: uuid.UUID,
+) -> Path:
+    source_token = hashlib.sha256(
+        source.source_id.encode("utf-8")
+    ).hexdigest()[:12]
+    operation_name = (
+        f"{operation_time.strftime('%Y%m%dT%H%M%SZ')}-"
+        f"{operation_id.hex}"
+    )
+    return (
+        source.canonical_path.resolve().parent
+        / _STEAM_BACKUP_ROOT_NAME
+        / source_token
+        / operation_name
     )
 
 
@@ -107,20 +144,24 @@ def snapshot_active_steam_tree(
     reject_symlinks: bool = False,
 ) -> StorageSnapshot:
     files: list[StorageFileSnapshot] = []
-    if root.is_dir():
+    native_root = _native_path(root)
+    if native_root.is_dir():
         for path in _iter_steam_source_files(
-            root,
+            native_root,
             reject_symlinks=reject_symlinks,
         ):
             stat = path.stat()
+            relative_path = PurePosixPath(
+                path.relative_to(native_root).as_posix()
+            )
             files.append(
                 StorageFileSnapshot(
-                    relative_path=PurePosixPath(
-                        path.relative_to(root).as_posix()
-                    ),
+                    relative_path=relative_path,
                     size=stat.st_size,
                     mtime_ns=stat.st_mtime_ns,
-                    sha256=sha256_file(path),
+                    sha256=sha256_file(
+                        root / Path(relative_path.as_posix())
+                    ),
                 )
             )
     return StorageSnapshot(files=tuple(files))
@@ -215,14 +256,15 @@ class SteamDirectoryAdapter:
             )
         relative = PurePosixPath(str(relative_path).replace("\\", "/"))
         physical = Path(physical_path).resolve()
-        if not physical.is_file():
+        native_physical = _native_path(physical)
+        if not native_physical.is_file():
             raise DomainError(
                 code="LOCAL_DATA_MISSING",
                 message="The selected logical save file does not exist.",
                 details={"path": str(physical)},
                 http_status=404,
             )
-        stat = physical.stat()
+        stat = native_physical.stat()
         opened.logical_files[relative.as_posix()] = LogicalSaveFile(
             relative_path=relative,
             physical_identity=str(physical),
@@ -299,7 +341,11 @@ class SteamDirectoryAdapter:
         for relative in changed:
             expected = opened.logical_files.get(relative)
             path = self.logical_source_path(opened, relative)
-            if expected is None or not path.is_file() or sha256_file(path) != expected.sha256:
+            if (
+                expected is None
+                or not _native_path(path).is_file()
+                or sha256_file(path) != expected.sha256
+            ):
                 raise DomainError(
                     code="SAVE_TARGET_CHANGED",
                     message="A save file changed on disk after this session opened.",
@@ -311,14 +357,14 @@ class SteamDirectoryAdapter:
             relative: sha256_file(request.staged_workspace / Path(relative))
             for relative in changed
         }
-        if target != source and target.exists():
+        if target != source and _native_path(target).exists():
             raise DomainError(
                 code="SAVE_TARGET_ALREADY_EXISTS",
                 message="Saving to a different existing directory is not supported safely.",
                 field="target",
                 http_status=409,
             )
-        if not target.parent.exists():
+        if not _native_path(target.parent).exists():
             raise DomainError(
                 code="INVALID_SAVE_TARGET",
                 message="The target parent directory does not exist.",
@@ -326,12 +372,11 @@ class SteamDirectoryAdapter:
                 http_status=400,
             )
 
-        operation_id = str(uuid.uuid4())
-        backup_path = (
-            source.parent
-            / ".Palworld-Pal-Editor-Backup"
-            / source.name
-            / f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')}-{operation_id}"
+        operation_id = uuid.uuid4()
+        backup_path = _new_steam_backup_path(
+            opened.source,
+            datetime.now(timezone.utc),
+            operation_id,
         )
         manifest_path = backup_path / "manifest.json"
         progress: list[str] = []
@@ -377,7 +422,7 @@ class SteamDirectoryAdapter:
                 current = self.logical_source_path(opened, relative)
                 if (
                     expected is None
-                    or not current.is_file()
+                    or not _native_path(current).is_file()
                     or sha256_file(current) != expected.sha256
                 ):
                     raise source_changed(
@@ -391,15 +436,21 @@ class SteamDirectoryAdapter:
                         failed_file=relative,
                     )
             if target != source:
-                os.replace(request.staged_workspace, target)
+                os.replace(
+                    _native_path(request.staged_workspace),
+                    _native_path(target),
+                )
                 progress.append(".")
                 self._fail(request, "after_replace", {"path": str(target)})
             else:
                 for relative in changed:
                     staged = request.staged_workspace / Path(relative)
                     destination = self.logical_source_path(opened, relative)
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    os.replace(staged, destination)
+                    _native_path(destination.parent).mkdir(
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    os.replace(_native_path(staged), _native_path(destination))
                     progress.append(relative)
                     self._fail(
                         request,
@@ -507,21 +558,23 @@ class SteamDirectoryAdapter:
         failed_file: str | None = None
         try:
             files_root = backup_path / "files"
-            files_root.mkdir(parents=True, exist_ok=False)
+            _native_path(files_root).mkdir(parents=True, exist_ok=False)
             manifest: list[dict[str, object]] = []
             for item in snapshot.files:
                 relative = item.relative_path.as_posix()
                 failed_file = relative
                 source_file = source / Path(relative)
                 backup_file = files_root / Path(relative)
+                native_source_file = _native_path(source_file)
+                native_backup_file = _native_path(backup_file)
                 phase = "create_backup_directory"
-                backup_file.parent.mkdir(parents=True, exist_ok=True)
+                native_backup_file.parent.mkdir(parents=True, exist_ok=True)
                 phase = "copy_file"
                 self._fail(request, "before_backup_copy", {"path": relative})
                 try:
-                    shutil.copy2(source_file, backup_file)
+                    shutil.copy2(native_source_file, native_backup_file)
                 except FileNotFoundError as error:
-                    if not source_file.is_file():
+                    if not native_source_file.is_file():
                         raise source_changed(
                             code="SAVE_TARGET_CHANGED",
                             message=(
@@ -535,7 +588,7 @@ class SteamDirectoryAdapter:
                         ) from error
                     raise
                 try:
-                    source_stat = source_file.stat()
+                    source_stat = native_source_file.stat()
                     source_hash = sha256_file(source_file)
                 except OSError as error:
                     raise source_changed(
@@ -558,10 +611,10 @@ class SteamDirectoryAdapter:
                         failed_file=relative,
                     )
                 phase = "verify_copy"
-                copied = backup_file.stat()
+                copied = native_backup_file.stat()
                 if (
                     copied.st_size != item.size
-                    or sha256_file(backup_file) != item.sha256
+                    or sha256_file(native_backup_file) != item.sha256
                 ):
                     raise BackupVerificationError(
                         "Steam backup file verification failed"
@@ -590,16 +643,18 @@ class SteamDirectoryAdapter:
                     backup_file = self._backup_file_path(
                         opened, backup_path, relative
                     )
+                    native_source_file = _native_path(source_file)
+                    native_backup_file = _native_path(backup_file)
                     phase = "create_backup_directory"
-                    backup_file.parent.mkdir(parents=True, exist_ok=True)
+                    native_backup_file.parent.mkdir(parents=True, exist_ok=True)
                     phase = "copy_file"
                     self._fail(
                         request,
                         "before_backup_copy",
                         {"path": relative, "external": True},
                     )
-                    shutil.copy2(source_file, backup_file)
-                    source_stat = source_file.stat()
+                    shutil.copy2(native_source_file, native_backup_file)
+                    source_stat = native_source_file.stat()
                     source_hash = sha256_file(source_file)
                     if (
                         source_stat.st_size != logical.size
@@ -617,8 +672,8 @@ class SteamDirectoryAdapter:
                         )
                     phase = "verify_copy"
                     if (
-                        backup_file.stat().st_size != logical.size
-                        or sha256_file(backup_file) != logical.sha256
+                        native_backup_file.stat().st_size != logical.size
+                        or sha256_file(native_backup_file) != logical.sha256
                     ):
                         raise BackupVerificationError(
                             "External Steam backup verification failed"
@@ -653,7 +708,9 @@ class SteamDirectoryAdapter:
             phase = "write_manifest"
             self._write_json_durable(manifest_path, document)
             phase = "read_manifest"
-            manifest_text = manifest_path.read_text(encoding="utf-8")
+            manifest_text = _native_path(manifest_path).read_text(
+                encoding="utf-8"
+            )
             phase = "verify_manifest"
             try:
                 loaded = json.loads(manifest_text)
@@ -683,7 +740,8 @@ class SteamDirectoryAdapter:
         path: Path,
         document: dict[str, object],
     ) -> None:
-        temporary = path.with_name(
+        native_path = _native_path(path)
+        temporary = native_path.with_name(
             f".{path.name}.{uuid.uuid4()}.tmp"
         )
         with temporary.open("w", encoding="utf-8", newline="\n") as stream:
@@ -691,8 +749,8 @@ class SteamDirectoryAdapter:
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
-        self._fsync_directory(path.parent)
+        os.replace(temporary, native_path)
+        self._fsync_directory(native_path.parent)
 
     def _fsync_directory(self, path: Path) -> None:
         try:
@@ -719,7 +777,7 @@ class SteamDirectoryAdapter:
         try:
             self._fail(request, "before_recovery", {"progress": list(progress)})
             if target != source:
-                if target.exists():
+                if _native_path(target).exists():
                     return False
                 return True
             for relative in reversed(progress):
@@ -730,10 +788,12 @@ class SteamDirectoryAdapter:
                 temporary = destination.with_name(
                     f".{destination.name}.restore-{uuid.uuid4()}"
                 )
-                shutil.copy2(backup_file, temporary)
+                native_backup_file = _native_path(backup_file)
+                native_temporary = _native_path(temporary)
+                shutil.copy2(native_backup_file, native_temporary)
                 if sha256_file(temporary) != sha256_file(backup_file):
                     raise OSError("Steam restore hash mismatch")
-                os.replace(temporary, destination)
+                os.replace(native_temporary, _native_path(destination))
             return all(
                 sha256_file(self.logical_source_path(opened, relative))
                 == sha256_file(

@@ -37,6 +37,11 @@ _FILE_BUSY_ERRNOS = {
     )
     if value is not None
 }
+_PATH_TOO_LONG_ERRNOS = {
+    value
+    for value in (getattr(errno, "ENAMETOOLONG", None),)
+    if value is not None
+}
 _SOURCE_MISSING_ERRNOS = {
     value
     for value in (
@@ -49,6 +54,7 @@ _SOURCE_MISSING_ERRNOS = {
 _WINDOWS_DISK_SPACE_CODES = {39, 112}
 _WINDOWS_PERMISSION_CODES = {5, 19, 65, 1314}
 _WINDOWS_FILE_BUSY_CODES = {32, 33}
+_WINDOWS_PATH_TOO_LONG_CODES = {206}
 _WINDOWS_SOURCE_MISSING_CODES = {2, 3}
 
 
@@ -86,6 +92,11 @@ def os_error_diagnostic(
         return error_code, "permission"
     if windows_code in _WINDOWS_FILE_BUSY_CODES or error.errno in _FILE_BUSY_ERRNOS:
         return error_code, "file_busy"
+    if (
+        windows_code in _WINDOWS_PATH_TOO_LONG_CODES
+        or error.errno in _PATH_TOO_LONG_ERRNOS
+    ):
+        return error_code, "path_too_long"
     if (
         windows_code in _WINDOWS_SOURCE_MISSING_CODES
         or error.errno in _SOURCE_MISSING_ERRNOS

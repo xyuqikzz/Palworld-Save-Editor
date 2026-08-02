@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 import errno
+import os
 from pathlib import Path
+import shutil
+import tempfile
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
@@ -27,6 +30,7 @@ from palworld_pal_editor.core.save_manager import (
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.storage.discovery import XgpSourceCatalog
+from palworld_pal_editor.storage import steam as steam_storage
 from palworld_pal_editor.storage.xgp import XgpWgsAdapter
 from tests.wgs_fixture import make_user_directory
 
@@ -278,6 +282,48 @@ class SaveWriterTests(unittest.TestCase):
                 read_dynamic_issue_codes(root / "Level.sav"),
             )
             self.assertTrue(result.staged_reload_verified)
+
+    @unittest.skipUnless(os.name == "nt", "Windows extended-path regression")
+    def test_steam_save_writer_stages_and_reopens_beyond_max_path(self) -> None:
+        temp_root = Path(tempfile.mkdtemp(prefix="pwe-save-writer-longpath-")).resolve()
+        try:
+            target_parent = temp_root
+            desired_parent_length = 233
+            index = 0
+            while len(str(target_parent)) + 31 <= desired_parent_length - 8:
+                index += 1
+                target_parent /= f"segment-{index:02d}-" + "x" * 19
+            remaining = desired_parent_length - len(str(target_parent)) - 1
+            target_parent /= "x" * remaining
+            root = target_parent / "save"
+            steam_storage._native_path(root).mkdir(parents=True)
+
+            self.assertLess(len(str(root / "Level.sav")), 260)
+            projected_staging = root.parent / (
+                f".{root.name}.pal-editor-staging-" + "0" * 36
+            )
+            self.assertGreater(len(str(projected_staging)), 260)
+            session = self.make_session(root)
+
+            result = SaveWriter().save(session, root, 1)
+
+            backup_file = Path(result.backup_path) / "files" / "Level.sav"
+            self.assertGreater(len(str(backup_file)), 260)
+            self.assertEqual(
+                1,
+                read_counter(steam_storage._native_path(backup_file)),
+            )
+            self.assertEqual(2, read_counter(root / "Level.sav"))
+            self.assertEqual(
+                2,
+                read_counter(
+                    steam_storage._native_path(root / "Level.sav")
+                ),
+            )
+        finally:
+            native_temp_root = steam_storage._native_path(temp_root)
+            if native_temp_root.exists():
+                shutil.rmtree(native_temp_root)
 
     def test_save_rejects_new_dangling_dynamic_reference(self) -> None:
         with TemporaryDirectory() as temp:

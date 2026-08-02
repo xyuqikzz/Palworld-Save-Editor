@@ -395,6 +395,7 @@ export default {
     NETWORK_NO_RESPONSE: "エディターのローカルバックエンドが応答しません。バックアップ失敗が確認された状態ではありません。",
     CLIENT_REQUEST_FAILED: "画面から保存要求を送信できませんでした。",
     Save_Backup_Failure_Action: "空き容量、バックアップ先の権限、セキュリティソフトの妨害、Palworld または Xbox クラウド同期によるファイル使用を確認してください。調査用に失敗したバックアップフォルダーを保持してください。",
+    Save_Backup_Path_Too_Long_Action: "バックアップ パスが Windows で扱える長さを超えています。セーブをより短いローカル パスへ移動して再試行してください。データは書き込まれていません。",
     Save_Wgs_Running_Action: "Palworld を完全に終了し、Xbox クラウド同期が停止してから再試行してください。",
     Save_Source_Changed_Action: "セーブ元を再読み込みし、保留中の変更を確認してから再保存してください。",
     Save_Network_No_Response_Action: "ローカルバックエンドが動作しているか確認し、再試行前にローカルログを確認してください。保存結果は不明です。",

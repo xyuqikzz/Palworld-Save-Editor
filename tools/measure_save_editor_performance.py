@@ -129,6 +129,7 @@ def _copy_fixture(source: Path, destination: Path) -> Path:
         source,
         destination,
         ignore=shutil.ignore_patterns(
+            ".pwe-backup",
             ".Palworld-Pal-Editor-Backup",
             "Palworld-Pal-Editor-Backup",
             "backup",

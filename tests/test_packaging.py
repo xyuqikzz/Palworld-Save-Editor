@@ -147,10 +147,10 @@ class PackagingTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         lockfile = (PROJECT_ROOT / "uv.lock").read_text(encoding="utf-8")
 
-        self.assertEqual("1.1.1", pyproject["project"]["version"])
-        self.assertIn('VERSION = "1.1.1"', config)
+        self.assertEqual("1.1.2", pyproject["project"]["version"])
+        self.assertIn('VERSION = "1.1.2"', config)
         self.assertIn(
-            'name = "palworld-save-editor"\nversion = "1.1.1"',
+            'name = "palworld-save-editor"\nversion = "1.1.2"',
             lockfile,
         )
 

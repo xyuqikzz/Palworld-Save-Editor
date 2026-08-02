@@ -395,6 +395,7 @@ export default {
     NETWORK_NO_RESPONSE: "编辑器后端没有响应；这不代表已经确认发生备份失败。",
     CLIENT_REQUEST_FAILED: "界面未能发送保存请求。",
     Save_Backup_Failure_Action: "请检查磁盘剩余空间、备份目录权限、安全软件拦截，以及 Palworld 或 Xbox 云同步是否仍占用文件。保留失败的备份目录用于排查，处理后再重试。",
+    Save_Backup_Path_Too_Long_Action: "备份路径仍然超过 Windows 支持的长度。请将存档移动到更短的本地路径后重试；本次没有写入任何存档数据。",
     Save_Wgs_Running_Action: "请完全退出 Palworld，并等待 Xbox 云同步停止后再重试。",
     Save_Source_Changed_Action: "请重新加载存档来源，核对待保存改动后再尝试保存。",
     Save_Network_No_Response_Action: "请确认本地编辑器后端仍在运行且可访问，并先检查本地日志；当前保存结果未知。",
