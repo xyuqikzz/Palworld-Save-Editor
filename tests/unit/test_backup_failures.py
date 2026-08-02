@@ -27,7 +27,7 @@ from tests.wgs_fixture import make_user_directory
 @pytest.fixture
 def backup_test_root():
     with TemporaryDirectory(prefix="pwe-backup-test-") as temp:
-        yield Path(temp)
+        yield Path(temp).resolve()
 
 
 def _steam_case(base: Path):
