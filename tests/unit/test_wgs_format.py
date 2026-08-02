@@ -8,6 +8,7 @@ import pytest
 from palworld_pal_editor.storage.wgs_format import (
     encode_container,
     encode_index,
+    encode_palworld_payload,
     normalize_palworld_payload,
     parse_container,
     parse_index,
@@ -121,11 +122,15 @@ def test_cnk0_payload_normalization_is_exact_and_direct_payloads_are_unchanged()
     direct = normalize_palworld_payload(standard)
     assert direct.data == standard
     assert direct.encoding == "direct"
+    assert encode_palworld_payload(direct.data, direct.encoding, direct.header_prefix) == standard
 
-    opaque_prefix = b"\x32\x5f\x00\x00" + struct.pack("<I", 1)
-    wrapped = normalize_palworld_payload(opaque_prefix + b"CNK0" + standard)
+    opaque_prefix = b"\x32\x5f\x00\x00"
+    raw_payload = opaque_prefix + struct.pack("<I", 1) + b"CNK0" + standard
+    wrapped = normalize_palworld_payload(raw_payload)
     assert wrapped.data == standard
     assert wrapped.encoding == "cnk0"
+    assert wrapped.header_prefix == opaque_prefix
+    assert encode_palworld_payload(wrapped.data, wrapped.encoding, wrapped.header_prefix) == raw_payload
 
 
 @pytest.mark.parametrize(

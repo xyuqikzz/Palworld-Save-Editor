@@ -21,6 +21,7 @@ from palworld_pal_editor.domain.models import StorageCommitRequest
 from palworld_pal_editor.storage.discovery import XgpSourceCatalog
 from palworld_pal_editor.storage.steam import sha256_file, snapshot_tree
 from palworld_pal_editor.storage.wgs_format import (
+    normalize_palworld_payload,
     parse_container,
     parse_index,
     select_payload_folder,
@@ -106,7 +107,8 @@ def _sav(gvas: GvasFile) -> bytes:
 
 
 def _read_gvas(path: Path) -> GvasFile:
-    raw, _compression = decompress_sav_to_gvas(path.read_bytes())
+    normalized = normalize_palworld_payload(path.read_bytes())
+    raw, _compression = decompress_sav_to_gvas(normalized.data)
     return GvasFile.read(raw, PALWORLD_TYPE_HINTS, MAIN_SKIP_PROPERTIES)
 
 
@@ -436,7 +438,7 @@ def test_xgp_commit_replaces_cnk0_level_with_verified_standard_payload() -> None
         )
 
         after = snapshot_tree(user).by_path()
-        assert (user / Path(level_relative)).read_bytes() == replacement
+        assert (user / Path(level_relative)).read_bytes() == _cnk0_payload(replacement)
         assert _counter(user / Path(level_relative)) == 2
         assert after[player_relative].sha256 == before[player_relative].sha256
         adapter.close(opened)

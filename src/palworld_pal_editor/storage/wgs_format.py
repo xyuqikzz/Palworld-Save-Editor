@@ -26,6 +26,7 @@ class WgsFormatError(ValueError):
 class NormalizedPayload:
     data: bytes
     encoding: str
+    header_prefix: bytes = b"\x00\x00\x00\x00"
 
 
 def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
@@ -38,7 +39,7 @@ def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
 
     marker = data[8:11] if len(data) >= 11 else b""
     if marker != b"CNK":
-        return NormalizedPayload(data=data, encoding="direct")
+        return NormalizedPayload(data=data, encoding="direct", header_prefix=b"")
     if len(data) < 24:
         raise WgsFormatError(
             "TRUNCATED",
@@ -65,7 +66,18 @@ def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
             "The Palworld CNK payload does not contain a supported save.",
             20,
         )
-    return NormalizedPayload(data=nested, encoding="cnk0")
+    return NormalizedPayload(data=nested, encoding="cnk0", header_prefix=data[0:4])
+
+
+def encode_palworld_payload(
+    data: bytes, encoding: str, header_prefix: bytes = b"\x00\x00\x00\x00"
+) -> bytes:
+    """Re-encode a raw Palworld save payload back into its WGS container format."""
+    if encoding == "cnk0":
+        prefix = header_prefix if len(header_prefix) == 4 else b"\x00\x00\x00\x00"
+        return prefix + struct.pack("<I", 1) + b"CNK0" + data
+    return data
+
 
 
 class _Reader:

@@ -34,7 +34,9 @@ from .discovery import XgpSourceCatalog, world_bindings
 from .steam import sha256_file, snapshot_tree
 from .wgs_format import (
     WgsFormatError,
+    encode_container,
     encode_index,
+    encode_palworld_payload,
     parse_container,
     parse_index,
     normalize_palworld_payload,
@@ -403,14 +405,27 @@ class XgpWgsAdapter:
                     {"path": relative_path, "file_count": len(parsed_container.files)},
                 )
             now_filetime = int((time.time() + _FILETIME_EPOCH_OFFSET) * 10_000_000)
+            payload_candidates: dict[str, Path] = {}
             for relative_path in changed:
                 metadata = current_metadata[relative_path]
                 position = int(metadata["index_position"])
+                payload_relative = str(metadata["payload_relative"])
                 staged = request.staged_workspace / Path(relative_path)
+                staged_data = staged.read_bytes()
+                encoding = str(metadata.get("payload_encoding", "direct"))
+                prefix_hex = str(metadata.get("payload_header_prefix", "00000000"))
+                header_prefix = bytes.fromhex(prefix_hex) if prefix_hex else b"\x00\x00\x00\x00"
+                encoded_data = encode_palworld_payload(staged_data, encoding, header_prefix)
+
+                candidate_payload = candidate_dir / Path(payload_relative)
+                candidate_payload.parent.mkdir(parents=True, exist_ok=True)
+                self._write_bytes_durable(candidate_payload, encoded_data)
+                payload_candidates[relative_path] = candidate_payload
+
                 index = index.replace_entry(
                     position,
                     index.entries[position].with_payload(
-                        size=staged.stat().st_size,
+                        size=len(encoded_data),
                         modified_filetime=now_filetime,
                     ),
                 )
@@ -441,7 +456,7 @@ class XgpWgsAdapter:
             + ["containers.index"],
             "candidate_hashes": {
                 str(current_metadata[path]["payload_relative"]): sha256_file(
-                    request.staged_workspace / Path(path)
+                    payload_candidates[path]
                 )
                 for path in changed
             }
@@ -456,12 +471,12 @@ class XgpWgsAdapter:
         try:
             for relative_path in changed:
                 payload_relative = str(current_metadata[relative_path]["payload_relative"])
-                staged = request.staged_workspace / Path(relative_path)
+                candidate_payload = payload_candidates[relative_path]
                 target = opened.source.canonical_path / Path(payload_relative)
                 journal["in_flight"] = payload_relative
                 self._write_json_durable(journal_path, journal)
                 self._fail(request, "before_payload_replace", {"path": relative_path})
-                self._replace_from_candidate(staged, target)
+                self._replace_from_candidate(candidate_payload, target)
                 progress.append(payload_relative)
                 journal["in_flight"] = None
                 journal["status"] = "committing"
@@ -1182,6 +1197,7 @@ class XgpWgsAdapter:
                 "container_file_relative": container_file_relative.as_posix(),
                 "payload_relative": payload_relative.as_posix(),
                 "payload_encoding": normalized.encoding,
+                "payload_header_prefix": normalized.header_prefix.hex(),
                 "physical_size": stat.st_size,
                 "physical_sha256": physical_digest,
             }
