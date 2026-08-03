@@ -34,12 +34,11 @@ from .discovery import XgpSourceCatalog, world_bindings
 from .steam import sha256_file, snapshot_tree
 from .wgs_format import (
     WgsFormatError,
-    encode_container,
     encode_index,
     encode_palworld_payload,
+    normalize_palworld_payload,
     parse_container,
     parse_index,
-    normalize_palworld_payload,
     select_payload_folder,
 )
 
@@ -412,10 +411,27 @@ class XgpWgsAdapter:
                 payload_relative = str(metadata["payload_relative"])
                 staged = request.staged_workspace / Path(relative_path)
                 staged_data = staged.read_bytes()
-                encoding = str(metadata.get("payload_encoding", "direct"))
-                prefix_hex = str(metadata.get("payload_header_prefix", "00000000"))
-                header_prefix = bytes.fromhex(prefix_hex) if prefix_hex else b"\x00\x00\x00\x00"
-                encoded_data = encode_palworld_payload(staged_data, encoding, header_prefix)
+                encoding = metadata.get("payload_encoding")
+                prefix_hex = metadata.get("payload_header_prefix")
+                if not isinstance(encoding, str) or not isinstance(prefix_hex, str):
+                    raise WgsFormatError(
+                        "INVALID_METADATA",
+                        "The WGS payload encoding metadata is invalid.",
+                        0,
+                    )
+                try:
+                    header_prefix = bytes.fromhex(prefix_hex)
+                except ValueError as error:
+                    raise WgsFormatError(
+                        "INVALID_METADATA",
+                        "The WGS payload header prefix is not valid hexadecimal.",
+                        0,
+                    ) from error
+                encoded_data = encode_palworld_payload(
+                    staged_data,
+                    encoding,
+                    header_prefix,
+                )
 
                 candidate_payload = candidate_dir / Path(payload_relative)
                 candidate_payload.parent.mkdir(parents=True, exist_ok=True)

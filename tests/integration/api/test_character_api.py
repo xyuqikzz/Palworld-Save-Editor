@@ -138,6 +138,27 @@ class CharacterApiTests(unittest.TestCase):
             self.pal._pal_param["PassiveSkillList"]["array_type"],
         )
 
+    def test_unrestricted_passive_api_accepts_duplicates_beyond_four(self) -> None:
+        passive = ["Rare", "Rare", "Legend", "Rare", "Legend"]
+
+        response = self.client.post(
+            f"/api/pal/{self.pal.InstanceId}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_pal_skills",
+                "active": None,
+                "mastered": None,
+                "passive": passive,
+                "unrestricted": True,
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        self.assertEqual(passive, response.get_json()["data"]["value"]["passive"])
+        self.assertEqual(passive, self.pal.PassiveSkillList)
+
     def test_explicit_player_attribute_command_updates_read_model(self) -> None:
         response = self.client.post(
             f"/api/player/{self.player.PlayerUId}/commands",

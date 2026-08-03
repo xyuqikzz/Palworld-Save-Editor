@@ -1010,12 +1010,12 @@ def skill_fruits_from_item_catalog(
         ):
             raise ValueError(f"Skill fruit {item_id} is not verified against v1.0")
         verified_rows += 1
-        if rule.get("OfficialLegal") and not rule.get("Disabled"):
+        if not rule.get("Disabled"):
             result.add(f"EPalWazaID::{item_id.removeprefix('SkillCard_')}")
-    if verified_rows != 93 or len(result) != 92:
+    if verified_rows != 93 or len(result) != 93:
         raise ValueError(
-            "Expected 93 verified SkillCard rows with 92 legal fruits, found "
-            f"{verified_rows} rows and {len(result)} legal fruits"
+            "Expected 93 verified SkillCard rows with 93 editor-enabled fruits, found "
+            f"{verified_rows} rows and {len(result)} enabled fruits"
         )
     return result
 

@@ -37,6 +37,7 @@ MAX_EXPERIENCE = 9_223_372_036_854_775_807
 MAX_TECHNOLOGY_POINTS = 65_535
 MAX_HEALTH = 2_147_483_647
 MAX_MASTERED_SKILLS = 255
+MAX_UNRESTRICTED_PASSIVE_SKILLS = 255
 MAX_ENHANCEMENT_CHEAT_LEVEL = 255
 MAX_REGULAR_PAL_LEVEL = 80
 MAX_REGULAR_IV = 100
@@ -756,6 +757,13 @@ class CharacterEditor:
                 field="allow_custom_passive",
                 http_status=400,
             )
+        if not isinstance(command.unrestricted, bool):
+            raise DomainError(
+                code="INVALID_FIELD_TYPE",
+                message="unrestricted must be a boolean.",
+                field="unrestricted",
+                http_status=400,
+            )
         if command.allow_custom_passive and command.passive is None:
             raise DomainError(
                 code="INVALID_CUSTOM_PASSIVE_REQUEST",
@@ -797,9 +805,14 @@ class CharacterEditor:
                 passive,
                 "passive",
                 DataProvider.has_passive_skill,
-                4,
+                (
+                    MAX_UNRESTRICTED_PASSIVE_SKILLS
+                    if command.unrestricted
+                    else 4
+                ),
                 current_passive,
                 allow_unknown_additions=command.allow_custom_passive,
+                allow_duplicates=command.unrestricted,
             )
             if command.allow_custom_passive:
                 self._validate_custom_passive_ids(unknown_passive)
@@ -856,6 +869,7 @@ class CharacterEditor:
                     if command.allow_custom_passive
                     else {}
                 ),
+                **({"unrestricted": True} if command.unrestricted else {}),
             },
             before=lambda: self._pal_skills(pal),
             mutate=mutate,
@@ -1410,6 +1424,7 @@ class CharacterEditor:
         existing=(),
         *,
         allow_unknown_additions: bool = False,
+        allow_duplicates: bool = False,
     ) -> tuple[str, ...]:
         if not isinstance(values, (tuple, list)) or any(
             not isinstance(value, str) for value in values
@@ -1427,7 +1442,7 @@ class CharacterEditor:
                 field=field,
                 details={"maximum": limit, "actual": len(values)},
             )
-        if len(set(values)) != len(values):
+        if not allow_duplicates and len(set(values)) != len(values):
             raise DomainError(
                 code="DUPLICATE_SKILL",
                 message=f"{field} contains a duplicate skill ID.",

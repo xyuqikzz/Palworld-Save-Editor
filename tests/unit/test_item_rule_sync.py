@@ -180,6 +180,32 @@ class ItemRuleSyncTests(unittest.TestCase):
         self.assertTrue(rule["OfficialLegal"])
         self.assertEqual("T_Stone", catalog["Stone"]["Icon"])
 
+    def test_psychokinesis_skill_fruit_is_an_explicit_editor_override(self) -> None:
+        record = StaticItemRule(
+            static_id="SkillCard_Psychokinesis",
+            name_base="SkillCard_Psychokinesis",
+            name_number=0,
+            type_a=6,
+            type_b=34,
+            rank=1,
+            rarity=3,
+            price=0,
+            max_stack=9999,
+            sort_id=1,
+            dynamic_class_index=0,
+            item_static_class=None,
+            icon_package="/Game/T_itemicon_Consume_SkillCard_Dark",
+            icon_asset="T_itemicon_Consume_SkillCard_Dark",
+            object_class="PalStaticItemDataBase",
+            official_legal=False,
+        )
+
+        catalog = build_catalog({}, {record.static_id: record})
+        rule = catalog[record.static_id]["Rule"]
+
+        self.assertFalse(rule["OfficialLegal"])
+        self.assertFalse(rule["Disabled"])
+
 
 if __name__ == "__main__":
     unittest.main()

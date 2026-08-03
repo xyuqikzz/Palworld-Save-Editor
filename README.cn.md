@@ -15,7 +15,7 @@
   · <a href="https://github.com/xyuqikzz/Palworld-Save-Editor/issues">反馈问题</a>
 </p>
 
-面向《幻兽帕鲁》的本地工具：离线编辑 Steam 与 Xbox Game Pass/WGS 存档，并为受支持的 Windows Steam 游戏和专用服务器提供独立、按能力门控的实时管理入口。程序提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
+面向《幻兽帕鲁》的本地工具：离线编辑 Steam 与 Xbox Game Pass/WGS 存档，并为 Windows Steam、PC Game Pass/XGP 游戏客户端和专用服务器提供独立、按能力门控的实时管理入口。程序提供桌面 GUI、Web UI 和交互式 CLI。本项目基于 [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) 二次开发，并继续使用 GPL-3.0 许可证。
 
 ## 界面预览
 
@@ -48,9 +48,9 @@
 
 - 直接支持 Steam 格式目录和用户选择的 Xbox Game Pass WGS 文件夹。Game Pass 保存目标锁定为打开时的原槽位，并会先在 WGS 外创建已验证备份。
 - 双存档迁移可以读取 Steam 或 WGS 源存档，但当前流程只允许写入另一个独立的 Steam 格式目标。全量迁移与指定角色迁移均使用绑定分析结果的计划、已验证目标备份、暂存、冲突检查、原子替换、重新打开验证和已验证恢复；WGS 目标会被明确阻止。
-- 离线存档编辑与实时管理是两个独立流程。实时存档管理第一阶段的发布目标仅为 Windows 专用服务器，需要通过 UE4SS 安装 PalEditorBridge；单人游戏、监听服务器、普通联机客户端和 WGS 实时管理不在本阶段支持声明内。
+- 离线存档编辑与实时管理是两个独立流程。Windows Steam、PC Game Pass/XGP 客户端和专用服务器通过 UE4SS 安装 PalEditorBridge；单人游戏与监听服务器仅允许具备服务器权威的房主连接，普通联机客户端会被拒绝。
 - synthetic fixture 与一份经用户授权后复制到临时目录的真实 WGS 样本已完成打开、编辑、提交和重新打开测试；真实游戏加载与 Xbox 云同步尚未验证。
-- 打包 EXE 已连接并显示本地 Windows Steam 单人游戏的运行时数据。每条实时命令仍需分别验证游戏内效果、客户端同步、保存、重启和重新加载；仅收到成功协议响应并不足以证明功能有效。
+- 打包 EXE 已连接并显示本地 Windows Steam 单人游戏的运行时数据；XGP 已具备 WinGDK 进程发现和安装路径支持，但尚未完成真实 XGP 游戏效果、退出重进和 Xbox 云同步验证。每条实时命令仍需分别验证游戏内效果、客户端同步、保存、重启和重新加载；仅收到成功协议响应并不足以证明功能有效。
 - 当前数据与兼容性基线面向 Palworld 1.0 / Steam build 24088745。
 - 未知版本或未验证的数据布局会按能力门控处理；请勿强行写入不受支持的字段。
 - 本项目与 Pocketpair 无隶属或官方合作关系。
@@ -100,14 +100,14 @@ Game Pass 使用前请完全退出 Palworld 并等待本地同步，再选择 WG
 
 ### Windows 实时管理
 
-实时存档管理与离线存档编辑互相独立，并且必须使用 Windows 桌面 EXE。第一阶段只以 Windows 专用服务器作为发布验收目标：
+实时存档管理与离线存档编辑互相独立，并且必须使用 Windows 桌面 EXE。Steam、PC Game Pass/XGP 客户端和专用服务器分别安装到对应的 UE4SS 目录：
 
-1. 在 Windows 专用服务器的 `Win64` 目录安装与当前 Palworld 版本兼容的 UE4SS。
+1. 安装与当前 Palworld 版本兼容的 UE4SS：Steam 客户端和 Windows 专用服务器使用 `Win64`，PC Game Pass/XGP 客户端使用 `Content\Pal\Binaries\WinGDK`。
 2. 在来源选择页打开“实时管理”，下载程序内置的 PalEditorBridge 压缩包，并将其中完整目录复制到 UE4SS 的 `Mods` 目录。
 3. 在 `PalWorldSettings.ini` 中启用管理员 REST API 并配置管理员密码。
 4. 完全重启游戏或服务器，从编辑器连接，并且只使用桥接明确声明的能力。
 
-不要把 Palworld 或桥接端口直接暴露到公网。非 TLS 连接应仅绑定本机回环地址，远程访问应放在 HTTPS 反向代理之后。客户端安装可用于后续兼容性验证，但单人游戏和监听服务器不属于第一阶段发布支持范围。任何会改变状态的命令都应先在游戏内独立验证，再用于实际管理。
+不要把 Palworld 或桥接端口直接暴露到公网。非 TLS 连接应仅绑定本机回环地址，远程访问应放在 HTTPS 反向代理之后。XGP 实时修改通过游戏的正常权威与保存路径完成，不直接改写运行中的 WGS 容器。任何会改变状态的命令都应分别在 Steam 与 XGP 游戏内验证，再用于实际管理。
 
 ### 从源码运行
 

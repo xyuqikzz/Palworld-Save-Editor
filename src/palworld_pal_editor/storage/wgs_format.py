@@ -26,7 +26,7 @@ class WgsFormatError(ValueError):
 class NormalizedPayload:
     data: bytes
     encoding: str
-    header_prefix: bytes = b"\x00\x00\x00\x00"
+    header_prefix: bytes = b""
 
 
 def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
@@ -39,7 +39,7 @@ def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
 
     marker = data[8:11] if len(data) >= 11 else b""
     if marker != b"CNK":
-        return NormalizedPayload(data=data, encoding="direct", header_prefix=b"")
+        return NormalizedPayload(data=data, encoding="direct")
     if len(data) < 24:
         raise WgsFormatError(
             "TRUNCATED",
@@ -70,14 +70,30 @@ def normalize_palworld_payload(data: bytes) -> NormalizedPayload:
 
 
 def encode_palworld_payload(
-    data: bytes, encoding: str, header_prefix: bytes = b"\x00\x00\x00\x00"
+    data: bytes, encoding: str, header_prefix: bytes = b""
 ) -> bytes:
     """Re-encode a raw Palworld save payload back into its WGS container format."""
-    if encoding == "cnk0":
-        prefix = header_prefix if len(header_prefix) == 4 else b"\x00\x00\x00\x00"
-        return prefix + struct.pack("<I", 1) + b"CNK0" + data
-    return data
-
+    if encoding == "direct":
+        if header_prefix:
+            raise WgsFormatError(
+                "INVALID_LENGTH",
+                "A direct Palworld payload cannot have a CNK header prefix.",
+                0,
+            )
+        return data
+    if encoding != "cnk0":
+        raise WgsFormatError(
+            "UNSUPPORTED_ENCODING",
+            f"Unsupported Palworld WGS payload encoding: {encoding}.",
+            0,
+        )
+    if len(header_prefix) != 4:
+        raise WgsFormatError(
+            "INVALID_LENGTH",
+            "The Palworld CNK0 header prefix must be exactly 4 bytes.",
+            0,
+        )
+    return header_prefix + struct.pack("<I", 1) + b"CNK0" + data
 
 
 class _Reader:

@@ -92765,7 +92765,7 @@
       "Status": "verified",
       "Source": "Palworld 1.0 DA_StaticItemDataAsset + DT_ItemDataTable_Common",
       "Version": "Steam build 24088745",
-      "Disabled": true,
+      "Disabled": false,
       "GameTypeA": 6,
       "GameTypeB": 34,
       "OfficialLegal": false,

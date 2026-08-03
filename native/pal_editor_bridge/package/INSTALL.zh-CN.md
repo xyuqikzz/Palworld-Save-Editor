@@ -2,7 +2,8 @@
 
 ## 前置条件
 
-- Windows Steam 版 Palworld 客户端或 Palworld Dedicated Server。
+- Windows Steam 版、PC Game Pass/XGP 版 Palworld 客户端，或 Palworld
+  Dedicated Server。
 - 与当前 Palworld 版本匹配的 UE4SS。
 - 专用服务器还需要在 `PalWorldSettings.ini` 设置
   `RESTAPIEnabled=True`、`RESTAPIPort=8212` 和 `AdminPassword`。
@@ -13,10 +14,13 @@
 1. 完全停止游戏客户端或专用服务器。
 2. 安装或解压 UE4SS 到游戏可执行文件所在目录：
    - Windows 客户端：`<Palworld>\Pal\Binaries\Win64`
+   - PC Game Pass/XGP 客户端：`<Palworld>\Content\Pal\Binaries\WinGDK`
    - Windows 专用服务器：`<PalServer>\Pal\Binaries\Win64`
 3. 找到 UE4SS 的 `Mods` 目录。它通常位于以下其中一个位置：
    - `Pal\Binaries\Win64\ue4ss\Mods`
    - `Pal\Binaries\Win64\Mods`
+   - XGP：`Content\Pal\Binaries\WinGDK\ue4ss\Mods`
+   - XGP：`Content\Pal\Binaries\WinGDK\Mods`
 4. 把压缩包中的 `PalEditorBridge` 文件夹复制到该 `Mods` 目录。
 5. 如果该 UE4SS 安装使用 `mods.txt`，加入：
 
@@ -30,14 +34,14 @@
    Invoke-RestMethod http://127.0.0.1:8213/v1/health
    ```
 
-   专服返回的 `bridgeVersion` 应为 `0.6.1`。客户端使用动态回环端口，
+   专服返回的 `bridgeVersion` 应为 `0.6.2`。客户端使用动态回环端口，
    无需手工探测端口。
 
 ## EXE 连接
 
 ### 单机或联机房主
 
-1. 给 Steam 游戏客户端安装本模组并启动游戏。
+1. 给 Steam 或 PC Game Pass/XGP 游戏客户端安装本模组并启动游戏。
 2. 进入单机世界，或者由当前客户端创建联机世界并成为房主。
 3. 在编辑器选择“实时管理”，点击“连接本机游戏”。
 
@@ -61,9 +65,14 @@ http://127.0.0.1:8213
 
 ## 能力说明
 
-实时存档管理第一阶段只把 Windows 专用服务器作为发布支持目标。客户端目录也可
-安装同一 DLL 供后续兼容性验证，但单人游戏、监听服务器、普通联机客户端和 WGS
-实时管理不在本阶段支持声明内。
+Windows Steam 与 PC Game Pass/XGP 客户端使用同一个 Bridge DLL。XGP 必须把
+UE4SS 和 PalEditorBridge 安装到 `WinGDK`，桌面端会验证
+`Palworld-WinGDK-Shipping.exe` 的进程身份。单人游戏和联机房主具备服务器权威时
+可以连接；加入其他房主的普通联机客户端仍会被拒绝。
+
+XGP 实时修改只调用游戏的服务器权威函数和正常保存路径，不直接读写运行中的 WGS
+容器。命令成功、游戏本地保存成功和 Xbox 云同步成功是三个不同结论；在真实 XGP
+游戏、退出重进和云同步分别验证前，不得把低层测试视为完整运行时验证。
 
 - `player.list`：模组在游戏线程直接读取在线 `PalPlayerState`，不调用
   REST 玩家列表。
@@ -117,5 +126,6 @@ http://127.0.0.1:8213
 模组会检查当前游戏反射函数签名。某项能力不匹配当前游戏版本时，EXE 不会
 显示对应操作，避免按旧版函数盲目写入。
 
-单机与房主模式的真实游戏效果、复制和退出重进后的持久化需要分别验证；
-仅成功构建 DLL 不代表这些运行时验证已经完成。
+Steam 与 XGP 的单机、房主模式都需要分别验证真实游戏效果、复制、正常保存、退出
+重进和持久化；XGP 还需要单独验证 Xbox 云同步。仅成功构建 DLL 或连接 Bridge
+不代表这些运行时验证已经完成。

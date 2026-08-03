@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "bridgeVersion": "0.6.1",
+  "bridgeVersion": "0.6.2",
   "ue4ssRevision": "c838a8acaade1a0f860bdf249f039e58f4e10088",
-  "sourceSha256": "c58c13ed37c571f74e3c3cf240bc6721516952aceadc2d0b1690a06c8503a1d3",
-  "dllSha256": "1154c06e4e13cd3ad381c4051f45c376b88fce6accfb4d635b4cc57db989fd36",
+  "sourceSha256": "7c20ebafced2898cdb8d52fc7c733679e5e1eb75514622eef8978105e98b1168",
+  "dllSha256": "8ff78ed0bee8aee9e2ecee96e0a47723b53e73a31460bfe95c36510f9c0e66c5",
   "dllSize": 1472512
 }

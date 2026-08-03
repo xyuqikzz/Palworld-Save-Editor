@@ -531,6 +531,38 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertEqual(list(mastered), result["value"]["mastered"])
         self.assertEqual(list(passive), result["value"]["passive"])
 
+    def test_unrestricted_passives_allow_more_than_four_and_duplicates(self) -> None:
+        passive = ("Rare", "Rare", "Legend", "Rare", "Legend")
+
+        result = self.editor.execute(
+            UpdatePalSkills(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                passive=passive,
+                unrestricted=True,
+            )
+        )
+
+        self.assertEqual(list(passive), result["value"]["passive"])
+        self.assertEqual(list(passive), self.pal.PassiveSkillList)
+        self.assertEqual(1, self.session.revision)
+
+    def test_unrestricted_passive_flag_must_be_boolean(self) -> None:
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePalSkills(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    pal_id=str(self.pal.InstanceId),
+                    passive=("Rare",),
+                    unrestricted="true",
+                )
+            )
+
+        self.assertEqual("INVALID_FIELD_TYPE", raised.exception.code)
+        self.assertEqual(0, self.session.revision)
+
     def test_invalid_skill_sets_leave_all_lists_unchanged(self) -> None:
         before = deepcopy(self.pal._pal_param)
         commands = (

@@ -53,6 +53,86 @@ test('passive skill edits do not revalidate unrelated active skills', async () =
   assert.deepEqual(skillRequest.passive, [])
 })
 
+test('cheat mode allows a fifth duplicate passive and marks the request unrestricted', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  const palId = 'pal-passive-cheat'
+  const pal = {
+    InstanceId: palId,
+    EquipWaza: [],
+    MasteredWaza: [],
+    PassiveSkillList: ['Rare', 'Legend', 'Rare', 'Legend'],
+  }
+  const player = { pals: new Map([[palId, pal]]) }
+  store.SESSION_ID = 'session-1'
+  store.SESSION_REVISION = 0
+  store.SELECTED_PLAYER_ID = 'player-1'
+  store.PLAYER_MAP = new Map([['player-1', player]])
+  store.PAL_MAP = player.pals
+  store.PASSIVE_SKILLS = { Rare: { InternalName: 'Rare' } }
+  store.HIDE_INVALID_OPTIONS = false
+
+  let resolveSkillRequest
+  const skillRequestReceived = new Promise(resolve => {
+    resolveSkillRequest = resolve
+  })
+  axios.post = async (url, data) => {
+    if (url.includes('/commands')) {
+      pal.PassiveSkillList = [...data.passive]
+      resolveSkillRequest(data)
+      return { data: { status: 0, data: { revision: 1 } } }
+    }
+    if (url === '/api/pal/paldata') return { data: { status: 0, data: pal } }
+    throw new Error(`unexpected ${url}`)
+  }
+
+  await store.selectPal(palId, true)
+  store.SELECTED_PAL_DATA.add_PassiveSkillList('Rare')
+  const skillRequest = await skillRequestReceived
+
+  assert.equal(skillRequest.unrestricted, true)
+  assert.deepEqual(skillRequest.passive, ['Rare', 'Legend', 'Rare', 'Legend', 'Rare'])
+})
+
+test('duplicate passive removal targets the selected occurrence by index', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  const palId = 'pal-passive-remove'
+  const pal = {
+    InstanceId: palId,
+    EquipWaza: [],
+    MasteredWaza: [],
+    PassiveSkillList: ['Rare', 'Legend', 'Rare'],
+  }
+  const player = { pals: new Map([[palId, pal]]) }
+  store.SESSION_ID = 'session-1'
+  store.SESSION_REVISION = 0
+  store.SELECTED_PLAYER_ID = 'player-1'
+  store.PLAYER_MAP = new Map([['player-1', player]])
+  store.PAL_MAP = player.pals
+  store.HIDE_INVALID_OPTIONS = false
+
+  let resolveSkillRequest
+  const skillRequestReceived = new Promise(resolve => {
+    resolveSkillRequest = resolve
+  })
+  axios.post = async (url, data) => {
+    if (url.includes('/commands')) {
+      resolveSkillRequest(data)
+      return { data: { status: 0, data: { revision: 1 } } }
+    }
+    if (url === '/api/pal/paldata') return { data: { status: 0, data: pal } }
+    throw new Error(`unexpected ${url}`)
+  }
+
+  await store.selectPal(palId, true)
+  store.SELECTED_PAL_DATA.pop_PassiveSkillList('Rare', 2)
+  const skillRequest = await skillRequestReceived
+
+  assert.deepEqual(skillRequest.passive, ['Rare', 'Legend'])
+  assert.equal(skillRequest.unrestricted, true)
+})
+
 test('active skill removal uses the button name when its icon is clicked', async () => {
   setActivePinia(createPinia())
   const store = usePalEditorStore()

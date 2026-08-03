@@ -925,6 +925,11 @@ select.selector {
     flex: 0 0 auto;
 }
 
+:global(#EditorMain .player-editor-layout > .inventory-editor) {
+    flex: 1 0 710px;
+    min-height: 710px;
+}
+
 .player-editor-tabs {
     display: flex;
     width: 100%;
@@ -1345,5 +1350,12 @@ select.selector {
     .player-summary-actions { justify-content: flex-start; }
     .player-attributes-actions { width: 100%; }
     .player-attributes-actions button { flex: 1; }
+}
+
+@media (max-width: 700px) {
+    :global(#EditorMain .player-editor-layout > .inventory-editor) {
+        flex: 0 0 auto;
+        min-height: 0;
+    }
 }
 </style>

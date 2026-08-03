@@ -91,7 +91,7 @@ class PackagingTests(unittest.TestCase):
             / "INSTALL.zh-CN.md"
         ).read_text(encoding="utf-8")
 
-        self.assertEqual("0.6.1", version)
+        self.assertEqual("0.6.2", version)
         self.assertIn("native\\pal_editor_bridge\\VERSION", package_script)
         self.assertIn(version, bridge_header)
         self.assertIn(version, mod_source)
@@ -147,10 +147,10 @@ class PackagingTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         lockfile = (PROJECT_ROOT / "uv.lock").read_text(encoding="utf-8")
 
-        self.assertEqual("1.1.2", pyproject["project"]["version"])
-        self.assertIn('VERSION = "1.1.2"', config)
+        self.assertEqual("1.1.3", pyproject["project"]["version"])
+        self.assertIn('VERSION = "1.1.3"', config)
         self.assertIn(
-            'name = "palworld-save-editor"\nversion = "1.1.2"',
+            'name = "palworld-save-editor"\nversion = "1.1.3"',
             lockfile,
         )
 

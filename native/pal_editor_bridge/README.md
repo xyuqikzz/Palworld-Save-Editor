@@ -13,7 +13,8 @@ The repository currently contains:
 - administrator credential verification through the Palworld REST API on
   `127.0.0.1` for dedicated servers;
 - per-process local credentials protected with Windows DPAPI, dynamic loopback
-  ports, and automatic EXE discovery for the Steam game client;
+  ports, and automatic EXE discovery for Steam `Win64` and PC Game Pass
+  `WinGDK` game clients;
 - fail-closed runtime authority detection that exposes gameplay operations only
   for single-player and multiplayer-host instances;
 - a UE4SS C++ mod lifecycle entry point with no ImGui registration;
@@ -104,10 +105,12 @@ member-variable layout. A compiled DLL alone is not evidence that it loads in
 the dedicated server.
 
 The built DLL is installed in the UE4SS Mods directory of either the game
-client or dedicated server:
+client or dedicated server. Steam clients and dedicated servers use `Win64`;
+PC Game Pass clients use `Content/Pal/Binaries/WinGDK`:
 
 ```text
 Pal/Binaries/Win64/Mods/PalEditorBridge/dlls/main.dll
+Content/Pal/Binaries/WinGDK/Mods/PalEditorBridge/dlls/main.dll
 ```
 
 Enable it with `PalEditorBridge : 1` in UE4SS `Mods/mods.txt`. This repository
@@ -144,7 +147,7 @@ an authorized local source build refreshes the verified DLL:
 ```
 
 The package is written to
-`mod/PalEditorBridge-UE4SS-Mod-0.6.1.zip`. It contains the required
+`mod/PalEditorBridge-UE4SS-Mod-0.6.2.zip`. It contains the required
 `PalEditorBridge/dlls/main.dll` layout, an `enabled.txt`, and Chinese
 installation instructions.
 
@@ -205,10 +208,12 @@ management UI sends no optional reason and requires a second confirmation for
 all three actions. `world.shutdown` calls `world.save` first and does not
 schedule shutdown if that save request fails.
 
-In a game-client process, the bridge continually determines whether the active
-world is `single_player`, `listen_server`, or `client`. A joining client
-advertises no player-list or mutation capabilities. The local EXE connection
-also rejects that mode, so only the host can use live management.
+In a Steam or PC Game Pass game-client process, the bridge continually
+determines whether the active world is `single_player`, `listen_server`, or
+`client`. A joining client advertises no player-list or mutation capabilities.
+The local EXE connection also rejects that mode, so only the host can use live
+management. PC Game Pass runtime mutations use the game's normal authoritative
+and save paths; the bridge never edits an active WGS container directly.
 
 `player.list` and `guild.list` are lightweight overview reads. `map.read`
 samples each online player Pawn through `Actor:K2_GetActorLocation` and

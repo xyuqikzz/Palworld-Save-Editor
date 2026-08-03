@@ -122,7 +122,11 @@ def test_cnk0_payload_normalization_is_exact_and_direct_payloads_are_unchanged()
     direct = normalize_palworld_payload(standard)
     assert direct.data == standard
     assert direct.encoding == "direct"
-    assert encode_palworld_payload(direct.data, direct.encoding, direct.header_prefix) == standard
+    assert direct.header_prefix == b""
+    assert (
+        encode_palworld_payload(direct.data, direct.encoding, direct.header_prefix)
+        == standard
+    )
 
     opaque_prefix = b"\x32\x5f\x00\x00"
     raw_payload = opaque_prefix + struct.pack("<I", 1) + b"CNK0" + standard
@@ -130,7 +134,34 @@ def test_cnk0_payload_normalization_is_exact_and_direct_payloads_are_unchanged()
     assert wrapped.data == standard
     assert wrapped.encoding == "cnk0"
     assert wrapped.header_prefix == opaque_prefix
-    assert encode_palworld_payload(wrapped.data, wrapped.encoding, wrapped.header_prefix) == raw_payload
+    assert (
+        encode_palworld_payload(
+            wrapped.data,
+            wrapped.encoding,
+            wrapped.header_prefix,
+        )
+        == raw_payload
+    )
+
+
+@pytest.mark.parametrize(
+    ("encoding", "header_prefix", "expected_code"),
+    (
+        ("unknown", b"", "UNSUPPORTED_ENCODING"),
+        ("direct", b"\0" * 4, "INVALID_LENGTH"),
+        ("cnk0", b"", "INVALID_LENGTH"),
+        ("cnk0", b"\0" * 3, "INVALID_LENGTH"),
+        ("cnk0", b"\0" * 5, "INVALID_LENGTH"),
+    ),
+)
+def test_payload_encoding_rejects_unknown_or_inconsistent_metadata(
+    encoding: str,
+    header_prefix: bytes,
+    expected_code: str,
+) -> None:
+    with pytest.raises(WgsFormatError) as raised:
+        encode_palworld_payload(b"payload", encoding, header_prefix)
+    assert raised.value.code == expected_code
 
 
 @pytest.mark.parametrize(

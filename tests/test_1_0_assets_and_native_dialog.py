@@ -127,13 +127,13 @@ class SkillAssetTests(unittest.TestCase):
         )
 
         self.assertEqual(384, len(attacks))
-        self.assertEqual(92, sum(row["SkillFruit"] for row in attacks.values()))
+        self.assertEqual(93, sum(row["SkillFruit"] for row in attacks.values()))
         self.assertEqual(25, sum(row.get("Invalid", False) for row in attacks.values()))
         self.assertEqual(40, attacks["EPalWazaID::AquaJet"]["Power"])
         self.assertEqual(50, attacks["EPalWazaID::WaterGun"]["Power"])
         self.assertEqual(12, attacks["EPalWazaID::WaterBall"]["CT"])
         self.assertEqual(200, attacks["EPalWazaID::WaterBall"]["Power"])
-        self.assertFalse(attacks["EPalWazaID::Psychokinesis"]["SkillFruit"])
+        self.assertTrue(attacks["EPalWazaID::Psychokinesis"]["SkillFruit"])
         self.assertEqual("워터 제트", attacks["EPalWazaID::AquaJet"]["I18n"]["ko"]["Name"])
 
         used_attacks = {

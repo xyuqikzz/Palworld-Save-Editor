@@ -489,7 +489,7 @@ const suitabilityIconSrc = key => {
           <h3>{{ palStore.getTranslatedText("Editor_Passive_Skills") }}</h3>
           <div class="skill-section-actions">
             <button type="button" class="custom-passive-trigger"
-              :disabled="palStore.LOADING_FLAG || palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4"
+              :disabled="palStore.LOADING_FLAG || (palStore.HIDE_INVALID_OPTIONS && palStore.SELECTED_PAL_DATA.PassiveSkillList.length >= 4)"
               @click="customPassiveDialog?.open()">
               {{ palStore.getTranslatedText('PalEditor_AddCustomPassive') }}
             </button>
@@ -566,7 +566,7 @@ const suitabilityIconSrc = key => {
                 :unknown-label="palStore.getTranslatedText('PalEditor_CustomPassive_UnknownBadge')"
               />
 
-              <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList" :name="skill"
+              <button type="button" class="edit del skill-item-remove" @click="palStore.SELECTED_PAL_DATA.pop_PassiveSkillList(skill, index)" :name="skill"
               :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('Common_Remove')"><AppIcon name="x" /></button>
             </div>
           </div>

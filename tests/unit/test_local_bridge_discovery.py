@@ -20,8 +20,13 @@ class _Protector:
 
 
 class _ProcessProbe:
-    def __init__(self, matches: bool = True) -> None:
+    def __init__(
+        self,
+        matches: bool = True,
+        executable_name: str = "Palworld-Win64-Shipping.exe",
+    ) -> None:
         self._matches = matches
+        self._executable_name = executable_name
 
     def matches(
         self,
@@ -32,11 +37,19 @@ class _ProcessProbe:
     ) -> bool:
         assert pid > 0
         assert process_start_time.isdecimal()
-        assert executable_path.endswith("Palworld-Win64-Shipping.exe")
+        assert executable_path.endswith(self._executable_name)
         return self._matches
 
 
-def _write_registration(path, *, pid: int = 1234) -> None:
+def _write_registration(
+    path,
+    *,
+    pid: int = 1234,
+    executable_path: str = (
+        "D:\\Steam\\Palworld\\Pal\\Binaries\\Win64\\"
+        "Palworld-Win64-Shipping.exe"
+    ),
+) -> None:
     path.write_text(
         json.dumps(
             {
@@ -48,10 +61,7 @@ def _write_registration(path, *, pid: int = 1234) -> None:
                 "protectedSecret": "protected:test-secret",
                 "pid": pid,
                 "processStartTime": str(10_000 + pid),
-                "executablePath": (
-                    "D:\\Steam\\Palworld\\Pal\\Binaries\\Win64\\"
-                    "Palworld-Win64-Shipping.exe"
-                ),
+                "executablePath": executable_path,
                 "instanceKind": "local_game",
             }
         ),
@@ -74,6 +84,28 @@ def test_local_bridge_discovery_returns_verified_loopback_spec(tmp_path) -> None
     assert spec.admin_password == "test-secret"
     assert spec.allow_insecure_local is True
     assert "test-secret" not in repr(spec)
+
+
+def test_local_bridge_discovery_accepts_xgp_wingdk_client(tmp_path) -> None:
+    _write_registration(
+        tmp_path / "client-1234.json",
+        executable_path=(
+            "D:\\XboxGames\\Palworld\\Content\\Pal\\Binaries\\WinGDK\\"
+            "Palworld-WinGDK-Shipping.exe"
+        ),
+    )
+    discovery = LocalBridgeDiscovery(
+        tmp_path,
+        _Protector(),
+        _ProcessProbe(executable_name="Palworld-WinGDK-Shipping.exe"),
+    )
+
+    spec = discovery.discover_spec()
+
+    assert spec.base_url == "http://127.0.0.1:49123"
+    assert spec.username == "local"
+    assert spec.admin_password == "test-secret"
+    assert spec.allow_insecure_local is True
 
 
 def test_local_bridge_discovery_ignores_stale_process_registration(

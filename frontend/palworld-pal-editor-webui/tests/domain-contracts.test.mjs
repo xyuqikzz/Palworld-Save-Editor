@@ -236,6 +236,37 @@ test('inventory writes use semantic container type and advance session revision'
   assert.equal(store.SELECTED_PLAYER_DATA.InventoryContainers[0].container_type, 'COMMON')
 })
 
+test('occupied inventory slots can use the existing atomic replace command', async () => {
+  const { store, playerId } = makeStore()
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: { revision: 1, slot: {} } } }
+  }
+  axios.get = async () => ({ data: { status: 0, data: { containers: [] } } })
+
+  await store.putInventoryItem(
+    { container_type: 'COMMON' },
+    { slot_index: 4 },
+    'Stone',
+    25,
+    null,
+    'replace',
+  )
+
+  assert.equal(calls[0].url, `/api/player/${playerId}/inventory/commands`)
+  assert.deepEqual(calls[0].data, {
+    session_id: 'session-1',
+    expected_revision: 0,
+    container_type: 'COMMON',
+    slot_index: 4,
+    command: 'put_item',
+    static_id: 'Stone',
+    count: 25,
+    mode: 'replace',
+  })
+})
+
 test('structural add sends creation presets in one command and refreshes the target Pal', async () => {
   const { store, player, playerId } = makeStore()
   const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
@@ -437,23 +468,54 @@ test('inventory clipboard and layout commands stay semantic and revision-bound',
   assert.equal(store.SESSION_REVISION, 2)
 })
 
-test('inventory editor keeps the restored card layout and accessible move behavior', () => {
+test('inventory editor uses a game-style split layout and keeps accessible ordinary-backpack moves', () => {
   const source = readFileSync(
     new URL('../src/components/InventoryEditor.vue', import.meta.url),
     'utf8',
   )
   for (const marker of [
-    "'slot-card'",
-    'grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));',
-    `:draggable="slot.state === 'occupied' && !palStore.LOADING_FLAG"`,
+    "'inventory-slot'",
+    "const backpackContainerTypes = new Set(['COMMON', 'ESSENTIAL'])",
+    'v-for="container in backpackContainers"',
+    'class="inventory-game-layout"',
+    'class="equipment-stage"',
+    'v-for="section in leftEquipmentSections"',
+    'v-for="section in rightEquipmentSections"',
+    'v-if="bottomEquipmentSections.length"',
+    'v-for="section in bottomEquipmentSections"',
+    "containerType: 'WEAPON_LOADOUT'",
+    "containerType: 'PLAYER_EQUIP_ARMOR'",
+    "containerType: 'FOOD_EQUIP'",
+    'grid-template-columns: clamp(360px, 36%, 680px) minmax(360px, 1fr);',
+    'grid-template-columns: repeat(6, minmax(44px, 1fr));',
+    'min-height: 710px;',
+    'overflow-y: auto;',
+    'grid-auto-flow: column;',
+    'grid-template-rows: repeat(4, var(--inventory-slot-size));',
+    'grid-column: 1 / 3;',
+    'justify-self: end;',
+    "selectedContainer.value?.container_type !== 'ESSENTIAL'",
+    "const retainedSlots = slots.filter(slot => slot.state === 'occupied')",
+    'return emptySlot ? [...retainedSlots, emptySlot] : retainedSlots',
+    "container && container.container_type !== 'ESSENTIAL'",
+    `:draggable="supportsSlotMove(selectedContainer) && slot.state === 'occupied' && !palStore.LOADING_FLAG"`,
     '@drop="onDrop($event, selectedContainer, slot)"',
     '@keydown="onSlotKeydown($event, selectedContainer, slot)"',
     'sourceContainerType === container?.container_type',
     'swapInventorySlots',
+    'const slotButton = event.currentTarget',
+    'selectedSlotButton.value = slotButton',
+    'function shouldShowQuantity(item)',
+    'v-if="shouldShowQuantity(slot.item)"',
+    'const selectedCountEditable = computed(() => selectedMaxStack.value > 1)',
+    '<label v-if="selectedCountEditable" class="inventory-slot-editor__count">',
+    'class="inventory-slot-editor"',
+    '<AppIcon v-else-if="slot.state === \'empty\'" class="inventory-slot__plus" name="plus"',
   ]) {
-    assert.ok(source.includes(marker), 'missing restored inventory behavior: ' + marker)
+    assert.ok(source.includes(marker), 'missing inventory-grid behavior: ' + marker)
   }
-  assert.doesNotMatch(source, /inventory-game-layout|equipment-stage/)
+  assert.doesNotMatch(source, /v-for="container in containers"/)
+  assert.doesNotMatch(source, /width:\s*min\(100%,\s*470px\)/)
   for (const action of [
     'updateInventoryItem',
     'copyInventoryItem',

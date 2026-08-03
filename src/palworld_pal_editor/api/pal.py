@@ -309,6 +309,7 @@ def execute_pal_command(pal_id: str):
             "mastered",
             "passive",
             "allow_custom_passive",
+            "unrestricted",
         },
         "update_pal_enhancement": {"values", "work_suitability"},
         "max_pal": {"unrestricted"},
@@ -364,6 +365,7 @@ def execute_pal_command(pal_id: str):
                 allow_custom_passive=payload.get(
                     "allow_custom_passive", False
                 ),
+                unrestricted=payload.get("unrestricted", False),
             )
         elif command_name == "unlock_pal_expedition":
             command = UnlockPalExpedition(**base)
@@ -539,6 +541,7 @@ def patch_paldata():
                 active=tuple(active),
                 mastered=tuple(mastered),
                 passive=tuple(passive),
+                unrestricted=payload.get("unrestricted", False),
             )
         elif key == "in_owner_palbox":
             target_player_id = payload.get("PlayerUId")

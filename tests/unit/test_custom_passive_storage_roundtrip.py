@@ -25,6 +25,7 @@ from tests.wgs_fixture import make_user_directory
 PLAYER_ID = "11111111-2222-3333-4444-555555555555"
 PAL_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 CUSTOM_PASSIVE = "OtherMod_RoundTripPassive_Exact_01"
+UNRESTRICTED_PASSIVES = ("Rare", "Rare", "Legend", "Rare", "Legend")
 
 
 def _gvas() -> GvasFile:
@@ -107,14 +108,21 @@ class _PassiveManager:
         return self.pal if str(pal_id) == str(self.pal.InstanceId) else None
 
 
-def _edit_save_and_close(session: SaveSession) -> None:
+def _edit_save_and_close(
+    session: SaveSession,
+    *,
+    passive: tuple[str, ...] = ("Rare", CUSTOM_PASSIVE),
+    allow_custom_passive: bool = True,
+    unrestricted: bool = False,
+) -> None:
     CharacterEditor(session).execute(
         UpdatePalSkills(
             session_id=session.session_id,
             expected_revision=0,
             pal_id=str(session.manager.pal.InstanceId),
-            passive=("Rare", CUSTOM_PASSIVE),
-            allow_custom_passive=True,
+            passive=passive,
+            allow_custom_passive=allow_custom_passive,
+            unrestricted=unrestricted,
         )
     )
     SaveWriter().save(
@@ -125,8 +133,11 @@ def _edit_save_and_close(session: SaveSession) -> None:
     session.close()
 
 
-def _assert_reopened_exact(session: SaveSession) -> None:
-    assert session.manager.pal.PassiveSkillList == ["Rare", CUSTOM_PASSIVE]
+def _assert_reopened_exact(
+    session: SaveSession,
+    expected: tuple[str, ...] = ("Rare", CUSTOM_PASSIVE),
+) -> None:
+    assert session.manager.pal.PassiveSkillList == list(expected)
     assert (
         session.manager.pal._pal_param["PassiveSkillList"]["array_type"]
         == "NameProperty"
@@ -181,4 +192,65 @@ def test_custom_passive_wgs_fixture_open_edit_save_reopen() -> None:
             manager=_PassiveManager(),
         )
         _assert_reopened_exact(reopened)
+        reopened.close()
+
+
+def test_unrestricted_passives_steam_fixture_open_edit_save_reopen() -> None:
+    with TemporaryDirectory() as temp:
+        root = Path(temp) / "steam-world"
+        root.mkdir()
+        (root / "Level.sav").write_bytes(_sav())
+
+        session = SaveSession.open(root, manager=_PassiveManager())
+        _edit_save_and_close(
+            session,
+            passive=UNRESTRICTED_PASSIVES,
+            allow_custom_passive=False,
+            unrestricted=True,
+        )
+
+        reopened = SaveSession.open(root, manager=_PassiveManager())
+        _assert_reopened_exact(reopened, UNRESTRICTED_PASSIVES)
+        reopened.close()
+
+
+def test_unrestricted_passives_wgs_fixture_open_edit_save_reopen() -> None:
+    with TemporaryDirectory() as temp:
+        base = Path(temp)
+        root = base / "wgs"
+        root.mkdir()
+        make_user_directory(
+            root,
+            "1111111111111111_" + "C" * 32,
+            {"A" * 32: {"Level.sav": _sav()}},
+        )
+        catalog = XgpSourceCatalog(roots=(root,))
+        source = catalog.discover()[0]
+        adapter = XgpWgsAdapter(
+            catalog=catalog,
+            process_checker=lambda: False,
+            workspace_validator=lambda _path: None,
+            workspace_root=base / "workspaces",
+            backup_root=base / "backups",
+            stability_delay=0,
+        )
+
+        session = SaveSession.open_storage(
+            source,
+            adapter,
+            manager=_PassiveManager(),
+        )
+        _edit_save_and_close(
+            session,
+            passive=UNRESTRICTED_PASSIVES,
+            allow_custom_passive=False,
+            unrestricted=True,
+        )
+
+        reopened = SaveSession.open_storage(
+            source,
+            adapter,
+            manager=_PassiveManager(),
+        )
+        _assert_reopened_exact(reopened, UNRESTRICTED_PASSIVES)
         reopened.close()

@@ -19,9 +19,10 @@ const bridgeModDownloadState = ref('idle');
 const bridgeModDownloadResult = ref(null);
 const ue4ssReleasesUrl = 'https://github.com/UE4SS-RE/RE-UE4SS/releases';
 const windowsClientUe4ssPath = String.raw`…\steamapps\common\Palworld\Pal\Binaries\Win64`;
+const windowsXgpClientUe4ssPath = String.raw`…\XboxGames\Palworld\Content\Pal\Binaries\WinGDK`;
 const windowsServerUe4ssPath = String.raw`…\steamapps\common\PalServer\Pal\Binaries\Win64`;
-const bridgeModPrimaryPath = String.raw`Pal\Binaries\Win64\ue4ss\Mods\PalEditorBridge`;
-const bridgeModFallbackPath = String.raw`Pal\Binaries\Win64\Mods\PalEditorBridge`;
+const bridgeModPrimaryPath = String.raw`Pal\Binaries\<Win64|WinGDK>\ue4ss\Mods\PalEditorBridge`;
+const bridgeModFallbackPath = String.raw`Pal\Binaries\<Win64|WinGDK>\Mods\PalEditorBridge`;
 const serverRestConfiguration = 'RESTAPIEnabled=True · RESTAPIPort=8212 · AdminPassword=…';
 
 function selectEntryEditMode(mode) {
@@ -446,6 +447,10 @@ onBeforeUnmount(() => {
                 <div>
                   <dt>{{ palStore.getTranslatedText('Remote_ModInstallClientPath') }}</dt>
                   <dd><code>{{ windowsClientUe4ssPath }}</code></dd>
+                </div>
+                <div>
+                  <dt>{{ palStore.getTranslatedText('Remote_ModInstallXgpClientPath') }}</dt>
+                  <dd><code>{{ windowsXgpClientUe4ssPath }}</code></dd>
                 </div>
                 <div>
                   <dt>{{ palStore.getTranslatedText('Remote_ModInstallServerPath') }}</dt>

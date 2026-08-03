@@ -67,6 +67,24 @@ class ItemCatalogTests(unittest.TestCase):
             [item.static_id for item in self.catalog.search(category="material")],
         )
 
+    def test_psychokinesis_skill_fruit_is_searchable_and_placeable(self) -> None:
+        catalog = ItemCatalog.load_default()
+
+        result = catalog.search(
+            text="Psycho Gravity",
+            container_type=ItemContainerType.COMMON,
+            locale="en",
+        )
+
+        self.assertEqual(["SkillCard_Psychokinesis"], [item.static_id for item in result])
+        self.assertFalse(result[0].disabled)
+        catalog.validate_placement(
+            "SkillCard_Psychokinesis",
+            ItemContainerType.COMMON,
+            0,
+            1,
+        )
+
     def test_max_stack_and_container_are_verified(self) -> None:
         self.catalog.validate_placement("Stone", ItemContainerType.COMMON, 0, 9999)
         with self.assertRaises(DomainError) as too_many:
@@ -260,7 +278,7 @@ class ItemCatalogTests(unittest.TestCase):
         catalog = ItemCatalog.load_default()
         all_items = catalog.search(include_disabled=True)
         self.assertEqual(2466, len(all_items))
-        self.assertEqual(1891, sum(not item.disabled for item in all_items))
+        self.assertEqual(1892, sum(not item.disabled for item in all_items))
         self.assertTrue(
             all(
                 item.rule_status == "verified"

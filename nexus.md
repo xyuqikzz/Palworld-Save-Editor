@@ -12,7 +12,7 @@ Offline save editing • Separate Windows live management beta[/center]
 
 Palworld Save Editor is a local toolkit for inspecting and editing supported Palworld save data. It provides a desktop GUI, Web UI, and interactive CLI for players, Pals, guilds, inventories, missions, expeditions, maps, and other verified save structures.
 
-Offline editing does not require an in-game mod or mod loader. A separate capability-gated live management path is available for Windows dedicated servers through PalEditorBridge and UE4SS.
+Offline editing does not require an in-game mod or mod loader. A separate capability-gated live management path is available for Windows Steam and PC Game Pass/XGP clients and Windows dedicated servers through PalEditorBridge and UE4SS.
 
 This project is based on KrisCris/Palworld-Pal-Editor and includes a redesigned multilingual interface, current game data, safer transactional save handling, expanded editing tools, and clearer workflows for large worlds.
 
@@ -70,10 +70,11 @@ The current migration workflow does not write results into a WGS target. WGS tar
 
 [size=4][b]Windows Live Management Beta[/b][/size]
 
-Live management is a separate Windows workflow. The first live-save-management release target is Windows dedicated servers; single-player, listen servers, joined clients, and WGS live management are not declared supported in this phase.
+Live management is a separate Windows workflow. Steam and PC Game Pass/XGP clients may connect only while running an authoritative single-player world or listen-server host; joined clients are rejected. Dedicated servers remain the fully documented server-management target.
 
 [list]
 [*]Connect through PalEditorBridge installed with UE4SS on the authoritative host or server
+[*]Discover both Steam [b]Palworld-Win64-Shipping.exe[/b] and PC Game Pass/XGP [b]Palworld-WinGDK-Shipping.exe[/b] local Bridge instances
 [*]Show online players first, then merge all saved players from a short-lived read-only snapshot by PlayerUId
 [*]Filter all, online, and offline players and lazily inspect profile, inventory, technology, missions, attributes, map progress, Party, and Palbox data
 [*]Combine authoritative online Pawn positions with last-saved offline player positions on the Map, label every marker as online or offline, and keep the saved level when a runtime level is invalid
@@ -86,7 +87,7 @@ Live management is a separate Windows workflow. The first live-save-management r
 
 The snapshot is not a backup: it keeps at most two captures for ten minutes and never writes the active save files. Live management has no rollback, undo, pre-change backup, or deferred offline command queue. A save failure leaves already-applied runtime changes visible and marks them as not yet persisted.
 
-Every state-changing command still requires its own in-game effect, replication, save, restart, and reload verification. A successful protocol response alone is not proof of gameplay effect or persistence.
+Every state-changing command still requires its own in-game effect, replication, save, restart, and reload verification. XGP also requires separate Xbox cloud synchronization verification. A successful protocol response alone is not proof of gameplay effect, persistence, or cloud synchronization.
 
 [size=5][b]Main Features[/b][/size]
 
@@ -218,7 +219,7 @@ No Python installation is required when using the prebuilt Windows application.
 [size=4][b]Live Management on Windows[/b][/size]
 
 [list=1]
-[*]Install a UE4SS release compatible with the current Palworld game in the Windows dedicated-server directory.
+[*]Install a UE4SS release compatible with the current Palworld game: use [b]Win64[/b] for Steam clients and Windows dedicated servers, or [b]Content\Pal\Binaries\WinGDK[/b] for PC Game Pass/XGP clients.
 [*]Open [b]Live management[/b] in the Windows desktop application and download the bundled PalEditorBridge package.
 [*]Copy the complete PalEditorBridge folder into the UE4SS [b]Mods[/b] directory.
 [*]Enable the dedicated-server administrator REST API and configure its password.

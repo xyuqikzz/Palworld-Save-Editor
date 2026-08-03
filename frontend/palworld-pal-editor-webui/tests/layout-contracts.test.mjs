@@ -86,6 +86,8 @@ test('entry save-source modes share stable workspace dimensions and internal scr
   assert.match(source, /modInstallDialog\.value\?\.showModal\(\)/)
   assert.match(source, /class="mod-install-dialog"/)
   assert.match(source, /Remote_ModInstallClientPath/)
+  assert.match(source, /Remote_ModInstallXgpClientPath/)
+  assert.match(source, /WinGDK/)
   assert.match(source, /Remote_ModInstallServerPath/)
   assert.match(source, /Remote_ModInstallModsPath/)
   assert.doesNotMatch(source, /alert\([^)]*Remote_Mod/)
@@ -380,33 +382,86 @@ test('player summary uses content height and keeps its information aligned at th
   )
 })
 
-test('occupied inventory slots restore item details and quantity controls to card rows', () => {
+test('player inventory uses the game-style split layout and warehouse-style slot editor', () => {
   const source = readFileSync(inventoryEditorPath, 'utf8')
+  const playerSource = readFileSync(playerEditorPath, 'utf8')
 
   for (const marker of [
-    '<div class="slot-main">',
-    '<div class="slot-copy">',
-    '<div class="slot-controls">',
-    'class="slot-count"',
-    '<div class="slot-actions">',
-    '.slot-main { display: flex; align-items: center; flex: 1 0 100%;',
-    '.slot-controls { display: flex; align-items: center; flex: 1 0 100%; flex-wrap: wrap;',
-    '.slot-count { flex: 1 1 120px;',
-    'max-width: 160px;',
-    '.slot-card.is-drop-target { border-color: var(--ui-accent);',
+    'class="inventory-game-layout"',
+    'class="inventory-board"',
+    'class="inventory-slot-grid"',
+    'v-for="slot in displaySlots"',
+    'v-for="container in backpackContainers"',
+    'class="equipment-stage"',
+    'v-for="section in leftEquipmentSections"',
+    'v-for="section in rightEquipmentSections"',
+    'class="equipment-bottom"',
+    'v-for="section in bottomEquipmentSections"',
+    'grid-template-columns: clamp(360px, 36%, 680px) minmax(360px, 1fr);',
+    'grid-template-columns: repeat(6, minmax(44px, 1fr));',
+    'grid-auto-rows: max-content;',
+    'container-type: inline-size;',
+    '--inventory-slot-size: clamp(48.5px, calc(6cqw - 11.5px), 101.84px);',
+    'width: var(--inventory-slot-size);',
+    'grid-template-columns: var(--inventory-slot-size);',
+    'grid-template-columns: repeat(2, var(--inventory-slot-size));',
+    'grid-auto-columns: var(--inventory-slot-size);',
+    'grid-template-columns: repeat(5, var(--inventory-slot-size));',
+    'min-height: 710px;',
+    'overflow-y: auto;',
+    'grid-auto-flow: column;',
+    'grid-template-rows: repeat(4, var(--inventory-slot-size));',
+    'grid-column: 1 / 3;',
+    'grid-row: 1 / 3;',
+    'justify-self: end;',
+    '<AppIcon v-else-if="slot.state === \'empty\'" class="inventory-slot__plus" name="plus"',
+    'const slotButton = event.currentTarget',
+    'selectedSlotButton.value = slotButton',
+    'function shouldShowQuantity(item)',
+    'v-if="shouldShowQuantity(slot.item)"',
+    'const selectedCountEditable = computed(() => selectedMaxStack.value > 1)',
+    'class="inventory-slot-editor"',
+    '<label v-if="selectedCountEditable" class="inventory-slot-editor__count">',
+    '<div class="inventory-slot-editor__actions">',
+    '.equipment-slot.is-drop-target {',
   ]) {
-    assert.ok(source.includes(marker), 'missing restored card-layout marker: ' + marker)
+    assert.ok(source.includes(marker), 'missing inventory-grid marker: ' + marker)
   }
-  assert.doesNotMatch(source, /inventory-game-layout|equipment-stage|slot-inspector/)
+  assert.match(
+    source,
+    /<button\s+v-if="selectedCountEditable"[\s\S]{0,300}Inventory_SaveCountTitle/,
+    'maximum-stack-one items must not render the save-count action',
+  )
+  assert.match(
+    playerSource,
+    /\.player-editor-layout > \.inventory-editor[\s\S]{0,100}flex:\s*1 0 710px;[\s\S]{0,100}min-height:\s*710px;/,
+    'the inventory must grow into available player-editor viewport height',
+  )
+  assert.match(source, /grid-template-rows:\s*auto minmax\(0, 1fr\);/)
+  assert.doesNotMatch(source, /inventory-board__toolbar/)
+  assert.doesNotMatch(source, /v-for="container in containers"|slot-inspector|width:\s*min\(100%,\s*470px\)/)
 })
 
-test('inventory omits its redundant inner title and keeps occupied item names legible', () => {
+test('enlarged accessory and food sections share one bottom row without colliding with weapons', () => {
+  const source = readFileSync(inventoryEditorPath, 'utf8')
+
+  assert.match(
+    source,
+    /\.equipment-bottom\s*\{[\s\S]{0,260}grid-template-columns:\s*max-content minmax\(0, 1fr\);/,
+  )
+  assert.match(
+    source,
+    /\.equipment-bottom\s*\{[\s\S]{0,260}align-items:\s*end;/,
+  )
+})
+
+test('inventory omits its redundant inner title and keeps editor item names legible', () => {
   const source = readFileSync(inventoryEditorPath, 'utf8')
 
   assert.doesNotMatch(source, /Editor_Inventory/)
   assert.ok(
-    source.includes('.slot-copy strong { color: var(--ui-text); }'),
-    'occupied item names must explicitly use the primary theme text color',
+    source.includes('.inventory-slot-editor > header strong { font-size: 12px; }'),
+    'occupied item names must remain visible in the slot editor header',
   )
 })
 test('skill sections use consistent item sizing and title-row add actions', () => {

@@ -46,6 +46,7 @@ test('custom passive uses the explicit revision-bound passive-only request', asy
   }
 
   await store.selectPal(palId, true)
+  store.HIDE_INVALID_OPTIONS = false
   const accepted = await store.addCustomPassive(custom)
 
   assert.equal(accepted, true)
@@ -54,6 +55,7 @@ test('custom passive uses the explicit revision-bound passive-only request', asy
   assert.equal(commandPayload.expected_revision, 7)
   assert.equal(commandPayload.command, 'update_pal_skills')
   assert.equal(commandPayload.allow_custom_passive, true)
+  assert.equal(commandPayload.unrestricted, true)
   assert.equal(commandPayload.active, null)
   assert.equal(commandPayload.mastered, null)
   assert.deepEqual(commandPayload.passive, [

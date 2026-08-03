@@ -15,7 +15,7 @@
   · <a href="https://github.com/xyuqikzz/Palworld-Save-Editor/issues">Report an issue</a>
 </p>
 
-A local Palworld toolkit for offline Steam and Xbox Game Pass/WGS save editing, plus a separate capability-gated live management path for supported Windows Steam games and dedicated servers. It provides a desktop GUI, Web UI, and interactive CLI. This project is a modified version based on [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) and remains licensed under GPL-3.0.
+A local Palworld toolkit for offline Steam and Xbox Game Pass/WGS save editing, plus a separate capability-gated live management path for Windows Steam and PC Game Pass/XGP clients and dedicated servers. It provides a desktop GUI, Web UI, and interactive CLI. This project is a modified version based on [KrisCris/Palworld-Pal-Editor](https://github.com/KrisCris/Palworld-Pal-Editor) and remains licensed under GPL-3.0.
 
 ## Screenshots
 
@@ -48,9 +48,9 @@ Screenshots show the packaged Windows EXE with a local test save and a local sin
 
 - Steam-format directories and locally selected Xbox Game Pass WGS folders are supported directly. Game Pass writes are locked to the opened slot and create a verified backup outside WGS first.
 - Two-save migration can read Steam or WGS sources, but the current workflow only writes to a separate Steam-format target. Full-world and selected-character migration use analysis-bound plans, verified target backups, staging, conflict checks, atomic replacement, reopen validation, and verified recovery; WGS targets are explicitly blocked.
-- Offline save editing and live management are separate workflows. The first live-save-management release target is Windows dedicated servers through PalEditorBridge and UE4SS. Single-player, listen servers, joined clients, and WGS live management are not declared supported in this phase.
+- Offline save editing and live management are separate workflows. Windows Steam and PC Game Pass/XGP clients and dedicated servers install PalEditorBridge through UE4SS. Only an authoritative single-player or listen-server host may connect; joined clients are rejected.
 - Synthetic fixtures and a copied, user-authorized WGS sample have passed open, edit, commit, and reopen tests. Loading the result in the game and Xbox cloud synchronization have not been verified.
-- The packaged EXE has connected to and displayed data from a local Windows Steam single-player session. Each live command still requires its own in-game effect, client replication, save, restart, and reload verification; a successful protocol response alone is not sufficient.
+- The packaged EXE has connected to and displayed data from a local Windows Steam single-player session. XGP now has WinGDK process discovery and installation-path support, but real XGP gameplay effects, restart persistence, and Xbox cloud synchronization have not yet been verified. Each live command still requires its own in-game effect, client replication, save, restart, and reload verification; a successful protocol response alone is not sufficient.
 - The current data and compatibility baseline targets Palworld 1.0 / Steam build 24088745.
 - Unknown versions and unverified layouts are capability-gated. Do not force unsupported fields to be written.
 - This is an unofficial community project and is not affiliated with Pocketpair.
@@ -100,14 +100,14 @@ Version-specific new features, bug fixes, and other changes are documented in Gi
 
 ### Live management on Windows
 
-Live save management is separate from offline save editing and requires the Windows desktop EXE. The first release acceptance target is Windows dedicated servers only:
+Live save management is separate from offline save editing and requires the Windows desktop EXE. Steam, PC Game Pass/XGP clients, and dedicated servers use their corresponding UE4SS directories:
 
-1. Install a UE4SS release compatible with the current Palworld version in the Windows dedicated-server `Win64` directory.
+1. Install a UE4SS release compatible with the current Palworld version: use `Win64` for Steam clients and Windows dedicated servers, or `Content\Pal\Binaries\WinGDK` for PC Game Pass/XGP clients.
 2. On the source-selection screen, open **Live management**, download the bundled PalEditorBridge package, and copy its complete folder into the UE4SS `Mods` directory.
 3. Enable the administrator REST API and configure its password in `PalWorldSettings.ini`.
 4. Fully restart the game or server, connect from the editor, and use only capabilities reported by the bridge.
 
-Do not expose Palworld or bridge ports directly to the public internet. Keep non-TLS access on loopback and place remote access behind an HTTPS reverse proxy. A client installation may be used for later compatibility testing, but single-player and listen servers are outside this phase's declared release support. Verify every state-changing command in the game before relying on it.
+Do not expose Palworld or bridge ports directly to the public internet. Keep non-TLS access on loopback and place remote access behind an HTTPS reverse proxy. XGP live mutations use the game's normal authoritative and save paths; they do not rewrite an active WGS container directly. Verify every state-changing command separately in Steam and XGP before relying on it.
 
 ### Run from source
 

@@ -3477,7 +3477,7 @@
       }
     },
     "UniqueSkill": true,
-    "SkillFruit": false
+    "SkillFruit": true
   },
   "EPalWazaID::Unique_BlackCentaur_TwoSpearRushes": {
     "InternalName": "EPalWazaID::Unique_BlackCentaur_TwoSpearRushes",

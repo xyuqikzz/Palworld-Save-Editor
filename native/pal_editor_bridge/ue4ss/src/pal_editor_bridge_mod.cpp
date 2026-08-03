@@ -140,6 +140,21 @@ namespace pal_editor_bridge::ue4ss
             return name.find(L"palserver") != std::wstring::npos;
         }
 
+        std::string process_platform()
+        {
+            auto name = executable_path().filename().wstring();
+            std::ranges::transform(
+                name,
+                name.begin(),
+                [](wchar_t value) {
+                    return static_cast<wchar_t>(std::towlower(value));
+                }
+            );
+            return name.find(L"wingdk") != std::wstring::npos
+                ? "WinGDK"
+                : "Win64";
+        }
+
         std::string secure_bootstrap_secret()
         {
             std::array<unsigned char, 32> bytes{};
@@ -1336,14 +1351,14 @@ namespace pal_editor_bridge::ue4ss
           m_game(m_dedicated_process)
     {
         ModName = STR("PalEditorBridge");
-        ModVersion = STR("0.6.1");
+        ModVersion = STR("0.6.2");
         ModDescription =
             STR("Headless bridge for Palworld Pal Editor live management.");
         ModAuthors = STR("Palworld-Pal-Editor");
 
         BridgeConfig config;
         ServerDescriptor server;
-        server.platform = "Win64";
+        server.platform = process_platform();
         std::unique_ptr<CredentialVerifier> verifier;
         std::string local_secret;
         if (m_dedicated_process)

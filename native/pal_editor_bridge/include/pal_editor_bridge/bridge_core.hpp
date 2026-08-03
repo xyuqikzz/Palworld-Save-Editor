@@ -17,7 +17,7 @@
 namespace pal_editor_bridge
 {
     inline constexpr std::int32_t protocol_version = 1;
-    inline constexpr const char* bridge_version = "0.6.1";
+    inline constexpr const char* bridge_version = "0.6.2";
 
     struct BridgeConfig
     {

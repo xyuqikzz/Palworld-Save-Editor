@@ -16,6 +16,7 @@ RULE_SOURCE = (
     "Palworld 1.0 DA_StaticItemDataAsset + DT_ItemDataTable_Common"
 )
 SUPPORTED_LOCALES = ("en", "fr", "ja", "ko", "zh-CN")
+EDITOR_ENABLED_UNOFFICIAL_ITEMS = frozenset({"SkillCard_Psychokinesis"})
 
 _BASE_PROPERTY_OFFSET = {
     "PalStaticItemDataBase": 0,
@@ -614,7 +615,13 @@ def build_catalog(
                 "Description": str(localized.get("Description") or ""),
             }
         category = item_category(record.type_a, record.type_b)
-        disabled = not record.official_legal or category == "unsupported"
+        disabled = (
+            (
+                not record.official_legal
+                and static_id not in EDITOR_ENABLED_UNOFFICIAL_ITEMS
+            )
+            or category == "unsupported"
+        )
         result[static_id] = {
             "InternalName": static_id,
             "Icon": previous.get("Icon") or record.icon_asset,

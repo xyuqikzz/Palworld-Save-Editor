@@ -237,6 +237,7 @@ class UpdatePalSkills(SessionCommand):
     mastered: tuple[str, ...] | None = None
     passive: tuple[str, ...] | None = None
     allow_custom_passive: bool = False
+    unrestricted: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)

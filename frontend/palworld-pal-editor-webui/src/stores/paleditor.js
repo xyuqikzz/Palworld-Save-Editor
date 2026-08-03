@@ -33,6 +33,7 @@ const REMOTE_CERTIFICATE_FINGERPRINT_STORAGE_KEY =
     "PAL_REMOTE_CERTIFICATE_FINGERPRINT";
 const REMOTE_ALLOW_INSECURE_LOCAL_STORAGE_KEY =
     "PAL_REMOTE_ALLOW_INSECURE_LOCAL";
+const MAX_UNRESTRICTED_PASSIVE_SKILLS = 255;
 const FOG_CLEAR_CONFIRMATION = "清除迷雾";
 const FOG_RESET_CONFIRMATION = "重新覆盖未探索迷雾";
 const FAST_TRAVEL_UNLOCK_CONFIRMATION = "解锁所有传送点";
@@ -336,12 +337,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             updatePal({ target: { name: "Gender", value: gender } });
         }
 
-        pop_PassiveSkillList(e) {
-            const skill = e.currentTarget?.name || e.target?.name;
+        pop_PassiveSkillList(skillOrEvent, index = null) {
+            const skill = typeof skillOrEvent === "string"
+                ? skillOrEvent
+                : skillOrEvent?.currentTarget?.name || skillOrEvent?.target?.name;
             updatePal({
                 target: {
                     name: "pop_PassiveSkillList",
-                    value: skill,
+                    value: Number.isInteger(index) ? { skill, index } : skill,
                 },
             });
         }
@@ -351,7 +354,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 alert("Select a skill first!");
                 return;
             }
-            if (this.isEquippedPassiveSkill(skill)) {
+            if (HIDE_INVALID_OPTIONS.value && this.isEquippedPassiveSkill(skill)) {
                 return;
             }
             if (
@@ -359,6 +362,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 this.PassiveSkillList.length >= 4
             ) {
                 alert("you can't add more than 4 passive skills");
+                return;
+            }
+            if (this.PassiveSkillList.length >= MAX_UNRESTRICTED_PASSIVE_SKILLS) {
+                alert(`you can't add more than ${MAX_UNRESTRICTED_PASSIVE_SKILLS} passive skills`);
                 return;
             }
             updatePal({
@@ -2567,12 +2574,19 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         });
     }
 
-    async function putInventoryItem(container, slot, staticId, count = 1, dynamicInit = null) {
+    async function putInventoryItem(
+        container,
+        slot,
+        staticId,
+        count = 1,
+        dynamicInit = null,
+        mode = "empty_only"
+    ) {
         const command = {
             command: "put_item",
             static_id: staticId,
             count: Number(count),
-            mode: "empty_only",
+            mode,
         };
         if (dynamicInit !== null) command.dynamic_init = dynamicInit;
         return executeInventoryCommand(container.container_type, slot.slot_index, command);
@@ -4648,8 +4662,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             const passive = [...(SELECTED_PAL_DATA.value.PassiveSkillList || [])];
             if (key === "add_PassiveSkillList") passive.push(value);
             if (key === "pop_PassiveSkillList") {
-                const index = passive.indexOf(value);
-                if (index >= 0) passive.splice(index, 1);
+                const selectedIndex = Number.isInteger(value?.index)
+                    && passive[value.index] === value.skill
+                    ? value.index
+                    : passive.indexOf(value?.skill || value);
+                if (selectedIndex >= 0) passive.splice(selectedIndex, 1);
             }
             if (key === "replace_PassiveSkillList") passive.splice(0, passive.length, ...value);
             if (key === "add_EquipWaza") {
@@ -4679,7 +4696,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 // makes passive add/remove fail with ACTIVE_SKILL_NOT_MASTERED.
                 active: key.includes("Passive") ? null : active,
                 mastered: key.includes("Passive") ? null : mastered,
-                passive,
+                passive: key.includes("Passive") ? passive : null,
+                unrestricted: key.includes("Passive") && !HIDE_INVALID_OPTIONS.value,
             };
         } else if (key === "in_owner_palbox") {
             endpoint = "/api/pal/structural/commands";
@@ -4771,6 +4789,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     mastered: null,
                     passive,
                     allow_custom_passive: true,
+                    unrestricted: !HIDE_INVALID_OPTIONS.value,
                 }
             );
             if (!acceptResponse(

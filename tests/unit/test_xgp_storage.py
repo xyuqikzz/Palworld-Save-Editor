@@ -459,10 +459,11 @@ def test_xgp_payload_failure_restores_the_entire_fixture_byte_for_byte() -> None
         root = base / "wgs"
         root.mkdir()
         world_id = "D" * 32
+        original_level = _sav(_gvas(1))
         user = make_user_directory(
             root,
             "3333333333333333_" + "E" * 32,
-            {world_id: {"Level.sav": b"original-level"}},
+            {world_id: {"Level.sav": _cnk0_payload(original_level)}},
         )
         catalog = XgpSourceCatalog(roots=(root,))
         adapter = XgpWgsAdapter(
@@ -477,7 +478,9 @@ def test_xgp_payload_failure_restores_the_entire_fixture_byte_for_byte() -> None
         original = snapshot_tree(user)
         stage = base / "stage"
         stage.mkdir()
-        (stage / "Level.sav").write_bytes(b"replacement-level")
+        edited_gvas = _read_gvas(opened.workspace / "Level.sav")
+        edited_gvas.properties["Counter"]["value"] = 2
+        (stage / "Level.sav").write_bytes(_sav(edited_gvas))
 
         def fail(stage_name, _context):
             if stage_name == "after_payload_replace":
@@ -490,7 +493,7 @@ def test_xgp_payload_failure_restores_the_entire_fixture_byte_for_byte() -> None
                     staged_workspace=stage,
                     changed_files=(Path("Level.sav"),),
                     expected_revision=1,
-                    verify_file=lambda _path, _relative: None,
+                    verify_file=lambda path, _relative: _counter(path),
                     failure_hook=fail,
                 )
             )

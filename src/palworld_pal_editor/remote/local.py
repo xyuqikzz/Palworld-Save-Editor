@@ -22,6 +22,7 @@ from palworld_pal_editor.remote.profile import (
 _LOCAL_BRIDGE_ENTROPY = b"Palworld-Pal-Editor/local-bridge/v1"
 _SUPPORTED_CLIENT_EXECUTABLES = {
     "palworld-win64-shipping.exe",
+    "palworld-wingdk-shipping.exe",
 }
 _MAX_REGISTRATION_BYTES = 16 * 1024
 
