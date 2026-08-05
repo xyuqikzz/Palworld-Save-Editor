@@ -119,6 +119,8 @@ class XgpSourceCatalog:
                 retryable=True,
                 http_status=404,
             ) from error
+        if selected.is_file() and selected.name.casefold() == "containers.index":
+            selected = selected.parent
         if not selected.is_dir() or self._is_excluded_directory(selected):
             raise DomainError(
                 code="WGS_NOT_FOUND",

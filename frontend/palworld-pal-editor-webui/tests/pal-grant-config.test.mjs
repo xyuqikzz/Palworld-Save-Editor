@@ -4,6 +4,7 @@ import {
   buildPalGrantPayload,
   createPalGrantForm,
   createPalGrantLimits,
+  DEFAULT_REMOTE_SOUL_MAX,
   MAX_REMOTE_PAL_LEVEL,
   maximizePalGrantLevel,
   maximizePalGrantEnhancements,
@@ -44,13 +45,14 @@ test('maximum enhancement applies the editor-safe limits', () => {
   const form = createPalGrantForm()
   maximizePalGrantEnhancements(form, 60)
 
+  assert.equal(DEFAULT_REMOTE_SOUL_MAX, 20)
   assert.deepEqual(form.ivs, { hp: 100, shot: 100, defense: 100 })
   assert.deepEqual(form.enhancements, {
     condensation: 5,
-    soulHp: 60,
-    soulAttack: 60,
-    soulDefense: 60,
-    soulCraftSpeed: 60,
+    soulHp: 20,
+    soulAttack: 20,
+    soulDefense: 20,
+    soulCraftSpeed: 20,
   })
 })
 test('cheat options raise IV, soul, and condensation limits without exceeding Pal level 80', () => {

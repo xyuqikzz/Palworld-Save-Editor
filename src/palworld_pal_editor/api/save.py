@@ -236,6 +236,11 @@ def browse_directory():
     raw_path = payload.get("path") or Config.path or str(PROGRAM_PATH)
     try:
         current_path = Path(raw_path).resolve(strict=True)
+        if (
+            current_path.is_file()
+            and current_path.name.casefold() == "containers.index"
+        ):
+            current_path = current_path.parent
         if payload.get("parent") is True:
             current_path = current_path.parent.resolve(strict=True)
         if not current_path.is_dir():

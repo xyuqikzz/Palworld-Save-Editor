@@ -1750,7 +1750,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_FILE_PICKER_PATH.value = data.currentPath;
         PATH_CONTEXT.value = new Map(Object.entries(data.children));
         SHOW_FILE_PICKER.value = true;
-        if (FILE_PICKER_PURPOSE.value === "local-data") {
+        if (["xgp", "local-data"].includes(FILE_PICKER_PURPOSE.value)) {
             PAL_FILE_PICKER_SELECTION.value = null;
         }
     }
@@ -1764,7 +1764,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 ? "local-data"
                 : "steam";
 
-        const nativePicker = window.pywebview?.api?.select_save_directory;
+        const nativePicker = FILE_PICKER_PURPOSE.value === "xgp"
+            ? (window.pywebview?.api?.select_xgp_source
+                ?? window.pywebview?.api?.select_save_directory)
+            : (window.pywebview?.api?.select_steam_source
+                ?? window.pywebview?.api?.select_save_directory);
         if (FILE_PICKER_PURPOSE.value !== "local-data" && nativePicker) {
             try {
                 const selectedPath = await nativePicker(

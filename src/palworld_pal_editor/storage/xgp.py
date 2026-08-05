@@ -440,7 +440,7 @@ class XgpWgsAdapter:
 
                 index = index.replace_entry(
                     position,
-                    index.entries[position].with_payload(
+                    index.entries[position].with_pending_sync_payload(
                         size=len(encoded_data),
                         modified_filetime=now_filetime,
                     ),

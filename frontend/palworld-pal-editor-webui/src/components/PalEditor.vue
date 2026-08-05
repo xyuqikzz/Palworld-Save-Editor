@@ -83,6 +83,8 @@ const areAllEnhancementsMax = computed(() => (
   palStore.SELECTED_PAL_DATA?.areAllEnhancementsMax?.() ?? true
 ))
 
+const soulBonusPercent = rank => Number(rank || 0) * 3
+
 const maxableSuitabilityKeys = computed(() => {
   const suitabilities = palStore.SELECTED_PAL_DATA?.Suitabilities || {}
   const baseSuitabilities = palStore.PAL_STATIC_DATA[palStore.SELECTED_PAL_DATA?.DataAccessKey]?.Suitabilities || {}
@@ -404,7 +406,7 @@ const suitabilityIconSrc = key => {
       <div class="editField spaceBetween">
         <p class="const">
           {{ palStore.getTranslatedText("Editor_Souls_HP") }}
-          {{ palStore.SELECTED_PAL_DATA.Rank_HP }}
+          {{ palStore.SELECTED_PAL_DATA.Rank_HP }} ({{ soulBonusPercent(palStore.SELECTED_PAL_DATA.Rank_HP) }}%)
         </p>
         <input class="slider" type="range" name="Rank_HP" min="0"
           :max="palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_SOULS_LEVEL : 255" :disabled="palStore.LOADING_FLAG"
@@ -413,7 +415,7 @@ const suitabilityIconSrc = key => {
       <div class="editField spaceBetween">
         <p class="const">
           {{ palStore.getTranslatedText("Editor_Souls_ATK") }}
-          {{ palStore.SELECTED_PAL_DATA.Rank_Attack }}
+          {{ palStore.SELECTED_PAL_DATA.Rank_Attack }} ({{ soulBonusPercent(palStore.SELECTED_PAL_DATA.Rank_Attack) }}%)
         </p>
         <input class="slider" type="range" name="Rank_Attack" min="0"
           :max="palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_SOULS_LEVEL : 255" :disabled="palStore.LOADING_FLAG"
@@ -422,7 +424,7 @@ const suitabilityIconSrc = key => {
       <div class="editField spaceBetween">
         <p class="const">
           {{ palStore.getTranslatedText("Editor_Souls_DEF") }}
-          {{ palStore.SELECTED_PAL_DATA.Rank_Defence }}
+          {{ palStore.SELECTED_PAL_DATA.Rank_Defence }} ({{ soulBonusPercent(palStore.SELECTED_PAL_DATA.Rank_Defence) }}%)
         </p>
         <input class="slider" type="range" name="Rank_Defence" min="0"
           :max="palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_SOULS_LEVEL : 255" :disabled="palStore.LOADING_FLAG"
@@ -432,7 +434,7 @@ const suitabilityIconSrc = key => {
       <div class="editField spaceBetween">
         <p class="const">
           {{ palStore.getTranslatedText("Editor_Souls_CraftSpeed") }}
-          {{ palStore.SELECTED_PAL_DATA.Rank_CraftSpeed }}
+          {{ palStore.SELECTED_PAL_DATA.Rank_CraftSpeed }} ({{ soulBonusPercent(palStore.SELECTED_PAL_DATA.Rank_CraftSpeed) }}%)
         </p>
         <input class="slider" type="range" name="Rank_CraftSpeed" min="0"
           :max="palStore.HIDE_INVALID_OPTIONS ? palStore.MAX_SOULS_LEVEL : 255" :disabled="palStore.LOADING_FLAG"

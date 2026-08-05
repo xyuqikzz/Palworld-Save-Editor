@@ -610,6 +610,63 @@ class NativeDialogTests(unittest.TestCase):
             self.assertEqual(str(Path(selected).resolve()), api.select_save_directory(selected))
             self.assertEqual([str(Path(selected).resolve())], received)
 
+    def test_game_pass_picker_selects_containers_index_from_the_default_wgs_root(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (str(Path(kwargs["directory"]) / "containers.index"),)
+
+        with TemporaryDirectory() as temp:
+            wgs_root = Path(temp) / "wgs"
+            user = wgs_root / ("1" * 16 + "_" + "A" * 32)
+            user.mkdir(parents=True)
+            (user / "containers.index").write_bytes(b"index")
+            window = FakeWindow()
+            api = NativeDialogApi(
+                window_provider=lambda: [window],
+                wgs_root_provider=lambda: (wgs_root,),
+            )
+
+            self.assertEqual(
+                str((user / "containers.index").resolve()),
+                api.select_xgp_source(),
+            )
+            self.assertEqual(webview.OPEN_DIALOG, window.calls[0][0])
+            self.assertEqual(str(user.resolve()), window.calls[1]["directory"])
+            self.assertFalse(window.calls[1]["allow_multiple"])
+            self.assertEqual(
+                ("Game Pass WGS index (containers.index)",),
+                window.calls[1]["file_types"],
+            )
+
+    def test_steam_picker_selects_level_sav_and_returns_its_world_directory(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (str(Path(kwargs["directory"]) / "Level.sav"),)
+
+        with TemporaryDirectory() as temp:
+            world = Path(temp) / "World"
+            world.mkdir()
+            (world / "Level.sav").write_bytes(b"level")
+            window = FakeWindow()
+            api = NativeDialogApi(window_provider=lambda: [window])
+
+            self.assertEqual(str(world.resolve()), api.select_steam_source(world))
+            self.assertEqual(webview.OPEN_DIALOG, window.calls[0][0])
+            self.assertEqual(str(world.resolve()), window.calls[1]["directory"])
+            self.assertFalse(window.calls[1]["allow_multiple"])
+            self.assertEqual(
+                ("Palworld world save (Level.sav)",),
+                window.calls[1]["file_types"],
+            )
+
     def test_non_windows_keeps_pywebview_fallback(self) -> None:
         from palworld_pal_editor.gui import NativeDialogApi
 
@@ -665,6 +722,8 @@ class NativeDialogTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("const MAX_LEVEL = 80;", source)
         self.assertIn("window.pywebview?.api?.select_save_directory", source)
+        self.assertIn("window.pywebview?.api?.select_steam_source", source)
+        self.assertIn("window.pywebview?.api?.select_xgp_source", source)
         self.assertIn("window.pywebview?.api?.select_local_data_file", source)
         entry_source = (
             PROJECT_ROOT

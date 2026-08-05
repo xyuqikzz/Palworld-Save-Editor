@@ -24,13 +24,24 @@ const sortedPathChildren = computed(() => {
 const isLocalDataPicker = computed(
     () => palStore.FILE_PICKER_PURPOSE === 'local-data',
 )
+const isXgpPicker = computed(
+    () => palStore.FILE_PICKER_PURPOSE === 'xgp',
+)
 
 const isLocalDataFile = (entry) => (
     !entry.isDir && entry.filename.toLowerCase() === 'localdata.sav'
 )
+const isXgpIndexFile = (entry) => (
+    !entry.isDir && entry.filename.toLowerCase() === 'containers.index'
+)
+const isSelectableFile = (entry) => (
+    (isLocalDataPicker.value && isLocalDataFile(entry))
+    || (isXgpPicker.value && isXgpIndexFile(entry))
+)
 
-const isSelectedLocalDataFile = (path) => (
-    isLocalDataPicker.value && palStore.PAL_FILE_PICKER_SELECTION === path
+const isSelectedFile = (path) => (
+    (isLocalDataPicker.value || isXgpPicker.value)
+    && palStore.PAL_FILE_PICKER_SELECTION === path
 )
 
 const pickerConfirmationDisabled = computed(() => {
@@ -45,7 +56,7 @@ const pickerConfirmationDisabled = computed(() => {
 
 const selectPathEntry = (path, entry) => {
     if (entry.isDir) palStore.update_picker_result(path)
-    else if (isLocalDataPicker.value && isLocalDataFile(entry)) {
+    else if (isSelectableFile(entry)) {
         palStore.PAL_FILE_PICKER_SELECTION = path
     }
 }
@@ -59,7 +70,8 @@ const savePickerResult = async () => {
     }
     palStore.SHOW_FILE_PICKER = false
     if (palStore.FILE_PICKER_PURPOSE === 'xgp') {
-        palStore.XGP_WGS_PATH = palStore.PAL_FILE_PICKER_PATH
+        palStore.XGP_WGS_PATH = palStore.PAL_FILE_PICKER_SELECTION
+            || palStore.PAL_FILE_PICKER_PATH
         await palStore.discoverXgpSources()
     } else {
         palStore.PAL_GAME_SAVE_PATH = palStore.PAL_FILE_PICKER_PATH
@@ -111,12 +123,12 @@ const abort = () => {
                     :key="key"
                     :isdir="value.isDir"
                     :class="{
-                        'path-entry--selectable': value.isDir || (isLocalDataPicker && isLocalDataFile(value)),
-                        'path-entry--selected': isSelectedLocalDataFile(key),
-                        'path-entry--disabled': isLocalDataPicker && !value.isDir && !isLocalDataFile(value),
+                        'path-entry--selectable': value.isDir || isSelectableFile(value),
+                        'path-entry--selected': isSelectedFile(key),
+                        'path-entry--disabled': !value.isDir && ((isLocalDataPicker && !isLocalDataFile(value)) || (isXgpPicker && !isXgpIndexFile(value))),
                     }"
-                    :tabindex="value.isDir || (isLocalDataPicker && isLocalDataFile(value)) ? 0 : undefined"
-                    :aria-selected="isLocalDataPicker && !value.isDir ? isSelectedLocalDataFile(key) : undefined"
+                    :tabindex="value.isDir || isSelectableFile(value) ? 0 : undefined"
+                    :aria-selected="!value.isDir && (isLocalDataPicker || isXgpPicker) ? isSelectedFile(key) : undefined"
                     @click="selectPathEntry(key, value)"
                     @keydown.enter.prevent="selectPathEntry(key, value)"
                     @keydown.space.prevent="selectPathEntry(key, value)"

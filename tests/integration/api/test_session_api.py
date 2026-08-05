@@ -738,6 +738,25 @@ class SessionApiTests(unittest.TestCase):
             finally:
                 Config.path = original
 
+    def test_directory_browser_reopens_a_selected_wgs_index_at_its_parent(self) -> None:
+        with TemporaryDirectory() as temp:
+            user = Path(temp) / ("1" * 16 + "_" + "A" * 32)
+            user.mkdir()
+            index = user / "containers.index"
+            index.write_bytes(b"index")
+
+            response = self.client.post(
+                "/api/save/browse-directory",
+                json={"path": str(index)},
+                headers=self.headers,
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            user.resolve(),
+            Path(response.get_json()["data"]["currentPath"]),
+        )
+
     def test_local_web_directory_picker_uses_the_native_system_dialog(self) -> None:
         with TemporaryDirectory() as temp, patch(
             "palworld_pal_editor.api.save._select_native_directory",

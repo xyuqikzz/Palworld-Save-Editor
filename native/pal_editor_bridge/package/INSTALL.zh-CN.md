@@ -34,7 +34,7 @@
    Invoke-RestMethod http://127.0.0.1:8213/v1/health
    ```
 
-   专服返回的 `bridgeVersion` 应为 `0.6.2`。客户端使用动态回环端口，
+   专服返回的 `bridgeVersion` 应为 `0.6.3`。客户端使用动态回环端口，
    无需手工探测端口。
 
 ## EXE 连接

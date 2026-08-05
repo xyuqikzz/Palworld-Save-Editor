@@ -46,7 +46,7 @@ Screenshots show the packaged Windows EXE with a local test save and a local sin
 
 ## Support scope
 
-- Steam-format directories and locally selected Xbox Game Pass WGS folders are supported directly. Game Pass writes are locked to the opened slot and create a verified backup outside WGS first.
+- Steam-format directories and locally selected Xbox Game Pass WGS folders or `containers.index` files are supported directly. Game Pass writes are locked to the opened slot, create a verified backup outside WGS first, and mark changed entries as pending synchronization without claiming that Xbox cloud upload succeeded.
 - Two-save migration can read Steam or WGS sources, but the current workflow only writes to a separate Steam-format target. Full-world and selected-character migration use analysis-bound plans, verified target backups, staging, conflict checks, atomic replacement, reopen validation, and verified recovery; WGS targets are explicitly blocked.
 - Offline save editing and live management are separate workflows. Windows Steam and PC Game Pass/XGP clients and dedicated servers install PalEditorBridge through UE4SS. Only an authoritative single-player or listen-server host may connect; joined clients are rejected.
 - Synthetic fixtures and a copied, user-authorized WGS sample have passed open, edit, commit, and reopen tests. Loading the result in the game and Xbox cloud synchronization have not been verified.
@@ -61,9 +61,9 @@ Steam saves are normally stored under:
 %LOCALAPPDATA%\Pal\Saved\SaveGames\<Steam ID>\<World ID>
 ```
 
-Select the complete world directory containing `Level.sav` and `Players/`, not an individual `.sav` file.
+In the desktop app, choose the world's `Level.sav`; the editor opens its containing directory as the complete Steam save. In Web mode, select the complete world directory containing `Level.sav` and `Players/`.
 
-For Game Pass, exit Palworld and wait for local synchronization, then choose either the WGS root or the user directory containing `containers.index`. Read the slots and explicitly select the world to open. A successful local transaction does not prove Xbox cloud synchronization.
+For Game Pass, exit Palworld and wait for local synchronization, then choose the WGS root, the user directory containing `containers.index`, or `containers.index` itself. Read the slots and explicitly select the world to open. A successful local transaction and pending-sync metadata do not prove Xbox cloud synchronization.
 
 ## Features
 
@@ -73,7 +73,7 @@ For Game Pass, exit Palworld and wait for local synchronization, then choose eit
 - Edit item quantities and supported dynamic attributes; copy, move, replace, or clear slots; expand verified ordinary backpacks and guild chests without shrinking them.
 - Inspect and edit verified persistent item storage for a selected guild base. Incomplete or ambiguous base-storage mappings remain read-only.
 - Review the world-local arena leaderboard with the game build 24088745 NPC baseline, edit player RP, explicitly create a missing verified `ArenaRankPoint` field, or reset existing supported player records.
-- Edit Pal species, variants, names, gender, trust, level, IVs, condensation, souls, work suitability, active skills, passive skills, custom/mod passive entries, and reusable presets.
+- Edit Pal species, variants, names, gender, trust, level, IVs, condensation, souls, work suitability, active skills, passive skills, custom/mod passive entries, and reusable presets. Soul controls keep the stored rank visible, show its `rank × 3%` game bonus, and cap normal editing at rank 20 / 60%; higher values remain restricted to unrestricted mode.
 - Add, duplicate, delete, and reorganize Pals across supported containers, with previews and reference checks for destructive operations; group player-owned Pals by Party, Palbox, and other locations with collapsible sections and container, Paldeck, or level sorting.
 - Rename supported guilds, inspect role-sorted members, safely transfer Guild Master ownership on known layouts, increase verified Palbox levels and guild-chest capacities, and inspect bases, working Pals, skills, and conditions.
 - Analyze two independent saves and perform full-world or selected-character migration into a Steam-format target, including supported player files, inventories, Party/Palbox data, and dimensional Pal storage. Unknown identities, opaque references, version mismatches, and changed sources or targets fail closed.
@@ -85,7 +85,7 @@ For Game Pass, exit Palworld and wait for local synchronization, then choose eit
 - Connect through PalEditorBridge to show online players first, then merge a short-lived read-only player snapshot by `PlayerUId`; filter all, online, and offline players and lazily inspect the selected player's profile, inventory, technology, missions, attributes, map progress, Party, and Palbox.
 - Open the live-management map to combine authoritative online Pawn positions with last-saved offline player positions; every marker is labeled with the player's online or offline state, and invalid runtime levels fall back to the snapshot value.
 - On dedicated servers, place kick, ban, and unban controls beside the selected player's level. These administrator actions send no optional reason, require a second confirmation, and are enabled only when the bridge has a verified REST `userId`; unban remains available for a player banned during the current connection.
-- Expose authoritative mutations only for online targets and only when the current game build advertises them. The verified paths are granting an existing item, adding experience, and granting a Pal; unverified identity, slot replacement, mission/technology/fast-travel, and existing-Pal mutation paths remain explicitly disabled.
+- Expose authoritative mutations only for online targets and only when the current game build advertises them. The verified paths are granting an existing item, adding experience, and granting a Pal; normal live Pal grants enforce the same rank 20 / 60% soul limit in both the form and bridge, while unverified identity, slot replacement, mission/technology/fast-travel, and existing-Pal mutation paths remain explicitly disabled.
 - Live mutations never write directly to an active `.sav` file and provide no rollback, undo, pre-change backup, or deferred offline queue. Successful changes coalesce a normal world save after two seconds, force one within ten seconds of continuous editing, and report `clean`, `dirty`, `saving`, or `failed` persistence state.
 - Review revision-bound pending changes and save explicitly through temporary files, validation, verified backups, conflict detection, replacement, and reopen checks, preserving recovery information on failure. Windows save staging, Steam backups, and reopen verification support extended-length paths; paths that still exceed platform limits fail before save data is written and surface a specific recovery action.
 - Use the UI in English, French, Japanese, Korean, or Simplified Chinese.

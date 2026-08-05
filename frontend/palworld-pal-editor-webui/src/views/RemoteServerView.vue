@@ -5,6 +5,7 @@ import AppIcon from '@/components/modules/AppIcon.vue'
 import ItemIcon from '@/components/modules/ItemIcon.vue'
 import ItemPicker from '@/components/modules/ItemPicker.vue'
 import RemotePalCard from '@/components/modules/RemotePalCard.vue'
+import { DEFAULT_REMOTE_SOUL_MAX } from '@/components/modules/pal-grant-config'
 import { palSpeciesCatalogKey } from '@/components/modules/pal-species-filter'
 import {
   LIVE_PLAYER_TABS,
@@ -1628,7 +1629,7 @@ onMounted(async () => {
               :pal-data="palStore.PAL_STATIC_DATA"
               :passive-options="palStore.PASSIVE_SKILLS_LIST"
               :level-maximum="palStore.MAX_LEVEL"
-              :soul-maximum="palStore.MAX_SOULS_LEVEL || 60"
+              :soul-maximum="palStore.MAX_SOULS_LEVEL || DEFAULT_REMOTE_SOUL_MAX"
               :disabled="palStore.REMOTE_LOADING || !canTarget('pal.grant')"
               :can-submit="Boolean(selectedPlayerId) && canTarget('pal.grant')"
               @submit="runCommand('pal.grant', $event)"

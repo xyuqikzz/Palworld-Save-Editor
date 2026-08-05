@@ -77,6 +77,8 @@ test('remote Pal grant exposes shared passive presets and persistent attributes'
   assert.match(source, /form\.enhancements\.condensation/)
   assert.match(source, /key: 'soulCraftSpeed'/)
   assert.match(source, /v-model\.number="form\.enhancements\[control\.key\]"/)
+  assert.match(source, /const soulBonusPercent = rank => Number\(rank \|\| 0\) \* 3/)
+  assert.match(source, /soulBonusPercent\(form\.enhancements\[control\.key\]\)/)
   assert.match(source, /:max="soulEnhancementMaximum"/)
   assert.match(source, /:max="condensationMaximum"/)
   assert.match(source, /REMOTE_PAL_GRANT_DRAFT_STORAGE_KEY/)
@@ -88,6 +90,10 @@ test('remote Pal grant exposes shared passive presets and persistent attributes'
   assert.match(source, /class="remote-pal-grant__level-max"/)
   assert.match(source, /@click="maximizePalGrantLevel\(form\)"/)
   assert.match(viewSource, /:level-maximum="palStore\.MAX_LEVEL"/)
+  assert.match(
+    viewSource,
+    /:soul-maximum="palStore\.MAX_SOULS_LEVEL \|\| DEFAULT_REMOTE_SOUL_MAX"/,
+  )
   assert.doesNotMatch(
     viewSource,
     /:level-maximum="palStore\.HIDE_INVALID_OPTIONS \? palStore\.MAX_LEVEL : palStore\.MAX_INVALID_LEVEL"/,

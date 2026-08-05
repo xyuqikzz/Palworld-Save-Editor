@@ -340,6 +340,7 @@ def test_xgp_commit_updates_only_changed_payload_and_index_with_verified_backup(
         )
         opened = adapter.open(source)
         before = snapshot_tree(user).by_path()
+        before_index = parse_index((user / "containers.index").read_bytes())
         player_payload = opened.storage_metadata["bindings"][f"Players/{player_id}.sav"][
             "payload_relative"
         ]
@@ -361,8 +362,20 @@ def test_xgp_commit_updates_only_changed_payload_and_index_with_verified_backup(
         )
 
         after = snapshot_tree(user).by_path()
+        after_index = parse_index((user / "containers.index").read_bytes())
+        level_position = int(
+            opened.storage_metadata["bindings"]["Level.sav"]["index_position"]
+        )
+        player_position = int(
+            opened.storage_metadata["bindings"][f"Players/{player_id}.sav"][
+                "index_position"
+            ]
+        )
         assert (user / Path(level_payload)).read_bytes() == b"level-after-and-larger"
         assert (user / Path(player_payload)).read_bytes() == b"player-before"
+        assert after_index.entries[level_position].cloud_id == ""
+        assert after_index.entries[level_position].flags & 4 == 4
+        assert after_index.entries[player_position] == before_index.entries[player_position]
         assert after[player_payload].sha256 == before[player_payload].sha256
         unchanged = set(before) - {"containers.index", level_payload}
         assert all(after[path].sha256 == before[path].sha256 for path in unchanged)

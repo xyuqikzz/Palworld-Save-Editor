@@ -11,6 +11,7 @@ import {
   clampPalGrantForm,
   createPalGrantForm,
   createPalGrantLimits,
+  DEFAULT_REMOTE_SOUL_MAX,
   maximizePalGrantEnhancements,
   maximizePalGrantLevel,
   REMOTE_PAL_GRANT_DRAFT_STORAGE_KEY,
@@ -23,7 +24,7 @@ const props = defineProps({
   palData: { type: Object, default: () => ({}) },
   passiveOptions: { type: Array, default: () => [] },
   levelMaximum: { type: Number, default: 80 },
-  soulMaximum: { type: Number, default: 60 },
+  soulMaximum: { type: Number, default: DEFAULT_REMOTE_SOUL_MAX },
   disabled: { type: Boolean, default: false },
   canSubmit: { type: Boolean, default: false },
 })
@@ -52,6 +53,7 @@ const grantLimits = computed(() => createPalGrantLimits({
 }))
 const ivMaximum = computed(() => grantLimits.value.ivMaximum)
 const soulEnhancementMaximum = computed(() => grantLimits.value.soulMaximum)
+const soulBonusPercent = rank => Number(rank || 0) * 3
 const condensationMaximum = computed(
   () => grantLimits.value.condensationMaximum,
 )
@@ -360,7 +362,7 @@ const submit = () => {
           <div class="remote-pal-grant__training-heading">
             <span><AppIcon name="sparkles" :size="16" /></span>
             <strong>{{ palStore.getTranslatedText('Editor_Souls_Upgrade') }}</strong>
-            <small>0—{{ soulEnhancementMaximum }}</small>
+            <small>0—{{ soulEnhancementMaximum }} ({{ soulBonusPercent(soulEnhancementMaximum) }}%)</small>
           </div>
           <div class="remote-pal-grant__stat-list remote-pal-grant__stat-list--souls">
             <div v-for="control in soulControls" :key="control.key" class="remote-pal-grant__stat">
@@ -377,7 +379,10 @@ const submit = () => {
                   </span>
                   {{ control.label }}
                 </label>
-                <output>{{ form.enhancements[control.key] }}</output>
+                <output>
+                  {{ form.enhancements[control.key] }}
+                  ({{ soulBonusPercent(form.enhancements[control.key]) }}%)
+                </output>
               </header>
               <div>
                 <input

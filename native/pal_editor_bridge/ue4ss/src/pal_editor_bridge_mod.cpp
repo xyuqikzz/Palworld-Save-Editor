@@ -439,7 +439,7 @@ namespace pal_editor_bridge::ue4ss
             result.unrestricted = unrestricted;
             const auto iv_maximum = unrestricted ? 255 : 100;
             const auto condensation_maximum = unrestricted ? 255 : 5;
-            const auto soul_maximum = unrestricted ? 255 : 60;
+            const auto soul_maximum = unrestricted ? 255 : 20;
 
             auto passives = payload.find("passiveSkills");
             if (passives == payload.end())
@@ -1351,7 +1351,7 @@ namespace pal_editor_bridge::ue4ss
           m_game(m_dedicated_process)
     {
         ModName = STR("PalEditorBridge");
-        ModVersion = STR("0.6.2");
+        ModVersion = STR("0.6.3");
         ModDescription =
             STR("Headless bridge for Palworld Pal Editor live management.");
         ModAuthors = STR("Palworld-Pal-Editor");

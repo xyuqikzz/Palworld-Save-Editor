@@ -2,7 +2,7 @@ export const MAX_REMOTE_PASSIVE_SKILLS = 4
 export const MAX_REMOTE_PAL_LEVEL = 80
 export const MAX_REMOTE_IV = 100
 export const MAX_REMOTE_CONDENSATION = 5
-export const DEFAULT_REMOTE_SOUL_MAX = 60
+export const DEFAULT_REMOTE_SOUL_MAX = 20
 export const MAX_REMOTE_UNRESTRICTED_VALUE = 255
 export const REMOTE_PAL_GRANT_DRAFT_STORAGE_KEY = 'pal-editor.remote-pal-grant-draft.v1'
 

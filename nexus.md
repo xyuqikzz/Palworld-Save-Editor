@@ -34,18 +34,19 @@ Default Steam save location:
 
 [code]%LOCALAPPDATA%\Pal\Saved\SaveGames\<Steam ID>\<World ID>[/code]
 
-Select the complete world directory. Do not select [b]Level.sav[/b] directly.
+In the desktop app, choose the world's [b]Level.sav[/b]; the editor opens its containing directory as the complete Steam save. In Web mode, select the complete world directory.
 
 [size=4][b]Xbox Game Pass / WGS Beta[/b][/size]
 
 The editor can discover, open, edit, and write back a locally selected Xbox Game Pass/WGS world.
 
 [list]
-[*]Select a WGS root or Xbox user directory containing [b]containers.index[/b]
+[*]Select a WGS root, an Xbox user directory containing [b]containers.index[/b], or [b]containers.index[/b] itself
 [*]Read the available local world slots and explicitly choose the intended world
 [*]Keep saving locked to the exact WGS slot opened at the start of the session
 [*]Create and verify a complete backup outside WGS before writeback
 [*]Detect source changes, stage and validate the transaction, preserve recovery details on failure, and reopen the final WGS result
+[*]Clear the previous cloud revision identifier and mark changed entries as pending synchronization without claiming that Xbox cloud upload succeeded
 [*]Export a separate Steam-format copy without treating that export as WGS writeback
 [/list]
 
@@ -80,6 +81,7 @@ Live management is a separate Windows workflow. Steam and PC Game Pass/XGP clien
 [*]Combine authoritative online Pawn positions with last-saved offline player positions on the Map, label every marker as online or offline, and keep the saved level when a runtime level is invalid
 [*]Place dedicated-server kick, ban, and unban controls beside the selected player's level; all three omit the optional reason, require a second confirmation, and require a REST-verified userId
 [*]Show only target-level operations reported by the connected bridge; the verified live mutations are granting an existing item, adding experience, and granting a Pal to an online player
+[*]Show stored Soul ranks with their rank × 3% game bonus and enforce the normal rank 20 / 60% limit in both the live Pal grant form and Bridge
 [*]Keep unverified identity, slot replacement, mission, technology, fast-travel, and existing-Pal mutation controls disabled
 [*]Use authenticated, revision-bound, idempotent command handling
 [*]Coalesce normal world saves after two seconds and force one within ten seconds of continuous editing
@@ -109,7 +111,7 @@ Every state-changing command still requires its own in-game effect, replication,
 [list]
 [*]Add, duplicate, delete, move, and reorganize Pals across supported containers
 [*]Edit species, supported variants, nickname, gender, trust, level, and experience
-[*]Edit IVs, condensation, Soul upgrades, work suitability, active skills, and passive skills
+[*]Edit IVs, condensation, Soul upgrades, work suitability, active skills, and passive skills; Soul controls show both stored rank and the rank × 3% game bonus, with a normal rank 20 / 60% cap
 [*]Manage supported custom or mod passive entries
 [*]Create, edit, pin, reuse, and quickly apply passive-skill presets
 [*]Apply supported maximum Pal and work-suitability settings

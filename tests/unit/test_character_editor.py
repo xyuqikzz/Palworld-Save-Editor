@@ -998,6 +998,10 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertEqual("VALUE_OUT_OF_RANGE", raised.exception.code)
         self.assertEqual(255, raised.exception.details["maximum"])
 
+    def test_normal_soul_limit_matches_the_sixty_percent_game_bonus(self) -> None:
+        self.assertEqual(20, Config.max_souls_level)
+        self.assertEqual(60, Config.max_souls_level * 3)
+
     def test_pal_progression_heals_then_applies_explicit_health_and_satiety(self) -> None:
         self.pal._pal_param["WorkerSick"] = PalObjects.EnumProperty(
             "EPalBaseCampWorkerSickType",

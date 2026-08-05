@@ -27,3 +27,16 @@ test('soul enhancement sliders switch between configured and cheat maximums', ()
   ) ?? []
   assert.equal(ivMaxBindings.length, 4)
 })
+
+test('soul enhancement ranks display their game bonus percentages', () => {
+  assert.match(editor, /const soulBonusPercent = rank => Number\(rank \|\| 0\) \* 3/)
+
+  const percentageBindings = editor.match(
+    /soulBonusPercent\(palStore\.SELECTED_PAL_DATA\.Rank_(?:HP|Attack|Defence|CraftSpeed)\)/g,
+  ) ?? []
+  assert.equal(percentageBindings.length, 4)
+
+  const soulBonusPercent = rank => Number(rank || 0) * 3
+  assert.equal(soulBonusPercent(20), 60)
+  assert.equal(soulBonusPercent(30), 90)
+})

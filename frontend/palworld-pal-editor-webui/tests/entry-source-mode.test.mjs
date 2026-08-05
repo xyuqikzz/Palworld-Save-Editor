@@ -82,6 +82,20 @@ test('later launches can restore the remote server source', () => {
   assert.equal(store.SAVE_SOURCE_MODE, 'remote')
 })
 
+test('Game Pass picker can select containers.index directly', async () => {
+  const [storeSource, pickerSource] = await Promise.all([
+    readFile(new URL('../src/stores/paleditor.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/PathPicker.vue', import.meta.url), 'utf8'),
+  ])
+
+  assert.match(storeSource, /select_xgp_source/)
+  assert.match(pickerSource, /filename\.toLowerCase\(\) === 'containers\.index'/)
+  assert.match(
+    pickerSource,
+    /XGP_WGS_PATH = palStore\.PAL_FILE_PICKER_SELECTION[\s\S]*?PAL_FILE_PICKER_PATH/,
+  )
+})
+
 test('remote login saves the password by default without exposing it to local storage', async () => {
   const values = installStorage()
   setActivePinia(createPinia())

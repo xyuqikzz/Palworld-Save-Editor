@@ -147,7 +147,7 @@ an authorized local source build refreshes the verified DLL:
 ```
 
 The package is written to
-`mod/PalEditorBridge-UE4SS-Mod-0.6.2.zip`. It contains the required
+`mod/PalEditorBridge-UE4SS-Mod-0.6.3.zip`. It contains the required
 `PalEditorBridge/dlls/main.dll` layout, an `enabled.txt`, and Chinese
 installation instructions.
 

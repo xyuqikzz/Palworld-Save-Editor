@@ -89,7 +89,7 @@ test("work suitability buttons use the button name when an SVG child is clicked"
     });
 
     store.HIDE_INVALID_OPTIONS = true;
-    store.MAX_SOULS_LEVEL = 60;
+    store.MAX_SOULS_LEVEL = 20;
     store.SELECTED_PAL_DATA.maxAllEnhancements();
     await Promise.resolve();
 
@@ -98,10 +98,10 @@ test("work suitability buttons use the button name when an SVG child is clicked"
         iv_hp: 100,
         iv_shot: 100,
         iv_defense: 100,
-        soul_hp: 60,
-        soul_attack: 60,
-        soul_defense: 60,
-        soul_craft_speed: 60,
+        soul_hp: 20,
+        soul_attack: 20,
+        soul_defense: 20,
+        soul_craft_speed: 20,
         condensation: 5,
     });
     assert.equal(Object.hasOwn(commandPayload, "work_suitability"), false);

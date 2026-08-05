@@ -105,6 +105,24 @@ def test_selected_wgs_folder_limits_discovery_to_the_user_chosen_scope() -> None
         ]
 
 
+def test_selected_containers_index_discovers_its_wgs_user_scope() -> None:
+    with TemporaryDirectory() as temp:
+        root = Path(temp) / "wgs"
+        root.mkdir()
+        user = make_user_directory(
+            root,
+            "5555555555555555_" + "E" * 32,
+            {"F" * 32: {"Level.sav": b"world-f"}},
+        )
+
+        sources = XgpSourceCatalog(roots=()).discover_selected(
+            user / "containers.index"
+        )
+
+        assert [source.world_id for source in sources] == ["F" * 32]
+        assert sources[0].canonical_path == user.resolve()
+
+
 def test_selected_folder_without_wgs_slots_is_rejected() -> None:
     with TemporaryDirectory() as temp:
         wrong_folder = Path(temp) / "not-a-wgs-save"

@@ -118,7 +118,7 @@ class PalEditorBridgePerformanceTests(unittest.TestCase):
             source,
         )
         self.assertIn(
-            "const auto soul_maximum = unrestricted ? 255 : 60",
+            "const auto soul_maximum = unrestricted ? 255 : 20",
             source,
         )
 

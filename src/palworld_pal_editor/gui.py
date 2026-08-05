@@ -11,6 +11,7 @@ import webbrowser
 import webview
 from pathlib import Path
 from palworld_pal_editor.config import Config
+from palworld_pal_editor.storage.discovery import default_wgs_roots
 from palworld_pal_editor.utils import LOGGER
 from palworld_pal_editor.webui import main as web_main
 from palworld_pal_editor.windows_dialog import choose_folder
@@ -23,10 +24,12 @@ class NativeDialogApi:
         modern_folder_picker=choose_folder,
         platform_name: str | None = None,
         bridge_mod_package: str | Path | None = None,
+        wgs_root_provider=default_wgs_roots,
     ):
         self._window_provider = window_provider or (lambda: webview.windows)
         self._modern_folder_picker = modern_folder_picker
         self._platform_name = platform_name or sys.platform
+        self._wgs_root_provider = wgs_root_provider
         self._bridge_mod_package = (
             Path(bridge_mod_package).resolve()
             if bridge_mod_package is not None
@@ -57,6 +60,79 @@ class NativeDialogApi:
         selected = windows[0].create_file_dialog(
             webview.FOLDER_DIALOG,
             directory=initial_directory,
+        )
+        if not selected:
+            return None
+        return str(selected[0])
+
+    def select_steam_source(self, requested_path=None):
+        initial_directory = ""
+        for candidate in (requested_path, Config.path):
+            if not candidate:
+                continue
+            path = Path(candidate)
+            if path.is_file():
+                initial_directory = str(path.resolve().parent)
+                break
+            if path.is_dir():
+                initial_directory = str(path.resolve())
+                break
+
+        windows = self._window_provider()
+        if not windows:
+            raise RuntimeError(
+                "No desktop window is available for Steam save selection."
+            )
+        selected = windows[0].create_file_dialog(
+            webview.OPEN_DIALOG,
+            directory=initial_directory,
+            allow_multiple=False,
+            file_types=("Palworld world save (Level.sav)",),
+        )
+        if not selected:
+            return None
+        selected_path = Path(selected[0]).resolve()
+        if not selected_path.is_file() or selected_path.name.casefold() != "level.sav":
+            raise ValueError("The Steam save picker must return Level.sav.")
+        return str(selected_path.parent)
+
+    def select_xgp_source(self, requested_path=None):
+        initial_directory = ""
+        if requested_path:
+            requested = Path(requested_path)
+            if requested.is_file():
+                initial_directory = str(requested.resolve().parent)
+            elif requested.is_dir():
+                initial_directory = str(requested.resolve())
+
+        if not initial_directory:
+            for root in self._wgs_root_provider():
+                try:
+                    resolved_root = root.resolve(strict=True)
+                    if not resolved_root.is_dir():
+                        continue
+                    users = [
+                        child
+                        for child in resolved_root.iterdir()
+                        if child.is_dir() and (child / "containers.index").is_file()
+                    ]
+                except OSError:
+                    continue
+                initial_directory = str(
+                    (users[0] if len(users) == 1 else resolved_root).resolve()
+                )
+                break
+
+        windows = self._window_provider()
+        if not windows:
+            raise RuntimeError(
+                "No desktop window is available for Game Pass save selection."
+            )
+        selected = windows[0].create_file_dialog(
+            webview.OPEN_DIALOG,
+            directory=initial_directory,
+            allow_multiple=False,
+            file_types=("Game Pass WGS index (containers.index)",),
         )
         if not selected:
             return None

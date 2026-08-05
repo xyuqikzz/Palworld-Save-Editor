@@ -27,8 +27,9 @@ else:
 
 CONFIG_PATH = PROGRAM_PATH / 'config.json'
 MIN_JWT_SECRET_BYTES = 32
+_MAX_SOULS_LEVEL = 20
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 RELEASE_TYPE = "RELEASE"
 BUILD_TIME = "0000000001"
 GIT_HASH = "0000000"
@@ -91,7 +92,7 @@ class Config:
     path: str = None
     password: str = None
     nocli: bool = False
-    max_souls_level: int = 60
+    max_souls_level: int = _MAX_SOULS_LEVEL
     max_suitability_level: int = 10
     _password_hash: str = None
     JWT_SECRET_KEY: str = secrets.token_urlsafe(MIN_JWT_SECRET_BYTES)
@@ -101,13 +102,20 @@ class Config:
         """Load configuration values from a JSON file using pathlib."""
         path = Path(file_path)
         if path.exists():
+            should_persist = False
             with path.open("r") as file:
                 data = json.load(file)
                 for key, value in data.items():
                     if hasattr(cls, key):
+                        if key == "max_souls_level" and value == 60:
+                            value = _MAX_SOULS_LEVEL
+                            data[key] = value
+                            should_persist = True
                         setattr(cls, key, value)
             if cls.ensure_secure_jwt_secret():
                 data["JWT_SECRET_KEY"] = cls.JWT_SECRET_KEY
+                should_persist = True
+            if should_persist:
                 temporary = path.with_suffix(f"{path.suffix}.tmp")
                 temporary.write_text(
                     json.dumps(data, ensure_ascii=False, indent=4),

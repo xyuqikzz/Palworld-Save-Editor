@@ -42,6 +42,28 @@ def test_loading_legacy_config_rotates_and_persists_short_jwt_secret(
         )
 
 
+def test_loading_legacy_soul_limit_migrates_the_old_default(tmp_path, monkeypatch) -> None:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "i18n": "en",
+                "max_souls_level": 60,
+                "future_setting": "preserve-me",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(Config, "max_souls_level", 20)
+
+    Config.load_from_file(config_path)
+
+    assert Config.max_souls_level == 20
+    persisted = json.loads(config_path.read_text(encoding="utf-8"))
+    assert persisted["max_souls_level"] == 20
+    assert persisted["future_setting"] == "preserve-me"
+
+
 def test_webui_refreshes_flask_jwt_secret_after_config_load(
     monkeypatch,
 ) -> None:

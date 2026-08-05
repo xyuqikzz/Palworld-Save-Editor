@@ -173,6 +173,19 @@ class WgsIndexEntry:
     def with_payload(self, *, size: int, modified_filetime: int) -> "WgsIndexEntry":
         return replace(self, size=size, modified_filetime=modified_filetime)
 
+    def with_pending_sync_payload(
+        self, *, size: int, modified_filetime: int
+    ) -> "WgsIndexEntry":
+        # A cloud id identifies the last synchronized container revision. A
+        # direct local payload update must be marked dirty for WGS to upload it.
+        return replace(
+            self,
+            cloud_id="",
+            flags=self.flags | 0x4,
+            size=size,
+            modified_filetime=modified_filetime,
+        )
+
 
 @dataclass(frozen=True)
 class WgsIndex:
