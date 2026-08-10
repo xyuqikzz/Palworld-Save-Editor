@@ -43,6 +43,9 @@ class NativeDialogApi:
         elif Config.path and Path(Config.path).is_dir():
             initial_directory = Config.path
 
+        return self._select_folder(initial_directory)
+
+    def _select_folder(self, initial_directory: str):
         if self._platform_name == "win32":
             try:
                 return self._modern_folder_picker(initial_directory)
@@ -123,20 +126,7 @@ class NativeDialogApi:
                 )
                 break
 
-        windows = self._window_provider()
-        if not windows:
-            raise RuntimeError(
-                "No desktop window is available for Game Pass save selection."
-            )
-        selected = windows[0].create_file_dialog(
-            webview.OPEN_DIALOG,
-            directory=initial_directory,
-            allow_multiple=False,
-            file_types=("Game Pass WGS index (containers.index)",),
-        )
-        if not selected:
-            return None
-        return str(selected[0])
+        return self._select_folder(initial_directory)
 
     @staticmethod
     def _bridge_mod_version(path: Path) -> tuple[int, int, int]:

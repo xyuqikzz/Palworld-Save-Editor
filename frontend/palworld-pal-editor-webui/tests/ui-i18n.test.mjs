@@ -102,6 +102,20 @@ test('all supported locales expose the same translation keys', () => {
   }
 })
 
+test('path picker describes loadable directories as complete world saves', () => {
+  const expectedLabels = {
+    en: 'Complete world save',
+    fr: 'Sauvegarde de monde complète',
+    ja: '完全なワールドセーブ',
+    ko: '완전한 월드 저장',
+    'zh-CN': '完整世界存档',
+  }
+
+  for (const [locale, expected] of Object.entries(expectedLabels)) {
+    assert.equal(loadMessages(locale).PathPicker_SaveFolder, expected)
+  }
+})
+
 test('the awakened Pal-list marker has no decorative prefix', () => {
   for (const locale of ['en', 'fr', 'ja', 'ko', 'zh-CN']) {
     const marker = loadMessages(locale).PalList_AwakenedMarker

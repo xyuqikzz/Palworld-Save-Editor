@@ -757,6 +757,56 @@ class SessionApiTests(unittest.TestCase):
             Path(response.get_json()["data"]["currentPath"]),
         )
 
+    def test_directory_browser_lists_filesystem_roots(self) -> None:
+        root_context = {
+            "currentPath": "",
+            "children": {
+                "C:\\": {
+                    "filename": "C:\\",
+                    "isDir": True,
+                    "isPalDir": False,
+                    "isRoot": True,
+                    "modifiedAt": None,
+                }
+            },
+            "isPalDir": False,
+            "isRootView": True,
+        }
+        with patch(
+            "palworld_pal_editor.api.save.get_filesystem_root_context",
+            return_value=root_context,
+        ) as roots:
+            response = self.client.get(
+                "/api/save/browse-roots",
+                headers=self.headers,
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(root_context, response.get_json()["data"])
+        roots.assert_called_once_with()
+
+    def test_parent_of_a_filesystem_root_returns_the_root_list(self) -> None:
+        filesystem_root = Path(Path.cwd().anchor or "/")
+        root_context = {
+            "currentPath": "",
+            "children": {},
+            "isPalDir": False,
+            "isRootView": True,
+        }
+        with patch(
+            "palworld_pal_editor.api.save.get_filesystem_root_context",
+            return_value=root_context,
+        ) as roots:
+            response = self.client.post(
+                "/api/save/browse-directory",
+                json={"path": str(filesystem_root), "parent": True},
+                headers=self.headers,
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(root_context, response.get_json()["data"])
+        roots.assert_called_once_with()
+
     def test_local_web_directory_picker_uses_the_native_system_dialog(self) -> None:
         with TemporaryDirectory() as temp, patch(
             "palworld_pal_editor.api.save._select_native_directory",

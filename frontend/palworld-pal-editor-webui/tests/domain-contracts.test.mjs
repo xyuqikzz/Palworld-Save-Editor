@@ -621,6 +621,8 @@ test('heal all confirms immediately before waiting for the batch preview', async
   try {
     const pending = store.healAllPals()
 
+    assert.deepEqual(events, ['confirm'])
+    await Promise.resolve()
     assert.deepEqual(events, ['confirm', '/api/batch/preview'])
     assert.equal(store.LOADING_FLAG, true)
 

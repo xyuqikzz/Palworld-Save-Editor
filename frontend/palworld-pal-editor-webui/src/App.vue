@@ -4,6 +4,7 @@ import TopBar from './components/TopBar.vue';
 import AuthView from './views/AuthView.vue';
 import UpdateNotice from './components/UpdateNotice.vue';
 import PathPicker from './components/PathPicker.vue';
+import GlobalMessageDialog from './components/GlobalMessageDialog.vue';
 import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -103,6 +104,7 @@ onMounted(async () => {
   <TopBar />
   <UpdateNotice />
   <PathPicker />
+  <GlobalMessageDialog />
   <AuthView v-if="palStore.IS_LOCKED" />
   <main v-else-if="BOOTSTRAPPING" class="app-shell route-loading" aria-busy="true">
     <span class="route-loading__indicator" />

@@ -340,13 +340,17 @@ onBeforeUnmount(() => {
                   {{ palStore.getTranslatedText('Remote_LocalConnect') }}
                 </button>
               </section>
-              <p
+              <div
                 v-if="palStore.LAST_ERROR?.context === 'local-connect'"
                 class="entry-error"
                 role="alert"
               >
-                {{ palStore.LAST_ERROR.message }}
-              </p>
+                <p>{{ palStore.LAST_ERROR.message }}</p>
+                <details v-if="palStore.LAST_ERROR.rawMessage">
+                  <summary>{{ palStore.getTranslatedText('MessageDialog_Details') }}</summary>
+                  <code>{{ palStore.LAST_ERROR.rawMessage }}</code>
+                </details>
+              </div>
               <div class="remote-divider">
                 <span>{{ palStore.getTranslatedText('Remote_ManualConnection') }}</span>
               </div>
@@ -767,6 +771,7 @@ h1 {
 
 .remote-connect-form {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   min-height: 0;
 }
@@ -1009,6 +1014,17 @@ h1 {
   border-radius: var(--ui-radius-sm);
   font-size: 12px;
   line-height: 1.55;
+}
+.entry-error > p { margin: 0; }
+.entry-error details { margin-top: 6px; color: var(--ui-text-muted); }
+.entry-error summary { width: fit-content; cursor: pointer; }
+.entry-error code {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  white-space: pre-wrap;
 }
 .xgp-load { width: 204px; align-self: flex-end; margin-top: auto; }
 .xgp-sources {

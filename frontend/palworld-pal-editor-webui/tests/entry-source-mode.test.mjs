@@ -94,6 +94,26 @@ test('Game Pass picker can select containers.index directly', async () => {
     pickerSource,
     /XGP_WGS_PATH = palStore\.PAL_FILE_PICKER_SELECTION[\s\S]*?PAL_FILE_PICKER_PATH/,
   )
+  assert.match(storeSource, /GET\("\/api\/save\/browse-roots"\)/)
+  assert.match(pickerSource, /show_path_picker_roots/)
+  assert.match(pickerSource, /PathPicker_Sort_Modified/)
+  assert.match(pickerSource, /entry\.modifiedAt/)
+  assert.match(pickerSource, /PathEntryIcon/)
+  assert.match(pickerSource, /min-width: 1900px/)
+})
+
+test('Game Pass picker explains disabled payload files and selecting the current folder', async () => {
+  const pickerSource = await readFile(
+    new URL('../src/components/PathPicker.vue', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(pickerSource, /PathPicker_Xgp_SelectionHint/)
+  assert.match(pickerSource, /PathPicker_Xgp_UseCurrentFolder/)
+  assert.match(
+    pickerSource,
+    /:aria-disabled="isDisabledFile\(entry\) \|\| undefined"/,
+  )
 })
 
 test('remote login saves the password by default without exposing it to local storage', async () => {
@@ -166,6 +186,38 @@ test('local game connection uses automatic discovery without a password', async 
   assert.equal([...values.values()].includes('local-secret'), false)
 })
 
+test('missing local Bridge explains that the game or mod may not be running', async () => {
+  installStorage({ PAL_I18n: 'zh-CN' })
+  setActivePinia(createPinia())
+  const rawMessage = (
+    'No running Palworld single-player or host Bridge was found '
+    + 'for the current Windows account.'
+  )
+  axios.post = async (url, payload) => {
+    assert.equal(url, '/api/remote/connect-local')
+    assert.deepEqual(payload, {})
+    return { data: {
+      status: 1,
+      msg: rawMessage,
+      error: {
+        code: 'LOCAL_BRIDGE_NOT_FOUND',
+        retryable: true,
+      },
+    } }
+  }
+
+  const store = usePalEditorStore()
+  const connected = await store.connectLocalGame()
+
+  assert.equal(connected, false)
+  assert.equal(store.LAST_ERROR.messageKey, 'Remote_LocalBridgeNotFound')
+  assert.equal(
+    store.LAST_ERROR.message,
+    '未检测到可连接的本机游戏。请启动 Palworld，并确认当前游戏客户端已安装并启用 PalEditorBridge 模组。',
+  )
+  assert.equal(store.LAST_ERROR.rawMessage, rawMessage)
+})
+
 test('successful remote connection leaves the entry page for the remote workspace', async () => {
   const [entrySource, routerSource, remoteSource] = await Promise.all([
     readFile(new URL('../src/views/EntryView.vue', import.meta.url), 'utf8'),
@@ -182,6 +234,18 @@ test('successful remote connection leaves the entry page for the remote workspac
   assert.match(routerSource, /requiresRemoteSession: true/)
   assert.match(remoteSource, /executeRemoteCommand/)
   assert.match(remoteSource, /disconnectRemote/)
+})
+
+test('remote connection content cannot shrink through the panel bottom spacing', async () => {
+  const source = await readFile(
+    new URL('../src/views/EntryView.vue', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    source,
+    /\.remote-connect-form\s*\{[^}]*flex-shrink:\s*0;/s,
+  )
 })
 
 test('first launch fills the Steam world detected by the backend', async () => {

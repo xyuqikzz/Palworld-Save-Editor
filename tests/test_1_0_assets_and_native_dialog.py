@@ -610,14 +610,14 @@ class NativeDialogTests(unittest.TestCase):
             self.assertEqual(str(Path(selected).resolve()), api.select_save_directory(selected))
             self.assertEqual([str(Path(selected).resolve())], received)
 
-    def test_game_pass_picker_selects_containers_index_from_the_default_wgs_root(self) -> None:
+    def test_game_pass_picker_selects_the_user_folder_from_the_default_wgs_root(self) -> None:
         from tempfile import TemporaryDirectory
         from palworld_pal_editor.gui import NativeDialogApi
 
         class FakeWindow:
             def create_file_dialog(self, *args, **kwargs):
                 self.calls = (args, kwargs)
-                return (str(Path(kwargs["directory"]) / "containers.index"),)
+                return (kwargs["directory"],)
 
         with TemporaryDirectory() as temp:
             wgs_root = Path(temp) / "wgs"
@@ -628,19 +628,35 @@ class NativeDialogTests(unittest.TestCase):
             api = NativeDialogApi(
                 window_provider=lambda: [window],
                 wgs_root_provider=lambda: (wgs_root,),
+                platform_name="linux",
             )
 
             self.assertEqual(
-                str((user / "containers.index").resolve()),
+                str(user.resolve()),
                 api.select_xgp_source(),
             )
-            self.assertEqual(webview.OPEN_DIALOG, window.calls[0][0])
+            self.assertEqual(webview.FOLDER_DIALOG, window.calls[0][0])
             self.assertEqual(str(user.resolve()), window.calls[1]["directory"])
-            self.assertFalse(window.calls[1]["allow_multiple"])
-            self.assertEqual(
-                ("Game Pass WGS index (containers.index)",),
-                window.calls[1]["file_types"],
+
+    def test_windows_game_pass_picker_uses_the_system_folder_dialog(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        with TemporaryDirectory() as selected:
+            received = []
+            api = NativeDialogApi(
+                modern_folder_picker=lambda initial_directory: received.append(
+                    initial_directory
+                )
+                or initial_directory,
+                platform_name="win32",
             )
+
+            self.assertEqual(
+                str(Path(selected).resolve()),
+                api.select_xgp_source(selected),
+            )
+            self.assertEqual([str(Path(selected).resolve())], received)
 
     def test_steam_picker_selects_level_sav_and_returns_its_world_directory(self) -> None:
         from tempfile import TemporaryDirectory

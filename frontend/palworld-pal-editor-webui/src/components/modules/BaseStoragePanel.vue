@@ -4,6 +4,7 @@ import ItemIcon from '@/components/modules/ItemIcon.vue'
 import ItemPicker from '@/components/modules/ItemPicker.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
 import { usePalEditorStore } from '@/stores/paleditor'
+import { confirmMessage } from '@/services/message-dialog'
 import {
   computed,
   nextTick,
@@ -281,7 +282,7 @@ async function clearSlot() {
     || !selectedSlot.value
     || !writable.value
     || loading.value
-    || !window.confirm(tr('Guild_BaseStorageDeleteConfirm'))
+    || !await confirmMessage(tr('Guild_BaseStorageDeleteConfirm'), { tone: 'error' })
   ) return
   const result = await palStore.clearBaseStorageItem(
     props.guildId,

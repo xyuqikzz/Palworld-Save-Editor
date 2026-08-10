@@ -8,6 +8,7 @@ import {
   watch,
 } from 'vue'
 import { usePalEditorStore } from '@/stores/paleditor'
+import { confirmMessage } from '@/services/message-dialog'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ItemIcon from '@/components/modules/ItemIcon.vue'
 import ItemPicker from '@/components/modules/ItemPicker.vue'
@@ -698,7 +699,7 @@ async function clearSelectedSlot() {
   if (
     !selectedSlotContainer.value
     || !selectedSlot.value
-    || !window.confirm(tr('Guild_BaseStorageDeleteConfirm'))
+    || !await confirmMessage(tr('Guild_BaseStorageDeleteConfirm'), { tone: 'error' })
   ) return
   if (await palStore.clearInventoryItem(selectedSlotContainer.value, selectedSlot.value)) {
     clearSlotSelection()

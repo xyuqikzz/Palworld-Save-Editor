@@ -48,7 +48,11 @@ from palworld_pal_editor.domain.commands import (
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.utils import LOGGER, DataProvider
-from palworld_pal_editor.utils.util import get_path_context, reply
+from palworld_pal_editor.utils.util import (
+    get_filesystem_root_context,
+    get_path_context,
+    reply,
+)
 
 save_blueprint = Blueprint("save", __name__)
 
@@ -242,7 +246,10 @@ def browse_directory():
         ):
             current_path = current_path.parent
         if payload.get("parent") is True:
-            current_path = current_path.parent.resolve(strict=True)
+            parent_path = current_path.parent.resolve(strict=True)
+            if parent_path == current_path:
+                return reply(0, get_filesystem_root_context())
+            current_path = parent_path
         if not current_path.is_dir():
             raise OSError("not a directory")
         return reply(0, get_path_context(current_path))
@@ -255,6 +262,12 @@ def browse_directory():
         )
         error.__cause__ = cause
         return reply(1, msg=error.message, error=error.to_dict()), error.http_status
+
+
+@save_blueprint.route("/browse-roots", methods=["GET"])
+@jwt_required()
+def browse_roots():
+    return reply(0, get_filesystem_root_context())
 
 
 @save_blueprint.route("/select-directory", methods=["POST"])

@@ -123,6 +123,46 @@ def test_selected_containers_index_discovers_its_wgs_user_scope() -> None:
         assert sources[0].canonical_path == user.resolve()
 
 
+def test_selected_nested_wgs_container_folder_discovers_its_user_scope() -> None:
+    with TemporaryDirectory() as temp:
+        root = Path(temp) / "wgs"
+        root.mkdir()
+        user = make_user_directory(
+            root,
+            "6666666666666666_" + "F" * 32,
+            {"A" * 32: {"Level.sav": b"world-a"}},
+        )
+        nested_container = next(
+            path
+            for path in user.iterdir()
+            if path.is_dir() and (path / "container.1").is_file()
+        )
+
+        sources = XgpSourceCatalog(roots=()).discover_selected(nested_container)
+
+        assert [source.world_id for source in sources] == ["A" * 32]
+        assert sources[0].canonical_path == user.resolve()
+
+
+def test_selected_folder_under_excluded_wgs_directory_is_rejected() -> None:
+    with TemporaryDirectory() as temp:
+        root = Path(temp) / "wgs"
+        root.mkdir()
+        user = make_user_directory(
+            root,
+            "7777777777777777_" + "A" * 32,
+            {"B" * 32: {"Level.sav": b"world-b"}},
+        )
+        excluded_child = user / "t" / "nested"
+        excluded_child.mkdir(parents=True)
+
+        catalog = XgpSourceCatalog(roots=())
+        with pytest.raises(DomainError) as captured:
+            catalog.discover_selected(excluded_child)
+
+        assert captured.value.code == "WGS_NOT_FOUND"
+
+
 def test_selected_folder_without_wgs_slots_is_rejected() -> None:
     with TemporaryDirectory() as temp:
         wrong_folder = Path(temp) / "not-a-wgs-save"

@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getArenaNpcName } from '@/data/arenaNpcNames'
+import { confirmMessage } from '@/services/message-dialog'
 import { usePalEditorStore } from '@/stores/paleditor'
 
 const palStore = usePalEditorStore()
@@ -72,14 +73,14 @@ async function saveRankPoint(entry) {
 }
 
 async function resetPlayer(entry) {
-  if (!window.confirm(
+  if (!await confirmMessage(
     palStore.getTranslatedText('Arena_ConfirmResetPlayer', [displayName(entry)]),
   )) return
   await palStore.resetArenaPlayer(entry.player_id)
 }
 
 async function resetAll() {
-  if (!window.confirm(palStore.getTranslatedText('Arena_ConfirmResetAll'))) return
+  if (!await confirmMessage(palStore.getTranslatedText('Arena_ConfirmResetAll'))) return
   await palStore.resetArenaLeaderboard()
 }
 

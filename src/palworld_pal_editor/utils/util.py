@@ -1,5 +1,8 @@
 from pathlib import Path
+from datetime import datetime, timezone
+import os
 import re
+import string
 from functools import wraps
 import sys
 from typing import Callable, Optional, get_type_hints, Union, _GenericAlias
@@ -16,23 +19,69 @@ def reply(status, data=None, msg=None, error=None):
     return jsonify(payload)
 
 
-def get_path_context(path: Path) -> dict:
-    current_path = path.resolve()        
-    children = {
-        str(child.resolve()): {
-            "filename": child.name,
-            "isDir": child.is_dir(),
-        }
-        for child in sorted(current_path.iterdir(), key=lambda x: (x.is_file(), x.name))
-    }
+def _modified_at(path: Path) -> str | None:
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
+    except OSError:
+        return None
 
-    names = [child.name for child in current_path.iterdir()]
+
+def get_path_context(path: Path) -> dict:
+    current_path = path.resolve()
+    child_paths = sorted(
+        current_path.iterdir(), key=lambda child: (child.is_file(), child.name)
+    )
+    children = {}
+    for child in child_paths:
+        is_directory = child.is_dir()
+        is_pal_dir = (
+            is_directory
+            and (child / "Level.sav").is_file()
+            and (child / "Players").is_dir()
+        )
+        modified_source = child / "Level.sav" if is_pal_dir else child
+        children[str(child.resolve())] = {
+            "filename": child.name,
+            "isDir": is_directory,
+            "isPalDir": is_pal_dir,
+            "modifiedAt": _modified_at(modified_source),
+        }
+
+    names = [child.name for child in child_paths]
     is_pal_dir = "Level.sav" in names and "Players" in names
 
     return {
         "currentPath": str(current_path),
         "children": children,
-        "isPalDir": is_pal_dir
+        "isPalDir": is_pal_dir,
+        "isRootView": False,
+    }
+
+
+def get_filesystem_root_context() -> dict:
+    if os.name == "nt":
+        roots = [
+            f"{letter}:\\"
+            for letter in string.ascii_uppercase
+            if os.path.isdir(f"{letter}:\\")
+        ]
+    else:
+        roots = [str(Path("/").resolve())]
+
+    return {
+        "currentPath": "",
+        "children": {
+            root: {
+                "filename": root,
+                "isDir": True,
+                "isPalDir": False,
+                "isRoot": True,
+                "modifiedAt": None,
+            }
+            for root in roots
+        },
+        "isPalDir": False,
+        "isRootView": True,
     }
 
 

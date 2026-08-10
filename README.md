@@ -63,11 +63,12 @@ Steam saves are normally stored under:
 
 In the desktop app, choose the world's `Level.sav`; the editor opens its containing directory as the complete Steam save. In Web mode, select the complete world directory containing `Level.sav` and `Players/`.
 
-For Game Pass, exit Palworld and wait for local synchronization, then choose the WGS root, the user directory containing `containers.index`, or `containers.index` itself. Read the slots and explicitly select the world to open. A successful local transaction and pending-sync metadata do not prove Xbox cloud synchronization.
+For Game Pass, exit Palworld and wait for local synchronization. The desktop system picker accepts the intended Xbox user folder or a folder inside its WGS container tree and resolves it back to the owning `containers.index`; the Web/in-app browser also accepts a WGS root, Xbox user directory, or `containers.index` itself. Read the slots and explicitly select the world to open. A successful local transaction and pending-sync metadata do not prove Xbox cloud synchronization.
 
 ## Features
 
 - Open a read-only world overview with player, Pal, species, base, guild, expedition, arena, condition, and structural-reference diagnostics.
+- Browse local save sources through system pickers where available or a root-aware in-app browser with search, natural sorting, modified times, save-folder markers, and offline file-type icons.
 - Browse players, Pals, guilds, bases, world containers, items, and last-saved map locations.
 - Edit player names, levels, technology points, attributes, missions, and supported inventories.
 - Edit item quantities and supported dynamic attributes; copy, move, replace, or clear slots; expand verified ordinary backpacks and guild chests without shrinking them.
@@ -82,13 +83,13 @@ For Game Pass, exit Palworld and wait for local synchronization, then choose the
 - Review expedition assignments, quick-complete supported expeditions for normal in-game settlement, release Pals from invalid assignments, and run atomic Pal maintenance operations.
 - Edit supported mission progress through preview tokens and explicit pending changes.
 - Use the advanced Monaco JSON editor for `Level.sav` and `Players/*.sav`; only JSON syntax and supported document structure are checked, so incorrect values can still corrupt a save.
-- Connect through PalEditorBridge to show online players first, then merge a short-lived read-only player snapshot by `PlayerUId`; filter all, online, and offline players and lazily inspect the selected player's profile, inventory, technology, missions, attributes, map progress, Party, and Palbox.
+- Connect through PalEditorBridge to show online players first, then merge a short-lived read-only player snapshot by `PlayerUId`; filter all, online, and offline players and lazily inspect the selected player's profile, inventory, technology, missions, attributes, map progress, Party, and Palbox. Automatic local connection reports a focused, localized recovery message when the game or Bridge is not available.
 - Open the live-management map to combine authoritative online Pawn positions with last-saved offline player positions; every marker is labeled with the player's online or offline state, and invalid runtime levels fall back to the snapshot value.
 - On dedicated servers, place kick, ban, and unban controls beside the selected player's level. These administrator actions send no optional reason, require a second confirmation, and are enabled only when the bridge has a verified REST `userId`; unban remains available for a player banned during the current connection.
 - Expose authoritative mutations only for online targets and only when the current game build advertises them. The verified paths are granting an existing item, adding experience, and granting a Pal; normal live Pal grants enforce the same rank 20 / 60% soul limit in both the form and bridge, while unverified identity, slot replacement, mission/technology/fast-travel, and existing-Pal mutation paths remain explicitly disabled.
 - Live mutations never write directly to an active `.sav` file and provide no rollback, undo, pre-change backup, or deferred offline queue. Successful changes coalesce a normal world save after two seconds, force one within ten seconds of continuous editing, and report `clean`, `dirty`, `saving`, or `failed` persistence state.
 - Review revision-bound pending changes and save explicitly through temporary files, validation, verified backups, conflict detection, replacement, and reopen checks, preserving recovery information on failure. Windows save staging, Steam backups, and reopen verification support extended-length paths; paths that still exceed platform limits fail before save data is written and surface a specific recovery action.
-- Use the UI in English, French, Japanese, Korean, or Simplified Chinese.
+- Use the UI in English, French, Japanese, Korean, or Simplified Chinese, including focus-managed in-app confirmations, prompts, success messages, and errors with optional technical details.
 
 ## Install and run
 

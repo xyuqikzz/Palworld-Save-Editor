@@ -41,7 +41,8 @@ In the desktop app, choose the world's [b]Level.sav[/b]; the editor opens its co
 The editor can discover, open, edit, and write back a locally selected Xbox Game Pass/WGS world.
 
 [list]
-[*]Select a WGS root, an Xbox user directory containing [b]containers.index[/b], or [b]containers.index[/b] itself
+[*]In the desktop system picker, select the intended Xbox user folder or a folder inside its WGS container tree; the editor resolves it back to the owning [b]containers.index[/b]
+[*]In the Web or in-app browser, select a WGS root, an Xbox user directory containing [b]containers.index[/b], or [b]containers.index[/b] itself
 [*]Read the available local world slots and explicitly choose the intended world
 [*]Keep saving locked to the exact WGS slot opened at the start of the session
 [*]Create and verify a complete backup outside WGS before writeback
@@ -76,6 +77,7 @@ Live management is a separate Windows workflow. Steam and PC Game Pass/XGP clien
 [list]
 [*]Connect through PalEditorBridge installed with UE4SS on the authoritative host or server
 [*]Discover both Steam [b]Palworld-Win64-Shipping.exe[/b] and PC Game Pass/XGP [b]Palworld-WinGDK-Shipping.exe[/b] local Bridge instances
+[*]Show a localized recovery message when automatic local connection cannot find the running game or Bridge
 [*]Show online players first, then merge all saved players from a short-lived read-only snapshot by PlayerUId
 [*]Filter all, online, and offline players and lazily inspect profile, inventory, technology, missions, attributes, map progress, Party, and Palbox data
 [*]Combine authoritative online Pawn positions with last-saved offline player positions on the Map, label every marker as online or offline, and keep the saved level when a runtime level is invalid
@@ -97,6 +99,7 @@ Every state-changing command still requires its own in-game effect, replication,
 
 [list]
 [*]Open a read-only world overview with player, Pal, species, base, guild, expedition, arena, condition, and structural-reference diagnostics
+[*]Browse local save sources through system pickers where available or a root-aware in-app browser with search, natural sorting, modified times, complete-save markers, and offline file-type icons
 [*]Browse players through guilds, bases, members, working Pals, and unmatched records
 [*]Edit supported player names, levels, technology points, attributes, missions, inventories, and equipment
 [*]Review the world-local arena leaderboard, edit supported player RP records, explicitly create a missing verified RP field, or reset supported player entries
@@ -190,6 +193,8 @@ The advanced Monaco JSON editor can open [b]Level.sav[/b] and [b]Players/*.sav[/
 [*]Korean
 [*]Simplified Chinese
 [/list]
+
+Confirmations, prompts, success messages, and errors use focus-managed in-app dialogs in every supported interface language, with technical details available when needed.
 
 [b]Application modes[/b]
 

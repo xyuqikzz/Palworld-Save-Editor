@@ -4,6 +4,7 @@ import AppIcon from '@/components/modules/AppIcon.vue'
 import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
 import PalSkillPicker from '@/components/modules/PalSkillPicker.vue'
 import { usePalEditorStore } from '@/stores/paleditor'
+import { confirmMessage } from '@/services/message-dialog'
 import {
   MAX_PASSIVE_PRESET_NAME_LENGTH,
   MAX_PASSIVE_PRESET_SKILLS,
@@ -141,8 +142,11 @@ const saveDraft = () => {
   if (persist(next)) cancelEdit()
 }
 
-const deletePreset = (preset) => {
-  if (!window.confirm(tr('PalEditor_PassivePreset_DeleteConfirm', [preset.name]))) return
+const deletePreset = async (preset) => {
+  if (!await confirmMessage(
+    tr('PalEditor_PassivePreset_DeleteConfirm', [preset.name]),
+    { tone: 'error' },
+  )) return
   if (persist(removePassivePreset(presets.value, preset.id)) && draft.value.id === preset.id) {
     cancelEdit()
   }

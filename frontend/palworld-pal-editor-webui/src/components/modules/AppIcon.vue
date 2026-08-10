@@ -44,6 +44,7 @@ defineProps({
     <template v-else-if="name === 'box'"><path d="m3 7 9-4 9 4-9 4-9-4ZM3 7v10l9 4 9-4V7M12 11v10" /></template>
     <template v-else-if="name === 'building'"><path d="M4 21V5l8-3v19M12 8h8v13M7 9h2M7 13h2M15 12h2M15 16h2" /></template>
     <template v-else-if="name === 'computer'"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></template>
+    <template v-else-if="name === 'hard-drive'"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 14h18M7 17h.01M11 17h.01" /></template>
     <template v-else-if="name === 'user'"><circle cx="12" cy="8" r="3" /><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6" /></template>
     <template v-else-if="name === 'pill'"><path d="m8 5 11 11a4.2 4.2 0 0 1-6 6L2 11a4.2 4.2 0 0 1 6-6Z" /><path d="m6 13 6-6" /></template>
     <template v-else-if="name === 'medical'"><path d="M12 4v16M4 12h16" /></template>
@@ -52,6 +53,9 @@ defineProps({
     <template v-else-if="name === 'back'"><path d="m10 6-6 6 6 6M4 12h16" /></template>
     <template v-else-if="name === 'forward'"><path d="m14 6 6 6-6 6M20 12H4" /></template>
     <template v-else-if="name === 'warning'"><path d="m12 3 10 18H2L12 3ZM12 9v4M12 17h.01" /></template>
+    <template v-else-if="name === 'info'"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></template>
+    <template v-else-if="name === 'success'"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.7 2.7L16.5 9" /></template>
+    <template v-else-if="name === 'error'"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6M15 9l-6 6" /></template>
     <template v-else-if="name === 'snowflake'"><path d="m12 2 1.5 3-1.5 2-1.5-2L12 2Zm0 20-1.5-3 1.5-2 1.5 2-1.5 3ZM3.3 7l3.3.3 1 2.3-2.7.8L3.3 7Zm17.4 10-3.3-.3-1-2.3 2.7-.8 1.6 3.4ZM3.3 17l1.6-3.4 2.7.8-1 2.3-3.3.3Zm17.4-10-1.6 3.4-2.7-.8 1-2.3 3.3-.3Z" /><path d="M12 7v10M7.7 9.6l8.6 4.8M7.7 14.4l8.6-4.8" /></template>
     <template v-else-if="name === 'clock'"><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /></template>
     <template v-else-if="name === 'search'"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></template>

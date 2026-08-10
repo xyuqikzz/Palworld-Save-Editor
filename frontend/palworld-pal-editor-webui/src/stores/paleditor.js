@@ -7,6 +7,11 @@ import jaTranslations from "../i18n/ja.js";
 import koTranslations from "../i18n/ko.js";
 import zhCnTranslations from "../i18n/zh-CN.js";
 import { PAL_LIST_SORT_MODES, sortPalList } from "../components/modules/pal-list-sort.js";
+import {
+    confirmMessage,
+    promptMessage,
+    showMessage,
+} from "../services/message-dialog.js";
 
 const NPC_WEAPON_TRANSLATION_KEYS = Object.freeze({
     AssaultRifle: "PalEditor_NpcWeapon_AssaultRifle",
@@ -34,6 +39,35 @@ const REMOTE_CERTIFICATE_FINGERPRINT_STORAGE_KEY =
 const REMOTE_ALLOW_INSECURE_LOCAL_STORAGE_KEY =
     "PAL_REMOTE_ALLOW_INSECURE_LOCAL";
 const MAX_UNRESTRICTED_PASSIVE_SKILLS = 255;
+const LEGACY_ALERT_MESSAGE_KEYS = Object.freeze({
+    "Wrong Password, Try Again.": "MessageDialog_LoginFailed",
+    "Unauthorized Access, Please Login.": "MessageDialog_Unauthorized",
+    "Select a skill first!": "MessageDialog_SelectSkill",
+    "Select a player first!": "MessageDialog_SelectPlayer",
+    "No Player Found in the Gamesave": "MessageDialog_NoPlayers",
+    "Adding pals to basecamp is unsupported!": "MessageDialog_BasePalUnsupported",
+    "Failed selecting pal, try again or reload": "MessageDialog_SelectionFailed",
+});
+const LEGACY_OPERATION_MESSAGE_KEYS = Object.freeze({
+    login: "MessageDialog_LoginFailed",
+    fetch_config: "MessageDialog_SettingsFailed",
+    updateI18n: "MessageDialog_SettingsFailed",
+    show_file_picker: "MessageDialog_PathBrowseFailed",
+    loadSave: "MessageDialog_LoadFailed",
+    loadPlayer: "MessageDialog_LoadFailed",
+    loadPlayers: "MessageDialog_LoadFailed",
+    fetchPlayerPal: "MessageDialog_LoadFailed",
+    fetchPlayerData: "MessageDialog_LoadFailed",
+    fetchStaticData: "MessageDialog_LoadFailed",
+    writeSave: "MessageDialog_SaveFailed",
+    updatePlayer: "MessageDialog_ChangeFailed",
+    updateInventoryItem: "MessageDialog_ChangeFailed",
+    updatePal: "MessageDialog_ChangeFailed",
+    delPal: "MessageDialog_ChangeFailed",
+});
+const REMOTE_ERROR_MESSAGE_KEYS = Object.freeze({
+    LOCAL_BRIDGE_NOT_FOUND: "Remote_LocalBridgeNotFound",
+});
 const FOG_CLEAR_CONFIRMATION = "清除迷雾";
 const FOG_RESET_CONFIRMATION = "重新覆盖未探索迷雾";
 const FAST_TRAVEL_UNLOCK_CONFIRMATION = "解锁所有传送点";
@@ -361,11 +395,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 HIDE_INVALID_OPTIONS.value &&
                 this.PassiveSkillList.length >= 4
             ) {
-                alert("you can't add more than 4 passive skills");
+                alert(getTranslatedText("MessageDialog_PassiveSkillLimit", [4]));
                 return;
             }
             if (this.PassiveSkillList.length >= MAX_UNRESTRICTED_PASSIVE_SKILLS) {
-                alert(`you can't add more than ${MAX_UNRESTRICTED_PASSIVE_SKILLS} passive skills`);
+                alert(getTranslatedText("MessageDialog_PassiveSkillLimit", [
+                    MAX_UNRESTRICTED_PASSIVE_SKILLS,
+                ]));
                 return;
             }
             updatePal({
@@ -433,7 +469,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             });
         }
 
-        add_MasteredWaza(skill = PAL_ACTIVE_SELECTED_ITEM.value) {
+        async add_MasteredWaza(skill = PAL_ACTIVE_SELECTED_ITEM.value) {
             const skillData = ACTIVE_SKILLS.value[skill];
             if (!skillData) {
                 alert("Select a skill first!");
@@ -444,7 +480,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
             if (
                 skillData.IsUniqueSkill &&
-                !window.confirm(
+                !await confirmMessage(
                     getTranslatedText(
                         "Confirm_AddUniqueActiveSkill",
                         [skillData.I18n?.[0] || skill]
@@ -579,9 +615,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     ?.Suitabilities[name];
             const max = MAX_SUITABILITY_LEVEL.value;
             if (HIDE_INVALID_OPTIONS.value && min == 0 && value != 0) {
-                alert(
-                    "Invalid suitability level, You can only modify suitabilities that the Pal is capable of."
-                );
+                alert(getTranslatedText("MessageDialog_InvalidSuitability"));
                 return;
             }
             value = Math.min(Math.max(value, min), max);
@@ -846,6 +880,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const PAL_FILE_PICKER_PATH = ref(PAL_GAME_SAVE_PATH.value);
     const PAL_FILE_PICKER_SELECTION = ref(null);
     const FILE_PICKER_PURPOSE = ref("steam");
+    const IS_PATH_PICKER_ROOT_VIEW = ref(false);
 
     // auth
     let auth_token = "";
@@ -1034,11 +1069,17 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     function acceptRemoteResponse(response, context) {
         if (!response || response.status !== 0) {
+            const errorCode = response?.error?.code || "REMOTE_REQUEST_FAILED";
+            const messageKey = REMOTE_ERROR_MESSAGE_KEYS[errorCode] || null;
+            const rawMessage = response?.msg || "The remote operation failed.";
             LAST_ERROR.value = {
                 context,
-                message: response?.msg || "The remote operation failed.",
-                messageKey: null,
-                code: response?.error?.code || "REMOTE_REQUEST_FAILED",
+                message: messageKey
+                    ? getTranslatedText(messageKey)
+                    : rawMessage,
+                messageKey,
+                rawMessage: messageKey ? rawMessage : null,
+                code: errorCode,
                 details: response?.error?.details || {},
                 retryable: Boolean(response?.error?.retryable),
             };
@@ -1747,7 +1788,8 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     function update_path_picker_result(data) {
         IS_PAL_SAVE_PATH.value = data.isPalDir;
-        PAL_FILE_PICKER_PATH.value = data.currentPath;
+        IS_PATH_PICKER_ROOT_VIEW.value = data.isRootView === true;
+        PAL_FILE_PICKER_PATH.value = data.currentPath || "";
         PATH_CONTEXT.value = new Map(Object.entries(data.children));
         SHOW_FILE_PICKER.value = true;
         if (["xgp", "local-data"].includes(FILE_PICKER_PURPOSE.value)) {
@@ -1817,31 +1859,15 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             }
         }
 
-        let response = undefined;
-        if (FILE_PICKER_PURPOSE.value === "local-data") {
-            response = await POST("/api/save/browse-directory", {
-                path: localDataPickerInitialPath(),
-            });
-            if (!response || response.status !== 0) {
-                response = await POST("/api/save/browse-directory", {});
-            }
-        } else if (FILE_PICKER_PURPOSE.value === "xgp") {
-            response = await POST("/api/save/browse-directory", {
-                path: XGP_WGS_PATH.value || PAL_GAME_SAVE_PATH.value || undefined,
-            });
-            if (!response || response.status !== 0) {
-                response = await POST("/api/save/browse-directory", {});
-            }
-        } else if (PAL_GAME_SAVE_PATH.value) {
-            response = await POST("/api/save/path", {
-                path: PAL_GAME_SAVE_PATH.value,
-            });
-            if (response.status != 0) {
-                PAL_GAME_SAVE_PATH.value = undefined;
-                localStorage.removeItem("PAL_GAME_SAVE_PATH");
-                response = await GET("/api/save/path");
-            }
-        } else {
+        const initialPath = FILE_PICKER_PURPOSE.value === "local-data"
+            ? localDataPickerInitialPath()
+            : FILE_PICKER_PURPOSE.value === "xgp"
+                ? XGP_WGS_PATH.value || PAL_GAME_SAVE_PATH.value || undefined
+                : PAL_GAME_SAVE_PATH.value || undefined;
+        let response = await POST("/api/save/browse-directory", {
+            path: initialPath,
+        });
+        if (!response || response.status !== 0) {
             response = await GET("/api/save/path");
         }
 
@@ -1861,17 +1887,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function path_back() {
+        if (IS_PATH_PICKER_ROOT_VIEW.value) return;
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        const response = ["xgp", "local-data"].includes(
-            FILE_PICKER_PURPOSE.value
-        )
-            ? await POST("/api/save/browse-directory", {
-                path: PAL_FILE_PICKER_PATH.value,
-                parent: true,
-            })
-            : await PATCH("/api/save/path");
+        const response = await POST("/api/save/browse-directory", {
+            path: PAL_FILE_PICKER_PATH.value,
+            parent: true,
+        });
 
         if (response === false) return;
 
@@ -1892,14 +1915,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
-        const response = await POST(
-            ["xgp", "local-data"].includes(
-                FILE_PICKER_PURPOSE.value
-            )
-                ? "/api/save/browse-directory"
-                : "/api/save/path",
-            { path }
-        );
+        const response = await POST("/api/save/browse-directory", { path });
 
         if (response === false) return;
 
@@ -1911,6 +1927,26 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             reset();
         } else {
             alert(`- show_file_picker - Error occured: ${response.msg}`);
+        }
+
+        if (!no_set_loading_flag) LOADING_FLAG.value = false;
+    }
+
+    async function show_path_picker_roots() {
+        let no_set_loading_flag = LOADING_FLAG.value;
+        if (!no_set_loading_flag) LOADING_FLAG.value = true;
+
+        const response = await GET("/api/save/browse-roots");
+        if (response !== false) {
+            if (response.status == 0) {
+                update_path_picker_result(response.data);
+            } else if (response.status == 2) {
+                alert("Unauthorized Access, Please Login. ");
+                IS_LOCKED.value = true;
+                reset();
+            } else {
+                alert(`- show_file_picker - Error occured: ${response.msg}`);
+            }
         }
 
         if (!no_set_loading_flag) LOADING_FLAG.value = false;
@@ -2154,7 +2190,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const discardChanges = PENDING_CHANGE_COUNT.value > 0;
         if (
             discardChanges &&
-            !window.confirm(
+            !await confirmMessage(
                 getTranslatedText("Confirm_DiscardChangesAndReturn", [
                     PENDING_CHANGE_COUNT.value,
                 ])
@@ -2183,7 +2219,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     async function refreshSave() {
         if (!SESSION_ID.value) return false;
-        if (!window.confirm(getTranslatedText("Confirm_DiscardChangesAndRefresh"))) {
+        if (!await confirmMessage(getTranslatedText("Confirm_DiscardChangesAndRefresh"))) {
             return false;
         }
 
@@ -2223,6 +2259,58 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
         const I18nKey = TranslationKeyMap.value[I18n.value] ? I18n.value : "en";
         return getTranslation(I18nKey, translationKey, args);
+    }
+
+    function alert(message, options = {}) {
+        const rawMessage = String(message || "").trim();
+        const normalizedExactMessage = rawMessage.replace(/\s+$/, "");
+        const exactKey = LEGACY_ALERT_MESSAGE_KEYS[normalizedExactMessage];
+        if (exactKey) {
+            void showMessage({
+                tone: "error",
+                message: getTranslatedText(exactKey),
+                ...options,
+            });
+            return;
+        }
+
+        const operationMatch = rawMessage.match(
+            /^-\s*([^\s:]+)(?::[^-]+)?\s*-\s*Error occured:\s*([\s\S]*)$/i
+        );
+        if (operationMatch) {
+            const operation = operationMatch[1];
+            void showMessage({
+                tone: "error",
+                message: getTranslatedText(
+                    LEGACY_OPERATION_MESSAGE_KEYS[operation]
+                    || "MessageDialog_RequestFailed"
+                ),
+                details: operationMatch[2].trim(),
+                dismissible: false,
+                ...options,
+            });
+            return;
+        }
+
+        const requestFailureMatch = rawMessage.match(
+            /^(?:get|post|patch)\(\):\s*([\s\S]*)$/i
+        );
+        if (requestFailureMatch || rawMessage.startsWith("no response from the backend")) {
+            void showMessage({
+                tone: "error",
+                message: getTranslatedText("MessageDialog_RequestFailed"),
+                details: requestFailureMatch?.[1]?.trim() || rawMessage,
+                dismissible: false,
+                ...options,
+            });
+            return;
+        }
+
+        void showMessage({
+            tone: options.tone || "error",
+            message: rawMessage || getTranslatedText("MessageDialog_RequestFailed"),
+            ...options,
+        });
     }
 
     function getNpcWeaponDisplayName(weapon) {
@@ -2728,7 +2816,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             presetKindTranslationKeys,
             "PresetKind_Unknown"
         );
-        if (!window.confirm(getTranslatedText(
+        if (!await confirmMessage(getTranslatedText(
             "Confirm_ApplyPreset",
             [presetKind, targetIds.length, count]
         ))) return false;
@@ -2778,7 +2866,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             confirmationArgs = null,
         } = {}
     ) {
-        if (confirmBeforePreview && !window.confirm(getTranslatedText(
+        if (confirmBeforePreview && !await confirmMessage(getTranslatedText(
             confirmationKey,
             confirmationArgs || [operations.length]
         ))) return false;
@@ -2794,7 +2882,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             };
             const preview = await POST("/api/batch/preview", payload);
             if (!acceptResponse(preview, "preview-batch")) return false;
-            if (!confirmBeforePreview && !window.confirm(getTranslatedText(
+            if (!confirmBeforePreview && !await confirmMessage(getTranslatedText(
                 confirmationKey,
                 confirmationArgs || [preview.data.impact.operation_count]
             ))) return false;
@@ -2828,7 +2916,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     async function healAllPalsInSave() {
         const palCount = Number(OVERVIEW_DATA.value?.totals?.pals) || 0;
         if (!palCount || !SESSION_ID.value) return false;
-        if (!window.confirm(getTranslatedText(
+        if (!await confirmMessage(getTranslatedText(
             "Confirm_HealAllPalsInSave",
             [palCount]
         ))) return false;
@@ -2880,7 +2968,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             const status = pal.ExpeditionAssignmentStatus ?? pal.assignment_status;
             statusCounts[statusCounts[status] === undefined ? "unknown" : status] += 1;
         }
-        if (!window.confirm(getTranslatedText("Confirm_UnlockExpeditionPals", [
+        if (!await confirmMessage(getTranslatedText("Confirm_UnlockExpeditionPals", [
             lockedPals.length,
             statusCounts.valid,
             statusCounts.invalid,
@@ -2945,7 +3033,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     async function completeActiveExpeditions() {
         if (!COMPLETABLE_EXPEDITION_COUNT.value || !SESSION_ID.value) return false;
-        if (!window.confirm(getTranslatedText("Confirm_CompleteActiveExpeditions"))) {
+        if (!await confirmMessage(getTranslatedText("Confirm_CompleteActiveExpeditions"))) {
             return false;
         }
         const ownsLoadingFlag = !LOADING_FLAG.value;
@@ -2975,7 +3063,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const baseLabel = expedition?.base_number
             ? getTranslatedText("PlayerTree_BaseNumber", [expedition.base_number])
             : expedition?.base_id || "-";
-        if (!window.confirm(getTranslatedText("Confirm_CompleteExpedition", [
+        if (!await confirmMessage(getTranslatedText("Confirm_CompleteExpedition", [
             expedition?.mission_id || expeditionId,
             baseLabel,
         ]))) {
@@ -3009,7 +3097,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             invalid: "Confirm_CancelInvalidExpedition",
             unknown: "Confirm_CancelUnknownExpedition",
         }[pal.ExpeditionAssignmentStatus] || "Confirm_CancelUnknownExpedition";
-        if (!window.confirm(getTranslatedText(
+        if (!await confirmMessage(getTranslatedText(
             confirmationKey,
             [pal.ExpeditionInstanceId || "-"]
         ))) return false;
@@ -3360,7 +3448,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             };
             return false;
         }
-        if (!window.confirm(getTranslatedText("Map_FogClear_Confirm"))) {
+        if (!await confirmMessage(getTranslatedText("Map_FogClear_Confirm"))) {
             return false;
         }
         const ownsLoadingFlag = !LOADING_FLAG.value;
@@ -3388,7 +3476,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 response.data?.changed
                     ? "Map_FogClear_Staged"
                     : "Map_FogClear_AlreadyCleared"
-            ));
+            ), { tone: "success" });
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -3412,7 +3500,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             };
             return false;
         }
-        if (!window.confirm(getTranslatedText("Map_FogReset_Confirm"))) {
+        if (!await confirmMessage(getTranslatedText("Map_FogReset_Confirm"))) {
             return false;
         }
         const ownsLoadingFlag = !LOADING_FLAG.value;
@@ -3440,7 +3528,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 response.data?.changed
                     ? "Map_FogReset_Staged"
                     : "Map_FogReset_AlreadyReset"
-            ));
+            ), { tone: "success" });
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -3466,7 +3554,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             };
             return false;
         }
-        if (!window.confirm(getTranslatedText("PlayerMap_FastTravel_Confirm"))) {
+        if (!await confirmMessage(getTranslatedText("PlayerMap_FastTravel_Confirm"))) {
             return false;
         }
         const ownsLoadingFlag = !LOADING_FLAG.value;
@@ -3512,7 +3600,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 response.data?.changed
                     ? "PlayerMap_FastTravel_Staged"
                     : "PlayerMap_FastTravel_AlreadyUnlocked",
-            ));
+            ), { tone: "success" });
             return true;
         } finally {
             if (ownsLoadingFlag) LOADING_FLAG.value = false;
@@ -3557,7 +3645,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             return false;
         }
         if (
-            !window.confirm(
+            !await confirmMessage(
                 getTranslatedText("PlayerInventoryCapacity_Confirm", [
                     capability.current_capacity,
                     targetCapacity,
@@ -4065,7 +4153,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (
                 SAVE_PLATFORM.value === "xgp"
                 && !XGP_SAVE_CONFIRMED.value
-                && !window.confirm(getTranslatedText("Confirm_Xgp_Save"))
+                && !await confirmMessage(getTranslatedText("Confirm_Xgp_Save"))
             ) {
                 return false;
             }
@@ -4093,7 +4181,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 && repairCount > 0
             );
             if (canRepairMissingGuildHandles) {
-                const confirmed = window.confirm(
+                const confirmed = await confirmMessage(
                     getTranslatedText(
                         "Confirm_CharacterReferenceRepair",
                         [repairCount],
@@ -4160,7 +4248,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                         "{{path}}",
                         PAL_WRITE_BACK_PATH.value
                     );
-                alert(Alert_Successful_Save);
+                alert(Alert_Successful_Save, { tone: "success" });
                 retval = true;
             } else if (response.status == 2) {
                 alert("Unauthorized Access, Please Login. ");
@@ -4206,9 +4294,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 return selected.trim();
             }
         }
-        return window.prompt(
+        return await promptMessage(
             getTranslatedText("Migration_PathPrompt"),
-            currentPath || PAL_GAME_SAVE_PATH.value || "",
+            {
+                defaultValue: currentPath || PAL_GAME_SAVE_PATH.value || "",
+                inputLabel: getTranslatedText("Migration_PathPlaceholder"),
+            },
         );
     }
 
@@ -4295,7 +4386,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function exportSteamCopy() {
-        const targetPath = window.prompt(getTranslatedText("Prompt_Xgp_Export_Target"));
+        const targetPath = await promptMessage(getTranslatedText("Prompt_Xgp_Export_Target"));
         if (!targetPath) return false;
         const noSetLoadingFlag = LOADING_FLAG.value;
         if (!noSetLoadingFlag) LOADING_FLAG.value = true;
@@ -4306,7 +4397,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 expected_revision: SESSION_REVISION.value,
             });
             if (!acceptResponse(response, "export-steam-copy")) return false;
-            alert(getTranslatedText("Alert_Xgp_Export_Success", [targetPath]));
+            alert(getTranslatedText("Alert_Xgp_Export_Success", [targetPath]), {
+                tone: "success",
+            });
             return true;
         } finally {
             if (!noSetLoadingFlag) LOADING_FLAG.value = false;
@@ -4737,7 +4830,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 containerTranslationKeys,
                 "Inventory_Container_Unknown"
             );
-            if (!window.confirm(getTranslatedText(
+            if (!await confirmMessage(getTranslatedText(
                 "Confirm_MovePal",
                 [container, destination.slot_index]
             ))) {
@@ -4831,7 +4924,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (response.status == 0) {
             const data = response.data;
             await navigator.clipboard.writeText(data);
-            alert(getTranslatedText("Alert_PalDataCopied"));
+            alert(getTranslatedText("Alert_PalDataCopied"), { tone: "success" });
             window.open("https://jsonformatter.curiousconcept.com/");
         } else if (response.status == 2) {
             alert("Unauthorized Access, Please Login. ");
@@ -4935,7 +5028,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             (impact.container_references?.length || 0) +
             (impact.owner_references?.length || 0) +
             (impact.group_references?.length || 0);
-        const confirmed = window.confirm(getTranslatedText(
+        const confirmed = await confirmMessage(getTranslatedText(
             "Confirm_DeletePal",
             [referenceCount]
         ));
@@ -5045,7 +5138,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             containerTranslationKeys,
             "Inventory_Container_Unknown"
         );
-        if (!window.confirm(getTranslatedText(
+        if (!await confirmMessage(getTranslatedText(
             "Confirm_ClonePal",
             [container, destination.slot_index]
         ))) {
@@ -5164,6 +5257,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_FILE_PICKER_SELECTION,
         IS_PAL_SAVE_PATH,
         FILE_PICKER_PURPOSE,
+        IS_PATH_PICKER_ROOT_VIEW,
 
         SHOW_PLAYER_EDIT_FLAG,
         HAS_WORKING_PAL_FLAG,
@@ -5353,6 +5447,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         login,
         auth,
         show_file_picker,
+        show_path_picker_roots,
         update_picker_result,
         path_back
     };

@@ -8,6 +8,7 @@ import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
 import PalSkillPicker from '@/components/modules/PalSkillPicker.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
 import VariantBadge from '@/components/modules/VariantBadge.vue'
+import { showMessage } from '@/services/message-dialog'
 import { computed, ref } from 'vue'
 const palStore = usePalEditorStore()
 const cloneContainer = ref('AUTO')
@@ -45,7 +46,12 @@ async function importPreset(event) {
       : [palStore.SELECTED_PAL_ID]
     await palStore.applyPreset(preset, targets)
   } catch (error) {
-    window.alert(`Preset import failed: ${error.message}`)
+    void showMessage({
+      tone: 'error',
+      message: palStore.getTranslatedText('MessageDialog_PresetImportFailed'),
+      details: error.message,
+      dismissible: false,
+    })
   }
 }
 

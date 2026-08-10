@@ -129,9 +129,10 @@ class XgpSourceCatalog:
                 retryable=True,
                 http_status=404,
             )
-        if (selected / "containers.index").is_file():
-            root = selected.parent.resolve()
-            scopes = ((root, (selected,)),)
+        selected_user = self._find_selected_user_directory(selected)
+        if selected_user is not None:
+            root = selected_user.parent.resolve()
+            scopes = ((root, (selected_user,)),)
         else:
             root = selected
             scopes = ((root, None),)
@@ -155,6 +156,19 @@ class XgpSourceCatalog:
     def _is_excluded_directory(path: Path) -> bool:
         folded = path.name.casefold()
         return folded == "t" or "backup" in folded or "temp" in folded
+
+    @classmethod
+    def _find_selected_user_directory(cls, selected: Path) -> Path | None:
+        candidate = selected
+        while True:
+            if cls._is_excluded_directory(candidate):
+                return None
+            if (candidate / "containers.index").is_file():
+                return candidate
+            parent = candidate.parent
+            if parent == candidate:
+                return None
+            candidate = parent
 
     def _discover_scopes(
         self,

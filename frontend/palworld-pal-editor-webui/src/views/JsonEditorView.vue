@@ -1,6 +1,7 @@
 <script setup>
 import AppIcon from '@/components/modules/AppIcon.vue'
 import MonacoJsonEditor from '@/components/json-editor/MonacoJsonEditor.vue'
+import { confirmMessage } from '@/services/message-dialog'
 import { usePalEditorStore } from '@/stores/paleditor'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
@@ -166,7 +167,7 @@ async function loadDocument(path, { skipDirtyCheck = false } = {}) {
   if (
     !skipDirtyCheck
     && dirty.value
-    && !window.confirm(t('JsonEditor_DiscardConfirm'))
+    && !await confirmMessage(t('JsonEditor_DiscardConfirm'))
   ) return
 
   documentLoading.value = true
@@ -216,7 +217,7 @@ async function applyDocument() {
     || validation.value.state !== 'valid'
     || applying.value
   ) return
-  if (!window.confirm(t('JsonEditor_ConfirmApply'))) return
+  if (!await confirmMessage(t('JsonEditor_ConfirmApply'))) return
   applying.value = true
   try {
     const result = await palStore.applyJsonDocument(selectedPath.value, text.value)
@@ -232,9 +233,9 @@ function returnToEditor() {
   router.push({ name: 'Editor' })
 }
 
-onBeforeRouteLeave(() => {
+onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
-  return window.confirm(t('JsonEditor_DiscardConfirm'))
+  return confirmMessage(t('JsonEditor_DiscardConfirm'))
 })
 
 const openedSessionId = ref(palStore.SESSION_ID)
