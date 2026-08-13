@@ -12,7 +12,7 @@ MAX_GUILD_BASE_CAMP_LEVEL = 35
 
 
 class GuildBaseEditor:
-    """Revision-bound, expand-only guild terminal level writes."""
+    """Revision-bound guild terminal level writes within official limits."""
 
     def __init__(self, session: SaveSession) -> None:
         self._session = session
@@ -40,15 +40,23 @@ class GuildBaseEditor:
                 details={"guild_id": str(command.guild_id)},
                 http_status=409,
             )
-        if command.level < current_level:
+        lowering = command.level < current_level
+        if lowering and command.confirm_lowering is not True:
             raise DomainError(
-                code="BASE_CAMP_LEVEL_SHRINK_UNSUPPORTED",
-                message="The base camp level can only be increased.",
-                field="level",
-                details={"current_level": current_level},
+                code="BASE_CAMP_LEVEL_LOWER_CONFIRMATION_REQUIRED",
+                message=(
+                    "Lowering the base camp level may affect Pals stored in "
+                    "or assigned through the Palbox. Explicit confirmation "
+                    "is required."
+                ),
+                field="confirm_base_camp_level_lowering",
+                details={
+                    "current_level": current_level,
+                    "target_level": command.level,
+                },
+                retryable=True,
                 http_status=409,
             )
-
         value = lambda: {
             "guild_id": str(group.group_id),
             "level": group.base_camp_level,

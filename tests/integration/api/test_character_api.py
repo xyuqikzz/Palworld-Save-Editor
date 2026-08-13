@@ -190,6 +190,44 @@ class CharacterApiTests(unittest.TestCase):
         self.assertEqual(50.0, attributes["move_speed"]["effect_percent"])
         self.assertEqual(1, self.session.revision)
 
+    def test_explicit_consumable_bonus_command_updates_separate_read_model(self) -> None:
+        self.player._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+        self.player._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
+        regular = PalObjects.get_ArrayProperty(
+            self.player._player_param["GotStatusPointList"]
+        )
+        bonus = PalObjects.get_ArrayProperty(
+            self.player._player_param["GotExStatusPointList"]
+        )
+        PalObjects.set_BaseType(regular[0]["StatusPoint"], 20)
+        PalObjects.set_BaseType(bonus[0]["StatusPoint"], 28)
+
+        response = self.client.post(
+            f"/api/player/{self.player.PlayerUId}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_player_consumable_bonuses",
+                "values": {"max_hp": 30},
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        payload = response.get_json()["data"]
+        self.assertEqual({"max_hp": 30}, payload["value"]["updated"])
+        self.player.has_viewing_cage = lambda: False
+        read_model = player_to_dict(self.player)
+        self.assertEqual(
+            30,
+            {
+                row["key"]: row["value"]
+                for row in read_model["PlayerConsumableBonuses"]["values"]
+            }["max_hp"],
+        )
+        self.assertEqual(20, PalObjects.get_BaseType(regular[0]["StatusPoint"]))
+        self.assertEqual(1, self.session.revision)
+
     def test_legacy_read_models_do_not_expose_raw_container_ids(self) -> None:
         self.player.has_viewing_cage = lambda: False
         player_payload = player_to_dict(self.player)

@@ -430,6 +430,47 @@ class GuildApiTests(unittest.TestCase):
         )
         self.assertEqual(35, self.group.base_camp_level)
 
+    def test_terminal_level_can_be_lowered_within_official_range(self) -> None:
+        response = self.client.post(
+            f"/api/save/guilds/{GUILD_ID}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_base_camp_level",
+                "level": 1,
+                "confirm_base_camp_level_lowering": True,
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        self.assertEqual(1, self.group.base_camp_level)
+
+    def test_terminal_level_lowering_requires_explicit_confirmation(self) -> None:
+        blocked = self.client.post(
+            f"/api/save/guilds/{GUILD_ID}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_base_camp_level",
+                "level": 10,
+            },
+        )
+
+        self.assertEqual(409, blocked.status_code, blocked.get_json())
+        error = blocked.get_json()["error"]
+        self.assertEqual(
+            "BASE_CAMP_LEVEL_LOWER_CONFIRMATION_REQUIRED",
+            error["code"],
+        )
+        self.assertEqual(
+            {"current_level": 14, "target_level": 10},
+            error["details"],
+        )
+        self.assertEqual(14, self.group.base_camp_level)
+        self.assertEqual(0, self.session.revision)
+
     def test_worker_capacity_command_is_not_supported(self) -> None:
         response = self.client.post(
             f"/api/save/guilds/{GUILD_ID}/commands",

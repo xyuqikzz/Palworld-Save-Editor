@@ -178,7 +178,9 @@ function validDraft(kind, guild) {
   const value = Number(editDraft.value)
   if (!Number.isInteger(value)) return false
   if (kind === 'level') {
-    return value > guild.base_camp_level && value <= MAX_BASE_CAMP_LEVEL
+    return value >= 1
+      && value <= MAX_BASE_CAMP_LEVEL
+      && value !== guild.base_camp_level
   }
   if (kind === 'chest') {
     return value > guild.guild_chest_capacity
@@ -209,7 +211,6 @@ async function saveEdit(kind, guild) {
 function canEditLevel(guild) {
   return guild.base_camp_level_status === 'available'
     && Number.isInteger(guild.base_camp_level)
-    && guild.base_camp_level < MAX_BASE_CAMP_LEVEL
 }
 
 function canEditChest(guild) {
@@ -336,7 +337,7 @@ onMounted(refreshGuilds)
                     : palStore.getTranslatedText('Guild_FieldUnavailable') }}
                 </strong>
                 <input v-else v-model.number="editDraft" class="guild-input"
-                  type="number" :min="guild.base_camp_level + 1"
+                  type="number" :min="1"
                   :max="MAX_BASE_CAMP_LEVEL"
                   :aria-label="palStore.getTranslatedText('Guild_EditTerminalLevel')"
                   :disabled="writesDisabled"

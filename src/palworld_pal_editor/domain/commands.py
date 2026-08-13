@@ -61,6 +61,7 @@ class UpdateGuildChestCapacity(SessionCommand):
 class UpdateGuildBaseCampLevel(SessionCommand):
     guild_id: str
     level: int
+    confirm_lowering: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -185,6 +186,12 @@ class UpdatePlayerProgression(SessionCommand):
 
 @dataclass(frozen=True, kw_only=True)
 class UpdatePlayerAttributes(SessionCommand):
+    player_id: str
+    values: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, kw_only=True)
+class UpdatePlayerConsumableBonuses(SessionCommand):
     player_id: str
     values: dict[str, int] = field(default_factory=dict)
 

@@ -144,6 +144,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.TechnologyPoint = obj.TechnologyPoint;
             this.bossTechnologyPoint = obj.bossTechnologyPoint;
             this.PlayerAttributes = obj.PlayerAttributes || [];
+            this.PlayerConsumableBonuses = obj.PlayerConsumableBonuses || {
+                available: false,
+                reason: "PLAYER_CONSUMABLE_BONUS_FIELD_MISSING",
+                reduce_only: false,
+                values: [],
+            };
             this.FastTravelUnlockCapability =
                 obj.FastTravelUnlockCapability || {
                     available: false,
@@ -2481,6 +2487,41 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
     }
 
+    async function updatePlayerConsumableBonuses(bonus = null) {
+        if (!SELECTED_PLAYER_ID.value || !SELECTED_PLAYER_DATA.value) return false;
+        const capability = SELECTED_PLAYER_DATA.value.PlayerConsumableBonuses;
+        if (!capability?.available) return false;
+        const bonuses = bonus?.key ? [bonus] : (capability.values || []);
+        const values = Object.fromEntries(
+            bonuses.map(item => [item.key, Number(item.value)])
+        );
+        if (!Object.keys(values).length) return false;
+        const noSetLoadingFlag = LOADING_FLAG.value;
+        if (!noSetLoadingFlag) LOADING_FLAG.value = true;
+        try {
+            const response = await POST(
+                `/api/player/${encodeURIComponent(SELECTED_PLAYER_ID.value)}/commands`,
+                {
+                    session_id: SESSION_ID.value,
+                    expected_revision: SESSION_REVISION.value,
+                    command: "update_player_consumable_bonuses",
+                    values,
+                }
+            );
+            if (!acceptResponse(
+                response,
+                "update-player-consumable-bonuses",
+                { command: true },
+            )) {
+                return false;
+            }
+            await loadPlayer(SELECTED_PLAYER_ID.value);
+            return true;
+        } finally {
+            if (!noSetLoadingFlag) LOADING_FLAG.value = false;
+        }
+    }
+
     async function discoverXgpSources(path = XGP_WGS_PATH.value) {
         const noSetLoadingFlag = LOADING_FLAG.value;
         if (!noSetLoadingFlag) LOADING_FLAG.value = true;
@@ -4048,6 +4089,25 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         ) {
             return false;
         }
+        const guild = GUILD_LIST.value.find(
+            item => String(item.guild_id) === String(guildId)
+        ) || GUILD_TREE.value.find(
+            item => String(item.guild_id) === String(guildId)
+        );
+        const currentLevel = Number(guild?.base_camp_level);
+        const lowering = Number.isInteger(currentLevel)
+            && normalizedLevel < currentLevel;
+        if (
+            lowering
+            && !await confirmMessage(
+                getTranslatedText("Confirm_LowerGuildBaseCampLevel", [
+                    currentLevel,
+                    normalizedLevel,
+                ])
+            )
+        ) {
+            return false;
+        }
         const ownsLoadingFlag = !LOADING_FLAG.value;
         if (ownsLoadingFlag) LOADING_FLAG.value = true;
         try {
@@ -4058,6 +4118,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     expected_revision: SESSION_REVISION.value,
                     command: "update_base_camp_level",
                     level: normalizedLevel,
+                    ...(lowering
+                        ? { confirm_base_camp_level_lowering: true }
+                        : {}),
                 }
             );
             if (
@@ -5402,6 +5465,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         addCustomPassive,
         updatePlayer,
         updatePlayerAttributes,
+        updatePlayerConsumableBonuses,
         updateInventoryItem,
         putInventoryItem,
         clearInventoryItem,

@@ -7,13 +7,18 @@ from palworld_save_tools.gvas import GvasFile, GvasHeader
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
 from palworld_save_tools.paltypes import PALWORLD_TYPE_HINTS
 
+from palworld_pal_editor.application.guild_base_editor import GuildBaseEditor
 from palworld_pal_editor.application.guild_editor import GuildEditor
 from palworld_pal_editor.application.save_session import SaveSession
 from palworld_pal_editor.application.save_writer import SaveWriter
 from palworld_pal_editor.core.group_data import GroupData
 from palworld_pal_editor.core.pal_objects import PalObjects, toUUID
 from palworld_pal_editor.core.save_manager import MAIN_SKIP_PROPERTIES
-from palworld_pal_editor.domain.commands import UpdateGuildName, UpdateGuildOwner
+from palworld_pal_editor.domain.commands import (
+    UpdateGuildBaseCampLevel,
+    UpdateGuildName,
+    UpdateGuildOwner,
+)
 from palworld_pal_editor.storage.discovery import XgpSourceCatalog
 from palworld_pal_editor.storage.xgp import XgpWgsAdapter
 from tests.wgs_fixture import make_user_directory
@@ -24,7 +29,7 @@ OWNER_ID = "aaaaaaaa-1111-2222-3333-444444444444"
 MEMBER_ID = "bbbbbbbb-1111-2222-3333-444444444444"
 
 
-def _gvas(name: str) -> GvasFile:
+def _gvas(name: str, *, level: int = 1) -> GvasFile:
     group_map = PalObjects.MapProperty(
         "StructProperty",
         "StructProperty",
@@ -50,7 +55,7 @@ def _gvas(name: str) -> GvasFile:
                         "leading_bytes": [0, 0, 0, 0],
                         "base_ids": [],
                         "unknown_1": 0,
-                        "base_camp_level": 1,
+                        "base_camp_level": level,
                         "map_object_instance_ids_base_camp_points": [],
                         "guild_name": name,
                         "last_guild_name_modifier_player_uid": (
@@ -165,6 +170,18 @@ def _set_owner(session: SaveSession, player_id: str) -> None:
             expected_revision=session.revision,
             guild_id=GUILD_ID,
             player_id=player_id,
+        )
+    )
+
+
+def _set_level(session: SaveSession, level: int) -> None:
+    GuildBaseEditor(session).execute(
+        UpdateGuildBaseCampLevel(
+            session_id=session.session_id,
+            expected_revision=session.revision,
+            guild_id=GUILD_ID,
+            level=level,
+            confirm_lowering=True,
         )
     )
 
@@ -312,6 +329,73 @@ def test_synthetic_wgs_guild_owner_open_edit_save_reopen() -> None:
             OWNER_ID: 2,
             MEMBER_ID: 1,
         }
+        reopened.close()
+        assert result.platform == "xgp"
+        assert result.source_reloaded is True
+        assert result.target_reload_verified is True
+        assert result.cloud_sync_verified is False
+        assert result.written_files == ("Level.sav",)
+
+
+def test_synthetic_steam_out_of_range_level_repair_save_reopen(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "steam-level"
+    source.mkdir()
+    (source / "Level.sav").write_bytes(_sav(_gvas("Builders", level=60)))
+
+    session = SaveSession.open(source, manager=_Manager())
+    _set_level(session, 35)
+    result = SaveWriter().save(session, source, session.revision)
+    session.close()
+
+    reopened = SaveSession.open(source, manager=_Manager())
+    assert reopened.manager.group_data.get_group(GUILD_ID).base_camp_level == 35
+    reopened.close()
+    assert result.platform == "steam"
+    assert result.target_reload_verified is True
+    assert result.written_files == ("Level.sav",)
+
+
+def test_synthetic_wgs_level_lower_save_reopen() -> None:
+    with TemporaryDirectory(prefix="g") as temp:
+        base = Path(temp)
+        root = base / "wgs"
+        root.mkdir()
+        make_user_directory(
+            root,
+            "1111111111111111_" + "E" * 32,
+            {"C" * 32: {"Level.sav": _sav(_gvas("Builders", level=14))}},
+        )
+        catalog = XgpSourceCatalog(roots=(root,))
+        adapter = XgpWgsAdapter(
+            catalog=catalog,
+            process_checker=lambda: False,
+            workspace_validator=lambda _path: None,
+            workspace_root=base / "workspaces",
+            backup_root=base / "backups",
+            stability_delay=0,
+        )
+        session = SaveSession.open_storage(
+            catalog.discover()[0], adapter, manager=_Manager()
+        )
+
+        _set_level(session, 1)
+        result = SaveWriter().save(session, None, session.revision)
+        session.close()
+
+        reopened_adapter = XgpWgsAdapter(
+            catalog=catalog,
+            process_checker=lambda: False,
+            workspace_validator=lambda _path: None,
+            workspace_root=base / "reopened-workspaces",
+            backup_root=base / "reopened-backups",
+            stability_delay=0,
+        )
+        reopened = SaveSession.open_storage(
+            catalog.discover()[0], reopened_adapter, manager=_Manager()
+        )
+        assert reopened.manager.group_data.get_group(GUILD_ID).base_camp_level == 1
         reopened.close()
         assert result.platform == "xgp"
         assert result.source_reloaded is True

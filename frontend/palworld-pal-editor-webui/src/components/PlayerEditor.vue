@@ -173,6 +173,28 @@ const setAllPlayerAttributesToMaximum = () => {
     }
 }
 
+const consumableBonusCapability = computed(() => (
+    palStore.SELECTED_PLAYER_DATA.PlayerConsumableBonuses || {
+        available: false,
+        reason: 'PLAYER_CONSUMABLE_BONUS_FIELD_MISSING',
+        reduce_only: false,
+        values: [],
+    }
+))
+const consumableBonusReason = computed(() => (
+    consumableBonusCapability.value.available
+        ? ''
+        : palStore.getTranslatedText(
+            consumableBonusCapability.value.reason
+                || 'PLAYER_CONSUMABLE_BONUS_STRUCTURE_UNSUPPORTED',
+        )
+))
+const clearAllConsumableBonuses = () => {
+    for (const bonus of consumableBonusCapability.value.values || []) {
+        bonus.value = 0
+    }
+}
+
 const formatAttributeEffect = (value) => {
     if (value === null || value === undefined) return ''
     return Number.isInteger(value) ? String(value) : Number(value).toFixed(1)
@@ -527,6 +549,70 @@ const formatAttributeEffect = (value) => {
                     </div>
                 </article>
             </div>
+            <section class="player-consumable-bonuses" aria-labelledby="player-consumable-bonuses-title">
+                <header class="player-consumable-bonuses__heading">
+                    <div>
+                        <h3 id="player-consumable-bonuses-title">
+                            {{ palStore.getTranslatedText('PlayerConsumableBonuses_Title') }}
+                        </h3>
+                        <p>{{ palStore.getTranslatedText('PlayerConsumableBonuses_Description') }}</p>
+                    </div>
+                    <div v-if="consumableBonusCapability.available" class="player-attributes-actions">
+                        <button
+                            type="button"
+                            class="attribute-secondary-action"
+                            :disabled="palStore.LOADING_FLAG"
+                            @click="clearAllConsumableBonuses"
+                        >{{ palStore.getTranslatedText('PlayerConsumableBonuses_ClearAll') }}</button>
+                        <button
+                            type="button"
+                            class="attribute-primary-action"
+                            :disabled="palStore.LOADING_FLAG"
+                            @click="palStore.updatePlayerConsumableBonuses()"
+                        ><AppIcon name="check" />{{ palStore.getTranslatedText('PlayerAttributes_SaveAll') }}</button>
+                    </div>
+                </header>
+                <p v-if="!consumableBonusCapability.available" class="player-consumable-bonuses__unavailable">
+                    {{ consumableBonusReason }}
+                </p>
+                <div v-else class="player-consumable-bonuses__grid">
+                    <article
+                        v-for="bonus in palStore.SELECTED_PLAYER_DATA.PlayerConsumableBonuses.values"
+                        :key="bonus.key"
+                        class="player-consumable-bonus"
+                    >
+                        <img
+                            :src="`/image/player_attributes/${bonus.icon}`"
+                            :alt="palStore.getTranslatedText(`PlayerAttribute_${bonus.key}`)"
+                        >
+                        <label>
+                            <strong>{{ palStore.getTranslatedText(`PlayerAttribute_${bonus.key}`) }}</strong>
+                            <span>
+                                {{ palStore.getTranslatedText('PlayerConsumableBonuses_Total', [
+                                    Number(bonus.regular_rank) + Number(bonus.value),
+                                    bonus.maximum_total,
+                                ]) }}
+                            </span>
+                            <input
+                                v-model.number="bonus.value"
+                                type="number"
+                                min="0"
+                                :max="bonus.maximum"
+                                step="1"
+                                :disabled="palStore.LOADING_FLAG"
+                                @keydown.enter="palStore.updatePlayerConsumableBonuses(bonus)"
+                            >
+                        </label>
+                        <button
+                            type="button"
+                            class="player-attribute-save-action"
+                            :disabled="palStore.LOADING_FLAG"
+                            :title="palStore.getTranslatedText('Common_Save')"
+                            @click="palStore.updatePlayerConsumableBonuses(bonus)"
+                        ><AppIcon name="check" :size="15" /></button>
+                    </article>
+                </div>
+            </section>
         </section>
         
     </div>
@@ -1186,6 +1272,101 @@ select.selector {
     width: 100%;
     grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
     gap: 8px;
+}
+
+.player-consumable-bonuses {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--ui-border);
+}
+
+.player-consumable-bonuses__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.player-consumable-bonuses__heading h3 {
+    margin: 0;
+    color: var(--ui-text);
+    font-size: 13px;
+}
+
+.player-consumable-bonuses__heading p,
+.player-consumable-bonuses__unavailable {
+    margin: 5px 0 0;
+    color: var(--ui-text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.player-consumable-bonuses__unavailable {
+    padding: 12px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+}
+
+.player-consumable-bonuses__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 8px;
+}
+
+.player-consumable-bonus {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 32px;
+    align-items: center;
+    gap: 9px;
+    padding: 10px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-sm);
+}
+
+.player-consumable-bonus > img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+
+.player-consumable-bonus label {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 1fr 64px;
+    align-items: center;
+    gap: 3px 8px;
+}
+
+.player-consumable-bonus strong {
+    overflow: hidden;
+    color: var(--ui-text);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-consumable-bonus label > span {
+    grid-column: 1;
+    color: var(--ui-text-muted);
+    font-size: 9px;
+}
+
+.player-consumable-bonus input {
+    box-sizing: border-box;
+    width: 64px;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding: 6px 7px;
+    color: var(--ui-text);
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border-strong);
+    border-radius: var(--ui-radius-sm);
+    font: inherit;
+    font-size: 11px;
 }
 
 .player-attribute-item {

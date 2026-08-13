@@ -112,7 +112,40 @@ class GuildBaseEditorTests(unittest.TestCase):
             self.session.changes()[0]["affected_records"],
         )
 
-    def test_rejects_lower_guild_base_camp_level(self) -> None:
+    def test_lowers_guild_base_camp_level(self) -> None:
+        result = GuildBaseEditor(self.session).execute(
+            UpdateGuildBaseCampLevel(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                guild_id=str(GUILD_ID),
+                level=13,
+                confirm_lowering=True,
+            )
+        )
+
+        self.assertEqual(1, result["revision"])
+        self.assertEqual(13, result["value"]["level"])
+        self.assertEqual(
+            13, self.manager.group_data.get_group(GUILD_ID).base_camp_level
+        )
+
+    def test_repairs_out_of_range_guild_base_camp_level(self) -> None:
+        group = self.manager.group_data.get_group(GUILD_ID)
+        group.set_base_camp_level(60)
+
+        GuildBaseEditor(self.session).execute(
+            UpdateGuildBaseCampLevel(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                guild_id=str(GUILD_ID),
+                level=35,
+                confirm_lowering=True,
+            )
+        )
+
+        self.assertEqual(35, group.base_camp_level)
+
+    def test_rejects_lowering_without_explicit_confirmation(self) -> None:
         with self.assertRaises(DomainError) as raised:
             GuildBaseEditor(self.session).execute(
                 UpdateGuildBaseCampLevel(
@@ -124,12 +157,29 @@ class GuildBaseEditorTests(unittest.TestCase):
             )
 
         self.assertEqual(
-            "BASE_CAMP_LEVEL_SHRINK_UNSUPPORTED",
+            "BASE_CAMP_LEVEL_LOWER_CONFIRMATION_REQUIRED",
             raised.exception.code,
         )
         self.assertEqual(
             14, self.manager.group_data.get_group(GUILD_ID).base_camp_level
         )
+
+    def test_rejects_target_levels_outside_official_range(self) -> None:
+        for level in (0, 36):
+            with self.subTest(level=level), self.assertRaises(DomainError) as raised:
+                GuildBaseEditor(self.session).execute(
+                    UpdateGuildBaseCampLevel(
+                        session_id=self.session.session_id,
+                        expected_revision=0,
+                        guild_id=str(GUILD_ID),
+                        level=level,
+                    )
+                )
+
+            self.assertEqual("INVALID_BASE_CAMP_LEVEL", raised.exception.code)
+            self.assertEqual(
+                14, self.manager.group_data.get_group(GUILD_ID).base_camp_level
+            )
 
 if __name__ == "__main__":
     unittest.main()

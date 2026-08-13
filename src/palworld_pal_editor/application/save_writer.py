@@ -20,9 +20,15 @@ from palworld_pal_editor.core.character_index import (
 )
 from palworld_pal_editor.core.dynamic_item_data import DynamicItemData
 from palworld_pal_editor.core.guild_item_storage_data import GuildItemStorageData
-from palworld_pal_editor.core.pal_objects import UUID2HexStr
+from palworld_pal_editor.core.pal_objects import PalObjects, UUID2HexStr
 from palworld_pal_editor.core.save_manager import MAIN_SKIP_PROPERTIES, PLAYER_SKIP_PROPERTIES
 from palworld_pal_editor.domain.errors import DomainError, stale_revision
+from palworld_pal_editor.domain.player_consumable_bonuses import (
+    CONSUMABLE_BONUS_BY_KEY,
+    ConsumableBonusStructureError,
+    inspect_consumable_bonus_values,
+    regular_attribute_rank,
+)
 from palworld_pal_editor.domain.models import (
     SavePlatform,
     SaveResult,
@@ -383,6 +389,7 @@ class SaveWriter:
         chest_expected: dict[str, int] = {}
         level_expected: dict[str, int] = {}
         owner_expected: dict[str, tuple[str, dict[str, int]]] = {}
+        consumable_bonus_expected: dict[str, dict[str, int]] = {}
         player_inventory_expected: dict[str, int] = {}
         item_slot_expected: dict[tuple[str, int], dict[str, Any]] = {}
         for change in session.changes():
@@ -434,6 +441,22 @@ class SaveWriter:
                 if roles.get(owner_player_id) != 1:
                     raise ValueError("Guild owner must retain the leader role")
                 owner_expected[guild_id] = (owner_player_id, roles)
+            elif command == "UpdatePlayerConsumableBonuses":
+                player_id = target.get("player_id")
+                if (
+                    not isinstance(player_id, str)
+                    or not isinstance(after, dict)
+                    or any(
+                        not isinstance(key, str)
+                        or isinstance(value, bool)
+                        or not isinstance(value, int)
+                        for key, value in after.items()
+                    )
+                ):
+                    raise ValueError(
+                        "Invalid player consumable bonus postcondition"
+                    )
+                consumable_bonus_expected.setdefault(player_id, {}).update(after)
             elif command == "UpdatePlayerInventoryCapacity":
                 container_id = target.get("container_id")
                 capacity = after.get("capacity")
@@ -472,6 +495,7 @@ class SaveWriter:
             chest_expected
             or level_expected
             or owner_expected
+            or consumable_bonus_expected
             or player_inventory_expected
             or item_slot_expected
         ):
@@ -479,7 +503,58 @@ class SaveWriter:
 
         level = reloaded.get("Level.sav")
         if level is None:
-            raise ValueError("Guild changes require a reloaded Level.sav")
+            raise ValueError("Level changes require a reloaded Level.sav")
+        if consumable_bonus_expected:
+            records = (
+                level.properties.get("worldSaveData", {})
+                .get("value", {})
+                .get("CharacterSaveParameterMap", {})
+                .get("value", [])
+            )
+            for player_id, expected in consumable_bonus_expected.items():
+                matches = []
+                for record in records:
+                    try:
+                        parameter = record["value"]["RawData"]["value"]["object"][
+                            "SaveParameter"
+                        ]["value"]
+                        record_player_id = PalObjects.get_BaseType(
+                            record["key"].get("PlayerUId")
+                        )
+                    except (KeyError, TypeError, AttributeError):
+                        continue
+                    if (
+                        PalObjects.get_BaseType(parameter.get("IsPlayer"))
+                        and str(record_player_id) == player_id
+                    ):
+                        matches.append(parameter)
+                if len(matches) != 1:
+                    raise ValueError(
+                        "Reloaded consumable bonus player record is not unique"
+                    )
+                try:
+                    actual = inspect_consumable_bonus_values(matches[0])
+                except ConsumableBonusStructureError as error:
+                    raise ValueError(
+                        "Reloaded consumable bonus structure is unsupported"
+                    ) from error
+                if any(actual.get(key) != value for key, value in expected.items()):
+                    raise ValueError(
+                        "Reloaded player consumable bonuses do not match staging"
+                    )
+                for key, value in expected.items():
+                    definition = CONSUMABLE_BONUS_BY_KEY.get(key)
+                    if definition is None:
+                        raise ValueError(
+                            "Reloaded consumable bonus field is unsupported"
+                        )
+                    regular = regular_attribute_rank(
+                        matches[0], definition.status_name
+                    )
+                    if regular + value > definition.maximum_total:
+                        raise ValueError(
+                            "Reloaded player attribute total exceeds the official maximum"
+                        )
         if chest_expected:
             guild_storage = GuildItemStorageData(level)
             item_containers = ItemContainerData(level)

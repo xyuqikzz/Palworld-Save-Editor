@@ -297,6 +297,58 @@ test('terminal level uses a dedicated revision-bound command', async () => {
   assert.equal(store.SESSION_REVISION, 7)
 })
 
+test('terminal level accepts reductions and repairs values above 35', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 2
+  store.GUILD_LIST = [{ guild_id: 'guild-1', base_camp_level: 60 }]
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    return { data: { status: 0, data: {
+      revision: 3,
+      value: { guild_id: 'guild-1', level: data.level },
+    } } }
+  }
+
+  assert.equal(await store.updateGuildBaseCampLevel('guild-1', 35), true)
+  assert.equal(store.GUILD_LIST[0].base_camp_level, 35)
+  assert.equal(calls[0].data.level, 35)
+  assert.equal(calls[0].data.confirm_base_camp_level_lowering, true)
+
+  assert.equal(await store.updateGuildBaseCampLevel('guild-1', 1), true)
+  assert.equal(store.GUILD_LIST[0].base_camp_level, 1)
+  assert.equal(calls[1].data.level, 1)
+  assert.equal(calls[1].data.confirm_base_camp_level_lowering, true)
+})
+
+test('terminal level cancellation does not create a pending command', async () => {
+  const store = makeStore()
+  store.SESSION_REVISION = 2
+  store.GUILD_LIST = [{ guild_id: 'guild-1', base_camp_level: 14 }]
+  const previousConfirm = window.confirm
+  let requestCount = 0
+  let warning = ''
+  window.confirm = message => {
+    warning = message
+    return false
+  }
+  axios.post = async () => {
+    requestCount += 1
+    throw new Error('lowering command must not be sent after cancellation')
+  }
+
+  try {
+    assert.equal(await store.updateGuildBaseCampLevel('guild-1', 10), false)
+    assert.match(warning, /14 to 10/)
+    assert.match(warning, /Pals stored in or assigned through the Palbox/i)
+    assert.equal(requestCount, 0)
+    assert.equal(store.GUILD_LIST[0].base_camp_level, 14)
+    assert.equal(store.PENDING_CHANGE_COUNT, 0)
+  } finally {
+    window.confirm = previousConfirm
+  }
+})
+
 test('base storage is loaded lazily and item count writes keep guild-base scope', async () => {
   const store = makeStore()
   store.SESSION_REVISION = 4
@@ -395,6 +447,8 @@ test('the guild page owns guild, chest, terminal, read-only base capacity, and m
   assert.match(source, /palStore\.updateGuildOwner/)
   assert.match(source, /palStore\.updateGuildChestCapacity/)
   assert.match(source, /palStore\.updateGuildBaseCampLevel/)
+  assert.match(source, /type="number" :min="1"/)
+  assert.doesNotMatch(source, /guild\.base_camp_level < MAX_BASE_CAMP_LEVEL/)
   assert.doesNotMatch(source, /updateBaseWorkerCapacity|saveEdit\('workers'|startEdit\('workers'/)
   assert.doesNotMatch(storeSource, /updateBaseWorkerCapacity|update_base_worker_capacity/)
   assert.match(source, /v-for="\(base, index\) in guild\.bases"/)

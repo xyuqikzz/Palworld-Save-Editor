@@ -74,3 +74,30 @@ test('player attribute editor uses packaged game icons and the explicit command 
     assert.ok(existsSync(new URL(`${key}.png`, iconRoot)), `${key} icon is missing`)
   }
 })
+
+test('remedy and elixir bonuses use a separate official-total-capped command flow', () => {
+  const component = readFileSync(
+    fileURLToPath(new URL('../src/components/PlayerEditor.vue', import.meta.url)),
+    'utf8',
+  )
+  const store = readFileSync(
+    fileURLToPath(new URL('../src/stores/paleditor.js', import.meta.url)),
+    'utf8',
+  )
+
+  for (const translations of [en, fr, ja, ko, zhCN]) {
+    assert.ok(translations.PlayerConsumableBonuses_Title)
+    assert.ok(translations.PlayerConsumableBonuses_Description)
+    assert.ok(translations.PLAYER_CONSUMABLE_BONUS_FIELD_MISSING)
+    assert.ok(translations.PLAYER_CONSUMABLE_BONUS_STRUCTURE_UNSUPPORTED)
+    assert.ok(translations.PLAYER_ATTRIBUTE_STRUCTURE_UNSUPPORTED)
+    assert.ok(translations.PLAYER_ATTRIBUTE_TOTAL_EXCEEDED)
+  }
+  assert.match(component, /PlayerConsumableBonuses\.values/)
+  assert.match(component, /:max="bonus\.maximum"/)
+  assert.match(component, /bonus\.maximum_total/)
+  assert.match(component, /palStore\.updatePlayerConsumableBonuses/)
+  assert.match(store, /async function updatePlayerConsumableBonuses\(bonus = null\)/)
+  assert.match(store, /command:\s*"update_player_consumable_bonuses"/)
+  assert.doesNotMatch(component, /reduce-only/)
+})

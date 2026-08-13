@@ -266,6 +266,64 @@ class SaveWriterTests(unittest.TestCase):
         )
         return session
 
+    def test_consumable_bonus_staged_postcondition_targets_unique_player(self) -> None:
+        player_id = "11111111-2222-3333-4444-555555555555"
+        record = PalObjects.PalSaveParameter(
+            "22222222-3333-4444-5555-666666666666",
+            player_id,
+            "33333333-4444-5555-6666-777777777777",
+            0,
+            "44444444-5555-6666-7777-888888888888",
+        )
+        record["key"]["PlayerUId"] = PalObjects.Guid(player_id)
+        parameter = record["value"]["RawData"]["value"]["object"][
+            "SaveParameter"
+        ]["value"]
+        parameter["IsPlayer"] = PalObjects.BoolProperty(True)
+        bonus_rows = PalObjects.get_ArrayProperty(parameter["GotExStatusPointList"])
+        PalObjects.set_BaseType(bonus_rows[0]["StatusPoint"], 12)
+        gvas = SimpleNamespace(
+            properties={
+                "worldSaveData": {
+                    "value": {"CharacterSaveParameterMap": {"value": [record]}}
+                }
+            }
+        )
+        session = SimpleNamespace(
+            changes=lambda: [
+                {
+                    "command": "UpdatePlayerConsumableBonuses",
+                    "target": {"player_id": player_id},
+                    "after": {"max_hp": 12},
+                },
+                {
+                    "command": "UpdatePlayerConsumableBonuses",
+                    "target": {"player_id": player_id},
+                    "after": {"max_sp": 0},
+                },
+            ]
+        )
+
+        SaveWriter()._verify_change_postconditions(
+            session, {"Level.sav": gvas}
+        )
+
+        regular_rows = PalObjects.get_ArrayProperty(
+            parameter["GotStatusPointList"]
+        )
+        PalObjects.set_BaseType(regular_rows[0]["StatusPoint"], 39)
+        with self.assertRaisesRegex(ValueError, "official maximum"):
+            SaveWriter()._verify_change_postconditions(
+                session, {"Level.sav": gvas}
+            )
+
+        PalObjects.set_BaseType(regular_rows[0]["StatusPoint"], 0)
+        PalObjects.set_BaseType(bonus_rows[0]["StatusPoint"], 11)
+        with self.assertRaisesRegex(ValueError, "do not match staging"):
+            SaveWriter()._verify_change_postconditions(
+                session, {"Level.sav": gvas}
+            )
+
     def test_unrelated_save_preserves_preexisting_dangling_dynamic_reference(
         self,
     ) -> None:

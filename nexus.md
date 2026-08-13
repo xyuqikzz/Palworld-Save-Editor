@@ -101,12 +101,12 @@ Every state-changing command still requires its own in-game effect, replication,
 [*]Open a read-only world overview with player, Pal, species, base, guild, expedition, arena, condition, and structural-reference diagnostics
 [*]Browse local save sources through system pickers where available or a root-aware in-app browser with search, natural sorting, modified times, complete-save markers, and offline file-type icons
 [*]Browse players through guilds, bases, members, working Pals, and unmatched records
-[*]Edit supported player names, levels, technology points, attributes, missions, inventories, and equipment
+[*]Edit supported player names, levels, technology points, attributes, missions, inventories, and equipment, including Remedy and Elixir bonus ranks capped by each attribute's official combined total
 [*]Review the world-local arena leaderboard, edit supported player RP records, explicitly create a missing verified RP field, or reset supported player entries
 [*]Rename supported guilds, inspect role-sorted members, and safely transfer Guild Master ownership on known layouts
 [*]Inspect and edit verified persistent item storage for a selected guild base; incomplete or ambiguous mappings remain read-only
 [*]Offer a narrowly scoped, backup-protected repair only for proven missing guild character handles; ambiguous or mixed structural damage remains blocked
-[*]Increase verified Palbox levels and guild-chest capacities without shrinking existing structures
+[*]Edit verified Palbox levels within the official 1–35 range, with a Palbox-Pal warning before confirming reductions, and expand guild-chest capacities without shrinking existing structures
 [/list]
 
 [size=4][b]Pal Editing[/b][/size]

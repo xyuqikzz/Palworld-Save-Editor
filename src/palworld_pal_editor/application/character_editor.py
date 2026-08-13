@@ -18,6 +18,7 @@ from palworld_pal_editor.domain.commands import (
     UpdatePalSkills,
     UpdatePlayerIdentity,
     UpdatePlayerAttributes,
+    UpdatePlayerConsumableBonuses,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
 )
@@ -25,6 +26,14 @@ from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.player_attributes import (
     PLAYER_ATTRIBUTE_BY_KEY,
     player_attribute_view,
+)
+from palworld_pal_editor.domain.player_consumable_bonuses import (
+    CONSUMABLE_BONUS_BY_KEY,
+    ConsumableBonusStructureError,
+    inspect_consumable_bonus_values,
+    player_consumable_bonus_view,
+    regular_attribute_rank,
+    set_consumable_bonus_value,
 )
 from palworld_pal_editor.utils.data_provider import DataProvider
 
@@ -62,6 +71,8 @@ class CharacterEditor:
             return self._update_player_progression(command)
         if isinstance(command, UpdatePlayerAttributes):
             return self._update_player_attributes(command)
+        if isinstance(command, UpdatePlayerConsumableBonuses):
+            return self._update_player_consumable_bonuses(command)
         if isinstance(command, UpdatePlayerTechnology):
             return self._update_player_technology(command)
         if isinstance(command, UpdatePalIdentity):
@@ -215,6 +226,33 @@ class CharacterEditor:
         for key, value in command.values.items():
             definition = PLAYER_ATTRIBUTE_BY_KEY[key]
             self._require_int_range(value, 0, definition.max_rank, key)
+            if definition.kind != "base" or key not in CONSUMABLE_BONUS_BY_KEY:
+                continue
+            try:
+                bonuses = inspect_consumable_bonus_values(player._player_param)
+            except ConsumableBonusStructureError as error:
+                if error.code == "PLAYER_CONSUMABLE_BONUS_FIELD_MISSING":
+                    bonuses = {}
+                else:
+                    raise DomainError(
+                        code=error.code,
+                        message=str(error),
+                        field=key,
+                        http_status=409,
+                    ) from error
+            bonus = bonuses.get(key, 0)
+            if value + bonus > definition.max_rank:
+                raise DomainError(
+                    code="PLAYER_ATTRIBUTE_TOTAL_EXCEEDED",
+                    message="The combined attribute rank exceeds the official maximum.",
+                    field=key,
+                    details={
+                        "regular_rank": value,
+                        "bonus_rank": bonus,
+                        "maximum_total": definition.max_rank,
+                    },
+                    http_status=409,
+                )
 
         def current_values() -> dict[str, int]:
             return {
@@ -255,6 +293,105 @@ class CharacterEditor:
             entry,
             {
                 "attributes": player_attribute_view(player),
+                "updated": current_values(),
+            },
+        )
+
+    def _update_player_consumable_bonuses(
+        self, command: UpdatePlayerConsumableBonuses
+    ) -> dict:
+        player = self._require_player(command.player_id)
+        if not isinstance(command.values, dict):
+            raise DomainError(
+                code="INVALID_FIELD_TYPE",
+                message="values must be an object.",
+                field="values",
+                http_status=400,
+            )
+        if not command.values:
+            self._empty_command()
+        unknown = sorted(set(command.values) - set(CONSUMABLE_BONUS_BY_KEY))
+        if unknown:
+            raise DomainError(
+                code="UNSUPPORTED_COMMAND_FIELD",
+                message="The command contains unsupported consumable bonuses.",
+                details={"fields": unknown},
+                http_status=400,
+            )
+        try:
+            inspect_consumable_bonus_values(player._player_param)
+        except ConsumableBonusStructureError as error:
+            raise DomainError(
+                code=error.code,
+                message=str(error),
+                field="values",
+                http_status=409,
+            ) from error
+        for key, value in command.values.items():
+            self._require_int_range(value, 0, PalObjects.UInt16Max, key)
+            definition = CONSUMABLE_BONUS_BY_KEY[key]
+            regular = regular_attribute_rank(
+                player._player_param, definition.status_name
+            )
+            if value + regular > definition.maximum_total:
+                raise DomainError(
+                    code="PLAYER_ATTRIBUTE_TOTAL_EXCEEDED",
+                    message="The combined attribute rank exceeds the official maximum.",
+                    field=key,
+                    details={
+                        "regular_rank": regular,
+                        "bonus_rank": value,
+                        "maximum_total": definition.maximum_total,
+                    },
+                    http_status=409,
+                )
+
+        def current_values() -> dict[str, int]:
+            try:
+                values = inspect_consumable_bonus_values(player._player_param)
+            except ConsumableBonusStructureError as error:
+                raise DomainError(
+                    code=error.code,
+                    message=str(error),
+                    field="values",
+                    http_status=409,
+                ) from error
+            return {key: values[key] for key in command.values}
+
+        def mutate() -> None:
+            for key, value in command.values.items():
+                set_consumable_bonus_value(
+                    player._player_param,
+                    CONSUMABLE_BONUS_BY_KEY[key].status_name,
+                    value,
+                )
+
+        def validate() -> None:
+            actual = current_values()
+            for key, expected in command.values.items():
+                if actual[key] != expected:
+                    self._postcondition(
+                        f"Player consumable bonus {key} did not update as requested."
+                    )
+
+        entry = self._apply_player(
+            command=command,
+            player=player,
+            command_name="UpdatePlayerConsumableBonuses",
+            target={
+                "player_id": str(player.PlayerUId),
+                "fields": sorted(command.values),
+            },
+            before=current_values,
+            mutate=mutate,
+            validate=validate,
+            after=current_values,
+            affected_records=("level:CharacterSaveParameterMap",),
+        )
+        return self._result(
+            entry,
+            {
+                "consumable_bonuses": player_consumable_bonus_view(player),
                 "updated": current_values(),
             },
         )

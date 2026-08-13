@@ -22,6 +22,7 @@ from palworld_pal_editor.domain.commands import (
     UpdatePalSkills,
     UpdatePlayerIdentity,
     UpdatePlayerAttributes,
+    UpdatePlayerConsumableBonuses,
     UpdatePlayerProgression,
     UpdatePlayerTechnology,
 )
@@ -422,6 +423,110 @@ class CharacterEditorTests(unittest.TestCase):
             )
 
         self.assertEqual("VALUE_OUT_OF_RANGE", raised.exception.code)
+        self.assertEqual(before, self.player._player_param)
+        self.assertEqual(0, self.session.revision)
+
+    def test_player_consumable_bonus_update_is_bidirectional_with_total_cap(self) -> None:
+        self.player._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+        self.player._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
+        regular = PalObjects.get_ArrayProperty(
+            self.player._player_param["GotStatusPointList"]
+        )
+        bonus = PalObjects.get_ArrayProperty(
+            self.player._player_param["GotExStatusPointList"]
+        )
+        PalObjects.set_BaseType(regular[0]["StatusPoint"], 20)
+        PalObjects.set_BaseType(bonus[0]["StatusPoint"], 28)
+        bonus.append(PalObjects.StatusPointStruct("future-field", 7))
+
+        result = self.editor.execute(
+            UpdatePlayerConsumableBonuses(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=self.player.PlayerUId,
+                values={"max_hp": 30},
+            )
+        )
+
+        self.assertEqual({"max_hp": 30}, result["value"]["updated"])
+        self.assertEqual(20, PalObjects.get_BaseType(regular[0]["StatusPoint"]))
+        self.assertEqual(30, PalObjects.get_BaseType(bonus[0]["StatusPoint"]))
+        self.assertEqual(7, PalObjects.get_BaseType(bonus[-1]["StatusPoint"]))
+        self.assertEqual(
+            "UpdatePlayerConsumableBonuses",
+            self.session.changes()[0]["command"],
+        )
+
+        lowered = self.editor.execute(
+            UpdatePlayerConsumableBonuses(
+                session_id=self.session.session_id,
+                expected_revision=1,
+                player_id=self.player.PlayerUId,
+                values={"max_hp": 12},
+            )
+        )
+        self.assertEqual({"max_hp": 12}, lowered["value"]["updated"])
+
+        before = deepcopy(self.player._player_param)
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePlayerConsumableBonuses(
+                    session_id=self.session.session_id,
+                    expected_revision=2,
+                    player_id=self.player.PlayerUId,
+                    values={"max_hp": 31},
+                )
+            )
+        self.assertEqual("PLAYER_ATTRIBUTE_TOTAL_EXCEEDED", raised.exception.code)
+        self.assertEqual(before, self.player._player_param)
+        self.assertEqual(2, self.session.revision)
+
+    def test_regular_player_attribute_respects_consumable_bonus_total_cap(self) -> None:
+        self.player._player_param["GotStatusPointList"] = PalObjects.GotStatusPointList()
+        self.player._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
+        bonus = PalObjects.get_ArrayProperty(
+            self.player._player_param["GotExStatusPointList"]
+        )
+        PalObjects.set_BaseType(bonus[0]["StatusPoint"], 28)
+
+        result = self.editor.execute(
+            UpdatePlayerAttributes(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                player_id=self.player.PlayerUId,
+                values={"max_hp": 22},
+            )
+        )
+        self.assertEqual({"max_hp": 22}, result["value"]["updated"])
+
+        before = deepcopy(self.player._player_param)
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePlayerAttributes(
+                    session_id=self.session.session_id,
+                    expected_revision=1,
+                    player_id=self.player.PlayerUId,
+                    values={"max_hp": 23},
+                )
+            )
+        self.assertEqual("PLAYER_ATTRIBUTE_TOTAL_EXCEEDED", raised.exception.code)
+        self.assertEqual(before, self.player._player_param)
+
+    def test_player_consumable_bonus_missing_structure_does_not_mutate(self) -> None:
+        before = deepcopy(self.player._player_param)
+        with self.assertRaises(DomainError) as raised:
+            self.editor.execute(
+                UpdatePlayerConsumableBonuses(
+                    session_id=self.session.session_id,
+                    expected_revision=0,
+                    player_id=self.player.PlayerUId,
+                    values={"max_hp": 0},
+                )
+            )
+        self.assertEqual(
+            "PLAYER_CONSUMABLE_BONUS_FIELD_MISSING",
+            raised.exception.code,
+        )
         self.assertEqual(before, self.player._player_param)
         self.assertEqual(0, self.session.revision)
 

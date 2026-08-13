@@ -175,50 +175,35 @@ class PlayerEntity:
     # do this for ex points as well, while ex points do not have the capture rate thing
     @property
     def ExStatusPointHP(self) -> Optional[int]:
-        if not self.GotExStatusPointList:
-            self._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
-
-        for sp in self.GotExStatusPointList:
+        for sp in self.GotExStatusPointList or ():
             if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.MaxHP):
                 status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
                 return status_point
             
     @property
     def ExStatusPointSP(self) -> Optional[int]:
-        if not self.GotExStatusPointList:
-            self._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
-
-        for sp in self.GotExStatusPointList:
+        for sp in self.GotExStatusPointList or ():
             if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.MaxSP):
                 status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
                 return status_point
     
     @property
     def ExStatusPointATK(self) -> Optional[int]:
-        if not self.GotExStatusPointList:
-            self._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
-        
-        for sp in self.GotExStatusPointList:
+        for sp in self.GotExStatusPointList or ():
             if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.Attack):
                 status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
                 return status_point
             
     @property
     def ExStatusPointCarryWeight(self) -> Optional[int]:
-        if not self.GotExStatusPointList:
-            self._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
-
-        for sp in self.GotExStatusPointList:
+        for sp in self.GotExStatusPointList or ():
             if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.CarryWeight):
                 status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
                 return status_point
             
     @property
     def ExStatusPointWorkSpeed(self) -> Optional[int]:
-        if not self.GotExStatusPointList:
-            self._player_param["GotExStatusPointList"] = PalObjects.GotExStatusPointList()
-
-        for sp in self.GotExStatusPointList:
+        for sp in self.GotExStatusPointList or ():
             if (PalObjects.get_BaseType(sp.get("StatusName")) == StatusName.WorkSpeed):
                 status_point = PalObjects.get_BaseType(sp.get("StatusPoint"))
                 return status_point

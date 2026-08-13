@@ -121,7 +121,26 @@ PLAYER_ATTRIBUTE_BY_KEY = {
 
 
 def player_attribute_view(player) -> list[dict[str, object]]:
-    return [
-        definition.view(player.status_point(definition.status_name) or 0)
-        for definition in PLAYER_ATTRIBUTE_DEFINITIONS
-    ]
+    try:
+        from palworld_pal_editor.domain.player_consumable_bonuses import (
+            inspect_consumable_bonus_values,
+        )
+
+        consumable_bonuses = inspect_consumable_bonus_values(
+            player._player_param
+        )
+    except (AttributeError, ValueError):
+        consumable_bonuses = {}
+
+    result = []
+    for definition in PLAYER_ATTRIBUTE_DEFINITIONS:
+        view = definition.view(
+            player.status_point(definition.status_name) or 0
+        )
+        if definition.kind == "base" and definition.key in consumable_bonuses:
+            view["max_rank"] = max(
+                0,
+                definition.max_rank - consumable_bonuses[definition.key],
+            )
+        result.append(view)
+    return result

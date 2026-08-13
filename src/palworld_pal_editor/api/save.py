@@ -436,7 +436,10 @@ def execute_guild_command(guild_id: str):
         "update_guild_name": {"name"},
         "update_guild_owner": {"player_id"},
         "update_guild_chest_capacity": {"capacity"},
-        "update_base_camp_level": {"level"},
+        "update_base_camp_level": {
+            "level",
+            "confirm_base_camp_level_lowering",
+        },
     }
     if command_name not in command_fields:
         error = DomainError(
@@ -497,6 +500,9 @@ def execute_guild_command(guild_id: str):
                     expected_revision=payload.get("expected_revision"),
                     guild_id=guild_id,
                     level=payload.get("level"),
+                    confirm_lowering=(
+                        payload.get("confirm_base_camp_level_lowering") is True
+                    ),
                 )
             )
         return reply(0, result)

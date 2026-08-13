@@ -25,6 +25,7 @@ from palworld_pal_editor.domain.commands import (
     UpdateItemCount,
     UpdateDynamicItemAttributes,
     UpdatePlayerAttributes,
+    UpdatePlayerConsumableBonuses,
     UpdatePlayerIdentity,
     UpdatePlayerInventoryCapacity,
     UpdatePlayerProgression,
@@ -33,6 +34,9 @@ from palworld_pal_editor.domain.commands import (
     UnlockAllFastTravelPoints,
 )
 from palworld_pal_editor.domain.player_attributes import player_attribute_view
+from palworld_pal_editor.domain.player_consumable_bonuses import (
+    player_consumable_bonus_view,
+)
 from palworld_pal_editor.utils.util import reply
 
 from palworld_pal_editor.core import SaveManager
@@ -165,6 +169,7 @@ def execute_player_command(player_id: str):
             "boss_technology_points",
         },
         "update_player_attributes": {"values"},
+        "update_player_consumable_bonuses": {"values"},
         "update_player_technology": {"recipe_id", "unlocked", "unlock_all"},
         "unlock_all_fast_travel_points": {"confirmation"},
         "update_player_inventory_capacity": {"capacity"},
@@ -208,6 +213,11 @@ def execute_player_command(player_id: str):
             )
         elif command_name == "update_player_attributes":
             command = UpdatePlayerAttributes(
+                **base,
+                values=payload.get("values"),
+            )
+        elif command_name == "update_player_consumable_bonuses":
+            command = UpdatePlayerConsumableBonuses(
                 **base,
                 values=payload.get("values"),
             )
@@ -722,6 +732,7 @@ def player_to_dict(player: PlayerEntity):
         "TechnologyPoint": player.TechnologyPoint or 0,
         "bossTechnologyPoint": player.bossTechnologyPoint or 0,
         "PlayerAttributes": player_attribute_view(player),
+        "PlayerConsumableBonuses": player_consumable_bonus_view(player),
     }
 
 
