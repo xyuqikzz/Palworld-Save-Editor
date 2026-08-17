@@ -18,6 +18,9 @@ import { useRoute } from 'vue-router';
 
 const palStore = usePalEditorStore()
 const route = useRoute()
+const props = defineProps({
+    globalPalbox: { type: Boolean, default: false },
+})
 
 const palListContainer = ref(null);
 const addSpeciesPicker = ref(null)
@@ -60,6 +63,11 @@ async function addSelectedPal(speciesId) {
     })
 }
 
+async function addGlobalPreset(speciesId) {
+    await addSelectedPal(speciesId)
+    addSpeciesPicker.value?.close()
+}
+
 const passivePresetIsAvailable = preset => (
     preset.skills.every(skill => palStore.PASSIVE_SKILLS[skill])
 )
@@ -96,6 +104,7 @@ function togglePalGroup(groupKey) {
 }
 
 function isPalGroupExpanded(group) {
+    if (props.globalPalbox) return true
     if (group.key === 'base') return true
     return expandedPalGroups.value.has(group.key)
 }
@@ -203,6 +212,13 @@ const filteredPalList = computed(() => (
 ))
 
 const visiblePalGroups = computed(() => {
+    if (props.globalPalbox) {
+        return [{
+            key: 'global',
+            label: palStore.getTranslatedText('GlobalPalbox_Entry'),
+            pals: sortPalList(filteredPalList.value, palListSortMode.value),
+        }]
+    }
     if (palStore.BASE_PAL_BTN_CLK_FLAG) {
         return [{
             key: 'base',
@@ -265,12 +281,14 @@ function expeditionStatusTooltipKey(pal) {
     <aside class="flex list-panel pal-panel">
         <div class="title panel-title">
             <div>
-                <p>{{ palStore.getTranslatedText("PalList_Text") }}</p>
+                <p>{{ palStore.getTranslatedText(props.globalPalbox ? "GlobalPalbox_Entry" : "PalList_Text") }}</p>
                 <span>{{ filteredPalList.length }}</span>
             </div>
             <div class="panel-actions">
                 <button class="add_pal" v-if="!palStore.BASE_PAL_BTN_CLK_FLAG"
-                    :title="palStore.getTranslatedText('PalList_AddPalForPlayer', [palStore.PLAYER_MAP.get(palStore.SELECTED_PLAYER_ID).NickName])"
+                    :title="props.globalPalbox
+                        ? palStore.getTranslatedText('GlobalPalbox_AddTitle')
+                        : palStore.getTranslatedText('PalList_AddPalForPlayer', [palStore.PLAYER_MAP.get(palStore.SELECTED_PLAYER_ID).NickName])"
                     :disabled="palStore.LOADING_FLAG" @click="openAddPal" name="add_pal"><AppIcon name="plus" :size="16" /></button>
             </div>
         </div>
@@ -366,6 +384,14 @@ function expeditionStatusTooltipKey(pal) {
         >
             <template #footer>
                 <section class="add-pal-presets" :aria-label="palStore.getTranslatedText('PalList_AddPresets_Title')">
+                    <div v-if="props.globalPalbox" class="global-palbox-presets">
+                        <span class="add-pal-preset-label">{{ palStore.getTranslatedText('GlobalPalbox_AddHint') }}</span>
+                        <div class="add-pal-passive-options">
+                            <button type="button" @click="addGlobalPreset('GrassBoss')">{{ palStore.getTranslatedText('GlobalPalbox_PresetZoe') }}</button>
+                            <button type="button" @click="addGlobalPreset('GYM_ElecPanda')">{{ palStore.getTranslatedText('GlobalPalbox_PresetZoeGrizzbolt') }}</button>
+                            <button type="button" @click="addGlobalPreset('GYM_ElecPanda_Otomo')">{{ palStore.getTranslatedText('GlobalPalbox_PresetGrizzbolt') }}</button>
+                        </div>
+                    </div>
                     <header>
                         <strong>{{ palStore.getTranslatedText('PalList_AddPresets_Title') }}</strong>
                         <span>{{ palStore.getTranslatedText('PalList_AddPresets_Description') }}</span>
@@ -438,6 +464,7 @@ function expeditionStatusTooltipKey(pal) {
 .add_pal { display: inline-flex; align-items: center; justify-content: center; }
 
 .add-pal-presets { display: grid; gap: 10px; }
+.global-palbox-presets { display: flex; min-width: 0; align-items: center; gap: 9px; }
 .add-pal-presets > header { display: flex; align-items: baseline; gap: 9px; }
 .add-pal-presets > header strong { color: var(--ui-text); font-size: 13px; font-weight: 700; }
 .add-pal-presets > header span { color: var(--ui-text-muted); font-size: 11px; }

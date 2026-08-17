@@ -727,6 +727,32 @@ class NativeDialogTests(unittest.TestCase):
                 window.calls[1]["file_types"],
             )
 
+    def test_global_palbox_picker_selects_only_global_storage_file(self) -> None:
+        from tempfile import TemporaryDirectory
+        from palworld_pal_editor.gui import NativeDialogApi
+
+        class FakeWindow:
+            def create_file_dialog(self, *args, **kwargs):
+                self.calls = (args, kwargs)
+                return (str(Path(kwargs["directory"]) / "GlobalPalStorage.sav"),)
+
+        with TemporaryDirectory() as initial_directory:
+            source = Path(initial_directory) / "GlobalPalStorage.sav"
+            source.write_bytes(b"global")
+            window = FakeWindow()
+            api = NativeDialogApi(window_provider=lambda: [window])
+
+            self.assertEqual(
+                str(source.resolve()),
+                api.select_global_palbox_file(initial_directory),
+            )
+            self.assertEqual(webview.OPEN_DIALOG, window.calls[0][0])
+            self.assertFalse(window.calls[1]["allow_multiple"])
+            self.assertEqual(
+                ("Palworld Global Palbox (GlobalPalStorage.sav)",),
+                window.calls[1]["file_types"],
+            )
+
     def test_frontend_uses_native_picker_when_available(self) -> None:
         source = (
             PROJECT_ROOT
@@ -741,6 +767,7 @@ class NativeDialogTests(unittest.TestCase):
         self.assertIn("window.pywebview?.api?.select_steam_source", source)
         self.assertIn("window.pywebview?.api?.select_xgp_source", source)
         self.assertIn("window.pywebview?.api?.select_local_data_file", source)
+        self.assertIn("window.pywebview?.api?.select_global_palbox_file", source)
         entry_source = (
             PROJECT_ROOT
             / "frontend"

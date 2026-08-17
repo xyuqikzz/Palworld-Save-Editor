@@ -41,8 +41,8 @@ test('Pal add action centers its icon and opens the species dialog directly', ()
   )
   assert.match(
     pickerSource,
-    /defineExpose\(\{\s*open\s*\}\)/,
-    'the species picker must expose its dialog opener to the add flow',
+    /defineExpose\(\{\s*open,\s*close\s*\}\)/,
+    'the species picker must expose its dialog controls to the add flow',
   )
 })
 

@@ -55,6 +55,19 @@ The editor can discover, open, edit, and write back a locally selected Xbox Game
 
 Close Palworld completely and wait for local Xbox synchronization activity to stop before opening or saving a WGS world.
 
+[size=4][b]Account-level Global Palbox[/b][/size]
+
+The editor can open an account-level Global Palbox in a separate session without mixing it into a world-save session.
+
+[list]
+[*]For Steam, select [b]GlobalPalStorage.sav[/b] directly
+[*]For Game Pass/WGS, select the Xbox user directory containing [b]containers.index[/b], or [b]containers.index[/b] itself; the editor resolves and writes back only to the opened account slot
+[*]Add catalog Pals or supported NPCs through real free slots, including Zoe and Zoe & Grizzbolt presets; edit, clone, or delete supported entries
+[*]Use source conflict detection, verified external backups, transactional replacement, recovery information, and reopen validation before completing a save
+[/list]
+
+[b]Important:[/b] Automated validation covers Steam and synthetic WGS open-edit-save-reopen paths. Loading an edited Global Palbox in the game and Xbox cloud synchronization have not been verified.
+
 [size=4][b]Two-save Migration[/b][/size]
 
 The editor can analyze two independent saves and migrate either the complete source world or selected source characters into a separate Steam-format target.
@@ -113,6 +126,7 @@ Every state-changing command still requires its own in-game effect, replication,
 
 [list]
 [*]Add, duplicate, delete, move, and reorganize Pals across supported containers
+[*]Open an account-level Steam or Game Pass/WGS Global Palbox in its own session; add catalog Pals or supported NPCs through real free slots, edit attributes and skills, apply Zoe or Zoe & Grizzbolt presets, clone or delete entries, and save back to the original source
 [*]Edit species, supported variants, nickname, gender, trust, level, and experience
 [*]Edit IVs, condensation, Soul upgrades, work suitability, active skills, and passive skills; Soul controls show both stored rank and the rank × 3% game bonus, with a normal rank 20 / 60% cap
 [*]Manage supported custom or mod passive entries
@@ -129,7 +143,7 @@ Every state-changing command still requires its own in-game effect, replication,
 [list]
 [*]Edit supported item quantities, inventory slots, and dynamic item attributes
 [*]Copy, move, replace, clear, and arrange supported slots
-[*]Expand verified ordinary backpacks and guild chests without shrinking them
+[*]Resize verified ordinary backpacks down to the official 42-slot base capacity with an item-loss warning, and expand guild chests without shrinking them
 [*]Import and export supported inventory and Pal presets
 [*]Preview multi-target changes before applying them
 [*]Apply supported batch operations atomically
@@ -174,7 +188,7 @@ The advanced Monaco JSON editor can open [b]Level.sav[/b] and [b]Players/*.sav[/
 [*]Stage writes through temporary files before replacing save data
 [*]Validate and reopen supported saves before completing a transaction
 [*]Create verified backups for supported save operations
-[*]Support extended-length Windows paths during save staging, Steam backup creation, and reopen verification; paths that still exceed platform limits are blocked before save data is written and report a specific recovery action
+[*]Support extended-length Windows paths during save staging, Steam backups, WGS backup/commit/recovery transactions, and reopen verification; paths that still exceed platform limits are blocked before save data is written and report a specific recovery action
 [*]Detect source changes and reject stale writes
 [*]Preserve recovery information when a write fails
 [*]Keep WGS writes locked to the original selected slot
@@ -220,6 +234,8 @@ Confirmations, prompts, success messages, and errors use focus-managed in-app di
 [*]Load the save, review your changes, and save.
 [*]Start the game or server and verify players, Pals, containers, missions, maps, and bases before continuing normal play.
 [/list]
+
+For an account-level Global Palbox, open a separate session and select [b]GlobalPalStorage.sav[/b] for Steam or the Game Pass/WGS Xbox user directory containing [b]containers.index[/b]. Create your own offline backup and verify the edited Global Palbox in game before continuing normal play.
 
 No Python installation is required when using the prebuilt Windows application.
 

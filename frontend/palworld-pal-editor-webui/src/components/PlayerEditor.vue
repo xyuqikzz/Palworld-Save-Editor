@@ -78,7 +78,7 @@ const inventoryCapacityCapability = computed(() => (
         minimum_capacity: null,
         maximum_capacity: 1000,
         custom_input: true,
-        expand_only: true,
+        expand_only: false,
     }
 ))
 const inventoryCapacityReason = computed(() => (
@@ -99,7 +99,7 @@ const inventoryCapacityTargetValid = computed(() => {
         && Number.isInteger(current)
         && Number.isInteger(minimum)
         && Number.isInteger(maximum)
-        && target > current
+        && target !== current
         && target >= minimum
         && target <= maximum
 })
@@ -107,6 +107,7 @@ const inventoryCapacityTargetValid = computed(() => {
 watch(
     inventoryCapacityCapability,
     (capability) => {
+        const current = Number(capability.current_capacity)
         const minimum = Number(capability.minimum_capacity)
         const maximum = Number(capability.maximum_capacity)
         if (
@@ -115,8 +116,11 @@ watch(
             || Number(inventoryCapacityTarget.value) > maximum
         ) {
             inventoryCapacityTarget.value =
-                Number.isInteger(minimum) && minimum <= maximum
-                    ? minimum
+                Number.isInteger(current)
+                    && Number.isInteger(minimum)
+                    && Number.isInteger(maximum)
+                    && minimum <= maximum
+                    ? Math.min(Math.max(current, minimum), maximum)
                     : null
         }
     },

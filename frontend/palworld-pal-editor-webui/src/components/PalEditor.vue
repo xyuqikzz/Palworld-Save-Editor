@@ -11,6 +11,9 @@ import VariantBadge from '@/components/modules/VariantBadge.vue'
 import { showMessage } from '@/services/message-dialog'
 import { computed, ref } from 'vue'
 const palStore = usePalEditorStore()
+const props = defineProps({
+  globalPalbox: { type: Boolean, default: false },
+})
 const cloneContainer = ref('AUTO')
 const presetInput = ref(null)
 const passivePresetDialog = ref(null)
@@ -168,14 +171,14 @@ const suitabilityIconSrc = key => {
             :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_MaxPal_Tooltip')">
             {{ palStore.getTranslatedText("PalEditor_MaxPal") }}
           </button>
-          <button id="dump_btn" @click="palStore.dumpPalData" :disabled="palStore.LOADING_FLAG">
+          <button id="dump_btn" v-if="!props.globalPalbox" @click="palStore.dumpPalData" :disabled="palStore.LOADING_FLAG">
             {{ palStore.getTranslatedText("Editor_Btn_Export_Data") }}
           </button>
-          <button @click="exportPreset('skills')" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ExportSkills') }}</button>
-          <button @click="exportPreset('pal')" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ExportPreset') }}</button>
-          <button @click="presetInput?.click()" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ImportPreset') }}</button>
-          <input ref="presetInput" class="preset-file-input" type="file" accept="application/json,.json" @change="importPreset">
-          <select v-if="!palStore.BASE_PAL_BTN_CLK_FLAG" v-model="cloneContainer" class="clone-target" :aria-label="palStore.getTranslatedText('PalEditor_CloneDestination')">
+          <button v-if="!props.globalPalbox" @click="exportPreset('skills')" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ExportSkills') }}</button>
+          <button v-if="!props.globalPalbox" @click="exportPreset('pal')" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ExportPreset') }}</button>
+          <button v-if="!props.globalPalbox" @click="presetInput?.click()" :disabled="palStore.LOADING_FLAG">{{ palStore.getTranslatedText('PalEditor_ImportPreset') }}</button>
+          <input v-if="!props.globalPalbox" ref="presetInput" class="preset-file-input" type="file" accept="application/json,.json" @change="importPreset">
+          <select v-if="!props.globalPalbox && !palStore.BASE_PAL_BTN_CLK_FLAG" v-model="cloneContainer" class="clone-target" :aria-label="palStore.getTranslatedText('PalEditor_CloneDestination')">
             <option value="AUTO">{{ palStore.getTranslatedText('PalEditor_CloneAutomatic') }}</option>
             <option value="PARTY">{{ palStore.getTranslatedText('PalEditor_CloneParty') }}</option>
             <option value="PAL_STORAGE">{{ palStore.getTranslatedText('PalEditor_CloneStorage') }}</option>

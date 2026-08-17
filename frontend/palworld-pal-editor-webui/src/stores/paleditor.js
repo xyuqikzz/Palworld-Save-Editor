@@ -167,7 +167,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                     minimum_capacity: null,
                     maximum_capacity: 1000,
                     custom_input: true,
-                    expand_only: true,
+                    expand_only: false,
                 };
             this.Inventory = obj.Inventory || { Capacity: 0, Items: [] };
             this.InventoryContainers = obj.InventoryContainers || [];
@@ -754,6 +754,28 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     });
     const I18n = ref(localStorage.getItem("PAL_I18n"));
     const PAL_GAME_SAVE_PATH = ref(localStorage.getItem("PAL_GAME_SAVE_PATH"));
+    const GLOBAL_PALBOX_PATH = ref(
+        localStorage.getItem("PAL_GLOBAL_PALBOX_PATH") || ""
+    );
+    const GLOBAL_PALBOX_SOURCE_MODE = ref(
+        localStorage.getItem("PAL_GLOBAL_PALBOX_SOURCE_MODE") === "xgp"
+            ? "xgp"
+            : "steam"
+    );
+    const GLOBAL_PALBOX_XGP_PATH = ref(
+        localStorage.getItem("PAL_GLOBAL_PALBOX_XGP_PATH") || ""
+    );
+    watch(GLOBAL_PALBOX_PATH, (path) => {
+        if (path) localStorage.setItem("PAL_GLOBAL_PALBOX_PATH", path);
+        else localStorage.removeItem("PAL_GLOBAL_PALBOX_PATH");
+    });
+    watch(GLOBAL_PALBOX_SOURCE_MODE, (mode) => {
+        localStorage.setItem("PAL_GLOBAL_PALBOX_SOURCE_MODE", mode);
+    });
+    watch(GLOBAL_PALBOX_XGP_PATH, (path) => {
+        if (path) localStorage.setItem("PAL_GLOBAL_PALBOX_XGP_PATH", path);
+        else localStorage.removeItem("PAL_GLOBAL_PALBOX_XGP_PATH");
+    });
     const HAS_PASSWORD = ref(false);
     const PAL_WRITE_BACK_PATH = ref("");
     const SAVE_SOURCE_MODE = ref(getInitialSaveSourceMode());
@@ -881,6 +903,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     const MAP_LOADING = ref(false);
     const OVERVIEW_DATA = ref(null);
     const OVERVIEW_LOADING = ref(false);
+    const GLOBAL_PALBOX_SESSION = ref(null);
+    const GLOBAL_PALBOX_PALS = ref([]);
+    const GLOBAL_PALBOX_CATALOG = ref([]);
+    const GLOBAL_PALBOX_XGP_SOURCES = ref([]);
+    const SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID = ref(null);
+    const GLOBAL_PALBOX_LOADING = ref(false);
+    const GLOBAL_PALBOX_ERROR = ref(null);
 
     const SHOW_FILE_PICKER = ref(false);
     const PAL_FILE_PICKER_PATH = ref(PAL_GAME_SAVE_PATH.value);
@@ -1798,21 +1827,440 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         PAL_FILE_PICKER_PATH.value = data.currentPath || "";
         PATH_CONTEXT.value = new Map(Object.entries(data.children));
         SHOW_FILE_PICKER.value = true;
-        if (["xgp", "local-data"].includes(FILE_PICKER_PURPOSE.value)) {
+        if (["xgp", "local-data", "global-palbox"].includes(FILE_PICKER_PURPOSE.value)) {
             PAL_FILE_PICKER_SELECTION.value = null;
         }
+    }
+
+    function setGlobalPalboxError(response) {
+        GLOBAL_PALBOX_ERROR.value = response?.msg
+            || getTranslatedText("GlobalPalbox_RequestFailed");
+        return false;
+    }
+
+    function updateGlobalPalboxSessionRevision(revision, pendingDelta = 1) {
+        if (!GLOBAL_PALBOX_SESSION.value) return;
+        GLOBAL_PALBOX_SESSION.value = {
+            ...GLOBAL_PALBOX_SESSION.value,
+            revision,
+            pending_change_count:
+                GLOBAL_PALBOX_SESSION.value.pending_change_count + pendingDelta,
+        };
+    }
+
+    function setGlobalPalboxPals(pals, selectedPalId = null) {
+        GLOBAL_PALBOX_PALS.value = pals || [];
+        PAL_MAP.value = new Map(
+            GLOBAL_PALBOX_PALS.value.map(raw => {
+                const pal = new PalData(raw);
+                return [pal.InstanceId, pal];
+            })
+        );
+        BASE_PAL_BTN_CLK_FLAG.value = false;
+        SHOW_PLAYER_EDIT_FLAG.value = false;
+        const selected = selectedPalId && PAL_MAP.value.has(selectedPalId)
+            ? selectedPalId
+            : PAL_MAP.value.keys().next().value || null;
+        SELECTED_PAL_ID.value = selected;
+        SELECTED_PAL_DATA.value = selected ? PAL_MAP.value.get(selected) : null;
+    }
+
+    function replaceGlobalPalboxPal(raw) {
+        const pal = new PalData(raw);
+        const index = GLOBAL_PALBOX_PALS.value.findIndex(
+            item => item.InstanceId === pal.InstanceId,
+        );
+        if (index >= 0) GLOBAL_PALBOX_PALS.value[index] = raw;
+        else GLOBAL_PALBOX_PALS.value.push(raw);
+        GLOBAL_PALBOX_PALS.value.sort((a, b) => a.SlotIndex - b.SlotIndex);
+        PAL_MAP.value.set(pal.InstanceId, pal);
+        if (SELECTED_PAL_ID.value === pal.InstanceId) {
+            SELECTED_PAL_DATA.value = pal;
+        }
+        return pal;
+    }
+
+    async function initializeGlobalPalbox() {
+        GLOBAL_PALBOX_LOADING.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const [catalogResponse, sourceResponse] = await Promise.all([
+                GET("/api/global-palbox/catalog"),
+                GET("/api/global-palbox/default-source"),
+                PAL_STATIC_DATA_LIST.value.length ? true : fetchStaticData(),
+            ]);
+            if (catalogResponse?.status !== 0) return setGlobalPalboxError(catalogResponse);
+            GLOBAL_PALBOX_CATALOG.value = catalogResponse.data || [];
+            if (sourceResponse?.status !== 0) return setGlobalPalboxError(sourceResponse);
+            if (!GLOBAL_PALBOX_PATH.value && sourceResponse.data?.path) {
+                GLOBAL_PALBOX_PATH.value = sourceResponse.data.path;
+            }
+            return true;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+        }
+    }
+
+    async function discoverGlobalPalboxXgp(
+        path = GLOBAL_PALBOX_XGP_PATH.value,
+    ) {
+        if (!path) {
+            GLOBAL_PALBOX_ERROR.value = getTranslatedText(
+                "GlobalPalbox_XgpPathRequired",
+            );
+            return false;
+        }
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        GLOBAL_PALBOX_XGP_SOURCES.value = [];
+        SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID.value = null;
+        try {
+            GLOBAL_PALBOX_XGP_PATH.value = path;
+            const response = await POST("/api/global-palbox/discover-xgp", {
+                path,
+            });
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            GLOBAL_PALBOX_XGP_SOURCES.value = response.data?.sources || [];
+            return GLOBAL_PALBOX_XGP_SOURCES.value.length > 0;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function openGlobalPalbox() {
+        if (
+            GLOBAL_PALBOX_SOURCE_MODE.value === "steam"
+            && !GLOBAL_PALBOX_PATH.value
+        ) {
+            GLOBAL_PALBOX_ERROR.value = getTranslatedText("GlobalPalbox_PathRequired");
+            return false;
+        }
+        if (
+            GLOBAL_PALBOX_SOURCE_MODE.value === "xgp"
+            && !SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID.value
+        ) {
+            GLOBAL_PALBOX_ERROR.value = getTranslatedText(
+                "GlobalPalbox_XgpSelectRequired",
+            );
+            return false;
+        }
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await POST(
+                "/api/global-palbox/open",
+                GLOBAL_PALBOX_SOURCE_MODE.value === "xgp"
+                    ? {
+                        platform: "xgp",
+                        sourceId: SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID.value,
+                    }
+                    : {
+                        platform: "steam",
+                        path: GLOBAL_PALBOX_PATH.value,
+                    },
+            );
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            GLOBAL_PALBOX_SESSION.value = response.data.session;
+            setGlobalPalboxPals(response.data.pals || []);
+            return true;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function updateGlobalPalboxPal(palId, values) {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return false;
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await PATCH(
+                `/api/global-palbox/pals/${encodeURIComponent(palId)}`,
+                {
+                    session_id: session.session_id,
+                    expected_revision: session.revision,
+                    values,
+                },
+            );
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            const pal = replaceGlobalPalboxPal(response.data.pal);
+            updateGlobalPalboxSessionRevision(response.data.revision);
+            return pal;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    function addGlobalPalboxResult(pal, revision) {
+        const added = replaceGlobalPalboxPal(pal);
+        updateGlobalPalboxSessionRevision(revision);
+        GLOBAL_PALBOX_SESSION.value.occupied += 1;
+        GLOBAL_PALBOX_SESSION.value.free -= 1;
+        return added;
+    }
+
+    async function addGlobalPalboxPal(speciesId) {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return false;
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await POST("/api/global-palbox/pals", {
+                session_id: session.session_id,
+                expected_revision: session.revision,
+                species_id: speciesId,
+            });
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            return addGlobalPalboxResult(response.data.pal, response.data.revision);
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function cloneGlobalPalboxPal(palId) {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return false;
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await POST(
+                `/api/global-palbox/pals/${encodeURIComponent(palId)}/clone`,
+                {
+                    session_id: session.session_id,
+                    expected_revision: session.revision,
+                },
+            );
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            return addGlobalPalboxResult(response.data.pal, response.data.revision);
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function deleteGlobalPalboxPal(palId) {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return false;
+        if (!await confirmMessage(getTranslatedText("GlobalPalbox_DeleteConfirm"))) {
+            return false;
+        }
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await DELETE(
+                `/api/global-palbox/pals/${encodeURIComponent(palId)}`,
+                {
+                    session_id: session.session_id,
+                    expected_revision: session.revision,
+                },
+            );
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            GLOBAL_PALBOX_PALS.value = GLOBAL_PALBOX_PALS.value.filter(
+                pal => pal.InstanceId !== palId,
+            );
+            PAL_MAP.value.delete(palId);
+            updateGlobalPalboxSessionRevision(response.data.revision);
+            GLOBAL_PALBOX_SESSION.value.occupied -= 1;
+            GLOBAL_PALBOX_SESSION.value.free += 1;
+            return true;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function saveGlobalPalbox() {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return false;
+        if (
+            session.platform === "xgp"
+            && !await confirmMessage(getTranslatedText("Confirm_Xgp_Save"))
+        ) return false;
+        GLOBAL_PALBOX_LOADING.value = true;
+        LOADING_FLAG.value = true;
+        GLOBAL_PALBOX_ERROR.value = null;
+        try {
+            const response = await POST("/api/global-palbox/save", {
+                session_id: session.session_id,
+                expected_revision: session.revision,
+            });
+            if (response?.status !== 0) return setGlobalPalboxError(response);
+            GLOBAL_PALBOX_SESSION.value = response.data.session;
+            return true;
+        } finally {
+            GLOBAL_PALBOX_LOADING.value = false;
+            LOADING_FLAG.value = false;
+        }
+    }
+
+    async function closeGlobalPalbox() {
+        const session = GLOBAL_PALBOX_SESSION.value;
+        if (!session) return true;
+        const hasChanges = session.pending_change_count > 0;
+        if (
+            hasChanges
+            && !await confirmMessage(getTranslatedText("GlobalPalbox_DiscardConfirm"))
+        ) return false;
+        const response = await POST("/api/global-palbox/close", {
+            session_id: session.session_id,
+            expected_revision: session.revision,
+            discard_changes: hasChanges,
+        });
+        if (response?.status !== 0) return setGlobalPalboxError(response);
+        GLOBAL_PALBOX_SESSION.value = null;
+        GLOBAL_PALBOX_PALS.value = [];
+        PAL_MAP.value = new Map();
+        SELECTED_PAL_ID.value = null;
+        SELECTED_PAL_DATA.value = null;
+        GLOBAL_PALBOX_ERROR.value = null;
+        return true;
+    }
+
+    function globalPalboxValuesFromEditor(key, value) {
+        if (["NickName", "Gender", "CharacterID", "IsBOSS", "IsTower", "IsRarePal"].includes(key)) {
+            return {
+                NickName: { nickname: value },
+                Gender: {
+                    gender: {
+                        "EPalGenderType::Male": "male",
+                        "EPalGenderType::Female": "female",
+                        NONE: "none",
+                    }[value] || value,
+                },
+                CharacterID: { species_id: value },
+                IsBOSS: { is_boss: Boolean(value) },
+                IsTower: { is_tower: Boolean(value) },
+                IsRarePal: { is_rare: Boolean(value) },
+            }[key];
+        }
+        if (["Level", "FriendshipLevel"].includes(key)) {
+            return {
+                [key === "Level" ? "level" : "friendship_level"]: Number(value),
+            };
+        }
+        if (key === "set_AllEnhancements") {
+            return Object.fromEntries(
+                Object.entries(value.values || {}).map(([name, level]) => [
+                    name === "condensation" ? "rank" : name,
+                    Number(level),
+                ]),
+            );
+        }
+        if ([
+            "Talent_HP", "Talent_Melee", "Talent_Shot", "Talent_Defense",
+            "Rank_HP", "Rank_Attack", "Rank_Defence", "Rank_CraftSpeed", "Rank",
+            "IsAwakened",
+        ].includes(key)) {
+            const field = {
+                Talent_HP: "iv_hp",
+                Talent_Melee: "iv_melee",
+                Talent_Shot: "iv_shot",
+                Talent_Defense: "iv_defense",
+                Rank_HP: "soul_hp",
+                Rank_Attack: "soul_attack",
+                Rank_Defence: "soul_defense",
+                Rank_CraftSpeed: "soul_craft_speed",
+                Rank: "rank",
+                IsAwakened: "is_awakened",
+            }[key];
+            return { [field]: key === "IsAwakened" ? Boolean(value) : Number(value) };
+        }
+        if (["set_Suitability", "set_AllSuitabilities"].includes(key)) {
+            return {
+                work_suitability: key === "set_Suitability"
+                    ? { [value.name]: Number(value.level) }
+                    : Object.fromEntries(
+                        Object.entries(value).map(([name, level]) => [name, Number(level)]),
+                    ),
+            };
+        }
+        if ([
+            "add_PassiveSkillList", "pop_PassiveSkillList", "replace_PassiveSkillList",
+            "add_EquipWaza", "pop_EquipWaza", "add_MasteredWaza", "pop_MasteredWaza",
+        ].includes(key)) {
+            const active = [...(SELECTED_PAL_DATA.value.EquipWaza || [])];
+            const mastered = [...(SELECTED_PAL_DATA.value.MasteredWaza || [])];
+            const passive = [...(SELECTED_PAL_DATA.value.PassiveSkillList || [])];
+            if (key === "add_PassiveSkillList") passive.push(value);
+            if (key === "pop_PassiveSkillList") {
+                const index = Number.isInteger(value?.index)
+                    && passive[value.index] === value.skill
+                    ? value.index
+                    : passive.indexOf(value?.skill || value);
+                if (index >= 0) passive.splice(index, 1);
+            }
+            if (key === "replace_PassiveSkillList") {
+                passive.splice(0, passive.length, ...value);
+            }
+            if (key === "add_EquipWaza") {
+                if (!active.includes(value)) active.push(value);
+                if (!mastered.includes(value)) mastered.push(value);
+            }
+            if (key === "pop_EquipWaza") {
+                const index = active.indexOf(value);
+                if (index >= 0) active.splice(index, 1);
+            }
+            if (key === "add_MasteredWaza") {
+                if (!mastered.includes(value)) mastered.push(value);
+                if (active.length < 3 && !active.includes(value)) active.push(value);
+            }
+            if (key === "pop_MasteredWaza") {
+                const index = mastered.indexOf(value);
+                if (index >= 0) mastered.splice(index, 1);
+                const activeIndex = active.indexOf(value);
+                if (activeIndex >= 0) active.splice(activeIndex, 1);
+            }
+            return key.includes("Passive")
+                ? { passive }
+                : { active, mastered };
+        }
+        return null;
+    }
+
+    async function updateGlobalPalboxFromEditor(event) {
+        const target = event.currentTarget || event.target;
+        const values = globalPalboxValuesFromEditor(target.name, target.value);
+        if (!values) {
+            GLOBAL_PALBOX_ERROR.value = getTranslatedText(
+                "GlobalPalbox_FieldUnsupported",
+                [target.name],
+            );
+            return false;
+        }
+        return Boolean(await updateGlobalPalboxPal(SELECTED_PAL_ID.value, values));
     }
 
     async function show_file_picker(purpose = SAVE_SOURCE_MODE.value) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
-        FILE_PICKER_PURPOSE.value = purpose === "xgp"
+        FILE_PICKER_PURPOSE.value = purpose === "global-palbox-xgp"
+            ? "global-palbox-xgp"
+            : purpose === "xgp"
             ? "xgp"
             : purpose === "local-data"
                 ? "local-data"
-                : "steam";
+                : purpose === "global-palbox"
+                    ? "global-palbox"
+                    : "steam";
 
-        const nativePicker = FILE_PICKER_PURPOSE.value === "xgp"
+        // The account-level XGP flow accepts either a folder or containers.index,
+        // so it intentionally uses the shared in-app browser instead of a
+        // folder-only native dialog.
+        const nativePicker = FILE_PICKER_PURPOSE.value === "global-palbox-xgp"
+            ? undefined
+            : FILE_PICKER_PURPOSE.value === "global-palbox"
+            ? window.pywebview?.api?.select_global_palbox_file
+            : FILE_PICKER_PURPOSE.value === "xgp"
             ? (window.pywebview?.api?.select_xgp_source
                 ?? window.pywebview?.api?.select_save_directory)
             : (window.pywebview?.api?.select_steam_source
@@ -1820,11 +2268,21 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         if (FILE_PICKER_PURPOSE.value !== "local-data" && nativePicker) {
             try {
                 const selectedPath = await nativePicker(
-                    FILE_PICKER_PURPOSE.value === "xgp"
+                    FILE_PICKER_PURPOSE.value === "global-palbox"
+                        ? GLOBAL_PALBOX_PATH.value
+                        : FILE_PICKER_PURPOSE.value === "xgp"
                         ? XGP_WGS_PATH.value
                         : PAL_GAME_SAVE_PATH.value
                 );
                 if (!selectedPath) {
+                    if (!no_set_loading_flag) LOADING_FLAG.value = false;
+                    return;
+                }
+
+                if (FILE_PICKER_PURPOSE.value === "global-palbox") {
+                    GLOBAL_PALBOX_PATH.value = selectedPath;
+                    PAL_FILE_PICKER_PATH.value = selectedPath;
+                    SHOW_FILE_PICKER.value = false;
                     if (!no_set_loading_flag) LOADING_FLAG.value = false;
                     return;
                 }
@@ -1867,7 +2325,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
         const initialPath = FILE_PICKER_PURPOSE.value === "local-data"
             ? localDataPickerInitialPath()
-            : FILE_PICKER_PURPOSE.value === "xgp"
+            : FILE_PICKER_PURPOSE.value === "global-palbox-xgp"
+                ? GLOBAL_PALBOX_XGP_PATH.value || XGP_WGS_PATH.value || undefined
+            : FILE_PICKER_PURPOSE.value === "global-palbox"
+                ? GLOBAL_PALBOX_PATH.value || PAL_GAME_SAVE_PATH.value || undefined
+                : FILE_PICKER_PURPOSE.value === "xgp"
                 ? XGP_WGS_PATH.value || PAL_GAME_SAVE_PATH.value || undefined
                 : PAL_GAME_SAVE_PATH.value || undefined;
         let response = await POST("/api/save/browse-directory", {
@@ -2876,6 +3338,27 @@ export const usePalEditorStore = defineStore("paleditor", () => {
 
     async function maxSelectedPal() {
         if (!SELECTED_PAL_ID.value || !SELECTED_PAL_DATA.value) return false;
+        if (GLOBAL_PALBOX_SESSION.value) {
+            const enhancements = SELECTED_PAL_DATA.value.maximumEnhancementPayload().values;
+            const { condensation, ...enhancementValues } = enhancements;
+            const work_suitability = Object.fromEntries(
+                Object.keys(SELECTED_PAL_DATA.value.Suitabilities || {}).map(name => [
+                    name,
+                    MAX_SUITABILITY_LEVEL.value,
+                ]),
+            );
+            return Boolean(await updateGlobalPalboxPal(
+                SELECTED_PAL_ID.value,
+                {
+                    ...enhancementValues,
+                    rank: condensation,
+                    level: HIDE_INVALID_OPTIONS.value ? MAX_LEVEL : MAX_INVALID_LEVEL,
+                    friendship_level: MAX_FRIENDSHIP_LEVEL,
+                    is_awakened: true,
+                    work_suitability,
+                },
+            ));
+        }
         const ownsLoadingFlag = !LOADING_FLAG.value;
         if (ownsLoadingFlag) LOADING_FLAG.value = true;
         try {
@@ -3662,17 +4145,11 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             || !Number.isInteger(currentCapacity)
             || !Number.isInteger(minimumCapacity)
             || !Number.isInteger(maximumCapacity)
-            || targetCapacity <= currentCapacity
+            || targetCapacity === currentCapacity
             || targetCapacity < minimumCapacity
             || targetCapacity > maximumCapacity
         ) {
-            const reason = capability.reason || (
-                Number.isInteger(targetCapacity)
-                && Number.isInteger(currentCapacity)
-                && targetCapacity <= currentCapacity
-                    ? "PLAYER_INVENTORY_SHRINK_UNSUPPORTED"
-                    : "INVALID_PLAYER_INVENTORY_CAPACITY"
-            );
+            const reason = capability.reason || "INVALID_PLAYER_INVENTORY_CAPACITY";
             LAST_ERROR.value = {
                 context: "update-player-inventory-capacity",
                 message: getTranslatedText(reason),
@@ -3687,10 +4164,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
         if (
             !await confirmMessage(
-                getTranslatedText("PlayerInventoryCapacity_Confirm", [
-                    capability.current_capacity,
-                    targetCapacity,
-                ]),
+                getTranslatedText(
+                    targetCapacity < currentCapacity
+                        ? "PlayerInventoryCapacity_ShrinkConfirm"
+                        : "PlayerInventoryCapacity_Confirm",
+                    [capability.current_capacity, targetCapacity],
+                ),
             )
         ) {
             return false;
@@ -4663,6 +5142,14 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function selectPal(palId, manual = false) {
+        if (GLOBAL_PALBOX_SESSION.value) {
+            const pal = PAL_MAP.value.get(palId);
+            if (!pal) return false;
+            SELECTED_PAL_ID.value = palId;
+            SELECTED_PAL_DATA.value = pal;
+            SHOW_PLAYER_EDIT_FLAG.value = false;
+            return true;
+        }
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
@@ -4712,6 +5199,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function updatePal(e) {
+        if (GLOBAL_PALBOX_SESSION.value) {
+            return updateGlobalPalboxFromEditor(e);
+        }
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
@@ -4932,6 +5422,18 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             return false;
         }
 
+        if (GLOBAL_PALBOX_SESSION.value) {
+            return Boolean(await updateGlobalPalboxPal(
+                SELECTED_PAL_ID.value,
+                {
+                    passive: [
+                        ...(SELECTED_PAL_DATA.value.PassiveSkillList || []),
+                        internalName,
+                    ],
+                },
+            ));
+        }
+
         const passive = [
             ...(SELECTED_PAL_DATA.value.PassiveSkillList || []),
             internalName,
@@ -5072,6 +5574,16 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function delPal() {
+        if (GLOBAL_PALBOX_SESSION.value) {
+            const ids = Array.from(PAL_MAP.value.keys());
+            const currentIndex = ids.indexOf(SELECTED_PAL_ID.value);
+            const nextId = ids[currentIndex + 1] || ids[currentIndex - 1] || null;
+            const deleted = await deleteGlobalPalboxPal(SELECTED_PAL_ID.value);
+            if (!deleted) return false;
+            SELECTED_PAL_ID.value = nextId;
+            SELECTED_PAL_DATA.value = nextId ? PAL_MAP.value.get(nextId) : null;
+            return true;
+        }
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
 
@@ -5135,6 +5647,40 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function addPal(speciesId = "SheepBall", containerType = "AUTO", options = {}) {
+        if (GLOBAL_PALBOX_SESSION.value) {
+            const added = await addGlobalPalboxPal(speciesId);
+            if (!added) return false;
+            const values = {};
+            if (Array.isArray(options.passive)) values.passive = [...options.passive];
+            if (options.maxPal) {
+                Object.assign(values, {
+                    level: MAX_LEVEL,
+                    iv_hp: 100,
+                    iv_melee: 100,
+                    iv_shot: 100,
+                    iv_defense: 100,
+                    soul_hp: MAX_SOULS_LEVEL.value,
+                    soul_attack: MAX_SOULS_LEVEL.value,
+                    soul_defense: MAX_SOULS_LEVEL.value,
+                    soul_craft_speed: MAX_SOULS_LEVEL.value,
+                    rank: 5,
+                    is_awakened: true,
+                });
+            }
+            if (options.maxWork) {
+                values.work_suitability = Object.fromEntries(
+                    Object.keys(added.Suitabilities || {}).map(name => [
+                        name,
+                        MAX_SUITABILITY_LEVEL.value,
+                    ]),
+                );
+            }
+            if (Object.keys(values).length) {
+                await updateGlobalPalboxPal(added.InstanceId, values);
+            }
+            await selectPal(added.InstanceId);
+            return true;
+        }
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
         const PlayerUId = GET_PAL_OWNER_API_ID();
@@ -5175,6 +5721,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     }
 
     async function dupePal(containerType = "AUTO") {
+        if (GLOBAL_PALBOX_SESSION.value) {
+            const clone = await cloneGlobalPalboxPal(SELECTED_PAL_ID.value);
+            if (!clone) return false;
+            await selectPal(clone.InstanceId);
+            return true;
+        }
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
         const PlayerUId = GET_PAL_OWNER_API_ID();
@@ -5326,6 +5878,9 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         HAS_WORKING_PAL_FLAG,
         BASE_PAL_BTN_CLK_FLAG,
         PAL_GAME_SAVE_PATH,
+        GLOBAL_PALBOX_PATH,
+        GLOBAL_PALBOX_SOURCE_MODE,
+        GLOBAL_PALBOX_XGP_PATH,
         PAL_WRITE_BACK_PATH,
         SAVE_SOURCE_MODE,
         REMOTE_SERVER_ADDRESS,
@@ -5382,6 +5937,13 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         MAP_LOADING,
         OVERVIEW_DATA,
         OVERVIEW_LOADING,
+        GLOBAL_PALBOX_SESSION,
+        GLOBAL_PALBOX_PALS,
+        GLOBAL_PALBOX_CATALOG,
+        GLOBAL_PALBOX_XGP_SOURCES,
+        SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID,
+        GLOBAL_PALBOX_LOADING,
+        GLOBAL_PALBOX_ERROR,
         VERSION,
         IS_OFFICIAL_BUILD,
         AVAILABLE_UPDATE,
@@ -5500,6 +6062,15 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         executeMigration,
         exportSteamCopy,
         discoverXgpSources,
+        initializeGlobalPalbox,
+        discoverGlobalPalboxXgp,
+        openGlobalPalbox,
+        updateGlobalPalboxPal,
+        addGlobalPalboxPal,
+        cloneGlobalPalboxPal,
+        deleteGlobalPalboxPal,
+        saveGlobalPalbox,
+        closeGlobalPalbox,
         fetch_config,
         checkForUpdate,
         skipUpdate,

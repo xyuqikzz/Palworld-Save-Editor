@@ -193,10 +193,12 @@ test('the save button has the exact disabled states and explains each one access
   assert.ok(saveButton, 'save button must exist')
   assert.match(
     saveButton,
-    /:disabled="palStore\.LOADING_FLAG \|\| !palStore\.PENDING_CHANGE_COUNT"/,
+    /:disabled="workspaceLoading \|\| !pendingChangeCount"/,
   )
   assert.match(saveButton, /:title="saveButtonHint"/)
   assert.match(saveButton, /:aria-label="saveButtonHint"/)
   assert.match(source, /TopBar_Save_Disabled_Loading/)
   assert.match(source, /TopBar_Save_Disabled_NoChanges/)
+  assert.match(source, /GLOBAL_PALBOX_LOADING/)
+  assert.match(source, /GLOBAL_PALBOX_SESSION\.pending_change_count/)
 })

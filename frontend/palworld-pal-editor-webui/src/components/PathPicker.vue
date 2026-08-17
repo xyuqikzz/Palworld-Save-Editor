@@ -15,8 +15,15 @@ const sortMode = ref('modified-desc')
 const isLocalDataPicker = computed(
     () => palStore.FILE_PICKER_PURPOSE === 'local-data',
 )
+const isGlobalPalboxXgpPicker = computed(
+    () => palStore.FILE_PICKER_PURPOSE === 'global-palbox-xgp',
+)
 const isXgpPicker = computed(
-    () => palStore.FILE_PICKER_PURPOSE === 'xgp',
+    () => palStore.FILE_PICKER_PURPOSE === 'xgp'
+        || isGlobalPalboxXgpPicker.value,
+)
+const isGlobalPalboxPicker = computed(
+    () => palStore.FILE_PICKER_PURPOSE === 'global-palbox',
 )
 
 const sortedPathChildren = computed(() => filterAndSortPathEntries(
@@ -39,20 +46,25 @@ const isLocalDataFile = (entry) => (
 const isXgpIndexFile = (entry) => (
     !entry.isDir && entry.filename.toLowerCase() === 'containers.index'
 )
+const isGlobalPalboxFile = (entry) => (
+    !entry.isDir && entry.filename.toLowerCase() === 'globalpalstorage.sav'
+)
 const isSelectableFile = (entry) => (
     (isLocalDataPicker.value && isLocalDataFile(entry))
     || (isXgpPicker.value && isXgpIndexFile(entry))
+    || (isGlobalPalboxPicker.value && isGlobalPalboxFile(entry))
 )
 const isDisabledFile = (entry) => (
     !entry.isDir
     && (
         (isLocalDataPicker.value && !isLocalDataFile(entry))
         || (isXgpPicker.value && !isXgpIndexFile(entry))
+        || (isGlobalPalboxPicker.value && !isGlobalPalboxFile(entry))
     )
 )
 
 const isSelectedFile = (path) => (
-    (isLocalDataPicker.value || isXgpPicker.value)
+    (isLocalDataPicker.value || isXgpPicker.value || isGlobalPalboxPicker.value)
     && palStore.PAL_FILE_PICKER_SELECTION === path
 )
 
@@ -61,7 +73,7 @@ const pickerConfirmationDisabled = computed(() => {
     if (palStore.FILE_PICKER_PURPOSE === 'steam') {
         return !palStore.IS_PAL_SAVE_PATH
     }
-    if (isLocalDataPicker.value) {
+    if (isLocalDataPicker.value || isGlobalPalboxPicker.value) {
         return !palStore.PAL_FILE_PICKER_SELECTION
     }
     return false
@@ -100,7 +112,13 @@ const savePickerResult = async () => {
         return
     }
     palStore.SHOW_FILE_PICKER = false
-    if (palStore.FILE_PICKER_PURPOSE === 'xgp') {
+    if (isGlobalPalboxXgpPicker.value) {
+        palStore.GLOBAL_PALBOX_XGP_PATH = palStore.PAL_FILE_PICKER_SELECTION
+            || palStore.PAL_FILE_PICKER_PATH
+        await palStore.discoverGlobalPalboxXgp()
+    } else if (isGlobalPalboxPicker.value) {
+        palStore.GLOBAL_PALBOX_PATH = palStore.PAL_FILE_PICKER_SELECTION
+    } else if (palStore.FILE_PICKER_PURPOSE === 'xgp') {
         palStore.XGP_WGS_PATH = palStore.PAL_FILE_PICKER_SELECTION
             || palStore.PAL_FILE_PICKER_PATH
         await palStore.discoverXgpSources()
@@ -196,6 +214,10 @@ const abort = () => {
                 <AppIcon name="info" :size="17" />
                 <span>{{ palStore.getTranslatedText('PathPicker_Xgp_SelectionHint') }}</span>
             </div>
+            <div v-else-if="isGlobalPalboxPicker" class="picker-guidance" role="note">
+                <AppIcon name="info" :size="17" />
+                <span>{{ palStore.getTranslatedText('PathPicker_GlobalPalbox_SelectionHint') }}</span>
+            </div>
 
             <div class="list-heading" aria-hidden="true">
                 <span>{{ palStore.getTranslatedText('PathPicker_Column_Name') }}</span>
@@ -213,7 +235,7 @@ const abort = () => {
                         'path-entry--save': entry.isPalDir,
                     }"
                     :tabindex="entry.isDir || isSelectableFile(entry) ? 0 : undefined"
-                    :aria-selected="!entry.isDir && (isLocalDataPicker || isXgpPicker) ? isSelectedFile(path) : undefined"
+                    :aria-selected="!entry.isDir && (isLocalDataPicker || isXgpPicker || isGlobalPalboxPicker) ? isSelectedFile(path) : undefined"
                     :aria-disabled="isDisabledFile(entry) || undefined"
                     :title="isXgpPicker && isDisabledFile(entry) ? palStore.getTranslatedText('PathPicker_Xgp_DisabledFile') : undefined"
                     @click="selectPathEntry(path, entry)"

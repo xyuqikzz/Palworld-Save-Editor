@@ -18,6 +18,11 @@ const router = createRouter({
       component: () => import('../views/SaveMigrationView.vue')
     },
     {
+      path: '/global-palbox',
+      name: 'GlobalPalbox',
+      component: () => import('../views/GlobalPalboxView.vue')
+    },
+    {
       path: '/remote',
       name: 'RemoteServer',
       component: () => import('../views/RemoteServerView.vue'),

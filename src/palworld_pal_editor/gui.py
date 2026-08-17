@@ -128,6 +128,45 @@ class NativeDialogApi:
 
         return self._select_folder(initial_directory)
 
+    def select_global_palbox_file(self, requested_path=None):
+        initial_directory = ""
+        if requested_path:
+            requested = Path(requested_path)
+            if requested.is_file():
+                initial_directory = str(requested.resolve().parent)
+            elif requested.is_dir():
+                initial_directory = str(requested.resolve())
+
+        if not initial_directory:
+            local_app_data = os.environ.get("LOCALAPPDATA")
+            if local_app_data:
+                save_games = Path(local_app_data) / "Pal" / "Saved" / "SaveGames"
+                if save_games.is_dir():
+                    initial_directory = str(save_games.resolve())
+
+        windows = self._window_provider()
+        if not windows:
+            raise RuntimeError(
+                "No desktop window is available for Global Palbox selection."
+            )
+        selected = windows[0].create_file_dialog(
+            webview.OPEN_DIALOG,
+            directory=initial_directory,
+            allow_multiple=False,
+            file_types=("Palworld Global Palbox (GlobalPalStorage.sav)",),
+        )
+        if not selected:
+            return None
+        selected_path = Path(selected[0]).resolve()
+        if (
+            not selected_path.is_file()
+            or selected_path.name.casefold() != "globalpalstorage.sav"
+        ):
+            raise ValueError(
+                "The Global Palbox picker must return GlobalPalStorage.sav."
+            )
+        return str(selected_path)
+
     @staticmethod
     def _bridge_mod_version(path: Path) -> tuple[int, int, int]:
         match = re.fullmatch(

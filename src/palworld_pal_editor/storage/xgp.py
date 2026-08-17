@@ -30,8 +30,13 @@ from palworld_pal_editor.storage.backup_diagnostics import (
     source_changed,
 )
 
-from .discovery import XgpSourceCatalog, world_bindings
-from .steam import sha256_file, snapshot_tree
+from .discovery import (
+    GLOBAL_PALBOX_SCOPE_ID,
+    XgpSourceCatalog,
+    global_palbox_bindings,
+    world_bindings,
+)
+from .steam import _native_path, sha256_file, snapshot_tree
 from .wgs_format import (
     WgsFormatError,
     encode_index,
@@ -44,6 +49,17 @@ from .wgs_format import (
 
 
 _FILETIME_EPOCH_OFFSET = 11644473600
+
+
+def _display_path(path: str | Path) -> Path:
+    """Return an ordinary absolute path after Windows extended-path I/O."""
+    value = str(path)
+    if os.name == "nt":
+        if value.startswith("\\\\?\\UNC\\"):
+            value = "\\\\" + value[8:]
+        elif value.startswith("\\\\?\\"):
+            value = value[4:]
+    return Path(value).absolute()
 
 
 def _windows_process_names() -> tuple[str, ...]:
@@ -170,16 +186,20 @@ class XgpWgsAdapter:
                 )
             logical_files, metadata, snapshot, bindings_snapshot = second
             if self._workspace_root is not None:
-                self._workspace_root.mkdir(parents=True, exist_ok=True)
-            workspace = Path(
+                _native_path(self._workspace_root).mkdir(parents=True, exist_ok=True)
+            workspace = _display_path(
                 tempfile.mkdtemp(
                     prefix="palworld-editor-xgp-",
-                    dir=str(self._workspace_root) if self._workspace_root else None,
+                    dir=(
+                        str(_native_path(self._workspace_root))
+                        if self._workspace_root
+                        else None
+                    ),
                 )
             ).resolve()
             for root in self._catalog.roots:
                 try:
-                    workspace.relative_to(root)
+                    _native_path(workspace).relative_to(_native_path(root))
                 except ValueError:
                     continue
                 raise DomainError(
@@ -191,9 +211,11 @@ class XgpWgsAdapter:
                 payload_relative = metadata[relative_path]["payload_relative"]
                 source_payload = source.canonical_path / Path(payload_relative)
                 destination = workspace / Path(relative_path)
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                normalized = normalize_palworld_payload(source_payload.read_bytes())
-                destination.write_bytes(normalized.data)
+                _native_path(destination.parent).mkdir(parents=True, exist_ok=True)
+                normalized = normalize_palworld_payload(
+                    _native_path(source_payload).read_bytes()
+                )
+                _native_path(destination).write_bytes(normalized.data)
                 if sha256_file(destination) != logical.sha256:
                     raise OSError("workspace extraction hash mismatch")
             try:
@@ -218,11 +240,11 @@ class XgpWgsAdapter:
             )
         except DomainError:
             if workspace is not None:
-                shutil.rmtree(workspace, ignore_errors=True)
+                shutil.rmtree(_native_path(workspace), ignore_errors=True)
             raise
         except (OSError, WgsFormatError) as error:
             if workspace is not None:
-                shutil.rmtree(workspace, ignore_errors=True)
+                shutil.rmtree(_native_path(workspace), ignore_errors=True)
             raise DomainError(
                 code="WGS_CONTAINER_INCOMPLETE",
                 message="The selected Game Pass save has an incomplete container or payload.",
@@ -260,7 +282,7 @@ class XgpWgsAdapter:
                     http_status=422,
                 )
             staged = request.staged_workspace / Path(relative_path)
-            if not staged.is_file():
+            if not _native_path(staged).is_file():
                 raise DomainError(
                     code="WGS_STAGE_FAILED",
                     message="A changed logical file is missing from staging.",
@@ -374,9 +396,11 @@ class XgpWgsAdapter:
 
         candidate_dir = request.staged_workspace / ".wgs-candidates"
         try:
-            candidate_dir.mkdir(parents=False, exist_ok=False)
+            _native_path(candidate_dir).mkdir(parents=False, exist_ok=False)
             index = parse_index(
-                (opened.source.canonical_path / "containers.index").read_bytes()
+                _native_path(
+                    opened.source.canonical_path / "containers.index"
+                ).read_bytes()
             )
             staged_containers: set[str] = set()
             for relative_path in changed:
@@ -388,14 +412,21 @@ class XgpWgsAdapter:
                 staged_containers.add(container_relative)
                 source_container = opened.source.canonical_path / Path(container_relative)
                 candidate_container = candidate_dir / Path(container_relative)
-                candidate_container.parent.mkdir(parents=True, exist_ok=True)
+                _native_path(candidate_container.parent).mkdir(
+                    parents=True, exist_ok=True
+                )
                 self._fail(
                     request,
                     "before_container_stage",
                     {"path": relative_path},
                 )
-                shutil.copy2(source_container, candidate_container)
-                parsed_container = parse_container(candidate_container.read_bytes())
+                shutil.copy2(
+                    _native_path(source_container),
+                    _native_path(candidate_container),
+                )
+                parsed_container = parse_container(
+                    _native_path(candidate_container).read_bytes()
+                )
                 if sha256_file(candidate_container) != sha256_file(source_container):
                     raise OSError("container candidate hash mismatch")
                 self._fail(
@@ -410,7 +441,7 @@ class XgpWgsAdapter:
                 position = int(metadata["index_position"])
                 payload_relative = str(metadata["payload_relative"])
                 staged = request.staged_workspace / Path(relative_path)
-                staged_data = staged.read_bytes()
+                staged_data = _native_path(staged).read_bytes()
                 encoding = metadata.get("payload_encoding")
                 prefix_hex = metadata.get("payload_header_prefix")
                 if not isinstance(encoding, str) or not isinstance(prefix_hex, str):
@@ -434,7 +465,9 @@ class XgpWgsAdapter:
                 )
 
                 candidate_payload = candidate_dir / Path(payload_relative)
-                candidate_payload.parent.mkdir(parents=True, exist_ok=True)
+                _native_path(candidate_payload.parent).mkdir(
+                    parents=True, exist_ok=True
+                )
                 self._write_bytes_durable(candidate_payload, encoded_data)
                 payload_candidates[relative_path] = candidate_payload
 
@@ -448,7 +481,7 @@ class XgpWgsAdapter:
             index = replace(index, modified_filetime=now_filetime)
             index_candidate = candidate_dir / "containers.index"
             self._write_bytes_durable(index_candidate, encode_index(index))
-            parse_index(index_candidate.read_bytes())
+            parse_index(_native_path(index_candidate).read_bytes())
         except DomainError:
             raise
         except Exception as error:
@@ -549,24 +582,27 @@ class XgpWgsAdapter:
                             str(final_metadata[relative_path]["payload_relative"])
                         )
                         normalized = normalize_palworld_payload(
-                            payload.read_bytes()
+                            _native_path(payload).read_bytes()
                         )
                         verification_path = (
                             verification_root / Path(relative_path)
                         )
-                        verification_path.parent.mkdir(
+                        _native_path(verification_path.parent).mkdir(
                             parents=True,
                             exist_ok=True,
                         )
-                        verification_path.write_bytes(normalized.data)
+                        _native_path(verification_path).write_bytes(normalized.data)
                         request.verify_file(
                             verification_path,
                             relative_path,
                         )
             for relative_path in changed:
                 workspace_file = opened.workspace / Path(relative_path)
-                workspace_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(request.staged_workspace / Path(relative_path), workspace_file)
+                _native_path(workspace_file.parent).mkdir(parents=True, exist_ok=True)
+                shutil.copy2(
+                    _native_path(request.staged_workspace / Path(relative_path)),
+                    _native_path(workspace_file),
+                )
             opened.logical_files = final_logical
             opened.storage_metadata["bindings"] = final_metadata
             opened.snapshot = type(final_snapshot)(
@@ -628,7 +664,7 @@ class XgpWgsAdapter:
 
     def close(self, opened: OpenedSave) -> None:
         if opened.cleanup_required:
-            shutil.rmtree(opened.workspace, ignore_errors=True)
+            shutil.rmtree(_native_path(opened.workspace), ignore_errors=True)
 
     def _validate_source(self, source: SaveSource) -> None:
         if source.platform is not SavePlatform.XGP:
@@ -708,13 +744,22 @@ class XgpWgsAdapter:
 
     def _recover_incomplete_journals(self, source: SaveSource) -> None:
         source_backups = self._backup_source_root(source)
-        if not source_backups.is_dir():
+        native_source_backups = _native_path(source_backups)
+        if not native_source_backups.is_dir():
             return
-        for journal_path in sorted(source_backups.glob("*/journal.json")):
+        operation_names = sorted(
+            operation.name
+            for operation in native_source_backups.iterdir()
+            if operation.is_dir() and (operation / "journal.json").is_file()
+        )
+        for operation_name in operation_names:
+            journal_path = source_backups / operation_name / "journal.json"
             manifest_path = journal_path.parent / "manifest.json"
             journal: dict[str, object] | None = None
             try:
-                journal = json.loads(journal_path.read_text(encoding="utf-8"))
+                journal = json.loads(
+                    _native_path(journal_path).read_text(encoding="utf-8")
+                )
                 if not isinstance(journal, dict):
                     raise ValueError("WGS journal must be an object")
                 status = journal.get("status")
@@ -741,7 +786,7 @@ class XgpWgsAdapter:
                     raise ValueError("unknown WGS journal state")
 
                 manifest_document = json.loads(
-                    manifest_path.read_text(encoding="utf-8")
+                    _native_path(manifest_path).read_text(encoding="utf-8")
                 )
                 if manifest_document.get("source_id") != source.source_id:
                     raise ValueError("WGS backup manifest source mismatch")
@@ -802,9 +847,10 @@ class XgpWgsAdapter:
                 for relative in reversed(recovery_paths):
                     backup_file = journal_path.parent / "files" / Path(relative)
                     expected_file = expected_by_path[relative]
+                    native_backup_file = _native_path(backup_file)
                     if (
-                        not backup_file.is_file()
-                        or backup_file.stat().st_size != expected_file.size
+                        not native_backup_file.is_file()
+                        or native_backup_file.stat().st_size != expected_file.size
                         or sha256_file(backup_file) != expected_file.sha256
                     ):
                         raise ValueError("WGS recovery backup failed verification")
@@ -858,7 +904,7 @@ class XgpWgsAdapter:
         failed_file: str | None = None
         try:
             files_root = backup_path / "files"
-            files_root.mkdir(parents=True, exist_ok=False)
+            _native_path(files_root).mkdir(parents=True, exist_ok=False)
             manifest: list[dict[str, object]] = []
             for item in snapshot.files:
                 relative = item.relative_path.as_posix()
@@ -866,13 +912,16 @@ class XgpWgsAdapter:
                 source_file = source.canonical_path / Path(relative)
                 backup_file = files_root / Path(relative)
                 phase = "create_backup_directory"
-                backup_file.parent.mkdir(parents=True, exist_ok=True)
+                _native_path(backup_file.parent).mkdir(parents=True, exist_ok=True)
                 phase = "copy_file"
                 self._fail(request, "before_backup_copy", {"path": relative})
                 try:
-                    shutil.copy2(source_file, backup_file)
+                    shutil.copy2(
+                        _native_path(source_file),
+                        _native_path(backup_file),
+                    )
                 except FileNotFoundError as error:
-                    if not source_file.is_file():
+                    if not _native_path(source_file).is_file():
                         raise source_changed(
                             code="WGS_SOURCE_CHANGED",
                             message=(
@@ -886,7 +935,7 @@ class XgpWgsAdapter:
                         ) from error
                     raise
                 try:
-                    source_stat = source_file.stat()
+                    source_stat = _native_path(source_file).stat()
                     source_hash = sha256_file(source_file)
                 except OSError as error:
                     raise source_changed(
@@ -915,7 +964,7 @@ class XgpWgsAdapter:
                         failed_file=relative,
                     )
                 phase = "verify_copy"
-                copied = backup_file.stat()
+                copied = _native_path(backup_file).stat()
                 copied_hash = sha256_file(backup_file)
                 if copied.st_size != item.size or copied_hash != item.sha256:
                     raise BackupVerificationError(
@@ -950,7 +999,7 @@ class XgpWgsAdapter:
             phase = "write_manifest"
             self._write_json_durable(manifest_path, document)
             phase = "read_manifest"
-            manifest_text = manifest_path.read_text(encoding="utf-8")
+            manifest_text = _native_path(manifest_path).read_text(encoding="utf-8")
             phase = "verify_manifest"
             try:
                 loaded = json.loads(manifest_text)
@@ -1037,39 +1086,41 @@ class XgpWgsAdapter:
     def _replace_from_candidate(self, candidate: Path, target: Path) -> None:
         temporary = target.with_name(f".{target.name}.pal-editor-{uuid.uuid4()}.tmp")
         try:
-            shutil.copy2(candidate, temporary)
+            shutil.copy2(_native_path(candidate), _native_path(temporary))
             if sha256_file(temporary) != sha256_file(candidate):
                 raise OSError("same-volume WGS staging hash mismatch")
-            with temporary.open("r+b") as stream:
+            with _native_path(temporary).open("r+b") as stream:
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temporary, target)
+            os.replace(_native_path(temporary), _native_path(target))
             self._fsync_directory(target.parent)
         finally:
             try:
-                temporary.unlink(missing_ok=True)
+                _native_path(temporary).unlink(missing_ok=True)
             except OSError:
                 pass
 
     def _write_bytes_durable(self, path: Path, data: bytes) -> None:
-        with path.open("wb") as stream:
+        with _native_path(path).open("wb") as stream:
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
 
     def _write_json_durable(self, path: Path, document: dict[str, object]) -> None:
         temporary = path.with_name(f".{path.name}.{uuid.uuid4()}.tmp")
-        with temporary.open("w", encoding="utf-8", newline="\n") as stream:
+        with _native_path(temporary).open(
+            "w", encoding="utf-8", newline="\n"
+        ) as stream:
             json.dump(document, stream, ensure_ascii=False, indent=2)
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        os.replace(_native_path(temporary), _native_path(path))
         self._fsync_directory(path.parent)
 
     def _fsync_directory(self, path: Path) -> None:
         try:
-            descriptor = os.open(path, os.O_RDONLY)
+            descriptor = os.open(_native_path(path), os.O_RDONLY)
         except OSError:
             return
         try:
@@ -1087,7 +1138,7 @@ class XgpWgsAdapter:
         user = source.canonical_path
         index_path = user / "containers.index"
         try:
-            index = parse_index(index_path.read_bytes())
+            index = parse_index(_native_path(index_path).read_bytes())
         except WgsFormatError as error:
             raise DomainError(
                 code="WGS_INDEX_UNSUPPORTED",
@@ -1100,12 +1151,14 @@ class XgpWgsAdapter:
                 message="The WGS index does not belong to Palworld.",
                 http_status=422,
             )
-        worlds = world_bindings(index)
-        selected = worlds.get(source.world_id or "")
+        if source.world_id == GLOBAL_PALBOX_SCOPE_ID:
+            selected = global_palbox_bindings(index)
+        else:
+            selected = world_bindings(index).get(source.world_id or "")
         if selected is None:
             raise DomainError(
                 code="WGS_SOURCE_CHANGED",
-                message="The selected world no longer exists in the WGS index.",
+                message="The selected save scope no longer exists in the WGS index.",
                 retryable=True,
                 http_status=409,
             )
@@ -1127,10 +1180,12 @@ class XgpWgsAdapter:
             container_path = user / Path(container_relative.as_posix())
             container_file_path = user / Path(container_file_relative.as_posix())
             try:
-                container = parse_container(container_file_path.read_bytes())
+                container = parse_container(
+                    _native_path(container_file_path).read_bytes()
+                )
                 available = {
                     path.name.upper()
-                    for path in container_path.iterdir()
+                    for path in _native_path(container_path).iterdir()
                     if path.is_file()
                     and not path.name.casefold().startswith("container.")
                 }
@@ -1153,7 +1208,7 @@ class XgpWgsAdapter:
                         )
                     referenced_payloads.add(payload_relative.as_posix())
                     payloads.append(payload_relative)
-                    total_size += (
+                    total_size += _native_path(
                         user / Path(payload_relative.as_posix())
                     ).stat().st_size
                 if total_size != entry.size:
@@ -1192,8 +1247,8 @@ class XgpWgsAdapter:
             payload_relative = payloads[0]
             payload_name = payload_relative.name
             payload_path = user / Path(payload_relative.as_posix())
-            stat = payload_path.stat()
-            physical_bytes = payload_path.read_bytes()
+            stat = _native_path(payload_path).stat()
+            physical_bytes = _native_path(payload_path).read_bytes()
             physical_digest = hashlib.sha256(physical_bytes).hexdigest()
             normalized = normalize_palworld_payload(physical_bytes)
             digest = hashlib.sha256(normalized.data).hexdigest()

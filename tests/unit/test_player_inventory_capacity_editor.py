@@ -165,6 +165,25 @@ def _gvas(capacity: int = 54, *, slotnum_type: str = "IntProperty") -> GvasFile:
     return gvas
 
 
+def _add_plain_slot(
+    gvas: GvasFile,
+    slot_index: int,
+    *,
+    static_id: str = "Stone",
+    count: int = 1,
+) -> GvasFile:
+    values = gvas.properties["worldSaveData"]["value"][
+        "ItemContainerSaveData"
+    ]["value"][0]["value"]["Slots"]["value"]["values"]
+    slot = deepcopy(values[0])
+    raw = slot["RawData"]["value"]
+    raw["slot_index"] = slot_index
+    raw["count"] = count
+    raw["item"]["static_id"] = static_id
+    values.append(slot)
+    return gvas
+
+
 def _manager(gvas: GvasFile):
     player = _Player()
     containers = ItemContainerData(gvas)
@@ -234,7 +253,7 @@ def _properties_without_capacity(gvas: GvasFile) -> dict:
     return properties
 
 
-def test_expand_only_command_updates_dense_inventory_slots(tmp_path: Path) -> None:
+def test_resize_command_expands_dense_inventory_slots(tmp_path: Path) -> None:
     session = SaveSession.from_loaded_manager(_manager(_gvas()), tmp_path)
     editor = PlayerInventoryCapacityEditor(session)
 
@@ -243,10 +262,10 @@ def test_expand_only_command_updates_dense_inventory_slots(tmp_path: Path) -> No
         "reason": None,
         "current_capacity": 54,
         "allowed_capacities": [60, 90, 120],
-        "minimum_capacity": 55,
+        "minimum_capacity": 42,
         "maximum_capacity": 1000,
         "custom_input": True,
-        "expand_only": True,
+        "expand_only": False,
     }
     result = editor.execute(_command(session, 90))
 
@@ -283,12 +302,12 @@ def test_growth_progress_capacities_are_supported(
         "reason": None,
         "current_capacity": capacity,
         "allowed_capacities": [
-            preset for preset in (60, 90, 120) if preset > capacity
+            preset for preset in (60, 90, 120) if preset != capacity
         ],
-        "minimum_capacity": capacity + 1,
+        "minimum_capacity": 42,
         "maximum_capacity": 1000,
         "custom_input": True,
-        "expand_only": True,
+        "expand_only": False,
     }
 
 
@@ -303,32 +322,22 @@ def test_custom_capacity_is_accepted_within_editor_limit(
 
     assert result["changed"] is True
     assert result["value"]["capacity"] == 75
-    assert result["capability"]["minimum_capacity"] == 76
+    assert result["capability"]["minimum_capacity"] == 42
     assert result["capability"]["maximum_capacity"] == 1000
 
 
-@pytest.mark.parametrize(
-    ("capacity", "target", "expected_code"),
-    [
-        (90, 60, "PLAYER_INVENTORY_SHRINK_UNSUPPORTED"),
-        (1001, 1000, "PLAYER_INVENTORY_CAPACITY_UNSUPPORTED"),
-    ],
-)
-def test_unknown_or_shrinking_capacity_is_rejected(
-    tmp_path: Path,
-    capacity: int,
-    target: int,
-    expected_code: str,
+@pytest.mark.parametrize("target", [1, 41, 1001])
+def test_capacity_outside_supported_range_is_rejected(
+    tmp_path: Path, target: int
 ) -> None:
-    session = SaveSession.from_loaded_manager(
-        _manager(_gvas(capacity)), tmp_path
-    )
-    editor = PlayerInventoryCapacityEditor(session)
+    session = SaveSession.from_loaded_manager(_manager(_gvas()), tmp_path)
 
     with pytest.raises(DomainError) as raised:
-        editor.execute(_command(session, target))
+        PlayerInventoryCapacityEditor(session).execute(
+            _command(session, target)
+        )
 
-    assert raised.value.code == expected_code
+    assert raised.value.code == "INVALID_PLAYER_INVENTORY_CAPACITY"
     assert session.revision == 0
     assert session.changes() == []
 
@@ -345,17 +354,86 @@ def test_capacity_above_editor_limit_is_rejected(tmp_path: Path) -> None:
     assert session.revision == 0
 
 
-def test_capacity_limit_disables_further_expansion(tmp_path: Path) -> None:
+def test_capacity_limit_still_allows_reduction(tmp_path: Path) -> None:
     session = SaveSession.from_loaded_manager(
         _manager(_gvas(1000)), tmp_path
     )
 
-    capability = PlayerInventoryCapacityEditor(session).capability(PLAYER_ID)
+    editor = PlayerInventoryCapacityEditor(session)
+    capability = editor.capability(PLAYER_ID)
 
-    assert capability["available"] is False
-    assert capability["reason"] == "PLAYER_INVENTORY_CAPACITY_MAXIMUM_REACHED"
+    assert capability["available"] is True
+    assert capability["reason"] is None
     assert capability["current_capacity"] == 1000
+    assert capability["minimum_capacity"] == 42
     assert capability["maximum_capacity"] == 1000
+    assert editor.execute(_command(session, 999))["value"]["capacity"] == 999
+
+
+def test_modded_capacity_above_editor_limit_can_be_reduced(
+    tmp_path: Path,
+) -> None:
+    session = SaveSession.from_loaded_manager(
+        _manager(_gvas(1001)), tmp_path
+    )
+    editor = PlayerInventoryCapacityEditor(session)
+
+    assert editor.capability(PLAYER_ID)["available"] is True
+    assert editor.execute(_command(session, 1000))["value"]["capacity"] == 1000
+
+
+def test_shrink_removes_slots_outside_the_new_capacity(tmp_path: Path) -> None:
+    gvas = _add_plain_slot(_gvas(90), 41)
+    _add_plain_slot(gvas, 89, count=7)
+    session = SaveSession.from_loaded_manager(_manager(gvas), tmp_path)
+    editor = PlayerInventoryCapacityEditor(session)
+
+    result = editor.execute(_command(session, 42))
+    container = session.manager.item_container_data.get(CONTAINER_ID)
+
+    assert result["changed"] is True
+    assert result["value"]["capacity"] == 42
+    assert container is not None
+    assert container.capacity_matches_declared(42)
+    assert container.get_occupied(41).static_id == "Stone"
+    assert [
+        slot.slot_index for slot in container.iter_encoded_slots()
+    ] == [0, 41]
+    inventory = InventoryEditor(
+        session, catalog=ItemCatalog([])
+    ).get_inventory(PLAYER_ID)
+    common = next(
+        container
+        for container in inventory.containers
+        if container.container_type.value == "COMMON"
+    )
+    assert len(common.slots) == 42
+
+
+def test_failed_shrink_restores_removed_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gvas = _add_plain_slot(_gvas(90), 89, count=7)
+    session = SaveSession.from_loaded_manager(_manager(gvas), tmp_path)
+    editor = PlayerInventoryCapacityEditor(session)
+
+    def fail_validation(_container, _capacity) -> None:
+        raise DomainError(
+            code="INVARIANT_VIOLATION",
+            message="forced resize validation failure",
+        )
+
+    monkeypatch.setattr(editor, "_validate_postcondition", fail_validation)
+    with pytest.raises(DomainError) as raised:
+        editor.execute(_command(session, 42))
+
+    container = session.manager.item_container_data.get(CONTAINER_ID)
+    assert raised.value.code == "INVARIANT_VIOLATION"
+    assert container is not None
+    assert container.capacity_matches_declared(90)
+    assert container.get_occupied(89).count == 7
+    assert session.revision == 0
+    assert session.changes() == []
 
 
 def test_unknown_slotnum_encoding_disables_capacity_capability(
@@ -397,6 +475,37 @@ def test_steam_expand_save_reopen_preserves_unmodified_fields(
     assert (Path(result.backup_path) / "files" / "Level.sav").read_bytes() == before
 
 
+def test_steam_shrink_save_reopen_removes_truncated_slots(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "steam-world"
+    root.mkdir()
+    gvas = _add_plain_slot(_gvas(90), 41)
+    _add_plain_slot(gvas, 89, count=7)
+    before = _sav(gvas)
+    (root / "Level.sav").write_bytes(before)
+    manager = _StorageManager()
+    assert manager.open(root) is not None
+    session = SaveSession.from_loaded_manager(manager, root)
+    PlayerInventoryCapacityEditor(session).execute(_command(session, 42))
+
+    result = SaveWriter().save(session, root, 1)
+    reloaded = _read_level(root / "Level.sav")
+    container = ItemContainerData(reloaded).get(CONTAINER_ID)
+
+    assert result.written_files == ("Level.sav",)
+    assert container is not None
+    assert container.capacity_matches_declared(42)
+    assert container.get_occupied(41).static_id == "Stone"
+    assert [
+        slot.slot_index for slot in container.iter_encoded_slots()
+    ] == [0, 41]
+    assert reloaded.properties["PreservedCounter"]["value"] == 73
+    assert (
+        Path(result.backup_path) / "files" / "Level.sav"
+    ).read_bytes() == before
+
+
 def test_wgs_expand_write_back_and_reopen_original_slot() -> None:
     with TemporaryDirectory() as temp:
         base = Path(temp)
@@ -432,6 +541,57 @@ def test_wgs_expand_write_back_and_reopen_original_slot() -> None:
             container = reopened.manager.item_container_data.get(CONTAINER_ID)
             assert container is not None
             assert container.capacity_matches_declared(120)
+            assert reopened.manager.gvas_file.properties[
+                "PreservedCounter"
+            ]["value"] == 73
+            assert result.written_files == ("Level.sav",)
+            assert result.target_reload_verified is True
+            assert result.cloud_sync_verified is False
+        finally:
+            reopened.close()
+
+
+def test_wgs_shrink_write_back_and_reopen_original_slot() -> None:
+    with TemporaryDirectory() as temp:
+        base = Path(temp)
+        wgs_root = base / "wgs"
+        wgs_root.mkdir()
+        world_id = "A" * 32
+        gvas = _add_plain_slot(_gvas(90), 41)
+        _add_plain_slot(gvas, 89, count=7)
+        make_user_directory(
+            wgs_root,
+            "1111111111111111_" + "B" * 32,
+            {world_id: {"Level.sav": _sav(gvas)}},
+        )
+        catalog = XgpSourceCatalog(roots=(wgs_root,))
+        adapter = XgpWgsAdapter(
+            catalog=catalog,
+            process_checker=lambda: False,
+            workspace_validator=lambda _path: None,
+            workspace_root=base / "workspaces",
+            backup_root=base / "backups",
+            stability_delay=0,
+        )
+        source = catalog.discover()[0]
+        session = SaveSession.open_storage(
+            source, adapter, manager=_StorageManager()
+        )
+        PlayerInventoryCapacityEditor(session).execute(_command(session, 42))
+        result = SaveWriter().save(session, None, 1)
+        session.close()
+
+        reopened = SaveSession.open_storage(
+            source, adapter, manager=_StorageManager()
+        )
+        try:
+            container = reopened.manager.item_container_data.get(CONTAINER_ID)
+            assert container is not None
+            assert container.capacity_matches_declared(42)
+            assert container.get_occupied(41).static_id == "Stone"
+            assert [
+                slot.slot_index for slot in container.iter_encoded_slots()
+            ] == [0, 41]
             assert reopened.manager.gvas_file.properties[
                 "PreservedCounter"
             ]["value"] == 73

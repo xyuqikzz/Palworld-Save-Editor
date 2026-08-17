@@ -9,11 +9,12 @@ from .save_session import SaveSession
 
 
 PLAYER_INVENTORY_CAPACITIES = (60, 90, 120)
+MIN_PLAYER_INVENTORY_CAPACITY = 42
 MAX_PLAYER_INVENTORY_CAPACITY = 1000
 
 
 class PlayerInventoryCapacityEditor:
-    """Revision-bound, expand-only mutation of the ordinary backpack."""
+    """Revision-bound resize mutation of the ordinary backpack."""
 
     def __init__(self, session: SaveSession) -> None:
         self._session = session
@@ -22,20 +23,13 @@ class PlayerInventoryCapacityEditor:
         try:
             _player, container = self._require_container(player_id)
             current = container.capacity
-            if current < 1 or current > MAX_PLAYER_INVENTORY_CAPACITY:
+            if current < 1:
                 raise DomainError(
                     code="PLAYER_INVENTORY_CAPACITY_UNSUPPORTED",
                     message=(
                         "The ordinary backpack capacity is outside the "
-                        "editor's supported expansion range."
+                        "editor's supported resize range."
                     ),
-                    details={"current_capacity": current},
-                    http_status=409,
-                )
-            if current == MAX_PLAYER_INVENTORY_CAPACITY:
-                raise DomainError(
-                    code="PLAYER_INVENTORY_CAPACITY_MAXIMUM_REACHED",
-                    message="The ordinary backpack is already at the editor limit.",
                     details={"current_capacity": current},
                     http_status=409,
                 )
@@ -55,12 +49,12 @@ class PlayerInventoryCapacityEditor:
                 "allowed_capacities": [
                     capacity
                     for capacity in PLAYER_INVENTORY_CAPACITIES
-                    if capacity > current
+                    if capacity != current
                 ],
-                "minimum_capacity": current + 1,
+                "minimum_capacity": MIN_PLAYER_INVENTORY_CAPACITY,
                 "maximum_capacity": MAX_PLAYER_INVENTORY_CAPACITY,
                 "custom_input": True,
-                "expand_only": True,
+                "expand_only": False,
             }
         except DomainError as error:
             return {
@@ -71,7 +65,7 @@ class PlayerInventoryCapacityEditor:
                 "minimum_capacity": None,
                 "maximum_capacity": MAX_PLAYER_INVENTORY_CAPACITY,
                 "custom_input": True,
-                "expand_only": True,
+                "expand_only": False,
             }
 
     def execute(self, command: UpdatePlayerInventoryCapacity) -> dict[str, Any]:
@@ -84,12 +78,12 @@ class PlayerInventoryCapacityEditor:
         self._validate_capacity(command.capacity)
         player, container = self._require_container(command.player_id)
         current = container.capacity
-        if current < 1 or current > MAX_PLAYER_INVENTORY_CAPACITY:
+        if current < 1:
             raise DomainError(
                 code="PLAYER_INVENTORY_CAPACITY_UNSUPPORTED",
                 message=(
                     "The ordinary backpack capacity is outside the editor's "
-                    "supported expansion range."
+                    "supported resize range."
                 ),
                 details={"current_capacity": current},
                 http_status=409,
@@ -103,15 +97,6 @@ class PlayerInventoryCapacityEditor:
                 ),
                 http_status=409,
             )
-        if command.capacity < current:
-            raise DomainError(
-                code="PLAYER_INVENTORY_SHRINK_UNSUPPORTED",
-                message="The ordinary backpack can only be expanded.",
-                field="capacity",
-                details={"current_capacity": current},
-                http_status=409,
-            )
-
         value = lambda: {
             "player_id": str(player.PlayerUId),
             "container_id": str(container.id),
@@ -139,10 +124,10 @@ class PlayerInventoryCapacityEditor:
                     "container_id": str(container.id),
                     "container_type": "COMMON",
                 },
-                snapshot=container.snapshot_capacity,
-                restore=container.restore_capacity,
+                snapshot=container.snapshot_resize,
+                restore=container.restore_resize,
                 before=value,
-                mutate=lambda: container.expand_capacity(command.capacity),
+                mutate=lambda: container.resize_capacity(command.capacity),
                 validate=lambda: self._validate_postcondition(
                     container, command.capacity
                 ),
@@ -210,16 +195,20 @@ class PlayerInventoryCapacityEditor:
                 field="capacity",
                 http_status=400,
             )
-        if not 1 <= capacity <= MAX_PLAYER_INVENTORY_CAPACITY:
+        if not (
+            MIN_PLAYER_INVENTORY_CAPACITY
+            <= capacity
+            <= MAX_PLAYER_INVENTORY_CAPACITY
+        ):
             raise DomainError(
                 code="INVALID_PLAYER_INVENTORY_CAPACITY",
                 message=(
-                    "capacity must be between 1 and "
+                    f"capacity must be between {MIN_PLAYER_INVENTORY_CAPACITY} and "
                     f"{MAX_PLAYER_INVENTORY_CAPACITY}."
                 ),
                 field="capacity",
                 details={
-                    "minimum": 1,
+                    "minimum": MIN_PLAYER_INVENTORY_CAPACITY,
                     "maximum": MAX_PLAYER_INVENTORY_CAPACITY,
                     "presets": list(PLAYER_INVENTORY_CAPACITIES),
                 },
@@ -233,7 +222,7 @@ class PlayerInventoryCapacityEditor:
                 code="INVARIANT_VIOLATION",
                 message=(
                     "The ordinary backpack does not match its declared "
-                    "capacity after expansion."
+                    "capacity after resizing."
                 ),
                 http_status=409,
             )

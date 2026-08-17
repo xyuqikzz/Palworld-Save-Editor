@@ -108,6 +108,48 @@ test('entry save-source modes share stable workspace dimensions and internal scr
   )
 })
 
+test('offline and Global Palbox Game Pass panels share one compact source layout', () => {
+  const source = readFileSync(entryViewPath, 'utf8')
+  const globalStart = source.indexOf(`<template v-if="entryEditMode === 'global-palbox'">`)
+  const steamStart = source.indexOf(`<template v-else-if="palStore.SAVE_SOURCE_MODE === 'steam'">`)
+  const offlineXgpStart = source.indexOf(`<template v-else-if="palStore.SAVE_SOURCE_MODE === 'xgp'">`)
+  const remoteStart = source.indexOf('<template v-else>', offlineXgpStart)
+  const globalPanel = source.slice(globalStart, steamStart)
+  const offlineXgpPanel = source.slice(offlineXgpStart, remoteStart)
+
+  for (const panel of [globalPanel, offlineXgpPanel]) {
+    assert.match(
+      panel,
+      /class="save-path-row xgp-path-row"/,
+      'both Game Pass paths must reserve the same single-line picker width',
+    )
+    assert.match(
+      panel,
+      /class="xgp-sources xgp-entry-sources"/,
+      'both Game Pass source lists must use the same scrollable spacing',
+    )
+    assert.match(
+      panel,
+      /class="entry-primary-row xgp-entry-actions"/,
+      'both Game Pass flows must keep discovery and opening in one action row',
+    )
+  }
+  assert.match(
+    offlineXgpPanel,
+    /class="entry-primary-row xgp-entry-actions"[\s\S]*?discoverXgpSources\(\)[\s\S]*?palStore\.loadSave/,
+    'offline Game Pass must keep slot discovery and save loading together',
+  )
+  assert.match(
+    source,
+    /\.xgp-path-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+150px/,
+  )
+  assert.match(
+    source,
+    /\.xgp-entry-actions\s*\{[^}]*gap:\s*10px[^}]*margin-top:\s*auto[^}]*padding-top:\s*12px/,
+  )
+  assert.doesNotMatch(source, /xgp-load|global-palbox-actions|global-palbox-path-row/)
+})
+
 test('editor list panels contain their independently scrollable lists', () => {
   const source = readFileSync(mainCssPath, 'utf8')
   const panelRule = source.match(
@@ -180,7 +222,8 @@ test('loaded editor toolbar keeps save actions and page navigation in stable row
   const baseSource = readFileSync(baseCssPath, 'utf8')
   const viewSource = readFileSync(editorViewPath, 'utf8')
 
-  assert.match(source, /'topbar--loaded': palStore\.SAVE_LOADED_FLAG/)
+  assert.match(source, /'topbar--loaded': workspaceLoaded/)
+  assert.match(source, /palStore\.SAVE_LOADED_FLAG \|\| globalPalboxLoaded\.value/)
   assert.match(
     source,
     /\.op\s*\{[^}]*white-space:\s*nowrap/,

@@ -84,11 +84,11 @@ const open = async () => {
   dialog.value?.querySelector('.pal-species-option.is-selected')?.scrollIntoView({ block: 'center' })
 }
 
-defineExpose({ open })
-
 const close = () => {
   dialog.value?.close()
 }
+
+defineExpose({ open, close })
 
 const select = pal => {
   emit('update:modelValue', pal.InternalName)

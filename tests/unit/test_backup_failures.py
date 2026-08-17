@@ -272,6 +272,81 @@ def test_steam_backup_and_recovery_support_paths_beyond_max_path(
             steam_module.shutil.rmtree(native_backup_root)
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows long-path regression")
+def test_wgs_backup_and_reopen_support_paths_beyond_max_path(
+    backup_test_root: Path,
+) -> None:
+    wgs_root = backup_test_root / "wgs"
+    wgs_root.mkdir()
+    user_root = make_user_directory(
+        wgs_root,
+        "1111111111111111_" + "A" * 32,
+        {"B" * 32: {"Level.sav": b"wgs-before"}},
+    )
+    catalog = XgpSourceCatalog(roots=(wgs_root,))
+    source = catalog.discover()[0]
+    deepest_relative = max(
+        snapshot_tree(user_root).files,
+        key=lambda item: len(item.relative_path.as_posix()),
+    ).relative_path
+    operation_placeholder = "20260101T000000Z-" + "0" * 16
+    projected = (
+        backup_test_root
+        / "PAD"
+        / source.source_id
+        / operation_placeholder
+        / "files"
+        / Path(deepest_relative.as_posix())
+    )
+    padding_length = 270 - len(str(projected)) + len("PAD")
+    assert padding_length > 0
+    backup_root = backup_test_root / ("p" * padding_length)
+    adapter = XgpWgsAdapter(
+        catalog=catalog,
+        process_checker=lambda: False,
+        workspace_validator=lambda _path: None,
+        workspace_root=backup_test_root / "wgs-workspaces",
+        backup_root=backup_root,
+        stability_delay=0,
+    )
+    opened = adapter.open(source)
+    stage = backup_test_root / "wgs-stage"
+    stage.mkdir()
+    (stage / "Level.sav").write_bytes(b"wgs-after")
+    target = user_root / Path(
+        str(opened.storage_metadata["bindings"]["Level.sav"]["payload_relative"])
+    )
+    request = StorageCommitRequest(
+        opened=opened,
+        staged_workspace=stage,
+        changed_files=(PurePosixPath("Level.sav"),),
+        expected_revision=1,
+        verify_file=lambda _path, _relative: None,
+    )
+
+    try:
+        result = adapter.commit(request)
+
+        deepest_backup = (
+            result.backup_path
+            / "files"
+            / Path(deepest_relative.as_posix())
+        )
+        assert len(str(deepest_backup)) == 270
+        assert steam_module._native_path(deepest_backup).read_bytes() == b"wgs-before"
+        assert target.read_bytes() == b"wgs-after"
+
+        reopened = adapter.open(source)
+        try:
+            assert (reopened.workspace / "Level.sav").read_bytes() == b"wgs-after"
+        finally:
+            adapter.close(reopened)
+    finally:
+        native_backup_root = steam_module._native_path(backup_root)
+        if native_backup_root.exists():
+            steam_module.shutil.rmtree(native_backup_root)
+
+
 @pytest.mark.parametrize(
     "backup_directory_name",
     [

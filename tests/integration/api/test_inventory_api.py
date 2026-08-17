@@ -227,10 +227,11 @@ class InventoryApiTests(unittest.TestCase):
         self.assertTrue(data["changed"])
         self.assertEqual(75, data["value"]["capacity"])
         self.assertEqual(
-            [90, 120], data["capability"]["allowed_capacities"]
+            [60, 90, 120], data["capability"]["allowed_capacities"]
         )
-        self.assertEqual(76, data["capability"]["minimum_capacity"])
+        self.assertEqual(42, data["capability"]["minimum_capacity"])
         self.assertEqual(1000, data["capability"]["maximum_capacity"])
+        self.assertFalse(data["capability"]["expand_only"])
         self.assertEqual(
             ["level:ItemContainerSaveData"],
             self.session.changes()[0]["affected_records"],
@@ -247,6 +248,37 @@ class InventoryApiTests(unittest.TestCase):
         )
         self.assertEqual(75, common["capacity"])
         self.assertEqual(75, len(common["slots"]))
+
+    def test_reduce_ordinary_backpack_updates_inventory_shape(self) -> None:
+        response = self.client.post(
+            "/api/player/player-a/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_player_inventory_capacity",
+                "capacity": 42,
+            },
+        )
+
+        self.assertEqual(200, response.status_code)
+        data = response.get_json()["data"]
+        self.assertTrue(data["changed"])
+        self.assertEqual(42, data["value"]["capacity"])
+        self.assertEqual(42, data["capability"]["minimum_capacity"])
+        self.assertFalse(data["capability"]["expand_only"])
+
+        with patch.object(ItemCatalog, "load_default", return_value=_catalog()):
+            inventory = self.client.get(
+                "/api/player/player-a/inventory", headers=self.headers
+            )
+        common = next(
+            container
+            for container in inventory.get_json()["data"]["containers"]
+            if container["container_type"] == "COMMON"
+        )
+        self.assertEqual(42, common["capacity"])
+        self.assertEqual(42, len(common["slots"]))
 
     def test_raw_container_id_is_rejected_without_mutation(self) -> None:
         response = self.client.post(

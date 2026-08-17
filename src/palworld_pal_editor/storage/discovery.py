@@ -14,6 +14,8 @@ from .wgs_format import WgsFormatError, WgsIndex, parse_index
 
 
 PALWORLD_PACKAGE = "PocketpairInc.Palworld_ad4psfrxyesvt"
+GLOBAL_PALBOX_SCOPE_ID = "@GlobalPalStorage"
+GLOBAL_PALBOX_LOGICAL_PATH = "GlobalPalStorage.sav"
 _USER_DIRECTORY = re.compile(r"^[0-9A-Fa-f]{16}_[0-9A-Fa-f]{32}$")
 _PLAYER_ID = re.compile(
     r"^(?:[0-9A-Fa-f]{32}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-"
@@ -77,6 +79,15 @@ def world_bindings(index: WgsIndex) -> dict[str, dict[str, list[int]]]:
             position
         )
     return result
+
+
+def global_palbox_bindings(index: WgsIndex) -> dict[str, list[int]]:
+    positions = [
+        position
+        for position, entry in enumerate(index.entries)
+        if entry.name.rstrip("\0") == "GlobalPalStorage"
+    ]
+    return {GLOBAL_PALBOX_LOGICAL_PATH: positions} if positions else {}
 
 
 def _source_id(user_directory: Path, world_id: str) -> str:
@@ -143,6 +154,57 @@ class XgpSourceCatalog:
                 message=(
                     "The selected folder contains no readable Palworld "
                     "Game Pass world slots."
+                ),
+                field="path",
+                retryable=True,
+                http_status=404,
+            )
+        with self._lock:
+            self._trusted_roots.add(root)
+        return discovered
+
+    def discover_global_palboxes(self) -> list[SaveSource]:
+        return self._discover_global_scopes(
+            tuple((root, None) for root in self._default_roots)
+        )
+
+    def discover_global_palboxes_selected(
+        self, selected_path: str | Path
+    ) -> list[SaveSource]:
+        try:
+            selected = Path(selected_path).resolve(strict=True)
+        except (OSError, RuntimeError) as error:
+            raise DomainError(
+                code="WGS_NOT_FOUND",
+                message="The selected Game Pass save folder does not exist.",
+                field="path",
+                retryable=True,
+                http_status=404,
+            ) from error
+        if selected.is_file() and selected.name.casefold() == "containers.index":
+            selected = selected.parent
+        if not selected.is_dir() or self._is_excluded_directory(selected):
+            raise DomainError(
+                code="WGS_NOT_FOUND",
+                message="The selected folder is not an active Game Pass WGS folder.",
+                field="path",
+                retryable=True,
+                http_status=404,
+            )
+        selected_user = self._find_selected_user_directory(selected)
+        if selected_user is not None:
+            root = selected_user.parent.resolve()
+            scopes = ((root, (selected_user,)),)
+        else:
+            root = selected.resolve()
+            scopes = ((root, None),)
+        discovered = self._discover_global_scopes(scopes)
+        if not discovered:
+            raise DomainError(
+                code="GLOBAL_PALBOX_WGS_NOT_FOUND",
+                message=(
+                    "The selected Game Pass folder contains no account-level "
+                    "Global Palbox data."
                 ),
                 field="path",
                 retryable=True,
@@ -257,6 +319,101 @@ class XgpSourceCatalog:
             raise first_error
         discovered.sort(key=lambda source: (source.updated_at or datetime.min.replace(tzinfo=timezone.utc), source.world_id or ""))
         with self._lock:
+            self._sources.update(
+                {source.source_id: source for source in discovered}
+            )
+        return discovered
+
+    def _discover_global_scopes(
+        self,
+        scopes: tuple[tuple[Path, tuple[Path, ...] | None], ...],
+    ) -> list[SaveSource]:
+        existing_roots: list[Path] = []
+        discovered: list[SaveSource] = []
+        first_error: DomainError | None = None
+        for root, selected_users in scopes:
+            try:
+                if not root.is_dir():
+                    continue
+                existing_roots.append(root)
+                user_directories = (
+                    list(selected_users)
+                    if selected_users is not None
+                    else sorted(
+                        path
+                        for path in root.iterdir()
+                        if path.is_dir()
+                        and not self._is_excluded_directory(path)
+                        and _USER_DIRECTORY.fullmatch(path.name)
+                    )
+                )
+            except PermissionError as error:
+                first_error = DomainError(
+                    code="WGS_NOT_FOUND",
+                    message="The Palworld WGS directory cannot be read.",
+                    retryable=True,
+                    http_status=403,
+                )
+                first_error.__cause__ = error
+                continue
+            except OSError:
+                continue
+            for user_directory in user_directories:
+                index_path = user_directory / "containers.index"
+                try:
+                    index = parse_index(index_path.read_bytes())
+                    bindings = global_palbox_bindings(index)
+                    updated_at = datetime.fromtimestamp(
+                        index_path.stat().st_mtime, timezone.utc
+                    )
+                except (OSError, WgsFormatError) as error:
+                    first_error = DomainError(
+                        code="WGS_INDEX_UNSUPPORTED",
+                        message="A Palworld WGS index is incomplete or unsupported.",
+                        retryable=False,
+                        http_status=422,
+                    )
+                    first_error.__cause__ = error
+                    continue
+                if not bindings:
+                    continue
+                positions = bindings[GLOBAL_PALBOX_LOGICAL_PATH]
+                account_token = hashlib.sha256(
+                    str(user_directory.resolve()).casefold().encode("utf-8")
+                ).hexdigest()[:8].upper()
+                discovered.append(
+                    SaveSource(
+                        platform=SavePlatform.XGP,
+                        canonical_path=user_directory.resolve(),
+                        source_id=_source_id(
+                            user_directory,
+                            GLOBAL_PALBOX_SCOPE_ID,
+                        ),
+                        display_name=(
+                            f"Game Pass · Global Palbox · Account {account_token}"
+                        ),
+                        world_id=GLOBAL_PALBOX_SCOPE_ID,
+                        updated_at=updated_at,
+                        status="available" if len(positions) == 1 else "ambiguous",
+                    )
+                )
+        if not existing_roots:
+            raise DomainError(
+                code="WGS_NOT_FOUND",
+                message="No Palworld Game Pass WGS directory was found.",
+                retryable=True,
+                http_status=404,
+            )
+        if not discovered and first_error is not None:
+            raise first_error
+        discovered.sort(
+            key=lambda source: (
+                source.updated_at or datetime.min.replace(tzinfo=timezone.utc),
+                source.source_id,
+            )
+        )
+        with self._lock:
+            self._trusted_roots.update(existing_roots)
             self._sources.update(
                 {source.source_id: source for source in discovered}
             )

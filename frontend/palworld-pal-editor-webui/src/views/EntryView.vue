@@ -1,17 +1,20 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePalEditorStore } from '@/stores/paleditor';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AppIcon from '@/components/modules/AppIcon.vue';
 
 const palStore = usePalEditorStore();
+const route = useRoute();
 const router = useRouter();
 const lastOfflineSourceMode = ref(
   palStore.SAVE_SOURCE_MODE === 'xgp' ? 'xgp' : 'steam',
 );
-const entryEditMode = computed(() => (
-  palStore.SAVE_SOURCE_MODE === 'remote' ? 'online' : 'offline'
-));
+const entryEditMode = ref(
+  route.query.source === 'global-palbox'
+    ? 'global-palbox'
+    : palStore.SAVE_SOURCE_MODE === 'remote' ? 'online' : 'offline',
+);
 const remoteAdminPassword = ref('');
 const modInstallDialog = ref(null);
 const bridgeModDownloadAvailable = ref(false);
@@ -25,7 +28,15 @@ const bridgeModPrimaryPath = String.raw`Pal\Binaries\<Win64|WinGDK>\ue4ss\Mods\P
 const bridgeModFallbackPath = String.raw`Pal\Binaries\<Win64|WinGDK>\Mods\PalEditorBridge`;
 const serverRestConfiguration = 'RESTAPIEnabled=True · RESTAPIPort=8212 · AdminPassword=…';
 
-function selectEntryEditMode(mode) {
+async function selectEntryEditMode(mode) {
+  entryEditMode.value = mode;
+  if (mode === 'global-palbox') {
+    if (palStore.SAVE_SOURCE_MODE === 'remote') {
+      palStore.SAVE_SOURCE_MODE = lastOfflineSourceMode.value;
+    }
+    await palStore.initializeGlobalPalbox();
+    return;
+  }
   if (mode === 'online') {
     if (palStore.SAVE_SOURCE_MODE === 'steam' || palStore.SAVE_SOURCE_MODE === 'xgp') {
       lastOfflineSourceMode.value = palStore.SAVE_SOURCE_MODE;
@@ -38,8 +49,20 @@ function selectEntryEditMode(mode) {
 }
 
 function selectOfflineSourceMode(mode) {
+  entryEditMode.value = 'offline';
   lastOfflineSourceMode.value = mode;
   palStore.SAVE_SOURCE_MODE = mode;
+}
+
+function selectGlobalPalboxSourceMode(mode) {
+  palStore.GLOBAL_PALBOX_SOURCE_MODE = mode;
+  palStore.GLOBAL_PALBOX_ERROR = null;
+}
+
+async function openGlobalPalbox() {
+  if (await palStore.openGlobalPalbox()) {
+    await router.push({ name: 'GlobalPalbox' });
+  }
 }
 
 function refreshBridgeModDownloadAvailability() {
@@ -103,6 +126,9 @@ onMounted(() => {
     'pywebviewready',
     refreshBridgeModDownloadAvailability,
   );
+  if (entryEditMode.value === 'global-palbox') {
+    palStore.initializeGlobalPalbox();
+  }
 });
 
 onBeforeUnmount(() => {
@@ -176,6 +202,21 @@ onBeforeUnmount(() => {
               <span class="beta-badge">{{ palStore.getTranslatedText('Entry_Source_Beta') }}</span>
             </span>
           </label>
+          <label :class="{ active: entryEditMode === 'global-palbox' }">
+            <input
+              type="radio"
+              name="entry-edit-mode"
+              value="global-palbox"
+              :checked="entryEditMode === 'global-palbox'"
+              @change="selectEntryEditMode('global-palbox')"
+            />
+            <span class="source-icon source-icon--offline" aria-hidden="true">
+              <AppIcon name="box" :size="26" />
+            </span>
+            <span class="source-label-text">
+              <span class="source-name">{{ palStore.getTranslatedText('GlobalPalbox_Entry') }}</span>
+            </span>
+          </label>
         </div>
 
         <section class="entry-panel" aria-labelledby="save-path-heading">
@@ -210,13 +251,52 @@ onBeforeUnmount(() => {
             </label>
           </div>
 
+          <div
+            v-if="entryEditMode === 'global-palbox'"
+            class="offline-platform-switch"
+            role="radiogroup"
+            :aria-label="palStore.getTranslatedText('GlobalPalbox_Platform')"
+          >
+            <span>{{ palStore.getTranslatedText('GlobalPalbox_Platform') }}</span>
+            <label :class="{ active: palStore.GLOBAL_PALBOX_SOURCE_MODE === 'steam' }">
+              <input
+                type="radio"
+                name="global-palbox-platform"
+                value="steam"
+                :checked="palStore.GLOBAL_PALBOX_SOURCE_MODE === 'steam'"
+                @change="selectGlobalPalboxSourceMode('steam')"
+              />
+              <img src="@/assets/steam.svg" alt="" width="18" height="18" />
+              {{ palStore.getTranslatedText('Entry_Platform_Steam') }}
+            </label>
+            <label :class="{ active: palStore.GLOBAL_PALBOX_SOURCE_MODE === 'xgp' }">
+              <input
+                type="radio"
+                name="global-palbox-platform"
+                value="xgp"
+                :checked="palStore.GLOBAL_PALBOX_SOURCE_MODE === 'xgp'"
+                @change="selectGlobalPalboxSourceMode('xgp')"
+              />
+              <img src="@/assets/xbox.svg" alt="" width="18" height="18" />
+              {{ palStore.getTranslatedText('SourceBadge_Xgp') }}
+            </label>
+          </div>
+
           <div class="panel-heading">
             <h2 id="save-path-heading">
-              {{ palStore.getTranslatedText(palStore.SAVE_SOURCE_MODE === 'remote' ? 'Remote_Title' : 'EntryView_Save_Path') }}
+              {{ palStore.getTranslatedText(
+                entryEditMode === 'global-palbox'
+                  ? 'GlobalPalbox_File'
+                  : palStore.SAVE_SOURCE_MODE === 'remote'
+                    ? 'Remote_Title'
+                    : 'EntryView_Save_Path'
+              ) }}
             </h2>
             <p>
               {{ palStore.getTranslatedText(
-                palStore.SAVE_SOURCE_MODE === 'xgp'
+                entryEditMode === 'global-palbox'
+                  ? 'GlobalPalbox_OpenHint'
+                  : palStore.SAVE_SOURCE_MODE === 'xgp'
                   ? 'Entry_Xgp_Hint'
                   : palStore.SAVE_SOURCE_MODE === 'remote'
                     ? 'Remote_Hint'
@@ -225,7 +305,111 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <template v-if="palStore.SAVE_SOURCE_MODE === 'steam'">
+          <template v-if="entryEditMode === 'global-palbox'">
+            <aside class="global-palbox-note" role="note">
+              <AppIcon name="info" :size="17" />
+              <span>{{ palStore.getTranslatedText(
+                palStore.GLOBAL_PALBOX_SOURCE_MODE === 'xgp'
+                  ? 'GlobalPalbox_XgpHint'
+                  : 'GlobalPalbox_SteamHint'
+              ) }}</span>
+            </aside>
+
+            <div v-if="palStore.GLOBAL_PALBOX_SOURCE_MODE === 'steam'" class="save-path-row">
+              <label class="path-field">
+                <span class="sr-only">{{ palStore.getTranslatedText('GlobalPalbox_File') }}</span>
+                <input
+                  type="text"
+                  v-model="palStore.GLOBAL_PALBOX_PATH"
+                  :placeholder="palStore.getTranslatedText('GlobalPalbox_PathPlaceholder')"
+                  :disabled="palStore.GLOBAL_PALBOX_LOADING"
+                />
+              </label>
+              <button class="button button--quiet" @click="palStore.show_file_picker('global-palbox')" :disabled="palStore.GLOBAL_PALBOX_LOADING || palStore.LOADING_FLAG">
+                {{ palStore.getTranslatedText('GlobalPalbox_ChooseFile') }}
+              </button>
+            </div>
+
+            <template v-else>
+              <div class="save-path-row xgp-path-row">
+                <label class="path-field">
+                  <span class="sr-only">{{ palStore.getTranslatedText('GlobalPalbox_XgpFolder') }}</span>
+                  <input
+                    type="text"
+                    v-model="palStore.GLOBAL_PALBOX_XGP_PATH"
+                    :placeholder="palStore.getTranslatedText('Entry_Xgp_Path_Example')"
+                    :disabled="palStore.GLOBAL_PALBOX_LOADING"
+                  />
+                </label>
+                <button
+                  class="button button--quiet"
+                  @click="palStore.show_file_picker('global-palbox-xgp')"
+                  :disabled="palStore.GLOBAL_PALBOX_LOADING"
+                >
+                  {{ palStore.getTranslatedText('Entry_Xgp_Select_Folder') }}
+                </button>
+              </div>
+              <div
+                v-if="palStore.GLOBAL_PALBOX_XGP_SOURCES.length"
+                class="xgp-sources xgp-entry-sources"
+                role="radiogroup"
+                :aria-label="palStore.getTranslatedText('GlobalPalbox_XgpSelect')"
+              >
+                <label
+                  v-for="source in palStore.GLOBAL_PALBOX_XGP_SOURCES"
+                  :key="source.sourceId"
+                  class="xgp-source"
+                >
+                  <input
+                    type="radio"
+                    v-model="palStore.SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID"
+                    :value="source.sourceId"
+                  />
+                  <span>
+                    <strong>{{ source.displayName }}</strong>
+                    <small>{{ new Date(source.updatedAt).toLocaleString() }}</small>
+                  </span>
+                  <em>{{ palStore.getTranslatedText(`Entry_Xgp_Status_${source.status}`) }}</em>
+                </label>
+              </div>
+              <p class="path-current" v-else>
+                {{ palStore.getTranslatedText('GlobalPalbox_XgpNoSources') }}
+              </p>
+            </template>
+            <p v-if="palStore.GLOBAL_PALBOX_ERROR" class="entry-error" role="alert">
+              {{ palStore.GLOBAL_PALBOX_ERROR }}
+            </p>
+            <div
+              v-if="palStore.GLOBAL_PALBOX_SOURCE_MODE === 'xgp'"
+              class="entry-primary-row xgp-entry-actions"
+            >
+              <button
+                class="button button--quiet"
+                @click="palStore.discoverGlobalPalboxXgp()"
+                :disabled="palStore.GLOBAL_PALBOX_LOADING || !palStore.GLOBAL_PALBOX_XGP_PATH"
+              >
+                {{ palStore.getTranslatedText('Entry_Xgp_Discover') }}
+              </button>
+              <button
+                class="button button--primary"
+                @click="openGlobalPalbox"
+                :disabled="palStore.GLOBAL_PALBOX_LOADING || !palStore.SELECTED_GLOBAL_PALBOX_XGP_SOURCE_ID"
+              >
+                {{ palStore.getTranslatedText('GlobalPalbox_Open') }}
+              </button>
+            </div>
+            <div v-else class="entry-primary-row">
+              <button
+                class="button button--primary"
+                @click="openGlobalPalbox"
+                :disabled="palStore.GLOBAL_PALBOX_LOADING || !palStore.GLOBAL_PALBOX_PATH"
+              >
+                {{ palStore.getTranslatedText('GlobalPalbox_Open') }}
+              </button>
+            </div>
+          </template>
+
+          <template v-else-if="palStore.SAVE_SOURCE_MODE === 'steam'">
             <div class="save-path-row">
               <label class="path-field">
                 <span class="sr-only">{{ palStore.getTranslatedText('EntryView_Save_Path') }}</span>
@@ -248,7 +432,7 @@ onBeforeUnmount(() => {
           </template>
 
           <template v-else-if="palStore.SAVE_SOURCE_MODE === 'xgp'">
-            <div class="save-path-row">
+            <div class="save-path-row xgp-path-row">
               <label class="path-field">
                 <span class="sr-only">{{ palStore.getTranslatedText('Entry_Xgp_Folder') }}</span>
                 <input
@@ -262,11 +446,6 @@ onBeforeUnmount(() => {
                 {{ palStore.getTranslatedText('Entry_Xgp_Select_Folder') }}
               </button>
             </div>
-            <div class="entry-primary-row">
-              <button class="button button--primary" @click="palStore.discoverXgpSources()" :disabled="palStore.LOADING_FLAG || !palStore.XGP_WGS_PATH">
-                {{ palStore.getTranslatedText('Entry_Xgp_Discover') }}
-              </button>
-            </div>
             <p
               v-if="palStore.LAST_ERROR?.context === 'discover-xgp-sources'"
               class="entry-error"
@@ -274,7 +453,7 @@ onBeforeUnmount(() => {
             >
               {{ palStore.LAST_ERROR.message }}
             </p>
-            <div class="xgp-sources" v-if="palStore.XGP_SOURCES.length" role="radiogroup" :aria-label="palStore.getTranslatedText('Entry_Xgp_Select')">
+            <div class="xgp-sources xgp-entry-sources" v-if="palStore.XGP_SOURCES.length" role="radiogroup" :aria-label="palStore.getTranslatedText('Entry_Xgp_Select')">
               <label v-for="source in palStore.XGP_SOURCES" :key="source.sourceId" class="xgp-source">
                 <input type="radio" v-model="palStore.SELECTED_XGP_SOURCE_ID" :value="source.sourceId" />
                 <span>
@@ -285,9 +464,14 @@ onBeforeUnmount(() => {
               </label>
             </div>
             <p class="path-current" v-else>{{ palStore.getTranslatedText('Entry_Xgp_NoSources') }}</p>
-            <button class="button button--primary xgp-load" @click="palStore.loadSave" :disabled="palStore.LOADING_FLAG || !palStore.SELECTED_XGP_SOURCE_ID">
-              {{ palStore.getTranslatedText('EntryView_BTN_Load') }}
-            </button>
+            <div class="entry-primary-row xgp-entry-actions">
+              <button class="button button--quiet" @click="palStore.discoverXgpSources()" :disabled="palStore.LOADING_FLAG || !palStore.XGP_WGS_PATH">
+                {{ palStore.getTranslatedText('Entry_Xgp_Discover') }}
+              </button>
+              <button class="button button--primary" @click="palStore.loadSave" :disabled="palStore.LOADING_FLAG || !palStore.SELECTED_XGP_SOURCE_ID">
+                {{ palStore.getTranslatedText('EntryView_BTN_Load') }}
+              </button>
+            </div>
           </template>
 
           <template v-else>
@@ -776,6 +960,12 @@ h1 {
   min-height: 0;
 }
 
+.xgp-path-row {
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+
+.xgp-path-row .button { white-space: nowrap; }
+
 .remote-platform-notice {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
@@ -987,6 +1177,12 @@ h1 {
 
 .entry-primary-row { display: flex; justify-content: flex-end; margin-top: 24px; }
 .entry-primary-row .button { min-width: 204px; min-height: 44px; }
+.xgp-entry-actions {
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.xgp-entry-actions .button { min-width: 168px; }
 
 .button {
   min-height: 40px;
@@ -1005,6 +1201,20 @@ h1 {
 .button:disabled { opacity: .5; cursor: not-allowed; }
 
 .path-current { overflow-wrap: anywhere; }
+.global-palbox-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  color: var(--ui-text-secondary);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.global-palbox-note :deep(svg) { flex: 0 0 auto; margin-top: 1px; color: var(--ui-accent-strong); }
 .entry-error {
   margin-top: 10px;
   padding: 9px 11px;
@@ -1026,7 +1236,6 @@ h1 {
   font-size: 11px;
   white-space: pre-wrap;
 }
-.xgp-load { width: 204px; align-self: flex-end; margin-top: auto; }
 .xgp-sources {
   display: grid;
   flex: 1 1 0;
@@ -1036,6 +1245,12 @@ h1 {
   min-height: 0;
   overflow-y: auto;
   margin: 12px 0 14px;
+}
+.xgp-entry-sources {
+  min-height: 72px;
+  padding-right: 4px;
+  margin-bottom: 8px;
+  scrollbar-gutter: stable;
 }
 .xgp-source {
   display: grid;
@@ -1047,11 +1262,17 @@ h1 {
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-sm);
   cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
 }
+.xgp-source:hover:not(:has(input:checked)) { background: var(--ui-surface-hover); border-color: var(--ui-border-strong); }
+.xgp-source:has(input:focus-visible) { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 .xgp-source:has(input:checked) { border-color: var(--ui-accent); background: var(--ui-accent-soft); }
+.xgp-source input { width: 14px; height: 14px; margin: 0; accent-color: var(--ui-accent); }
 .xgp-source span { display: grid; gap: 3px; min-width: 0; }
 .xgp-source strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .xgp-source small, .xgp-source em { color: var(--ui-text-muted); font-size: 10px; font-style: normal; }
+.xgp-source:has(input:checked) strong { color: var(--ui-text); }
+.xgp-source:has(input:checked) em { color: var(--ui-accent-strong); }
 .entry-safety {
   display: flex;
   align-items: center;
@@ -1136,7 +1357,7 @@ h1 {
   .entry-workspace { grid-template-columns: 1fr; }
   .source-switch {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 12px;
     border-right: 0;
     border-bottom: 1px solid var(--ui-border);
@@ -1162,12 +1383,14 @@ h1 {
   .offline-platform-switch > span { flex: 1 0 100%; }
   .offline-platform-switch label { flex: 1 1 0; }
   .save-path-row { grid-template-columns: 1fr; }
+  .xgp-entry-actions { flex-direction: column; margin-top: 16px; }
+  .xgp-entry-actions .button { min-width: 0; }
   .remote-mod-notice { grid-template-columns: 38px minmax(0, 1fr); }
   .remote-mod-download { grid-column: 1 / -1; width: 100%; }
   .mod-path-list > div { grid-template-columns: 1fr; gap: 4px; }
   .mod-install-dialog footer { align-items: stretch; flex-direction: column; }
   .mod-install-dialog footer .button { width: 100%; }
-  .entry-primary-row .button, .xgp-load { width: 100%; }
+  .entry-primary-row .button { width: 100%; }
   .entry-safety { align-items: flex-start; flex-direction: column; gap: 7px; padding: 12px 20px; }
   h1 { max-width: 22ch; }
 }

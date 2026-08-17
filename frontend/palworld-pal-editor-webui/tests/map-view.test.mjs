@@ -535,7 +535,10 @@ test('ordinary backpack expansion reloads inventory so the visible slot count ch
   assert.match(playerEditor, /type="number"[\s\S]*?:max="inventoryCapacityCapability\.maximum_capacity"/)
   assert.doesNotMatch(playerEditor, /player-inventory-capacity-presets|<datalist/)
   assert.match(playerEditor, /PlayerInventoryCapacity_PerformanceWarning/)
+  assert.match(playerEditor, /target !== current/)
   assert.match(zh, /PlayerInventoryCapacity_Title:\s*"普通背包容量"/)
+  assert.match(zh, /PlayerInventoryCapacity_ShrinkConfirm:[\s\S]*?物品可能消失/)
+  assert.match(zh, /游戏官方基础容量为 42 格/)
   assert.match(zh, /过大的背包格子数组[\s\S]*?打开背包卡顿/)
 
   setActivePinia(createPinia())
@@ -550,10 +553,10 @@ test('ordinary backpack expansion reloads inventory so the visible slot count ch
       reason: null,
       current_capacity: 54,
       allowed_capacities: [60, 90, 120],
-      minimum_capacity: 55,
+      minimum_capacity: 42,
       maximum_capacity: 1000,
       custom_input: true,
-      expand_only: true,
+      expand_only: false,
     },
     InventoryContainers: [],
   }
@@ -579,11 +582,11 @@ test('ordinary backpack expansion reloads inventory so the visible slot count ch
             available: true,
             reason: null,
             current_capacity: 75,
-            allowed_capacities: [90, 120],
-            minimum_capacity: 76,
+            allowed_capacities: [60, 90, 120],
+            minimum_capacity: 42,
             maximum_capacity: 1000,
             custom_input: true,
-            expand_only: true,
+            expand_only: false,
           },
         },
       },
@@ -611,6 +614,82 @@ test('ordinary backpack expansion reloads inventory so the visible slot count ch
   assert.equal(store.PENDING_CHANGE_COUNT, 1)
   assert.equal(store.SELECTED_PLAYER_DATA.InventoryCapacityCapability.current_capacity, 75)
   assert.equal(store.SELECTED_PLAYER_DATA.InventoryContainers[0].slots.length, 75)
+})
+
+test('ordinary backpack reduction uses the item-loss confirmation', async () => {
+  setActivePinia(createPinia())
+  const store = usePalEditorStore()
+  store.I18n = 'en'
+  store.SESSION_ID = 'session-inventory-reduction'
+  store.SESSION_REVISION = 3
+  store.PENDING_CHANGE_COUNT = 0
+  store.SELECTED_PLAYER_ID = 'player-1'
+  store.SELECTED_PLAYER_DATA = {
+    InventoryCapacityCapability: {
+      available: true,
+      reason: null,
+      current_capacity: 90,
+      allowed_capacities: [60, 120],
+      minimum_capacity: 42,
+      maximum_capacity: 1000,
+      custom_input: true,
+      expand_only: false,
+    },
+    InventoryContainers: [],
+  }
+  globalThis.window.confirm = message => {
+    assert.match(message, /90[\s\S]*42/)
+    assert.match(message, /items occupying those positions may disappear/i)
+    return true
+  }
+  axios.post = async (url, data) => {
+    assert.equal(url, '/api/player/player-1/commands')
+    assert.deepEqual(data, {
+      session_id: 'session-inventory-reduction',
+      expected_revision: 3,
+      command: 'update_player_inventory_capacity',
+      capacity: 42,
+    })
+    return {
+      data: {
+        status: 0,
+        data: {
+          revision: 4,
+          changed: true,
+          capability: {
+            available: true,
+            reason: null,
+            current_capacity: 42,
+            allowed_capacities: [60, 90, 120],
+            minimum_capacity: 42,
+            maximum_capacity: 1000,
+            custom_input: true,
+            expand_only: false,
+          },
+        },
+      },
+    }
+  }
+  axios.get = async url => {
+    assert.equal(url, '/api/player/player-1/inventory?session_id=session-inventory-reduction')
+    return {
+      data: {
+        status: 0,
+        data: {
+          revision: 4,
+          containers: [{
+            container_type: 'COMMON',
+            capacity: 42,
+            slots: Array.from({ length: 42 }, (_, slot_index) => ({ slot_index })),
+          }],
+        },
+      },
+    }
+  }
+
+  assert.equal(await store.updatePlayerInventoryCapacity(42), true)
+  assert.equal(store.SESSION_REVISION, 4)
+  assert.equal(store.SELECTED_PLAYER_DATA.InventoryContainers[0].slots.length, 42)
 })
 
 test('selected-player fast-travel unlock is capability-gated and revision-bound', async () => {

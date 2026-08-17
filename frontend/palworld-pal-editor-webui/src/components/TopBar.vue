@@ -13,6 +13,29 @@ const interval = ref(null)
 const settingsOpen = ref(false)
 const settingsButton = ref(null)
 const settingsCloseButton = ref(null)
+const globalPalboxLoaded = computed(() => Boolean(palStore.GLOBAL_PALBOX_SESSION))
+const workspaceLoaded = computed(() => (
+  palStore.SAVE_LOADED_FLAG || globalPalboxLoaded.value
+))
+const workspaceLoading = computed(() => (
+  palStore.LOADING_FLAG || palStore.GLOBAL_PALBOX_LOADING
+))
+const workspacePlatform = computed(() => (
+  globalPalboxLoaded.value
+    ? palStore.GLOBAL_PALBOX_SESSION.platform
+    : palStore.SAVE_PLATFORM
+))
+const workspaceSourceDisplay = computed(() => (
+  globalPalboxLoaded.value
+    ? palStore.GLOBAL_PALBOX_SESSION.source_display_name
+      || palStore.GLOBAL_PALBOX_SESSION.source
+    : palStore.SOURCE_DISPLAY_NAME
+))
+const pendingChangeCount = computed(() => (
+  globalPalboxLoaded.value
+    ? palStore.GLOBAL_PALBOX_SESSION.pending_change_count
+    : palStore.PENDING_CHANGE_COUNT
+))
 
 const palRouteNames = new Set([
   'Editor',
@@ -33,16 +56,16 @@ const displayVersion = computed(() => (
   palStore.VERSION.match(/^\d+\.\d+\.\d+/)?.[0] || palStore.VERSION
 ))
 const saveButtonHint = computed(() => {
-  if (palStore.LOADING_FLAG) {
+  if (workspaceLoading.value) {
     return palStore.getTranslatedText('TopBar_Save_Disabled_Loading')
   }
-  if (!palStore.PENDING_CHANGE_COUNT) {
+  if (!pendingChangeCount.value) {
     return palStore.getTranslatedText('TopBar_Save_Disabled_NoChanges')
   }
   return palStore.getTranslatedText('TopBar_Action_Save')
 })
 
-watch(() => palStore.LOADING_FLAG, (isLoading) => {
+watch(workspaceLoading, (isLoading) => {
   if (isLoading) {
     interval.value = setInterval(() => {
       if (loadingWidth.value < 92) loadingWidth.value += Math.random() * 6
@@ -77,7 +100,8 @@ watch(() => route.fullPath, () => {
 })
 
 function save() {
-  palStore.writeSave()
+  if (globalPalboxLoaded.value) palStore.saveGlobalPalbox()
+  else palStore.writeSave()
 }
 
 async function refreshSave() {
@@ -91,6 +115,12 @@ function navigate(name) {
 }
 
 async function returnToSaveSelection() {
+  if (globalPalboxLoaded.value) {
+    if (await palStore.closeGlobalPalbox()) {
+      await router.push({ name: 'Entry', query: { source: 'global-palbox' } })
+    }
+    return
+  }
   if (await palStore.returnToMain()) {
     await router.push({ name: 'Entry' })
   }
@@ -120,49 +150,51 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="showLoading" class="loading-bar" :style="{ width: loadingWidth + '%' }" />
-  <header id="topbar" :class="{ 'topbar--loaded': palStore.SAVE_LOADED_FLAG }">
+  <header id="topbar" :class="{ 'topbar--loaded': workspaceLoaded }">
     <div class="topbar__primary">
       <div class="topbar__context">
         <button
           class="brand"
           type="button"
-          :class="{ 'brand--clickable': palStore.SAVE_LOADED_FLAG }"
-          :tabindex="palStore.SAVE_LOADED_FLAG ? 0 : -1"
+          :class="{ 'brand--clickable': workspaceLoaded }"
+          :tabindex="workspaceLoaded ? 0 : -1"
           :aria-label="palStore.getTranslatedText('Common_AppName')"
-          @click="palStore.SAVE_LOADED_FLAG && returnToSaveSelection()"
+          @click="workspaceLoaded && returnToSaveSelection()"
         >
           <img src="@/assets/logo.ico" alt="" width="30" height="30" />
           <span>{{ palStore.getTranslatedText('Common_AppName') }}</span>
         </button>
 
-        <template v-if="palStore.SAVE_LOADED_FLAG">
-          <span :class="['source-badge', `source-badge--${palStore.SAVE_PLATFORM}`]">
-            {{ palStore.getTranslatedText(palStore.SAVE_PLATFORM === 'xgp' ? 'SourceBadge_Xgp' : 'SourceBadge_Steam') }}
+        <template v-if="workspaceLoaded">
+          <span :class="['source-badge', `source-badge--${workspacePlatform}`]">
+            {{ palStore.getTranslatedText(workspacePlatform === 'xgp' ? 'SourceBadge_Xgp' : 'SourceBadge_Steam') }}
           </span>
           <label
             class="save-location"
-            :title="palStore.SAVE_PLATFORM === 'xgp' ? palStore.getTranslatedText('TopBar_Xgp_TargetLocked') : palStore.PAL_GAME_SAVE_PATH"
+            :title="workspacePlatform === 'xgp' ? palStore.getTranslatedText('TopBar_Xgp_TargetLocked') : globalPalboxLoaded ? palStore.GLOBAL_PALBOX_PATH : palStore.PAL_GAME_SAVE_PATH"
           >
             <span class="sr-only">{{ palStore.getTranslatedText('TopBar_Save_Path') }}</span>
             <input
-              v-if="palStore.SAVE_CAPABILITIES.targetPathEditable"
+              v-if="!globalPalboxLoaded && palStore.SAVE_CAPABILITIES.targetPathEditable"
               class="savePath"
               type="text"
               v-model="palStore.PAL_WRITE_BACK_PATH"
               :placeholder="palStore.PAL_GAME_SAVE_PATH"
-              :disabled="palStore.LOADING_FLAG"
+              :disabled="workspaceLoading"
             />
-            <span v-else class="savePath savePath--locked">{{ palStore.SOURCE_DISPLAY_NAME }}</span>
+            <span v-else class="savePath savePath--locked">
+              {{ workspaceSourceDisplay }}
+            </span>
           </label>
         </template>
       </div>
 
       <div class="topbar__actions">
-        <template v-if="palStore.SAVE_LOADED_FLAG">
+        <template v-if="workspaceLoaded">
           <button
             class="op op--primary"
             type="button"
-            :disabled="palStore.LOADING_FLAG || !palStore.PENDING_CHANGE_COUNT"
+            :disabled="workspaceLoading || !pendingChangeCount"
             :title="saveButtonHint"
             :aria-label="saveButtonHint"
             @click="save"
@@ -170,21 +202,22 @@ onBeforeUnmount(() => {
             {{ palStore.getTranslatedText('TopBar_Action_Save') }}
           </button>
           <button
+            v-if="!globalPalboxLoaded"
             class="op"
             type="button"
             :title="palStore.getTranslatedText('TopBar_RefreshLatest')"
-            :disabled="palStore.LOADING_FLAG"
+            :disabled="workspaceLoading"
             @click="refreshSave"
           >
             <AppIcon name="refresh" :size="16" />
             {{ palStore.getTranslatedText('TopBar_Action_Refresh') }}
           </button>
           <button
-            v-if="palStore.SAVE_CAPABILITIES.exportSteamCopy"
+            v-if="!globalPalboxLoaded && palStore.SAVE_CAPABILITIES.exportSteamCopy"
             class="op"
             type="button"
             :title="palStore.getTranslatedText('TopBar_ExportSteam')"
-            :disabled="palStore.LOADING_FLAG"
+            :disabled="workspaceLoading"
             @click="palStore.exportSteamCopy"
           >
             {{ palStore.getTranslatedText('TopBar_Action_Export') }}
@@ -206,19 +239,29 @@ onBeforeUnmount(() => {
     </div>
 
     <nav
-      v-if="palStore.SAVE_LOADED_FLAG"
+      v-if="workspaceLoaded"
       class="topbar__nav"
       :aria-label="palStore.getTranslatedText('TopBar_PageNavigation')"
     >
       <button
         class="nav-item nav-item--return"
         type="button"
-        :disabled="palStore.LOADING_FLAG"
+        :disabled="workspaceLoading"
         @click="returnToSaveSelection"
       >
         <AppIcon name="back" :size="15" />
         {{ palStore.getTranslatedText('TopBar_Page_Return') }}
       </button>
+      <button
+        v-if="globalPalboxLoaded"
+        class="nav-item nav-item--active"
+        type="button"
+        aria-current="page"
+        :disabled="workspaceLoading"
+      >
+        {{ palStore.getTranslatedText('GlobalPalbox_Entry') }}
+      </button>
+      <template v-else>
       <button
         :class="['nav-item', { 'nav-item--active': isOverview }]"
         type="button"
@@ -291,6 +334,7 @@ onBeforeUnmount(() => {
       >
         {{ palStore.getTranslatedText('TopBar_Page_Json') }}
       </button>
+      </template>
     </nav>
 
     <div

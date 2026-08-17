@@ -18,6 +18,7 @@ def make_user_directory(
     worlds: dict[str, dict[str, bytes]],
     *,
     level_container_suffix: str = "Level",
+    account_files: dict[str, bytes] | None = None,
 ) -> Path:
     user = root / user_name
     user.mkdir(parents=True)
@@ -59,6 +60,39 @@ def make_user_directory(
                     size=len(payload),
                 )
             )
+    for logical_name, payload in (account_files or {}).items():
+        container_id = uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"container:{user_name}:account:{logical_name}",
+        )
+        payload_id = uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"payload:{user_name}:account:{logical_name}",
+        )
+        container_dir = user / container_id.hex.upper()
+        container_dir.mkdir()
+        fixed_name = "Data".encode("utf-16-le").ljust(128, b"\0")
+        (container_dir / "container.1").write_bytes(
+            struct.pack("<II", 4, 1)
+            + fixed_name
+            + (b"\0" * 16)
+            + payload_id.bytes_le
+        )
+        (container_dir / payload_id.hex.upper()).write_bytes(payload)
+        name = f"{logical_name}\0"
+        entries.append(
+            WgsIndexEntry(
+                name=name,
+                repeated_name=name,
+                cloud_id="cloud-id-preserved\0",
+                sequence=1,
+                flags=1,
+                container_id_bytes=container_id.bytes_le,
+                modified_filetime=133800000000000000,
+                opaque_bytes=struct.pack("<Q", 0x1234),
+                size=len(payload),
+            )
+        )
     index = WgsIndex(
         version=14,
         flag1=0,

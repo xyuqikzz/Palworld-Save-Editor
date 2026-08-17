@@ -136,13 +136,71 @@ class ItemContainer:
     def snapshot_capacity(self) -> int:
         return self.capacity
 
+    def snapshot_resize(self) -> dict[str, Any]:
+        return {
+            "capacity": self.capacity,
+            "slot_values": deepcopy(self._slot_values),
+        }
+
     def expand_capacity(self, capacity: int) -> None:
         if capacity < self.capacity:
             raise ValueError("Item container capacity cannot be shrunk")
         self._set_capacity(capacity)
 
+    def resize_capacity(self, capacity: int) -> None:
+        if (
+            isinstance(capacity, bool)
+            or not isinstance(capacity, int)
+            or capacity < 0
+        ):
+            raise ValueError("Invalid item container capacity")
+        if capacity < self.capacity:
+            for slot_index in sorted(
+                (
+                    slot_index
+                    for slot_index in self._all_slots
+                    if slot_index >= capacity
+                ),
+                reverse=True,
+            ):
+                self._remove_encoded_slot(slot_index, detach=False)
+            self._refresh_occupied()
+        self._set_capacity(capacity)
+
     def restore_capacity(self, capacity: int) -> None:
         self._set_capacity(capacity)
+
+    def restore_resize(self, snapshot: dict[str, Any]) -> None:
+        capacity = snapshot.get("capacity")
+        slot_values = snapshot.get("slot_values")
+        if (
+            isinstance(capacity, bool)
+            or not isinstance(capacity, int)
+            or capacity < 0
+            or not isinstance(slot_values, list)
+        ):
+            raise ValueError("Invalid item container resize snapshot")
+        slot_num = self._container_obj.get("value", {}).get("SlotNum")
+        if (
+            not isinstance(slot_num, dict)
+            or slot_num.get("type") != "IntProperty"
+            or isinstance(slot_num.get("value"), bool)
+            or not isinstance(slot_num.get("value"), int)
+        ):
+            raise ValueError("Unsupported item container SlotNum encoding")
+        slot_num["value"] = capacity
+        self.capacity = capacity
+        self._slot_values[:] = deepcopy(slot_values)
+        self._all_slots = {}
+        self._detached_slots = {}
+        for value in self._slot_values:
+            slot = ItemContainerSlot(value)
+            if slot.slot_index in self._all_slots:
+                raise ValueError(f"Duplicate item slot index: {slot.slot_index}")
+            if slot.slot_index < 0 or slot.slot_index >= self.capacity:
+                raise ValueError(f"Item slot index out of range: {slot.slot_index}")
+            self._all_slots[slot.slot_index] = slot
+        self._refresh_occupied()
 
     def capacity_matches_declared(self, expected_capacity: int) -> bool:
         slot_num = self._container_obj.get("value", {}).get("SlotNum")
@@ -151,6 +209,10 @@ class ItemContainer:
             and isinstance(slot_num, dict)
             and slot_num.get("type") == "IntProperty"
             and slot_num.get("value") == expected_capacity
+            and all(
+                0 <= slot_index < expected_capacity
+                for slot_index in self._all_slots
+            )
         )
 
     def _set_capacity(self, capacity: int) -> None:
