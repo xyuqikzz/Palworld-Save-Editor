@@ -326,7 +326,6 @@ class GlobalPalboxDocument:
                 or str(instance_id) == ZERO_GUID
                 or slot is None
                 or slot[1] < 0
-                or not DataProvider.in_pal_data(self._character_id(entry))
             ):
                 self._unsupported_structure()
             instance_key = str(instance_id)

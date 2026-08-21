@@ -7,7 +7,6 @@ import PassivePresetDialog from '@/components/modules/PassivePresetDialog.vue'
 import PassiveSkillCard from '@/components/modules/PassiveSkillCard.vue'
 import PalSkillPicker from '@/components/modules/PalSkillPicker.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
-import VariantBadge from '@/components/modules/VariantBadge.vue'
 import { showMessage } from '@/services/message-dialog'
 import { computed, ref } from 'vue'
 const palStore = usePalEditorStore()
@@ -277,13 +276,10 @@ const suitabilityIconSrc = key => {
           <div class="editField">
             <p class="const">
               {{ palStore.getTranslatedText("Editor_Variant") }}
-              <VariantBadge v-if="palStore.SELECTED_PAL_DATA.IsTower" kind="tower" />
-              <VariantBadge v-if="palStore.SELECTED_PAL_DATA.IsBOSS" kind="boss" />
-              <VariantBadge v-if="palStore.SELECTED_PAL_DATA.IsRarePal" kind="rare" />
               {{ palStore.SELECTED_PAL_DATA.displaySpecialType() }}
             </p>
-            <button class="edit" @click="palStore.SELECTED_PAL_DATA.swapTower" name="IsTower"
-              v-if="palStore.SELECTED_PAL_DATA.HasTowerVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_TowerVariant')"><AppIcon name="building" :size="15" /></button>
+            <button class="edit variant-toggle" :class="{ 'is-active': palStore.SELECTED_PAL_DATA.IsTower }" :aria-pressed="palStore.SELECTED_PAL_DATA.IsTower" @click="palStore.SELECTED_PAL_DATA.swapTower" name="IsTower"
+              v-if="palStore.SELECTED_PAL_DATA.HasTowerVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_TowerVariant')">{{ palStore.getTranslatedText('PalList_TowerBossMarker') }}</button>
             <button class="edit variant-toggle" :class="{ 'is-active': palStore.SELECTED_PAL_DATA.IsBOSS }" :aria-pressed="palStore.SELECTED_PAL_DATA.IsBOSS" @click="palStore.SELECTED_PAL_DATA.swapBoss" name="IsBOSS"
               v-if="palStore.SELECTED_PAL_DATA.HasBossVariant" :disabled="palStore.LOADING_FLAG" :title="palStore.getTranslatedText('PalEditor_BossVariant')">{{ palStore.getTranslatedText('Variant_Boss') }}</button>
             <button class="edit variant-toggle" :class="{ 'is-active': palStore.SELECTED_PAL_DATA.IsRarePal }" :aria-pressed="palStore.SELECTED_PAL_DATA.IsRarePal" @click="palStore.SELECTED_PAL_DATA.swapRare" name="IsRarePal"
@@ -306,6 +302,18 @@ const suitabilityIconSrc = key => {
               ? 'Editor_Awakening_Disable'
               : 'Editor_Awakening_Enable')">
               <AppIcon name="refresh" />
+            </button>
+          </div>
+          <div class="editField imported-character-field">
+            <p class="const">
+              {{ palStore.getTranslatedText("Editor_ImportedCharacter") }}:
+              {{ palStore.getTranslatedText(palStore.SELECTED_PAL_DATA.IsImportedCharacter
+                ? "Editor_ImportedCharacter_Imported"
+                : "Editor_ImportedCharacter_NotImported") }}
+            </p>
+            <button class="edit edit_text" @click="palStore.SELECTED_PAL_DATA.removeImportedCharacterTag"
+              :disabled="palStore.LOADING_FLAG || !palStore.SELECTED_PAL_DATA.IsImportedCharacter || props.globalPalbox">
+              {{ palStore.getTranslatedText("Editor_ImportedCharacter_Remove") }}
             </button>
           </div>
         </div>

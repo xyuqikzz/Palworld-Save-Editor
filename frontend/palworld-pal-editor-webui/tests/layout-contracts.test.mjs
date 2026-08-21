@@ -353,28 +353,58 @@ test('NPC basic information omits the gender editor', () => {
   )
 })
 
+test('special variant controls use text actions and clone status stays visible', () => {
+  const source = readFileSync(palEditorPath, 'utf8')
+
+  assert.doesNotMatch(
+    source,
+    /VariantBadge/,
+    'the special-variant status text must not repeat variant icons on the left',
+  )
+  assert.match(
+    source,
+    /<button class="edit variant-toggle"[^>]*name="IsTower"[^>]*>[\s\S]*?PalList_TowerBossMarker[\s\S]*?<\/button>/,
+    'the tower toggle must use the Tower Boss text label',
+  )
+  assert.doesNotMatch(
+    source,
+    /<button[^>]*name="IsTower"[^>]*>\s*<AppIcon/,
+    'the tower toggle must not use the building icon',
+  )
+  assert.match(
+    source,
+    /class="editField imported-character-field"[\s\S]*?Editor_ImportedCharacter_Imported[\s\S]*?Editor_ImportedCharacter_NotImported/,
+    'the clone row must always display an explicit clone state',
+  )
+  assert.match(
+    source,
+    /:disabled="palStore\.LOADING_FLAG \|\| !palStore\.SELECTED_PAL_DATA\.IsImportedCharacter \|\| props\.globalPalbox"/,
+    'the remove-clone action must be disabled for non-clones and Global Palbox documents',
+  )
+})
+
 test('awakened Pals expose the requested list marker and basic-info editor', () => {
   const editorSource = readFileSync(palEditorPath, 'utf8')
   const listSource = readFileSync(palListPath, 'utf8')
 
   assert.match(
     listSource,
-    /v-if="pal\.IsAwakened" class="pal-awakened-label"[\s\S]*?PalList_AwakenedMarker/,
+    /v-if="pal\.IsAwakened" class="pal-special-marker is-awakened"[\s\S]*?PalList_AwakenedMarker/,
     'the Pal list must render the awakened marker from the initial summary payload',
   )
   assert.match(
     listSource,
-    /\.pal-awakened-label\s*\{[^}]*color:\s*oklch\(0\.84 0\.16 92\)/,
+    /\.pal-special-marker\.is-awakened\s*\{[^}]*color:\s*oklch\(0\.84 0\.16 92\)/,
     'the awakened marker must use the requested yellow emphasis',
   )
   assert.match(
     listSource,
-    /v-if="pal\.IsBOSS" class="pal-variant-label is-boss"[\s\S]*?Variant_Boss/,
+    /v-else-if="pal\.IsBOSS" class="pal-special-marker is-boss"[\s\S]*?Variant_Boss/,
     'the Pal list must give the BOSS marker a dedicated state class',
   )
   assert.match(
     listSource,
-    /\.pal-variant-label\.is-boss\s*\{[^}]*color:\s*var\(--ui-danger\)/,
+    /\.pal-special-marker\.is-boss\s*\{[^}]*color:\s*var\(--ui-danger\)/,
     'the Pal-list BOSS marker must use the semantic red colour',
   )
   assert.match(

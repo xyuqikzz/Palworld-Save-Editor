@@ -145,3 +145,40 @@ test('Player Pal groups are accessible collapsible sections with a compact defau
     /palListContainer\.value\?\.querySelector\('button\.pal:not\(:disabled\)'\)/,
   )
 })
+
+test('all Pal special markers share one right-aligned group with uniform spacing', () => {
+  const source = readFileSync(palListPath, 'utf8')
+
+  assert.doesNotMatch(
+    source,
+    /<VariantBadge v-if="pal\.IsTower"/,
+    'the Tower variant icon must not remain in the left identity group',
+  )
+  assert.match(source, /v-if="hasPalSpecialMarkers\(pal\)" class="pal-special-markers"/)
+  for (const condition of [
+    'pal.IsTower',
+    'pal.IsBOSS',
+    'pal.IsImportedCharacter',
+    'pal.IsAwakened',
+    'pal.IsRarePal',
+    'pal.IsRAID',
+    'pal.IsPREDATOR',
+    'pal.IsOilrig',
+    'pal.IsExpeditionPal',
+  ]) {
+    assert.match(source, new RegExp(`v-(?:if|else-if)="${condition.replace('.', '\\.')}`))
+  }
+  assert.match(source, /PalList_TowerBossMarker/)
+  assert.match(source, /PalList_CloneMarker/)
+  assert.match(
+    source,
+    /button\.pal \.pal-special-markers\s*\{[^}]*gap:\s*4px;[^}]*margin-left:\s*auto;[^}]*margin-right:\s*0;/s,
+    'the marker group must use one gap and sit flush at the right edge',
+  )
+  assert.match(
+    source,
+    /button\.pal \.pal-special-marker,\s*button\.pal \.pal-expedition-label\s*\{[^}]*margin:\s*0;/s,
+    'individual markers must not add asymmetric outer spacing',
+  )
+  assert.doesNotMatch(source, /pal-awakened-label|pal-variants|pal-variant-label/)
+})

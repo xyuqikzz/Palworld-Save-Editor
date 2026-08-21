@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 import unittest
@@ -8,10 +9,12 @@ from unittest.mock import patch
 from palworld_pal_editor.application.preset_service import PresetService
 from palworld_pal_editor.application.inventory_editor import InventoryEditor
 from palworld_pal_editor.application.save_session import SaveSession
+from palworld_pal_editor.core.pal_objects import PalObjects
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.item_catalog import ItemCatalog
 from palworld_pal_editor.domain.models import ItemContainerType
 from palworld_pal_editor.domain.commands import PutItem
+from palworld_pal_editor.utils.data_provider import DataProvider
 
 from tests.unit import test_inventory_read as inventory_fixtures
 from tests.unit.test_structural_pal_editor import PAL_ID, make_manager
@@ -149,6 +152,53 @@ class PresetServiceTests(unittest.TestCase):
         self.assertEqual(list(pal.EquipWaza or []), preset["skills"]["active"])
         self.assertEqual(1, result["revision"])
         self.assertEqual("BatchCommand", session.changes()[0]["command"])
+
+    def test_pal_preset_roundtrip_excludes_nontransferable_enhancement_fields(
+        self,
+    ) -> None:
+        manager, _player, pal = make_manager()
+        pal._pal_param["bImportedCharacter"] = PalObjects.BoolProperty(True)
+        session = SaveSession.from_loaded_manager(manager, Path("synthetic-save"))
+        service = PresetService(session)
+
+        preset = service.export_pal(str(PAL_ID))
+
+        self.assertEqual(
+            set(PresetService.PAL_ENHANCEMENT_FIELDS),
+            set(preset["enhancement"]),
+        )
+        self.assertEqual(
+            DataProvider.get_pal_stats(pal.DataAccessKey, "FOOD"),
+            preset["progression"]["satiety"],
+        )
+        legacy_preset = deepcopy(preset)
+        legacy_preset["enhancement"].update(
+            {
+                "imported": False,
+                "awakening_status_multiplier": 1.5,
+            }
+        )
+        legacy_preset["progression"]["satiety"] = 150.0
+        preview = service.preview_apply(
+            session_id=session.session_id,
+            expected_revision=0,
+            preset=legacy_preset,
+            target_ids=(str(PAL_ID),),
+        )
+        result = service.apply(
+            session_id=session.session_id,
+            expected_revision=0,
+            preset=legacy_preset,
+            target_ids=(str(PAL_ID),),
+            impact_token=preview["impact_token"],
+        )
+
+        self.assertEqual(1, result["revision"])
+        self.assertTrue(pal.IsImportedCharacter)
+        self.assertEqual(
+            DataProvider.get_pal_stats(pal.DataAccessKey, "FOOD"),
+            pal.FullStomach,
+        )
 
     def test_unknown_or_malformed_preset_is_rejected(self) -> None:
         manager, _player, _pal = make_manager()

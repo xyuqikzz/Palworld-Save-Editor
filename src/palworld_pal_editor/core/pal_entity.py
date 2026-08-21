@@ -646,6 +646,29 @@ class PalEntity:
             self.Hp = maxHP
 
     @property
+    def IsImportedCharacter(self) -> bool:
+        imported = self._pal_param.get("bImportedCharacter")
+        return bool(
+            isinstance(imported, dict)
+            and imported.get("type") == "BoolProperty"
+            and imported.get("value") is True
+        )
+
+    def remove_imported_character_tag(self) -> None:
+        imported = self._pal_param.get("bImportedCharacter")
+        if (
+            not isinstance(imported, dict)
+            or imported.get("type") != "BoolProperty"
+            or imported.get("value") is not True
+        ):
+            raise ValueError(
+                "bImportedCharacter is not a removable BoolProperty"
+            )
+        # Current normal Pal records omit this marker; do not serialize an
+        # unobserved BoolProperty(false) form.
+        self._pal_param.pop("bImportedCharacter")
+
+    @property
     def FilteredNickName(self) -> Optional[str]:
         return PalObjects.get_BaseType(self._pal_param.get("FilteredNickName"))
     

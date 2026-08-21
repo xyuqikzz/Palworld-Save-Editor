@@ -2,7 +2,6 @@
 import { usePalEditorStore } from '@/stores/paleditor'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import ElementIcon from '@/components/modules/ElementIcon.vue'
-import VariantBadge from '@/components/modules/VariantBadge.vue'
 import PalSpeciesPicker from '@/components/modules/PalSpeciesPicker.vue'
 import {
     groupPalList,
@@ -263,6 +262,20 @@ function displayNameWithoutVariantEmoji(displayName) {
     return displayName?.replace(/^[👑✨🗼]+/u, '') || ''
 }
 
+function hasPalSpecialMarkers(pal) {
+    return Boolean(
+        pal.IsTower
+        || pal.IsBOSS
+        || pal.IsImportedCharacter
+        || pal.IsAwakened
+        || pal.IsRarePal
+        || pal.IsRAID
+        || pal.IsPREDATOR
+        || pal.IsOilrig
+        || pal.IsExpeditionPal
+    )
+}
+
 function expeditionStatusKey(pal) {
     return {
         valid: 'Expedition_Status_Valid',
@@ -346,17 +359,36 @@ function expeditionStatusTooltipKey(pal) {
                             >
                             <img :class="['palIcon']" :src="`/image/pals/${pal.IconAccessKey}`" alt="">
                             <span class="pal-label">
-                                <VariantBadge v-if="pal.IsTower" kind="tower" :size="14" />
                                 <ElementIcon v-for="element in palStore.PAL_STATIC_DATA[pal.DataAccessKey]?.Elements || []"
                                     :key="element" :element="element" :size="14" />
                                 <span class="pal-name">{{ displayNameWithoutVariantEmoji(pal.DisplayName) }}</span>
                             </span>
-                            <span v-if="pal.IsAwakened" class="pal-awakened-label">
-                                {{ palStore.getTranslatedText('PalList_AwakenedMarker') }}
-                            </span>
-                            <span v-if="pal.IsBOSS || pal.IsRarePal || pal.IsExpeditionPal" class="pal-variants">
-                                <span v-if="pal.IsBOSS" class="pal-variant-label is-boss">{{ palStore.getTranslatedText('Variant_Boss') }}</span>
-                                <span v-if="pal.IsRarePal" class="pal-variant-label">{{ palStore.getTranslatedText('Variant_Rare') }}</span>
+                            <span v-if="hasPalSpecialMarkers(pal)" class="pal-special-markers">
+                                <span v-if="pal.IsTower" class="pal-special-marker is-tower">
+                                    {{ palStore.getTranslatedText('PalList_TowerBossMarker') }}
+                                </span>
+                                <span v-else-if="pal.IsBOSS" class="pal-special-marker is-boss">
+                                    {{ palStore.getTranslatedText('Variant_Boss') }}
+                                </span>
+                                <span v-if="pal.IsImportedCharacter" class="pal-special-marker is-clone"
+                                    :title="palStore.getTranslatedText('Editor_ImportedCharacter')">
+                                    {{ palStore.getTranslatedText('PalList_CloneMarker') }}
+                                </span>
+                                <span v-if="pal.IsAwakened" class="pal-special-marker is-awakened">
+                                    {{ palStore.getTranslatedText('PalList_AwakenedMarker') }}
+                                </span>
+                                <span v-if="pal.IsRarePal" class="pal-special-marker is-rare">
+                                    {{ palStore.getTranslatedText('Variant_Rare') }}
+                                </span>
+                                <span v-if="pal.IsRAID" class="pal-special-marker is-raid">
+                                    {{ palStore.getTranslatedText('Variant_Raid') }}
+                                </span>
+                                <span v-if="pal.IsPREDATOR" class="pal-special-marker is-predator">
+                                    {{ palStore.getTranslatedText('Variant_Rampaging') }}
+                                </span>
+                                <span v-if="pal.IsOilrig" class="pal-special-marker is-oilrig">
+                                    {{ palStore.getTranslatedText('Variant_OilRig') }}
+                                </span>
                                 <span v-if="pal.IsExpeditionPal"
                                     :class="['pal-expedition-label', `is-${pal.ExpeditionAssignmentStatus || 'unknown'}`]"
                                     :title="palStore.getTranslatedText(expeditionStatusTooltipKey(pal), [pal.ExpeditionInstanceId || '-'])">
@@ -666,26 +698,37 @@ button.pal .pal-label {
     gap: 4px;
 }
 
-button.pal .pal-variants {
+button.pal .pal-special-markers {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    gap: 7px;
+    gap: 4px;
     margin-left: auto;
+    margin-right: 0;
     color: var(--ui-text-secondary);
     font-size: 10px;
     font-weight: 700;
 }
 
-button.pal .pal-awakened-label {
+button.pal .pal-special-marker,
+button.pal .pal-expedition-label {
+    display: inline-flex;
     flex: 0 0 auto;
-    margin: 0 6px 0 5px;
-    color: oklch(0.84 0.16 92);
-    font-size: 10px;
-    font-weight: 760;
+    align-items: center;
+    margin: 0;
 }
 
-button.pal .pal-variant-label.is-boss { color: var(--ui-danger); }
+button.pal .pal-special-marker.is-boss { color: var(--ui-danger); }
+button.pal .pal-special-marker.is-tower { color: var(--ui-accent); }
+button.pal .pal-special-marker.is-clone { color: oklch(0.76 0.13 300); }
+button.pal .pal-special-marker.is-awakened {
+    color: oklch(0.84 0.16 92);
+}
+button.pal .pal-special-marker.is-rare { color: oklch(0.82 0.14 78); }
+button.pal .pal-special-marker.is-raid,
+button.pal .pal-special-marker.is-predator,
+button.pal .pal-special-marker.is-oilrig { color: var(--ui-text-secondary); }
+
 button.pal .pal-expedition-label.is-valid { color: var(--ui-success); }
 button.pal .pal-expedition-label.is-invalid { color: var(--ui-danger); }
 button.pal .pal-expedition-label.is-unknown { color: var(--ui-text-muted); }

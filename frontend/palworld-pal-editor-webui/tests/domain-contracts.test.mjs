@@ -171,6 +171,66 @@ test('awakening sends a boolean enhancement command and refreshes the Pal detail
   assert.equal(store.SELECTED_PAL_DATA.AwakeningStatusMultiplier, 1.5)
 })
 
+test('removing the Global Palbox clone tag sends the constrained enhancement command', async () => {
+  const { store, player, playerId } = makeStore()
+  const palId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  const calls = []
+  axios.post = async (url, data) => {
+    calls.push({ url, data: structuredClone(data) })
+    if (url === '/api/player/player_pals') {
+      return { data: { status: 0, data: [{
+        InstanceId: palId,
+        IsImportedCharacter: true,
+        DataAccessKey: 'SheepBall',
+        DisplayName: 'Lamball',
+        PassiveSkillList: [],
+        EquipWaza: [],
+        MasteredWaza: [],
+        Suitabilities: {},
+      }] } }
+    }
+    if (url === `/api/pal/${palId}/commands`) {
+      return { data: { status: 0, data: {
+        revision: 1,
+        value: { imported: false },
+      } } }
+    }
+    if (url === '/api/pal/paldata') {
+      return { data: { status: 0, data: {
+        InstanceId: palId,
+        IsImportedCharacter: false,
+        DataAccessKey: 'SheepBall',
+        DisplayName: 'Lamball',
+        PassiveSkillList: [],
+        EquipWaza: [],
+        MasteredWaza: [],
+        Suitabilities: {},
+      } } }
+    }
+    return { data: { status: 0, data: {} } }
+  }
+
+  await store.selectPlayer(playerId, true)
+  assert.equal(
+    player.pals.get(palId).IsImportedCharacter,
+    true,
+    'the clone marker must be available before the Pal is selected',
+  )
+  store.SELECTED_PAL_ID = palId
+  store.SELECTED_PAL_DATA = player.pals.get(palId)
+  await store.SELECTED_PAL_DATA.removeImportedCharacterTag()
+
+  const command = calls.find(call => call.url === `/api/pal/${palId}/commands`)
+  assert.deepEqual(command.data, {
+    session_id: 'session-1',
+    expected_revision: 0,
+    command: 'update_pal_enhancement',
+    values: { remove_imported: true },
+  })
+  assert.equal(store.SELECTED_PAL_DATA.IsImportedCharacter, false)
+  assert.equal(store.SESSION_REVISION, 1)
+})
+
 test('NPC weapon is displayed from catalog metadata without edit controls', () => {
   const componentSource = readFileSync(
     new URL('../src/components/PalEditor.vue', import.meta.url),

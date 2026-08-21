@@ -630,7 +630,11 @@ def get_player_pals():
                 "IsTower": pal.IsTower or False,
                 "IsBOSS": pal.IsBOSS or False,
                 "IsRarePal": pal.IsRarePal or False,
+                "IsRAID": pal.IsRAID or False,
+                "IsPREDATOR": pal.IsPREDATOR or False,
+                "IsOilrig": pal.IsOilrig or False,
                 "IsAwakened": pal.IsAwakened,
+                "IsImportedCharacter": pal.IsImportedCharacter,
                 "IsExpeditionPal": pal.IsExpeditionPal,
                 "ExpeditionInstanceId": (
                     str(pal.ExpeditionInstanceId)

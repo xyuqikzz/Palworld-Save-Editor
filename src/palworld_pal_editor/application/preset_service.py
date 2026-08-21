@@ -11,6 +11,7 @@ from palworld_pal_editor.domain.commands import (
 )
 from palworld_pal_editor.domain.errors import DomainError
 from palworld_pal_editor.domain.models import ItemContainerType
+from palworld_pal_editor.utils.data_provider import DataProvider
 
 from .batch_editor import BatchEditor
 from .character_editor import CharacterEditor
@@ -25,6 +26,22 @@ class PresetService:
     VERSION = 2
     SUPPORTED_VERSIONS = frozenset({1, 2})
     KINDS = {"inventory", "equipment", "skills", "pal"}
+    PAL_ENHANCEMENT_FIELDS = (
+        "iv_hp",
+        "iv_melee",
+        "iv_shot",
+        "iv_defense",
+        "soul_hp",
+        "soul_attack",
+        "soul_defense",
+        "soul_craft_speed",
+        "condensation",
+        "awakening",
+    )
+    _PAL_ENHANCEMENT_FIELD_SET = frozenset(PAL_ENHANCEMENT_FIELDS)
+    _LEGACY_READ_ONLY_ENHANCEMENT_FIELDS = frozenset(
+        {"derived", "imported", "awakening_status_multiplier"}
+    )
 
     def __init__(self, session: SaveSession) -> None:
         self._session = session
@@ -102,14 +119,24 @@ class PresetService:
 
     def export_pal(self, pal_id: str) -> dict[str, Any]:
         pal = self._require_pal(pal_id)
-        enhancement = CharacterEditor._pal_enhancement(pal)
-        enhancement.pop("derived", None)
-        work_suitability = enhancement.pop("work_suitability", {})
+        raw_enhancement = CharacterEditor._pal_enhancement(pal)
+        enhancement = {
+            field: raw_enhancement[field]
+            for field in self.PAL_ENHANCEMENT_FIELDS
+        }
+        work_suitability = raw_enhancement["work_suitability"]
         progression = CharacterEditor._pal_progression(pal)
         progression = {
             key: progression[key]
             for key in ("level", "experience", "friendship_level", "health", "satiety")
         }
+        maximum_satiety = DataProvider.get_pal_stats(pal.DataAccessKey, "FOOD")
+        if maximum_satiety is not None:
+            # Keep exported values within UpdatePalProgression's supported
+            # write boundary so a preset is always importable.
+            progression["satiety"] = min(
+                progression["satiety"], maximum_satiety
+            )
         identity = CharacterEditor._pal_identity(pal)
         identity.pop("pal_id", None)
         skills = CharacterEditor._pal_skills(pal)
@@ -252,6 +279,21 @@ class PresetService:
         else:
             identity = preset["identity"]
             for pal_id in targets:
+                progression = dict(preset["progression"])
+                target_pal = self._require_pal(pal_id)
+                maximum_satiety = DataProvider.get_pal_stats(
+                    target_pal.DataAccessKey, "FOOD"
+                )
+                if (
+                    maximum_satiety is not None
+                    and isinstance(progression["satiety"], (int, float))
+                    and not isinstance(progression["satiety"], bool)
+                ):
+                    # Older exports can contain the raw stored value, which
+                    # exceeds the write boundary for some generated records.
+                    progression["satiety"] = min(
+                        progression["satiety"], maximum_satiety
+                    )
                 operations.extend(
                     (
                         UpdatePalIdentity(
@@ -267,13 +309,17 @@ class PresetService:
                         UpdatePalEnhancement(
                             **base,
                             pal_id=pal_id,
-                            values=dict(preset["enhancement"]),
+                            values={
+                                field: value
+                                for field, value in preset["enhancement"].items()
+                                if field in self._PAL_ENHANCEMENT_FIELD_SET
+                            },
                             work_suitability=dict(preset["work_suitability"]),
                         ),
                         UpdatePalProgression(
                             **base,
                             pal_id=pal_id,
-                            values=dict(preset["progression"]),
+                            values=progression,
                         ),
                         UpdatePalSkills(
                             **base,
@@ -411,8 +457,12 @@ class PresetService:
                     "satiety",
                 }:
                     raise TypeError("progression")
-                if not isinstance(preset["enhancement"], dict) or not isinstance(
-                    preset["work_suitability"], dict
+                if (
+                    not isinstance(preset["enhancement"], dict)
+                    or not isinstance(preset["work_suitability"], dict)
+                    or set(preset["enhancement"])
+                    - self._PAL_ENHANCEMENT_FIELD_SET
+                    - self._LEGACY_READ_ONLY_ENHANCEMENT_FIELDS
                 ):
                     raise TypeError("enhancement")
         except (TypeError, ValueError, KeyError) as error:

@@ -980,6 +980,51 @@ class CharacterEditorTests(unittest.TestCase):
         self.assertEqual(before, self.pal._pal_param)
         self.assertEqual(0, self.session.revision)
 
+    def test_removing_imported_character_tag_uses_the_observed_absent_form(self) -> None:
+        self.pal._pal_param["bImportedCharacter"] = PalObjects.BoolProperty(True)
+
+        result = self.editor.execute(
+            UpdatePalEnhancement(
+                session_id=self.session.session_id,
+                expected_revision=0,
+                pal_id=str(self.pal.InstanceId),
+                values={"remove_imported": True},
+            )
+        )
+
+        self.assertFalse(result["value"]["imported"])
+        self.assertNotIn("bImportedCharacter", self.pal._pal_param)
+        self.assertEqual(1, self.session.revision)
+        self.assertEqual(
+            ["level:CharacterSaveParameterMap"],
+            self.session.changes()[0]["affected_records"],
+        )
+
+    def test_removing_imported_character_tag_rejects_missing_or_unknown_structure(self) -> None:
+        for field in (None, PalObjects.BoolProperty(False), PalObjects.IntProperty(1)):
+            with self.subTest(field=field):
+                if field is None:
+                    self.pal._pal_param.pop("bImportedCharacter", None)
+                else:
+                    self.pal._pal_param["bImportedCharacter"] = field
+                before = deepcopy(self.pal._pal_param)
+
+                with self.assertRaises(DomainError) as raised:
+                    self.editor.execute(
+                        UpdatePalEnhancement(
+                            session_id=self.session.session_id,
+                            expected_revision=0,
+                            pal_id=str(self.pal.InstanceId),
+                            values={"remove_imported": True},
+                        )
+                    )
+
+                self.assertEqual(
+                    "COMPATIBILITY_FIELD_MISSING", raised.exception.code
+                )
+                self.assertEqual(before, self.pal._pal_param)
+                self.assertEqual(0, self.session.revision)
+
     def test_max_pal_sets_every_applicable_regular_field_atomically(self) -> None:
         result = self.editor.execute(
             MaxPal(

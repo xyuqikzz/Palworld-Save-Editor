@@ -657,6 +657,7 @@ def _pal_data(pal: PalEntity):
         "IsPREDATOR": pal.IsPREDATOR or False,
         "IsOilrig": pal.IsOilrig or False,
         "IsAwakened": pal.IsAwakened,
+        "IsImportedCharacter": pal.IsImportedCharacter,
         "AwakeningStatusMultiplier": pal.AWAKENING_STATUS_MULTIPLIER,
         "IsExpeditionPal": pal.IsExpeditionPal,
         "ExpeditionInstanceId": (

@@ -353,6 +353,28 @@ def test_global_palbox_rejects_unknown_entry_structure(tmp_path: Path) -> None:
     assert raised.value.code == "GLOBAL_PALBOX_STRUCTURE_UNSUPPORTED"
 
 
+def test_global_palbox_opens_unknown_species_with_a_valid_slot(
+    tmp_path: Path,
+) -> None:
+    gvas = _gvas()
+    entry = gvas.properties["SaveParameterArray"]["value"]["values"][0]
+    entry["SaveParameter"]["value"]["CharacterID"] = PalObjects.NameProperty(
+        "FuturePal"
+    )
+    source = tmp_path / "GlobalPalStorage.sav"
+    source.write_bytes(
+        compress_gvas_to_sav(
+            gvas.write(PALWORLD_CUSTOM_PROPERTIES),
+            0x32,
+            zlib=True,
+        )
+    )
+
+    document = GlobalPalboxDocument.open(source, process_checker=lambda: False)
+
+    assert document.pals()[0]["CharacterID"] == "FuturePal"
+
+
 def test_global_palbox_accepts_game_produced_duplicate_source_slots(
     tmp_path: Path,
 ) -> None:

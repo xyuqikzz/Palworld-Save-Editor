@@ -97,6 +97,26 @@ class CharacterApiTests(unittest.TestCase):
         self.assertEqual(["Rare"], payload["data"]["value"]["passive"])
         self.assertEqual(2, self.session.revision)
 
+    def test_imported_pal_tag_removal_is_revision_bound(self) -> None:
+        self.pal._pal_param["bImportedCharacter"] = PalObjects.BoolProperty(True)
+
+        response = self.client.post(
+            f"/api/pal/{self.pal.InstanceId}/commands",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "expected_revision": 0,
+                "command": "update_pal_enhancement",
+                "values": {"remove_imported": True},
+            },
+        )
+
+        self.assertEqual(200, response.status_code, response.get_json())
+        self.assertFalse(response.get_json()["data"]["value"]["imported"])
+        self.assertNotIn("bImportedCharacter", self.pal._pal_param)
+        self.assertFalse(_pal_data(self.pal)["IsImportedCharacter"])
+        self.assertEqual(1, self.session.revision)
+
     def test_custom_passive_api_requires_explicit_allow_flag(self) -> None:
         custom = "OtherMod_ApiPassive_Exact"
         endpoint = f"/api/pal/{self.pal.InstanceId}/commands"
@@ -334,6 +354,9 @@ class CharacterApiTests(unittest.TestCase):
         self.assertTrue(pal_payload["IsBOSS"])
         self.assertFalse(pal_payload["IsRarePal"])
         self.assertFalse(pal_payload["IsTower"])
+        self.assertEqual(self.pal.IsRAID, pal_payload["IsRAID"])
+        self.assertEqual(self.pal.IsPREDATOR, pal_payload["IsPREDATOR"])
+        self.assertEqual(self.pal.IsOilrig, pal_payload["IsOilrig"])
         self.assertEqual(10, pal_payload["Level"])
         self.assertEqual(self.pal.SlotIndex, pal_payload["SlotIndex"])
 
@@ -393,6 +416,21 @@ class CharacterApiTests(unittest.TestCase):
         detail = _pal_data(self.pal)
         self.assertTrue(detail["IsAwakened"])
         self.assertEqual(1.5, detail["AwakeningStatusMultiplier"])
+
+    def test_initial_pal_list_and_detail_include_imported_character_state(self) -> None:
+        self.pal._pal_param["bImportedCharacter"] = PalObjects.BoolProperty(True)
+        self.player.get_sorted_pals = lambda: [self.pal]
+        SaveManager().player_mapping[self.player.PlayerUId] = self.player
+
+        response = self.client.post(
+            "/api/player/player_pals",
+            headers=self.headers,
+            json={"PlayerUId": self.player.PlayerUId},
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.get_json()["data"][0]["IsImportedCharacter"])
+        self.assertTrue(_pal_data(self.pal)["IsImportedCharacter"])
 
     def test_initial_pal_list_and_detail_include_expedition_reference_status(self) -> None:
         expedition_id = "44444444-5555-6666-7777-888888888888"

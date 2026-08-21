@@ -1028,7 +1028,9 @@ class CharacterEditor:
             "soul_craft_speed": ("Rank_CraftSpeed", 0, MAX_ENHANCEMENT_CHEAT_LEVEL),
             "condensation": ("Rank", 1, MAX_ENHANCEMENT_CHEAT_LEVEL),
         }
-        self._reject_unknown_fields(command.values, set(field_map) | {"awakening"})
+        self._reject_unknown_fields(
+            command.values, set(field_map) | {"awakening", "remove_imported"}
+        )
         if not command.values and not command.work_suitability:
             self._empty_command()
         for field_name, value in command.values.items():
@@ -1051,6 +1053,30 @@ class CharacterEditor:
                         message="The save has an unsupported awakening field structure.",
                         field="awakening",
                         details={"property": "bIsAwakening"},
+                    )
+                continue
+            if field_name == "remove_imported":
+                if value is not True:
+                    raise DomainError(
+                        code="INVALID_FIELD_TYPE",
+                        message="remove_imported must be true.",
+                        field="remove_imported",
+                        http_status=400,
+                    )
+                imported = pal._pal_param.get("bImportedCharacter")
+                if (
+                    not isinstance(imported, dict)
+                    or imported.get("type") != "BoolProperty"
+                    or imported.get("value") is not True
+                ):
+                    raise DomainError(
+                        code="COMPATIBILITY_FIELD_MISSING",
+                        message=(
+                            "The save has no supported imported-character "
+                            "marker to remove."
+                        ),
+                        field="remove_imported",
+                        details={"property": "bImportedCharacter"},
                     )
                 continue
             _property_name, minimum, maximum = field_map[field_name]
@@ -1098,6 +1124,9 @@ class CharacterEditor:
                 if field_name == "awakening":
                     pal.IsAwakened = value
                     continue
+                if field_name == "remove_imported":
+                    pal.remove_imported_character_tag()
+                    continue
                 property_name = field_map[field_name][0]
                 if property_name == "Talent_HP":
                     pal.Talent_HP = value
@@ -1123,7 +1152,11 @@ class CharacterEditor:
         def validate() -> None:
             actual = self._pal_enhancement(pal)
             for field_name, expected in command.values.items():
-                if actual[field_name] != expected:
+                result_field = (
+                    "imported" if field_name == "remove_imported" else field_name
+                )
+                result_value = False if field_name == "remove_imported" else expected
+                if actual[result_field] != result_value:
                     self._postcondition(
                         f"Pal enhancement {field_name} did not update."
                     )
@@ -1817,6 +1850,7 @@ class CharacterEditor:
             "soul_craft_speed": pal.Rank_CraftSpeed or 0,
             "condensation": pal.Rank or 1,
             "awakening": pal.IsAwakened,
+            "imported": pal.IsImportedCharacter,
             "awakening_status_multiplier": pal.AWAKENING_STATUS_MULTIPLIER,
             "work_suitability": dict(pal.WorkSuitabilities or {}),
             "derived": {

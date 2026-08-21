@@ -249,6 +249,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.IsPREDATOR = obj.IsPREDATOR;
             this.IsOilrig = obj.IsOilrig;
             this.IsAwakened = Boolean(obj.IsAwakened);
+            this.IsImportedCharacter = Boolean(obj.IsImportedCharacter);
             this.AwakeningStatusMultiplier = obj.AwakeningStatusMultiplier ?? 1.5;
             this.IsExpeditionPal = obj.IsExpeditionPal;
             this.ExpeditionInstanceId = obj.ExpeditionInstanceId;
@@ -310,6 +311,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             this.IsAwakened = !this.IsAwakened;
             return updatePal({
                 target: { name: "IsAwakened", value: this.IsAwakened },
+            });
+        }
+
+        removeImportedCharacterTag() {
+            return updatePal({
+                target: { name: "RemoveImportedCharacterTag", value: true },
             });
         }
 
@@ -5220,6 +5227,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             if (!no_set_loading_flag) LOADING_FLAG.value = false;
             return;
         }
+        if (key === "RemoveImportedCharacterTag" && !await confirmMessage(
+            getTranslatedText("Confirm_RemoveImportedCharacterTag")
+        )) {
+            if (!no_set_loading_flag) LOADING_FLAG.value = false;
+            return;
+        }
         const base = {
             session_id: SESSION_ID.value,
             expected_revision: SESSION_REVISION.value,
@@ -5292,6 +5305,12 @@ export const usePalEditorStore = defineStore("paleditor", () => {
                 ...base,
                 command: "update_pal_enhancement",
                 values: { [field]: key === "IsAwakened" ? Boolean(value) : Number(value) },
+            };
+        } else if (key === "RemoveImportedCharacterTag") {
+            payload = {
+                ...base,
+                command: "update_pal_enhancement",
+                values: { remove_imported: true },
             };
         } else if (["set_Suitability", "set_AllSuitabilities"].includes(key)) {
             payload = {

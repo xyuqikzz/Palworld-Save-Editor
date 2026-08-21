@@ -9,6 +9,7 @@ from flask_jwt_extended import JWTManager, create_access_token
 from palworld_pal_editor.api.preset import preset_blueprint
 from palworld_pal_editor.application.runtime import SESSION_RUNTIME
 from palworld_pal_editor.application.save_session import SaveSession
+from palworld_pal_editor.core.pal_objects import PalObjects
 from tests.unit.test_structural_pal_editor import PAL_ID, make_manager
 
 
@@ -80,6 +81,43 @@ class PresetApiTests(unittest.TestCase):
         self.assertEqual(
             "UNSUPPORTED_COMMAND_FIELD", response.get_json()["error"]["code"]
         )
+
+    def test_pal_preset_roundtrip_ignores_nontransferable_enhancement_fields(
+        self,
+    ) -> None:
+        self.pal._pal_param["bImportedCharacter"] = PalObjects.BoolProperty(True)
+        exported = self.client.post(
+            "/api/preset/export",
+            headers=self.headers,
+            json={
+                "session_id": self.session.session_id,
+                "kind": "pal",
+                "target_id": str(PAL_ID),
+            },
+        )
+
+        self.assertEqual(200, exported.status_code)
+        preset = exported.get_json()["data"]["preset"]
+        self.assertNotIn("imported", preset["enhancement"])
+        self.assertNotIn("awakening_status_multiplier", preset["enhancement"])
+        payload = {
+            "session_id": self.session.session_id,
+            "expected_revision": 0,
+            "preset": preset,
+            "target_ids": [str(PAL_ID)],
+        }
+        preview = self.client.post(
+            "/api/preset/preview", headers=self.headers, json=payload
+        )
+        self.assertEqual(200, preview.status_code)
+        payload["impact_token"] = preview.get_json()["data"]["impact_token"]
+
+        applied = self.client.post(
+            "/api/preset/apply", headers=self.headers, json=payload
+        )
+
+        self.assertEqual(200, applied.status_code, applied.get_json())
+        self.assertTrue(self.pal.IsImportedCharacter)
 
 
 if __name__ == "__main__":

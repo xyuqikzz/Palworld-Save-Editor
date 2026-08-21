@@ -63,6 +63,7 @@ The editor can open an account-level Global Palbox in a separate session without
 [*]For Steam, select [b]GlobalPalStorage.sav[/b] directly
 [*]For Game Pass/WGS, select the Xbox user directory containing [b]containers.index[/b], or [b]containers.index[/b] itself; the editor resolves and writes back only to the opened account slot
 [*]Add catalog Pals or supported NPCs through real free slots, including Zoe and Zoe & Grizzbolt presets; edit, clone, or delete supported entries
+[*]Open a validly slotted record without rejecting it solely because its [b]CharacterID[/b] is absent from the current catalog
 [*]Use source conflict detection, verified external backups, transactional replacement, recovery information, and reopen validation before completing a save
 [/list]
 
@@ -128,6 +129,7 @@ Every state-changing command still requires its own in-game effect, replication,
 [*]Add, duplicate, delete, move, and reorganize Pals across supported containers
 [*]Open an account-level Steam or Game Pass/WGS Global Palbox in its own session; add catalog Pals or supported NPCs through real free slots, edit attributes and skills, apply Zoe or Zoe & Grizzbolt presets, clone or delete entries, and save back to the original source
 [*]Edit species, supported variants, nickname, gender, trust, level, and experience
+[*]Identify Tower Boss, Boss, clone, Awakened, rare, raid, predator, oil-rig, and expedition states in Pal lists; remove a standard-world Pal's Global Palbox clone marker only when its verified [b]bImportedCharacter[/b] structure is present
 [*]Edit IVs, condensation, Soul upgrades, work suitability, active skills, and passive skills; Soul controls show both stored rank and the rank × 3% game bonus, with a normal rank 20 / 60% cap
 [*]Manage supported custom or mod passive entries
 [*]Create, edit, pin, reuse, and quickly apply passive-skill presets
@@ -137,6 +139,8 @@ Every state-changing command still requires its own in-game effect, replication,
 [*]Group player-owned Pals by Party, Palbox, and other locations with collapsible sections
 [*]Sort and filter large Pal collections by container order, Paldeck order, level, species, element, gender, boss/Lucky state, and location
 [/list]
+
+[b]Clone-tag limitation:[/b] Automated Steam and synthetic WGS save-write/reopen tests cover removal of the observed marker. Its effect after loading a real game has not been verified.
 
 [size=4][b]Inventories and Batch Tools[/b][/size]
 

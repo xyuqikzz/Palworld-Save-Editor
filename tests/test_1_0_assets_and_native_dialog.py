@@ -837,11 +837,11 @@ class NativeDialogTests(unittest.TestCase):
         self.assertNotIn("displayPalElement(pal.InternalName)", pal_editor_source)
         self.assertIn("displayNameWithoutVariantEmoji", pal_list_source)
         self.assertIn(
-            '<span v-if="pal.IsBOSS" class="pal-variant-label is-boss">',
+            '<span v-else-if="pal.IsBOSS" class="pal-special-marker is-boss">',
             pal_list_source,
         )
         self.assertIn(
-            '<span v-if="pal.IsRarePal" class="pal-variant-label">',
+            '<span v-if="pal.IsRarePal" class="pal-special-marker is-rare">',
             pal_list_source,
         )
         self.assertIn("getTranslatedText('Variant_Boss')", pal_list_source)
