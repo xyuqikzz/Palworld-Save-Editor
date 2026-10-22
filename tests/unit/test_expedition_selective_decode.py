@@ -24,7 +24,8 @@ def struct_property(value):
     return dict(type="StructProperty", struct_type="StructProperty", struct_id=PalObjects.EMPTY_UUID, id=None, value=value)
 
 
-def map_property(*, broken_expedition=False, broken_outer=False):
+def map_property(*, broken_expedition=False, broken_outer=False,
+                 unrelated_type='NewUnrelatedModObject', unrelated_payload=b'opaque concrete'):
     payload = map_concrete_model.encode_bytes(current_expedition('bbbbbbbb-cccc-dddd-eeee-ffffffffffff'))
     expedition = {
         'MapObjectId': PalObjects.NameProperty('Expedition'),
@@ -36,8 +37,8 @@ def map_property(*, broken_expedition=False, broken_outer=False):
         }),
     }
     unrelated = deepcopy(expedition)
-    unrelated['MapObjectId'] = PalObjects.NameProperty('NewUnrelatedModObject')
-    unrelated['ConcreteModel']['value']['RawData']['value']['values'] = list(b'opaque concrete')
+    unrelated['MapObjectId'] = PalObjects.NameProperty(unrelated_type)
+    unrelated['ConcreteModel']['value']['RawData']['value']['values'] = list(unrelated_payload)
     unrelated['Model']['value']['RawData']['value']['values'] = list(b'unsupported raw data')
     prop = PalObjects.ArrayProperty('StructProperty', {
         'prop_name': 'MapObjectSaveData', 'prop_type': 'StructProperty',
@@ -69,6 +70,53 @@ def test_unrelated_raw_data_is_preserved_and_does_not_block_expedition():
     assert b'unsupported raw data' in changed
     manager.reset_expedition_index()
     assert manager.expedition_records()[0]['start_time'] == 1
+
+
+def unrelated_concrete_payload(object_id, layout):
+    writer = FArchiveWriter()
+    writer.guid(PalObjects.EMPTY_UUID)
+    writer.guid(PalObjects.EMPTY_UUID)
+    if object_id == 'HatchingPalEgg':
+        if layout == 'observed_opaque':
+            writer.u32(0)
+        writer.fstring('None')
+        writer.u32(0)
+        writer.guid(PalObjects.EMPTY_UUID)
+    else:
+        writer.float(1.0)
+        if layout == 'observed_opaque':
+            writer.float(1.0)
+        writer.fstring('None')
+    if layout == 'observed_opaque':
+        writer.u32(0)
+    return writer.bytes()
+
+
+@pytest.mark.parametrize('object_id', ['HatchingPalEgg', 'CoalPit', 'StationDeforest2'])
+@pytest.mark.parametrize('layout', ['legacy', 'observed_opaque'])
+def test_real_world_unrelated_layouts_do_not_block_or_change_expeditions(object_id, layout):
+    # Reconstruct the shapes observed in a copied real world using zero GUIDs.
+    # The newer layouts remain opaque to expedition editing.
+    payload = unrelated_concrete_payload(object_id, layout)
+    if layout == 'legacy':
+        decoded = map_concrete_model.decode_bytes(FArchiveReader(b''), payload, object_id)
+        assert map_concrete_model.encode_bytes(deepcopy(decoded)) == payload
+    else:
+        reason = 'Unknown type: None' if object_id == 'HatchingPalEgg' else 'remaining bytes'
+        with pytest.raises(Exception, match=reason):
+            map_concrete_model.decode_bytes(FArchiveReader(b''), payload, object_id)
+
+    prop = map_property(unrelated_type=object_id, unrelated_payload=payload)
+    original = deepcopy(prop)
+    manager = manager_for(prop)
+    before = deepcopy(manager._decode_map_object_property()['value']['values'][0])
+    assert manager.get_expedition_instance_ids() == frozenset({EXPEDITION_ID})
+    assert prop == original
+    assert manager.complete_active_expeditions() == [EXPEDITION_ID]
+
+    reopened = manager_for(deepcopy(prop))
+    assert reopened.expedition_records()[0]['start_time'] == 1
+    assert reopened._decode_map_object_property()['value']['values'][0] == before
 
 
 @pytest.mark.parametrize('bulk', [False, True])

@@ -422,7 +422,7 @@ class SaveMigration:
                 )
                 self._copy_snapshot_tree(
                     authority.workspace,
-                    self._snapshot_for_migration(authority),
+                    self._snapshot_for_staging(authority),
                     stage,
                 )
                 self._progress(MigrationStage.MIGRATING, operation_key)
@@ -1836,6 +1836,32 @@ class SaveMigration:
     @staticmethod
     def _snapshot_for_migration(session: SaveSession) -> StorageSnapshot:
         return session.opened_save.snapshot
+
+    @staticmethod
+    def _snapshot_for_staging(session: SaveSession) -> StorageSnapshot:
+        if session.platform is not SavePlatform.XGP:
+            return session.opened_save.snapshot
+
+        # The WGS source snapshot names physical containers and payloads for
+        # conflict detection. Staging copies the selected normalized world.
+        try:
+            snapshot = snapshot_tree(session.workspace, reject_symlinks=True)
+            files = snapshot.by_path()
+            logical_files = session.opened_save.logical_files
+            if set(files) != set(logical_files) or any(
+                files[path].size != logical.size
+                or files[path].sha256 != logical.sha256
+                for path, logical in logical_files.items()
+            ):
+                raise OSError("normalized workspace does not match its logical files")
+            return snapshot
+        except OSError as error:
+            raise DomainError(
+                code="MIGRATION_STAGE_FAILED",
+                message="The normalized Game Pass workspace changed before staging.",
+                details={"phase": "staging"},
+                http_status=500,
+            ) from error
 
     @staticmethod
     def _snapshot_for_target(session: SaveSession) -> StorageSnapshot:
