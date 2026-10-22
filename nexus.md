@@ -82,7 +82,7 @@ The editor can analyze two independent saves and migrate either the complete sou
 [*]Reject unknown identities, opaque references, version mismatches, duplicate mappings, and changed sources or targets
 [/list]
 
-The current migration workflow does not write results into a WGS target. WGS targets are explicitly blocked because safe complete logical-file replacement is not yet supported. Automated validation covers fixtures and offline reopen checks; real game loading, restart persistence, and Xbox cloud synchronization remain unverified.
+The current migration workflow does not write results into a WGS target. WGS targets are explicitly blocked because safe complete logical-file replacement is not yet supported. Validation covers fixtures plus copied Steam and WGS source worlds migrated into Steam targets and reopened offline; real game loading, restart persistence, and Xbox cloud synchronization remain unverified.
 
 [size=4][b]Windows Live Management Beta[/b][/size]
 
@@ -142,6 +142,12 @@ Every state-changing command still requires its own in-game effect, replication,
 
 [b]Clone-tag limitation:[/b] Automated Steam and synthetic WGS save-write/reopen tests cover removal of the observed marker. Its effect after loading a real game has not been verified.
 
+[size=4][b]Experimental MOD Levels[/b][/size]
+
+Players, Pals, and Global Palbox entries have a separate level editor that requires explicit confirmation. The supported save field accepts levels 1–255. Values above 100 require the MOD's exact cumulative experience; the editor does not infer a MOD experience curve. Normal controls retain their existing level limits.
+
+Steam and synthetic WGS open-edit-save-reopen tests cover this path. The upper bound comes from the save field; acceptance by a particular game or MOD remains unverified. Back up the complete world and ensure that the client, server, and target world use compatible MOD rules before applying experimental values.
+
 [size=4][b]Inventories and Batch Tools[/b][/size]
 
 [list]
@@ -163,6 +169,7 @@ Every state-changing command still requires its own in-game effect, replication,
 [*]Apply supported mission operations in atomic batches
 [*]Validate expedition assignments against expedition objects stored in the world
 [*]Identify valid, invalid, and unknown expedition references
+[*]Block Pal release when expedition membership cannot be verified and preserve unrelated map-object data during expedition edits
 [*]Release Pals from supported expedition assignments
 [*]Quick-complete supported active expedition timers so the game can perform normal settlement after loading
 [/list]
@@ -283,6 +290,7 @@ No Python installation is required when using the prebuilt Windows application.
 [*]Xbox cloud synchronization has not been verified.
 [*]Real Game Pass in-game loading may behave differently from fixture or copied-sample round trips.
 [*]Unknown game versions and unverified save layouts may be capability-gated or blocked for safety.
+[*]Save parsing reports field paths and offsets for unsupported strings or layouts; clearer diagnostics do not guarantee that every reported loading failure is resolved.
 [*]A bridge command reported as completed is not automatically proven to have replicated, persisted, or produced the intended gameplay result.
 [*]The full saved-player directory and read-only snapshot workflow is a Windows dedicated-server first-phase feature; other live instance modes are not release-supported in this phase.
 [*]Offline players are read-only unless a future game build exposes a verified authoritative runtime write path.
