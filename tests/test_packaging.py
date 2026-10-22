@@ -52,7 +52,8 @@ class PackagingTests(unittest.TestCase):
         self.assertIn("PalEditorBridge-UE4SS-Mod-*.zip", build_script)
         self.assertIn("selectedBridgeModPackage", build_script)
         self.assertIn(";mod", build_script)
-        self.assertIn("Resolve-Path -LiteralPath $BridgeModPackage", build_script)
+        self.assertIn("-PackagePath $BridgeModPackage", build_script)
+        self.assertIn("Resolve-Path -LiteralPath $PackagePath", build_script)
 
     def test_server_mod_package_uses_one_declared_version(self) -> None:
         package_script = (

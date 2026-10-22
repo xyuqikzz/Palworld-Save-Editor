@@ -11,12 +11,43 @@ from palworld_save_tools.rawdata import (
 
 
 def decode(
-    reader: FArchiveReader, type_name: str, size: int, path: str
+    reader: FArchiveReader, type_name: str, size: int, path: str,
+    *, expedition_only: bool = False,
 ) -> dict[str, Any]:
     if type_name != "ArrayProperty":
         raise Exception(f"Expected ArrayProperty, got {type_name}")
     value = reader.property(type_name, size, path, nested_caller_path=path)
-    for map_object in value["value"]["values"]:
+    if expedition_only and not reader.eof():
+        raise ValueError(f"MapObjectSaveData trailing bytes at offset={reader.data.tell()}")
+    for index, map_object in enumerate(value["value"]["values"]):
+        if expedition_only:
+            object_id = map_object.get("MapObjectId", {}).get("value")
+            if not isinstance(object_id, str) or not object_id:
+                raise ValueError(f"Missing map object type: path={path}[{index}]")
+            if object_id != "Expedition":
+                # The outer property parser already consumed all record boundaries.
+                # Unknown bounded RawData remains opaque; never scan for boundaries.
+                continue
+            for field, codec in (("Model", map_model), ("ConcreteModel", map_concrete_model)):
+                field_path = f"{path}[{index}].{field}.RawData"
+                previous = reader.context_path
+                reader.context_path = field_path
+                try:
+                    prop = map_object[field]["value"]["RawData"]
+                    if prop.get("array_type") != "ByteProperty":
+                        raise ValueError("Expected bounded ByteProperty RawData")
+                    payload = prop["value"]["values"]
+                    args = (object_id,) if field == "ConcreteModel" else ()
+                    prop["value"] = codec.decode_bytes(reader, payload, *args)
+                except Exception as error:
+                    error.add_note(
+                        f"map_object_type={object_id}, path={field_path}, "
+                        "offset_scope=raw-data-local; outer property parsed completely"
+                    )
+                    raise
+                finally:
+                    reader.context_path = previous
+            continue
         # Decode Model
         map_object["Model"]["value"]["RawData"]["value"] = map_model.decode_bytes(
             reader, map_object["Model"]["value"]["RawData"]["value"]["values"]

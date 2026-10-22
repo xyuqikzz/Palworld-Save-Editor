@@ -1,4 +1,12 @@
 export default {
+    EXPEDITION_INDEX_UNAVAILABLE: "无法确认完整远征引用，已禁止解锁且未修改分配状态。请查看诊断日志。",
+    ExperimentalLevel_Title: "实验性 MOD 等级（超过 100 级）",
+    ExperimentalLevel_Warning: "需要兼容的等级上限 MOD，并备份完整世界。请填写 MOD 对应的累计经验值；编辑器没有 100 级以上经验表。255 仅为 ByteProperty 存储上限，不代表游戏支持该等级。游戏可能重置等级、无法读档或崩溃。Global Palbox 重建时，目标世界也必须具备兼容的 MOD 规则。",
+    ExperimentalLevel_Acknowledge: "我已备份，并确认 MOD 的等级与经验规则。",
+    ExperimentalLevel_Level: "等级（存储范围 1–255）",
+    ExperimentalLevel_Experience: "MOD 累计经验（精确整数）",
+    ExperimentalLevel_Apply: "应用实验性等级",
+
     AuthView_PW_Prompt_1: "你好! 似乎你在运行这个工具时设置了认证密码 🔐。",
     AuthView_PW_Prompt_2: "你现在需要输入正确的密码，以进行后续操作：",
     AuthView_BTN_Unlock: "解锁",
@@ -1173,8 +1181,8 @@ export default {
     Confirm_HealAllPalsInSave: "治愈当前存档中的全部 {{0}} 只帕鲁？操作会原子执行，并在保存存档后写回。",
     Confirm_CancelValidExpedition: "确定解除该帕鲁在远征 {{0}} 中的占用吗？编辑器会同时从远征成员列表中移除该帕鲁。",
     Confirm_CancelInvalidExpedition: "远征 {{0}} 已不存在。要清除该帕鲁残留的远征标记吗？",
-    Confirm_CancelUnknownExpedition: "无法校验远征 {{0}} 是否存在。清除标记可能造成引用不一致，仍要继续吗？",
-    Confirm_UnlockExpeditionPals: "要解除 {{0}} 只帕鲁的远征占用吗？其中：有效 {{1}}、无效 {{2}}、未知 {{3}}。有效远征会同步移除成员引用；未知结构仅清除帕鲁标记，仍可能保留反向引用。",
+    Confirm_CancelUnknownExpedition: "无法确认完整远征引用，已禁止解锁且未修改分配状态。请查看诊断日志。",
+    Confirm_UnlockExpeditionPals: "要解除 {{0}} 只帕鲁的远征占用吗？有效 {{1}}、无效 {{2}}、未知 {{3}}。已确认的反向成员引用会同步移除；未知引用将阻止操作。",
     Confirm_CompleteActiveExpeditions: "要快速完成存档内所有有效且进行中的远征吗？编辑器会保留任务、成员和状态，仅将计时提前；保存并载入游戏后才会由游戏正常结算奖励。",
     Confirm_CompleteExpedition: "要快速完成远征“{{0}}”吗？归属基地：{{1}}。编辑器仅将该远征计时提前；保存并载入游戏后才会由游戏正常结算奖励。",
     Confirm_DiscardChangesAndReturn: "当前有 {{0}} 项未保存更改。返回主页将放弃并回滚这些更改，是否仍要返回？",

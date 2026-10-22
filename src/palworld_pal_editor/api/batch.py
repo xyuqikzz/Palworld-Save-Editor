@@ -109,7 +109,7 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                 fields = {
                     "update_player_identity": {"name"},
                     "update_player_progression": {
-                        "level", "experience", "technology_points",
+                        "level", "experience", "technology_points", "experimental_level",
                         "boss_technology_points",
                     },
                     "update_player_technology": {"recipe_id", "unlocked", "unlock_all"},
@@ -122,6 +122,7 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                     value = UpdatePlayerProgression(
                         **target,
                         level=raw.get("level"),
+                        experimental_level=raw.get("experimental_level", False),
                         experience=raw.get("experience"),
                         technology_points=raw.get("technology_points"),
                         boss_technology_points=raw.get("boss_technology_points"),
@@ -139,7 +140,7 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                     "update_pal_identity": {
                         "name", "gender", "variant", "boss", "tower", "rare",
                     },
-                    "update_pal_progression": {"values"},
+                    "update_pal_progression": {"values", "experimental_level"},
                     "update_pal_skills": {"active", "mastered", "passive"},
                     "update_pal_enhancement": {"values", "work_suitability"},
                     "unlock_pal_expedition": set(),
@@ -154,7 +155,7 @@ def _parse_operations(payload: dict, session_id: str, revision: int):
                         tower=raw.get("tower"), rare=raw.get("rare"),
                     )
                 elif command == "update_pal_progression":
-                    value = UpdatePalProgression(**target, values=raw.get("values") or {})
+                    value = UpdatePalProgression(**target, values=raw.get("values") or {}, experimental_level=raw.get("experimental_level", False))
                 elif command == "update_pal_skills":
                     value = UpdatePalSkills(
                         **target,

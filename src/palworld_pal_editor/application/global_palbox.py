@@ -23,6 +23,7 @@ from palworld_save_tools.paltypes import (
 
 from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalGender, PalObjects, toUUID
+from palworld_pal_editor.core.level_policy import validate_experimental_mode
 from palworld_pal_editor.domain.errors import DomainError, stale_revision
 from palworld_pal_editor.domain.models import OpenedSave, SaveSource, StorageCommitRequest
 from palworld_pal_editor.storage.discovery import XgpSourceCatalog
@@ -418,6 +419,7 @@ class GlobalPalboxDocument:
             "NickName": pal.CustomNickName or "",
             "Gender": pal.Gender.value if pal.Gender else None,
             "Level": pal.Level or 1,
+            "Exp": pal.Exp,
             "FriendshipLevel": pal.FriendshipLevel or 0,
             "HasBaseVariant": pal.HasBaseVariant,
             "HasBossVariant": pal.HasBossVariant,
@@ -549,6 +551,8 @@ class GlobalPalboxDocument:
             "nickname",
             "gender",
             "level",
+            "experience",
+            "experimental_level",
             "friendship_level",
             "rank",
             "is_boss",
@@ -627,21 +631,19 @@ class GlobalPalboxDocument:
                     "female": PalGender.FEMALE,
                     "none": "NONE",
                 }[gender]
+            mode = values.get("experimental_level", False)
+            validate_experimental_mode(mode)
+            if "experience" in values and "level" not in values:
+                raise DomainError(
+                    code="INVALID_REQUEST",
+                    message="Global Palbox experience requires a level.",
+                    field="level", http_status=400,
+                )
             if "level" in values:
-                level = values["level"]
-                if (
-                    isinstance(level, bool)
-                    or not isinstance(level, int)
-                    or not 1 <= level <= 100
-                    or DataProvider.get_pal_level_xp(level) is None
-                ):
-                    raise DomainError(
-                        code="VALUE_OUT_OF_RANGE",
-                        message="The Global Palbox level is outside the supported range.",
-                        field="level",
-                        http_status=400,
-                    )
-                pal.Level = level
+                pal.set_level(
+                    values["level"], experimental=mode,
+                    experience=values.get("experience"),
+                )
             if "friendship_level" in values:
                 friendship = values["friendship_level"]
                 if (

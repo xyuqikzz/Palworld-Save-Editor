@@ -47,7 +47,7 @@ onMounted(() => {
             <button
               class="operation-button"
               type="button"
-              :disabled="palStore.LOADING_FLAG || palStore.EXPEDITION_PAL_COUNT === 0"
+              :disabled="palStore.LOADING_FLAG || palStore.EXPEDITION_PAL_COUNT === 0 || palStore.EXPEDITION_DATA?.data_available === false || !!palStore.EXPEDITION_DATA?.unknown_locked_pals?.length"
               @click="palStore.unlockExpeditionPals"
             >
               {{ palStore.getTranslatedText(

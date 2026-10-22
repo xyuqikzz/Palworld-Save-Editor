@@ -1,4 +1,12 @@
 export default {
+    EXPEDITION_INDEX_UNAVAILABLE: "遠征の参照を確認できません。解除は無効で、割り当ては変更されていません。診断ログを確認してください。",
+    ExperimentalLevel_Title: "実験的な MOD レベル（100 超）",
+    ExperimentalLevel_Warning: "互換性のあるレベル上限 MOD とワールド全体のバックアップが必要です。MOD に対応する累積経験値を入力してください。100 超の経験値表はありません。255 は ByteProperty の保存上限であり、ゲームの対応上限ではありません。レベルのリセット、読み込み失敗、クラッシュの可能性があります。Global Palbox で復元する際も、移動先に互換性のある MOD が必要です。",
+    ExperimentalLevel_Acknowledge: "バックアップを作成し、MOD のレベルと経験値の規則を確認しました。",
+    ExperimentalLevel_Level: "レベル（保存範囲 1–255）",
+    ExperimentalLevel_Experience: "MOD の累積経験値（正確な整数）",
+    ExperimentalLevel_Apply: "実験的なレベルを適用",
+
     AuthView_PW_Prompt_1: "こんにちは！保護用のパスワードが設定されているようです 🔐。",
     AuthView_PW_Prompt_2: "続ける前に、パスワードを入力してください：",
     AuthView_BTN_Unlock: "アンロック",
@@ -1174,8 +1182,8 @@ export default {
     Confirm_HealAllPalsInSave: "このセーブ内の{{0}}体のパルをすべて回復しますか？処理は一括で行われ、セーブするまで保留されます。",
     Confirm_CancelValidExpedition: "このパルを遠征 {{0}} から解除しますか？遠征のメンバー一覧からも同時に削除されます。",
     Confirm_CancelInvalidExpedition: "遠征 {{0}} は存在しません。このパルに残った遠征フラグを削除しますか？",
-    Confirm_CancelUnknownExpedition: "遠征 {{0}} を検証できませんでした。フラグの削除によって参照が不整合になる可能性があります。続行しますか？",
-    Confirm_UnlockExpeditionPals: "{{0}}体のパルを遠征から解除しますか？有効：{{1}}、無効：{{2}}、不明：{{3}}。有効な遠征ではメンバー参照も削除されます。不明な構造ではパル側のフラグのみ削除され、逆参照が残る可能性があります。",
+    Confirm_CancelUnknownExpedition: "遠征の参照を確認できません。解除は無効で、割り当ては変更されていません。診断ログを確認してください。",
+    Confirm_UnlockExpeditionPals: "{{0}}体を遠征から解除しますか？有効：{{1}}、無効：{{2}}、不明：{{3}}。確認済みの逆参照も削除します。不明な参照がある場合、操作は拒否されます。",
     Confirm_CompleteActiveExpeditions: "このセーブの有効で進行中の遠征をすべて即時完了しますか？ミッション、メンバー、状態は保持し、タイマーのみを早めます。保存してゲームでロードした後、報酬はゲーム側で通常どおり精算されます。",
     Confirm_CompleteExpedition: "拠点 {{1}} の遠征「{{0}}」を即時完了しますか？この遠征のタイマーのみを早めます。保存してゲームでロードした後、報酬はゲーム側で通常どおり精算されます。",
     Confirm_DiscardChangesAndReturn: "未保存の変更が{{0}}件あります。メインページに戻ると変更は破棄され、元に戻されます。このまま戻りますか？",

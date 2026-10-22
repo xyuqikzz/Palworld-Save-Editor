@@ -699,7 +699,7 @@ test('heal all confirms immediately before waiting for the batch preview', async
 
 test('unlock all expedition Pals uses one whole-save command and refreshes expeditions', async () => {
   const { store, player } = makeStore()
-  const lockedPal = { IsExpeditionPal: true }
+  const lockedPal = { IsExpeditionPal: true, ExpeditionAssignmentStatus: 'invalid' }
   const normalPal = { IsExpeditionPal: false }
   player.pals.set('pal-locked', lockedPal)
   player.pals.set('pal-normal', normalPal)

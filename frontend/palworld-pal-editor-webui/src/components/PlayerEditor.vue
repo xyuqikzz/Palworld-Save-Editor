@@ -1,4 +1,5 @@
 <script setup>
+import ExperimentalLevelEditor from "@/components/modules/ExperimentalLevelEditor.vue"
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePalEditorStore } from '@/stores/paleditor'
@@ -164,7 +165,7 @@ const isMaxLv = () => {
 };
 
 const isMinLv = () => {
-    return palStore.SELECTED_PLAYER_DATA.Level <= 1;
+    return palStore.SELECTED_PLAYER_DATA.Level <= 1 || palStore.SELECTED_PLAYER_DATA.Level > palStore.MAX_INVALID_LEVEL;
 };
 
 const setPlayerAttributeToMaximum = (attribute) => {
@@ -249,6 +250,7 @@ const formatAttributeEffect = (value) => {
                     <button class="edit" @click="palStore.SELECTED_PLAYER_DATA.maxLevel" name="Level"
                         :disabled="palStore.LOADING_FLAG || isMaxLv()" :title="palStore.getTranslatedText('Common_SetMaximum')"><AppIcon name="chevrons-up" /></button>
                 </div>
+          <ExperimentalLevelEditor kind="player" :key="String(palStore.SESSION_ID) + String(palStore.GLOBAL_PALBOX_SESSION?.session_id) + String(palStore.SELECTED_PLAYER_ID)" />
             </div>
         </section>
         <nav

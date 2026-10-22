@@ -106,6 +106,8 @@ class BatchApiTests(unittest.TestCase):
 
     def test_batch_unlocks_an_expedition_pal(self) -> None:
         pal = make_pal()
+        # The complete index confirms that only the stale Pal flag remains.
+        self.manager.expedition_has_member = lambda *_: False
         field = "MapObjectConcreteInstanceIdAssignedToExpedition"
         pal._pal_param[field] = PalObjects.Guid(
             "44444444-5555-6666-7777-888888888888"

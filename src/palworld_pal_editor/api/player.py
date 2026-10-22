@@ -163,6 +163,7 @@ def execute_player_command(player_id: str):
     command_fields = {
         "update_player_identity": {"name"},
         "update_player_progression": {
+            "experimental_level",
             "level",
             "experience",
             "technology_points",
@@ -207,6 +208,7 @@ def execute_player_command(player_id: str):
             command = UpdatePlayerProgression(
                 **base,
                 level=payload.get("level"),
+                experimental_level=payload.get("experimental_level", False),
                 experience=payload.get("experience"),
                 technology_points=payload.get("technology_points"),
                 boss_technology_points=payload.get("boss_technology_points"),

@@ -1,4 +1,5 @@
 <script setup>
+import ExperimentalLevelEditor from "@/components/modules/ExperimentalLevelEditor.vue"
 import { usePalEditorStore } from '@/stores/paleditor'
 import AppIcon from '@/components/modules/AppIcon.vue'
 import CustomPassiveDialog from '@/components/modules/CustomPassiveDialog.vue'
@@ -132,7 +133,7 @@ const isMaxLv = () => {
 };
 
 const isMinLv = () => {
-  return palStore.SELECTED_PAL_DATA.Level <= 1;
+  return palStore.SELECTED_PAL_DATA.Level <= 1 || palStore.SELECTED_PAL_DATA.Level > palStore.MAX_INVALID_LEVEL;
 };
 
 const isMaxFriendshipLv = () => {
@@ -188,8 +189,8 @@ const suitabilityIconSrc = key => {
           </button>
           <span class="action-separator" aria-hidden="true"></span>
           <button v-if="palStore.SELECTED_PAL_DATA.IsExpeditionPal" class="cancel-expedition"
-            @click="palStore.cancelSelectedPalExpedition" :disabled="palStore.LOADING_FLAG"
-            :title="palStore.getTranslatedText('PalEditor_CancelExpedition_Tooltip')">
+            @click="palStore.cancelSelectedPalExpedition" :disabled="palStore.LOADING_FLAG || !['valid', 'invalid'].includes(palStore.SELECTED_PAL_DATA.ExpeditionAssignmentStatus)"
+            :title="palStore.getTranslatedText(palStore.SELECTED_PAL_DATA.ExpeditionAssignmentStatus === 'unknown' ? 'EXPEDITION_INDEX_UNAVAILABLE' : 'PalEditor_CancelExpedition_Tooltip')">
             {{ palStore.getTranslatedText("PalEditor_CancelExpedition") }}
           </button>
           <button id="del_btn" @click="palStore.delPal" :disabled="palStore.LOADING_FLAG">
@@ -262,6 +263,7 @@ const suitabilityIconSrc = key => {
             <button class="edit" @click="palStore.SELECTED_PAL_DATA.maxLevel" name="Level"
               :disabled="palStore.LOADING_FLAG || isMaxLv()" :title="palStore.getTranslatedText('Common_SetMaximum')"><AppIcon name="chevrons-up" /></button>
           </div>
+          <ExperimentalLevelEditor kind="pal" :key="String(palStore.SESSION_ID) + String(palStore.GLOBAL_PALBOX_SESSION?.session_id) + String(palStore.SELECTED_PAL_ID)" />
         </div>
         <div class="flex-h attribute-row" v-if="!palStore.SELECTED_PAL_DATA.IsHuman">
           <div class="editField" v-if="palStore.SELECTED_PAL_DATA.Gender || !palStore.HIDE_INVALID_OPTIONS">

@@ -359,7 +359,7 @@ class DataProvider:
     def get_player_level_xp(lv: int) -> Optional[int]:
         try:
             return PAL_EXP_TABLE[str(lv)]["TotalEXP"]
-        except IndexError:
+        except (IndexError, KeyError):
             LOGGER.warning(f"Level {lv} is out of bounds.")
             return None
 

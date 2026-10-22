@@ -1,4 +1,12 @@
 export default {
+    EXPEDITION_INDEX_UNAVAILABLE: "Expedition references could not be verified. Unlocking is disabled and no assignments were changed. Check the diagnostic log.",
+    ExperimentalLevel_Title: "Experimental MOD level (above 100)",
+    ExperimentalLevel_Warning: "Requires a compatible level-cap MOD and a complete world backup. Enter the matching total XP from your MOD; the editor has no XP curve above 100. 255 is only the ByteProperty storage limit, not a supported game level. The game may reset the level, fail to load, or crash. Global Palbox reconstruction also needs compatible MOD rules in the destination world.",
+    ExperimentalLevel_Acknowledge: "I have a backup and verified my MOD level and XP rules.",
+    ExperimentalLevel_Level: "Level (1–255 storage range)",
+    ExperimentalLevel_Experience: "MOD total XP (exact integer)",
+    ExperimentalLevel_Apply: "Apply experimental level",
+
     AuthView_PW_Prompt_1: "Hello! It seems you have set a protection password 🔐.",
     AuthView_PW_Prompt_2: "Before continue, please enter the password:",
     AuthView_BTN_Unlock: "Unlock",
@@ -1173,8 +1181,8 @@ export default {
     Confirm_HealAllPalsInSave: "Heal all {{0}} Pals in this save? The operation is atomic and remains pending until you save.",
     Confirm_CancelValidExpedition: "Remove this Pal from expedition {{0}}? The editor will also remove the Pal from the expedition member list.",
     Confirm_CancelInvalidExpedition: "Expedition {{0}} no longer exists. Remove the stale expedition flag from this Pal?",
-    Confirm_CancelUnknownExpedition: "Expedition {{0}} could not be validated. Removing its flag may leave inconsistent references. Continue anyway?",
-    Confirm_UnlockExpeditionPals: "Release {{0}} Pal(s) from expeditions? Valid: {{1}}, invalid: {{2}}, unknown: {{3}}. Valid expedition member references will also be removed; unknown structures only have the Pal flag cleared and may retain reverse references.",
+    Confirm_CancelUnknownExpedition: "Expedition references could not be verified. Unlocking is disabled and no assignments were changed. Check the diagnostic log.",
+    Confirm_UnlockExpeditionPals: "Release {{0}} Pal(s) from expeditions? Valid: {{1}}, invalid: {{2}}, unknown: {{3}}. Verified reverse member references will also be removed. Unknown references block this operation.",
     Confirm_CompleteActiveExpeditions: "Quick-complete every valid active expedition in this save? The editor keeps the mission, members, and state, and only backdates its timer. Rewards are settled normally by the game after you save and load it.",
     Confirm_CompleteExpedition: "Quick-complete expedition “{{0}}” for base {{1}}? The editor only backdates this expedition's timer. Rewards are settled normally by the game after you save and load it.",
     Confirm_DiscardChangesAndReturn: "There are {{0}} unsaved change(s). Returning to the main page will discard and roll them back. Return anyway?",

@@ -5,6 +5,12 @@ import traceback
 from typing import Optional
 from palworld_save_tools.archive import UUID
 from palworld_pal_editor.config import Config
+from palworld_pal_editor.core.level_policy import (
+    LEGACY_LEVEL_MAX,
+    REGULAR_LEVEL_MAX,
+    resolve_level_experience,
+    validate_level_property,
+)
 
 from palworld_pal_editor.utils import LOGGER, clamp, DataProvider
 from palworld_pal_editor.core.pal_objects import (
@@ -19,8 +25,8 @@ from palworld_pal_editor.utils.util import type_guard
 
 
 class PalEntity:
-    MAX_LEVEL = 60
-    MAX_INVALID_LEVEL = 100
+    MAX_LEVEL = REGULAR_LEVEL_MAX
+    MAX_INVALID_LEVEL = LEGACY_LEVEL_MAX
     AWAKENING_STATUS_MULTIPLIER = 1.5
 
     def __init__(self, pal_obj: dict) -> None:
@@ -726,11 +732,21 @@ class PalEntity:
     @type_guard
     def Level(self, value: int) -> None:
         value = clamp(1, PalEntity.MAX_INVALID_LEVEL, value)
+        self.set_level(value)
+
+    def set_level(
+        self, value: int, *, experimental: bool = False, experience: int | None = None
+    ) -> None:
+        xp = resolve_level_experience(
+            value, experimental=experimental, experience=experience,
+            lookup=DataProvider.get_pal_level_xp,
+        )
+        validate_level_property(self._pal_param.get("Level"))
         if self.Level is None:
             self._pal_param["Level"] = PalObjects.ByteProperty(value)
         else:
             PalObjects.set_ByteProperty(self._pal_param["Level"], value)
-        self.Exp = DataProvider.get_pal_level_xp(self.Level)
+        self.Exp = xp
 
         if maxHP := self.ComputedMaxHP:
             self.Hp = maxHP

@@ -174,7 +174,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         levelDown() {
-            if (this.Level > 1) {
+            if (this.Level > 1 && this.Level <= MAX_INVALID_LEVEL) {
                 this.Level -= 1;
                 updatePlayer({ target: { name: "Level", value: this.Level } });
             }
@@ -321,7 +321,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
 
         levelDown() {
-            if (this.Level > 1) {
+            if (this.Level > 1 && this.Level <= MAX_INVALID_LEVEL) {
                 this.Level -= 1;
                 updatePal({ target: { name: "Level", value: this.Level } });
             }
@@ -2850,6 +2850,39 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         }
     }
 
+    async function setExperimentalLevel(kind, level, experience) {
+        if (!["player", "pal"].includes(kind)
+            || !Number.isSafeInteger(level) || level < 1 || level > 255
+            || !Number.isSafeInteger(experience) || experience < 0) return false;
+        const id = kind === "player" ? SELECTED_PLAYER_ID.value : SELECTED_PAL_ID.value;
+        if (!id || LOADING_FLAG.value) return false;
+        if (kind === "pal" && GLOBAL_PALBOX_SESSION.value) {
+            return Boolean(await updateGlobalPalboxPal(id, {
+                level, experience, experimental_level: true,
+            }));
+        }
+        if (!SESSION_ID.value) return false;
+        LOADING_FLAG.value = true;
+        try {
+            const progression = kind === "player"
+                ? { level, experience }
+                : { values: { level, experience } };
+            const response = await POST(`/api/${kind}/${encodeURIComponent(id)}/commands`, {
+                session_id: SESSION_ID.value,
+                expected_revision: SESSION_REVISION.value,
+                command: `update_${kind}_progression`,
+                experimental_level: true,
+                ...progression,
+            });
+            if (!response || !acceptResponse(response, "experimental-level", { command: true })) return false;
+            if (kind === "player") await loadPlayer(id);
+            else await selectPal(id);
+            return true;
+        } finally {
+            LOADING_FLAG.value = false;
+        }
+    }
+
     async function updatePlayer(e) {
         let no_set_loading_flag = LOADING_FLAG.value;
         if (!no_set_loading_flag) LOADING_FLAG.value = true;
@@ -3499,6 +3532,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
             const status = pal.ExpeditionAssignmentStatus ?? pal.assignment_status;
             statusCounts[statusCounts[status] === undefined ? "unknown" : status] += 1;
         }
+        if (statusCounts.unknown || EXPEDITION_DATA.value?.data_available === false) {
+            LAST_ERROR.value = { code: "EXPEDITION_INDEX_UNAVAILABLE", message: getTranslatedText("EXPEDITION_INDEX_UNAVAILABLE") };
+            return false;
+        }
         if (!await confirmMessage(getTranslatedText("Confirm_UnlockExpeditionPals", [
             lockedPals.length,
             statusCounts.valid,
@@ -3623,6 +3660,10 @@ export const usePalEditorStore = defineStore("paleditor", () => {
         const pal = SELECTED_PAL_DATA.value;
         if (!SELECTED_PAL_ID.value || !pal?.IsExpeditionPal) return false;
 
+        if (!["valid", "invalid"].includes(pal.ExpeditionAssignmentStatus)) {
+            LAST_ERROR.value = { code: "EXPEDITION_INDEX_UNAVAILABLE", message: getTranslatedText("EXPEDITION_INDEX_UNAVAILABLE") };
+            return false;
+        }
         const confirmationKey = {
             valid: "Confirm_CancelValidExpedition",
             invalid: "Confirm_CancelInvalidExpedition",
@@ -5843,6 +5884,7 @@ export const usePalEditorStore = defineStore("paleditor", () => {
     return {
         MAX_LEVEL,
         MAX_INVALID_LEVEL,
+        setExperimentalLevel,
         MAX_SOULS_LEVEL,
         MAX_SUITABILITY_LEVEL,
         MIN_FRIENDSHIP_LEVEL,

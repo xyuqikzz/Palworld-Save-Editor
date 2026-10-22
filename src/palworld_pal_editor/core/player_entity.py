@@ -6,13 +6,19 @@ from palworld_pal_editor.utils import LOGGER, alphanumeric_key
 from palworld_pal_editor.core.pal_entity import PalEntity
 from palworld_pal_editor.core.pal_objects import PalObjects, StatusName
 from palworld_pal_editor.core.location_data import read_transform_translation
+from palworld_pal_editor.core.level_policy import (
+    LEGACY_LEVEL_MAX,
+    REGULAR_LEVEL_MAX,
+    resolve_level_experience,
+    validate_level_property,
+)
 from palworld_pal_editor.utils.data_provider import DataProvider
 from palworld_pal_editor.utils.util import clamp, type_guard
 
 
 class PlayerEntity:
-    MAX_LEVEL = 60
-    MAX_INVALID_LEVEL = 100
+    MAX_LEVEL = REGULAR_LEVEL_MAX
+    MAX_INVALID_LEVEL = LEGACY_LEVEL_MAX
 
     def __init__(
         self,
@@ -217,6 +223,16 @@ class PlayerEntity:
     @type_guard
     def Level(self, value: int) -> None:
         value = clamp(1, PlayerEntity.MAX_INVALID_LEVEL, value)
+        self.set_level(value)
+
+    def set_level(
+        self, value: int, *, experimental: bool = False, experience: int | None = None
+    ) -> None:
+        xp = resolve_level_experience(
+            value, experimental=experimental, experience=experience,
+            lookup=DataProvider.get_player_level_xp,
+        )
+        validate_level_property(self._player_param.get("Level"))
         if self.Level is None:
             self._player_param["Level"] = PalObjects.ByteProperty(1)
         
@@ -227,7 +243,7 @@ class PlayerEntity:
             return
         
         PalObjects.set_ByteProperty(self._player_param["Level"], value)
-        self.Exp = DataProvider.get_player_level_xp(self.Level)
+        self.Exp = xp
         self.UnusedStatusPoint = new_unused_status_point
 
     @property

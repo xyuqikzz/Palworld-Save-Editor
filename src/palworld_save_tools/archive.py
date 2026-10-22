@@ -229,6 +229,8 @@ class FArchiveReader:
         self.custom_properties = custom_properties
         self.debug = debug
         self.allow_nan = allow_nan
+        self.context_path = "<root>"
+        self.offset_scope = "archive"
 
     def __enter__(self):
         self.data.seek(0)
@@ -238,13 +240,17 @@ class FArchiveReader:
         self.data.close()
 
     def internal_copy(self, data, debug: bool) -> "FArchiveReader":
-        return FArchiveReader(
+        child = FArchiveReader(
             data,
             self.type_hints,
             self.custom_properties,
             debug=debug,
             allow_nan=self.allow_nan,
         )
+
+        child.context_path = self.context_path
+        child.offset_scope = "raw-data-local"
+        return child
 
     def get_type_or(self, path: str, default: str):
         if path in self.type_hints:
@@ -259,6 +265,16 @@ class FArchiveReader:
     def read(self, size: int) -> bytes:
         return self.data.read(size)
 
+    def read_exact(self, size: int) -> bytes:
+        offset = self.data.tell()
+        data = self.data.read(size)
+        if len(data) != size:
+            raise ValueError(
+                f"Truncated value: path={self.context_path}, offset={offset}, "
+                f"offset_scope={self.offset_scope}, expected_bytes={size}, actual_bytes={len(data)}"
+            )
+        return data
+
     def read_to_end(self) -> bytes:
         return self.data.read(self.size - self.data.tell())
 
@@ -266,71 +282,76 @@ class FArchiveReader:
         return self.byte() > 0
 
     def fstring(self) -> str:
-        # in the hot loop, avoid function calls
         reader = self.data
-        (size,) = FArchiveReader.unpack_i32(reader.read(4))
-
+        offset = reader.tell()
+        prefix = reader.read(4)
+        def context():
+            return (f"path={self.context_path}, offset={offset}, "
+                    f"offset_scope={self.offset_scope}, declared_length={size}")
+        size = None
+        if len(prefix) != 4:
+            raise ValueError(f"Invalid FString length prefix ({context()})")
+        (size,) = FArchiveReader.unpack_i32(prefix)
         if size == 0:
             return ""
-
-        data: bytes
-        encoding: str
+        width = 2 if size < 0 else 1
+        byte_count = abs(size) * width
+        remaining = self.size - reader.tell()
+        if byte_count > remaining:
+            raise ValueError(
+                f"FString length exceeds remaining bytes={remaining} ({context()})"
+            )
+        payload = reader.read(byte_count)
+        if payload[-width:] != b"\x00" * width:
+            raise ValueError(f"Invalid FString terminator ({context()})")
+        data = payload[:-width]
         if size < 0:
-            size = -size
-            data = reader.read(size * 2)[:-2]
-            encoding = "utf-16-le"
-        else:
-            data = reader.read(size)[:-1]
-            encoding = "ascii"
-
+            # Preserve the existing lossless UTF-16 code-unit roundtrip, including
+            # isolated surrogates. Do not guess encodings for narrow strings.
+            return data.decode("utf-16-le", errors="surrogatepass")
         try:
-            return data.decode(encoding)
-        except Exception as e:
-            try:
-                escaped = data.decode(encoding, errors="surrogatepass")
-                print(
-                    f"Error decoding {encoding} string of length {size}, data loss may occur! {bytes(data)!r}"
-                )
-                return escaped
-            except Exception as e:
-                raise Exception(
-                    f"Error decoding {encoding} string of length {size}: {bytes(data)!r}"
-                ) from e
+            return data.decode("ascii")
+        except UnicodeDecodeError as error:
+            raise ValueError(
+                f"FString contains non-ASCII byte 0x{data[error.start]:02x} "
+                f"at byte_offset={offset + 4 + error.start} ({context()}); "
+                "encoding or preceding field layout requires verification"
+            ) from error
 
     unpack_i16 = struct.Struct("h").unpack
 
     def i16(self) -> int:
-        return FArchiveReader.unpack_i16(self.data.read(2))[0]
+        return FArchiveReader.unpack_i16(self.read_exact(2))[0]
 
     unpack_u16 = struct.Struct("H").unpack
 
     def u16(self) -> int:
-        return FArchiveReader.unpack_u16(self.data.read(2))[0]
+        return FArchiveReader.unpack_u16(self.read_exact(2))[0]
 
     unpack_i32 = struct.Struct("i").unpack
 
     def i32(self) -> int:
-        return FArchiveReader.unpack_i32(self.data.read(4))[0]
+        return FArchiveReader.unpack_i32(self.read_exact(4))[0]
 
     unpack_u32 = struct.Struct("I").unpack
 
     def u32(self) -> int:
-        return FArchiveReader.unpack_u32(self.data.read(4))[0]
+        return FArchiveReader.unpack_u32(self.read_exact(4))[0]
 
     unpack_i64 = struct.Struct("q").unpack
 
     def i64(self) -> int:
-        return FArchiveReader.unpack_i64(self.data.read(8))[0]
+        return FArchiveReader.unpack_i64(self.read_exact(8))[0]
 
     unpack_u64 = struct.Struct("Q").unpack
 
     def u64(self) -> int:
-        return FArchiveReader.unpack_u64(self.data.read(8))[0]
+        return FArchiveReader.unpack_u64(self.read_exact(8))[0]
 
     unpack_float = struct.Struct("f").unpack
 
     def float(self) -> Optional[_float]:
-        val = FArchiveReader.unpack_float(self.data.read(4))[0]
+        val = FArchiveReader.unpack_float(self.read_exact(4))[0]
         if self.allow_nan:
             return val
         if val == math.nan or val == math.inf or val == -math.inf:
@@ -340,7 +361,7 @@ class FArchiveReader:
     unpack_double = struct.Struct("d").unpack
 
     def double(self) -> Optional[_float]:
-        val = FArchiveReader.unpack_double(self.data.read(8))[0]
+        val = FArchiveReader.unpack_double(self.read_exact(8))[0]
         if self.allow_nan:
             return val
         if val == math.nan or val == math.inf or val == -math.inf:
@@ -350,17 +371,17 @@ class FArchiveReader:
     unpack_byte = struct.Struct("B").unpack
 
     def byte(self) -> int:
-        return FArchiveReader.unpack_byte(self.data.read(1))[0]
+        return FArchiveReader.unpack_byte(self.read_exact(1))[0]
 
     def byte_list(self, size: int) -> Sequence[int]:
-        return struct.unpack(str(size) + "B", self.data.read(size))
+        return struct.unpack(str(size) + "B", self.read_exact(size))
 
     def skip(self, size: int) -> None:
-        self.data.read(size)
+        self.read_exact(size)
 
     def guid(self) -> UUID:
         # in the hot loop, avoid function calls
-        return UUID(self.data.read(16))
+        return UUID(self.read_exact(16))
 
     def optional_guid(self) -> Optional[UUID]:
         # in the hot loop, avoid function calls
@@ -377,16 +398,45 @@ class FArchiveReader:
 
     def properties_until_end(self, path: str = "") -> dict[str, Any]:
         properties = {}
-        while True:
-            name = self.fstring()
-            if name == "None":
-                break
-            type_name = self.fstring()
-            size = self.u64()
-            properties[name] = self.property(type_name, size, f"{path}.{name}")
+        previous = self.context_path
+        try:
+            while True:
+                self.context_path = path or previous
+                name = self.fstring()
+                if name == "None":
+                    break
+                self.context_path = f"{path}.{name}"
+                type_name = self.fstring()
+                size = self.u64()
+                properties[name] = self.property(type_name, size, f"{path}.{name}")
+        except Exception as error:
+            object_type = properties.get("MapObjectId", {}).get("value")
+            if object_type is not None:
+                error.add_note(f"map_object_type={object_type}, record_path={path}")
+            raise
+        finally:
+            self.context_path = previous
         return properties
 
     def property(
+        self, type_name: str, size: int, path: str, nested_caller_path: str = ""
+    ) -> dict[str, Any]:
+        previous = self.context_path
+        self.context_path = path or previous
+        offset = self.data.tell()
+        try:
+            return self._property(type_name, size, path, nested_caller_path)
+        except Exception as error:
+            error.add_note(
+                f"property_type={type_name}, path={self.context_path}, "
+                f"offset={offset}, end_offset={self.data.tell()}, "
+                f"offset_scope={self.offset_scope}, declared_size={size}"
+            )
+            raise
+        finally:
+            self.context_path = previous
+
+    def _property(
         self, type_name: str, size: int, path: str, nested_caller_path: str = ""
     ) -> dict[str, Any]:
         value = {}
@@ -603,8 +653,13 @@ class FArchiveReader:
             _id = self.guid()
             self.skip(1)
             prop_values = []
-            for _ in range(count):
-                prop_values.append(self.struct_value(type_name, f"{path}.{prop_name}"))
+            for index in range(count):
+                offset = self.data.tell()
+                try:
+                    prop_values.append(self.struct_value(type_name, f"{path}.{prop_name}"))
+                except Exception as error:
+                    error.add_note(f"array_record_index={index}, path={path}, offset={offset}")
+                    raise
             value = {
                 "prop_name": prop_name,
                 "prop_type": prop_type,

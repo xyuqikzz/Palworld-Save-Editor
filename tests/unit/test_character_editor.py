@@ -183,6 +183,7 @@ class CharacterEditorTests(unittest.TestCase):
         }
         manager = SimpleNamespace(
             gvas_file=SimpleNamespace(header=None),
+            expedition_has_member=lambda *_: False,
             player_mapping={self.player.PlayerUId: self.player},
             get_player=lambda player_id: (
                 self.player if player_id == self.player.PlayerUId else None

@@ -303,7 +303,7 @@ def execute_pal_command(pal_id: str):
     common_fields = {"session_id", "expected_revision", "command"}
     command_fields = {
         "update_pal_identity": {"name", "gender", "variant", "boss", "tower", "rare"},
-        "update_pal_progression": {"values"},
+        "update_pal_progression": {"values", "experimental_level"},
         "update_pal_skills": {
             "active",
             "mastered",
@@ -354,7 +354,8 @@ def execute_pal_command(pal_id: str):
             )
         elif command_name == "update_pal_progression":
             command = UpdatePalProgression(
-                **base, values=payload.get("values", {})
+                **base, values=payload.get("values", {}),
+                experimental_level=payload.get("experimental_level", False)
             )
         elif command_name == "update_pal_skills":
             command = UpdatePalSkills(

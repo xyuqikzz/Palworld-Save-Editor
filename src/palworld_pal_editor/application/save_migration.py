@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+from time import perf_counter
 from threading import RLock
 from typing import Any, Callable, Iterable
 import uuid
@@ -58,6 +59,7 @@ from palworld_pal_editor.storage.migration_transaction import (
 )
 from palworld_pal_editor.storage.steam import make_steam_source, snapshot_tree
 from palworld_pal_editor.storage.xgp import XgpWgsAdapter
+from palworld_pal_editor.utils import LOGGER
 
 
 PLAN_TTL = timedelta(minutes=30)
@@ -351,8 +353,9 @@ class SaveMigration:
                     http_status=409,
                 )
             source_session = self._open(stored.source, field="source")
-            target_session = self._open(stored.target, field="target")
+            target_session = None
             try:
+                target_session = self._open(stored.target, field="target")
                 self._require_current_snapshot(
                     source_session,
                     stored.plan.source_snapshot,
@@ -517,8 +520,17 @@ class SaveMigration:
                 return result
             finally:
                 source_session.close()
-                target_session.close()
-        except DomainError as error:
+                if target_session is not None:
+                    target_session.close()
+        except Exception as cause:
+            phase = self._operation_progress.get(operation_key, {}).get("stage", "opening")
+            LOGGER.logger.exception("Migration failed: operation=%s phase=%s", operation_id, phase)
+            error = cause if isinstance(cause, DomainError) else DomainError(
+                code="MIGRATION_STAGE_FAILED",
+                message="Migration failed before completion; inspect the diagnostic log.",
+                details={"phase": phase, "exception_type": type(cause).__name__},
+                http_status=500,
+            )
             self._progress(MigrationStage.FAILED, operation_key)
             if prepared_backup is not None:
                 error.details.setdefault(
@@ -529,7 +541,9 @@ class SaveMigration:
                     "manifest_path",
                     str(prepared_backup.manifest_path),
                 )
-            raise
+            if error is cause:
+                raise
+            raise error from cause
         finally:
             if owned_stage is not None and owned_stage.exists():
                 expected_prefix = (
@@ -654,7 +668,7 @@ class SaveMigration:
         try:
             manager = session.manager
             for player_id in list(manager.player_mapping):
-                session.load_player(player_id)
+                SaveMigration._load_player(session, player_id, phase="migrating")
             uid_mapping = {
                 item.source_player_uid: item.target_player_uid for item in mappings
             }
@@ -704,8 +718,12 @@ class SaveMigration:
             target_manager = target_session.manager
             dps_imports: list[tuple[PlayerIdentityMapping, str]] = []
             for mapping in mappings:
-                source = source_session.load_player(mapping.source_player_uid)
-                target = target_session.load_player(mapping.target_player_uid)
+                source = SaveMigration._load_player(
+                    source_session, mapping.source_player_uid, phase="migrating"
+                )
+                target = SaveMigration._load_player(
+                    target_session, mapping.target_player_uid, phase="migrating"
+                )
                 target_dynamic_issues = (
                     target_manager.dynamic_item_data.issue_fingerprints()
                 )
@@ -1525,7 +1543,7 @@ class SaveMigration:
                     },
                     http_status=500,
                 )
-            session.load_player(mapping.target_player_uid)
+            SaveMigration._load_player(session, mapping.target_player_uid, phase="validating")
         if CharacterIndex(session.manager).hard_issues():
             raise DomainError(
                 code="MIGRATION_VALIDATION_FAILED",
@@ -1579,7 +1597,9 @@ class SaveMigration:
                 dps_save = dps_by_player.get(mapping.target_player_uid)
                 if dps_save is None:
                     continue
-                target_player = session.load_player(mapping.target_player_uid)
+                target_player = SaveMigration._load_player(
+                    session, mapping.target_player_uid, phase="validating"
+                )
                 storage_id = target_player.PalStorageContainerId
                 if storage_id is None:
                     raise DomainError(
@@ -1928,7 +1948,38 @@ class SaveMigration:
         )
 
     @staticmethod
+    def _load_player(session: SaveSession, player_id: str, *, phase: str):
+        started = perf_counter()
+        LOGGER.info(
+            f"Migration step=load_player phase={phase} player_id={player_id} "
+            f"workspace={getattr(session, 'workspace', 'unknown')} started"
+        )
+        try:
+            result = session.load_player(player_id)
+        except Exception as cause:
+            LOGGER.logger.exception(
+                "Migration step=load_player phase=%s player_id=%s failed after %.3fs",
+                phase, player_id, perf_counter() - started,
+            )
+            details = {"phase": phase, "step": "load_player", "player_id": str(player_id)}
+            if isinstance(cause, DomainError):
+                for key, value in details.items():
+                    cause.details.setdefault(key, value)
+                raise
+            raise DomainError(
+                code="MIGRATION_STAGE_FAILED",
+                message="A migration player file could not be loaded safely.",
+                details=details, http_status=500,
+            ) from cause
+        LOGGER.info(
+            f"Migration step=load_player phase={phase} player_id={player_id} "
+            f"completed in {perf_counter() - started:.3f}s"
+        )
+        return result
+
+    @staticmethod
     def _open(source: SaveSource, *, field: str) -> SaveSession:
+        LOGGER.info(f"Migration step=open role={field} platform={source.platform.value} started")
         try:
             if source.platform is SavePlatform.STEAM:
                 return SaveSession.open(
@@ -1941,8 +1992,10 @@ class SaveMigration:
                 manager=SaveManager.create_isolated(),
             )
         except DomainError:
+            LOGGER.logger.exception("Migration step=open role=%s failed", field)
             raise
         except Exception as error:
+            LOGGER.logger.exception("Migration step=open role=%s failed", field)
             raise DomainError(
                 code=(
                     "MIGRATION_SOURCE_INVALID"
@@ -1959,6 +2012,7 @@ class SaveMigration:
         stage: MigrationStage,
         operation_key: tuple[str, str] | None = None,
     ) -> None:
+        LOGGER.info(f"Migration stage={stage.value} operation={operation_key}")
         if operation_key is not None:
             with self._lock:
                 current = self._operation_progress.setdefault(

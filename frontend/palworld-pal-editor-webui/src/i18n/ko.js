@@ -1,4 +1,12 @@
 export default {
+    EXPEDITION_INDEX_UNAVAILABLE: "원정 참조를 확인할 수 없습니다. 잠금 해제가 비활성화되었으며 배치는 변경되지 않았습니다. 진단 로그를 확인하세요.",
+    ExperimentalLevel_Title: "실험적 MOD 레벨 (100 초과)",
+    ExperimentalLevel_Warning: "호환되는 레벨 제한 MOD와 전체 월드 백업이 필요합니다. MOD에 맞는 누적 경험치를 입력하세요. 100 초과 경험치 표는 없습니다. 255는 ByteProperty 저장 한도이며 게임 지원 레벨이 아닙니다. 레벨 초기화, 불러오기 실패 또는 충돌이 발생할 수 있습니다. Global Palbox 복원 시 대상 월드에도 호환 MOD가 필요합니다.",
+    ExperimentalLevel_Acknowledge: "백업을 만들고 MOD의 레벨 및 경험치 규칙을 확인했습니다.",
+    ExperimentalLevel_Level: "레벨 (저장 범위 1–255)",
+    ExperimentalLevel_Experience: "MOD 누적 경험치 (정확한 정수)",
+    ExperimentalLevel_Apply: "실험적 레벨 적용",
+
     AuthView_PW_Prompt_1: "안녕하세요! 보호 비밀번호가 설정되어 있습니다 🔐.",
     AuthView_PW_Prompt_2: "계속하려면 비밀번호를 입력하세요:",
     AuthView_BTN_Unlock: "잠금 해제",
@@ -1173,8 +1181,8 @@ export default {
     Confirm_HealAllPalsInSave: "이 저장 데이터의 팰 {{0}}마리를 모두 치료할까요? 작업은 원자적으로 처리되며 저장할 때까지 보류됩니다.",
     Confirm_CancelValidExpedition: "이 팰을 원정 {{0}}에서 해제할까요? 원정 대원 목록에서도 함께 제거됩니다.",
     Confirm_CancelInvalidExpedition: "원정 {{0}}이 더 이상 존재하지 않습니다. 이 팰의 남은 원정 플래그를 제거할까요?",
-    Confirm_CancelUnknownExpedition: "원정 {{0}}을 확인할 수 없습니다. 플래그를 제거하면 참조가 불일치할 수 있습니다. 계속할까요?",
-    Confirm_UnlockExpeditionPals: "{{0}}마리 팰의 원정 배치를 해제할까요? 유효: {{1}}, 무효: {{2}}, 알 수 없음: {{3}}. 유효한 원정의 대원 참조도 함께 제거됩니다. 알 수 없는 구조는 팰 플래그만 제거되며 역참조가 남을 수 있습니다.",
+    Confirm_CancelUnknownExpedition: "원정 참조를 확인할 수 없습니다. 잠금 해제가 비활성화되었으며 배치는 변경되지 않았습니다. 진단 로그를 확인하세요.",
+    Confirm_UnlockExpeditionPals: "{{0}}마리의 원정을 해제할까요? 유효: {{1}}, 무효: {{2}}, 알 수 없음: {{3}}. 확인된 역참조도 제거됩니다. 알 수 없는 참조가 있으면 작업이 차단됩니다.",
     Confirm_CompleteActiveExpeditions: "이 저장 파일의 유효하고 진행 중인 원정을 모두 빠르게 완료할까요? 임무, 구성원, 상태는 유지하고 타이머만 앞당깁니다. 저장 후 게임에서 불러오면 게임이 정상적으로 보상을 정산합니다.",
     Confirm_CompleteExpedition: "거점 {{1}}의 원정 “{{0}}”을 빠르게 완료할까요? 이 원정의 타이머만 앞당깁니다. 저장 후 게임에서 불러오면 게임이 정상적으로 보상을 정산합니다.",
     Confirm_DiscardChangesAndReturn: "저장하지 않은 변경 사항이 {{0}}개 있습니다. 메인 페이지로 돌아가면 모두 취소되고 되돌려집니다. 그래도 돌아갈까요?",

@@ -1,4 +1,12 @@
 export default {
+    EXPEDITION_INDEX_UNAVAILABLE: "Les références d’expédition ne peuvent pas être vérifiées. Le déverrouillage est désactivé ; aucune affectation n’a changé. Consultez le journal.",
+    ExperimentalLevel_Title: "Niveau MOD expérimental (au-delà de 100)",
+    ExperimentalLevel_Warning: "Un MOD compatible et une sauvegarde complète du monde sont nécessaires. Saisissez l’XP totale correspondante du MOD ; aucune courbe au-delà du niveau 100 n’est connue. 255 est uniquement la limite de stockage ByteProperty, pas un niveau pris en charge par le jeu. Le jeu peut réinitialiser le niveau, refuser la sauvegarde ou planter. La reconstruction Global Palbox exige aussi un MOD compatible dans le monde cible.",
+    ExperimentalLevel_Acknowledge: "J’ai une sauvegarde et j’ai vérifié les règles de niveau et d’XP du MOD.",
+    ExperimentalLevel_Level: "Niveau (stockage 1–255)",
+    ExperimentalLevel_Experience: "XP totale du MOD (entier exact)",
+    ExperimentalLevel_Apply: "Appliquer le niveau expérimental",
+
     AuthView_PW_Prompt_1: "Bonjour ! Il semble que vous ayez défini un mot de passe de protection 🔐.",
     AuthView_PW_Prompt_2: "Avant de continuer, veuillez entrer le mot de passe :",
     AuthView_BTN_Unlock: "Déverrouiller",
@@ -1174,8 +1182,8 @@ export default {
     Confirm_HealAllPalsInSave: "Soigner les {{0}} Pals de cette sauvegarde ? L’opération est atomique et reste en attente jusqu’à l’enregistrement.",
     Confirm_CancelValidExpedition: "Retirer ce Pal de l'expédition {{0}} ? L'éditeur le retirera également de la liste des membres de l'expédition.",
     Confirm_CancelInvalidExpedition: "L'expédition {{0}} n'existe plus. Supprimer l'indicateur d'expédition obsolète de ce Pal ?",
-    Confirm_CancelUnknownExpedition: "L'expédition {{0}} n'a pas pu être vérifiée. Supprimer son indicateur peut rendre les références incohérentes. Continuer ?",
-    Confirm_UnlockExpeditionPals: "Libérer {{0}} Pal(s) des expéditions ? Valides : {{1}}, invalides : {{2}}, inconnues : {{3}}. Les références des membres des expéditions valides seront aussi supprimées ; pour les structures inconnues, seul l'indicateur du Pal est effacé et des références inverses peuvent subsister.",
+    Confirm_CancelUnknownExpedition: "Les références d’expédition ne peuvent pas être vérifiées. Le déverrouillage est désactivé ; aucune affectation n’a changé. Consultez le journal.",
+    Confirm_UnlockExpeditionPals: "Libérer {{0}} Pal(s) ? Valides : {{1}}, invalides : {{2}}, inconnues : {{3}}. Les références inverses vérifiées seront aussi supprimées. Les références inconnues bloquent cette opération.",
     Confirm_CompleteActiveExpeditions: "Terminer rapidement toutes les expéditions actives valides de cette sauvegarde ? L'éditeur conserve la mission, les membres et l'état, et antidate uniquement le minuteur. Le jeu réglera normalement les récompenses après l'enregistrement et le chargement.",
     Confirm_CompleteExpedition: "Terminer rapidement l'expédition « {{0}} » de la base {{1}} ? L'éditeur antidate uniquement son minuteur. Le jeu réglera normalement les récompenses après l'enregistrement et le chargement.",
     Confirm_DiscardChangesAndReturn: "Il y a {{0}} modification(s) non enregistrée(s). Le retour à la page principale les annulera. Revenir quand même ?",

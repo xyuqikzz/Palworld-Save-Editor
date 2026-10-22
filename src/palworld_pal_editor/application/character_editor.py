@@ -6,6 +6,13 @@ import unicodedata
 from typing import Any, Callable
 
 from palworld_pal_editor.config import Config
+from palworld_pal_editor.core.level_policy import (
+    EXPERIENCE_MAX,
+    LEGACY_LEVEL_MAX,
+    REGULAR_LEVEL_MAX,
+    resolve_level_experience,
+    validate_experimental_mode,
+)
 from palworld_pal_editor.core.pal_objects import PalGender, PalObjects, PalSuitability
 from palworld_pal_editor.domain.commands import (
     HealAllPals,
@@ -41,14 +48,14 @@ from .save_session import SaveSession
 
 
 MAX_NAME_LENGTH = 24
-MAX_LEVEL = 100
-MAX_EXPERIENCE = 9_223_372_036_854_775_807
+MAX_LEVEL = LEGACY_LEVEL_MAX
+MAX_EXPERIENCE = EXPERIENCE_MAX
 MAX_TECHNOLOGY_POINTS = 65_535
 MAX_HEALTH = 2_147_483_647
 MAX_MASTERED_SKILLS = 255
 MAX_UNRESTRICTED_PASSIVE_SKILLS = 255
 MAX_ENHANCEMENT_CHEAT_LEVEL = 255
-MAX_REGULAR_PAL_LEVEL = 80
+MAX_REGULAR_PAL_LEVEL = REGULAR_LEVEL_MAX
 MAX_REGULAR_IV = 100
 MAX_REGULAR_CONDENSATION = 5
 MAX_FRIENDSHIP_LEVEL = 10
@@ -133,14 +140,12 @@ class CharacterEditor:
         }
         if not any(value is not None for value in supplied.values()):
             self._empty_command()
+        validate_experimental_mode(command.experimental_level)
         if command.level is not None:
-            self._require_int_range(command.level, 1, MAX_LEVEL, "level")
-            if DataProvider.get_player_level_xp(command.level) is None:
-                raise DomainError(
-                    code="COMPATIBILITY_FIELD_MISSING",
-                    message="No experience rule exists for this player level.",
-                    field="level",
-                )
+            resolve_level_experience(
+                command.level, experimental=command.experimental_level,
+                experience=command.experience, lookup=DataProvider.get_player_level_xp,
+            )
         if command.experience is not None:
             self._require_int_range(
                 command.experience, 0, MAX_EXPERIENCE, "experience"
@@ -162,7 +167,12 @@ class CharacterEditor:
 
         def mutate() -> None:
             if command.level is not None:
-                player.Level = command.level
+                if command.experimental_level:
+                    player.set_level(
+                        command.level, experimental=True, experience=command.experience
+                    )
+                else:
+                    player.Level = command.level
             if command.experience is not None:
                 player.Exp = command.experience
             if command.technology_points is not None:
@@ -564,14 +574,12 @@ class CharacterEditor:
         if not command.values:
             self._empty_command()
         values = command.values
+        validate_experimental_mode(command.experimental_level)
         if "level" in values:
-            self._require_int_range(values["level"], 1, MAX_LEVEL, "level")
-            if DataProvider.get_pal_level_xp(values["level"]) is None:
-                raise DomainError(
-                    code="COMPATIBILITY_FIELD_MISSING",
-                    message="No experience rule exists for this Pal level.",
-                    field="level",
-                )
+            resolve_level_experience(
+                values["level"], experimental=command.experimental_level,
+                experience=values.get("experience"), lookup=DataProvider.get_pal_level_xp,
+            )
         if "experience" in values:
             self._require_int_range(
                 values["experience"], 0, MAX_EXPERIENCE, "experience"
@@ -611,7 +619,13 @@ class CharacterEditor:
 
         def mutate() -> None:
             if "level" in values:
-                pal.Level = values["level"]
+                if command.experimental_level:
+                    pal.set_level(
+                        values["level"], experimental=True,
+                        experience=values.get("experience"),
+                    )
+                else:
+                    pal.Level = values["level"]
             if "experience" in values:
                 pal.Exp = values["experience"]
             if "friendship_level" in values:
@@ -792,13 +806,11 @@ class CharacterEditor:
                 http_status=409,
             )
 
-        has_member = getattr(manager, "expedition_has_member", None)
-        reverse_targets = {
-            pal_id: str(pal.ExpeditionInstanceId)
-            for pal_id, pal in pals.items()
-            if callable(has_member)
-            and has_member(str(pal.ExpeditionInstanceId), pal_id) is True
-        }
+        reverse_targets = {}
+        for pal_id, pal in pals.items():
+            expedition_id = str(pal.ExpeditionInstanceId)
+            if self._require_expedition_membership(manager, expedition_id, pal_id):
+                reverse_targets[pal_id] = expedition_id
 
         def snapshot():
             return (
@@ -1342,6 +1354,19 @@ class CharacterEditor:
         )
         return self._result(entry, state())
 
+    @staticmethod
+    def _require_expedition_membership(manager, expedition_id, pal_id) -> bool:
+        lookup = getattr(manager, "expedition_has_member", None)
+        membership = lookup(expedition_id, pal_id) if callable(lookup) else None
+        if not isinstance(membership, bool):
+            raise DomainError(
+                code="EXPEDITION_INDEX_UNAVAILABLE",
+                message="Expedition references cannot be verified; no assignment was changed.",
+                details={"expedition_id": expedition_id, "pal_id": pal_id},
+                http_status=409,
+            )
+        return membership
+
     def _unlock_pal_expedition(self, command: UnlockPalExpedition) -> dict:
         pal = self._require_pal(command.pal_id)
         if not pal.IsExpeditionPal:
@@ -1355,10 +1380,8 @@ class CharacterEditor:
 
         manager = self._session.manager
         expedition_id = str(pal.ExpeditionInstanceId)
-        has_member = getattr(manager, "expedition_has_member", None)
-        has_reverse_membership = bool(
-            callable(has_member)
-            and has_member(expedition_id, str(pal.InstanceId)) is True
+        has_reverse_membership = self._require_expedition_membership(
+            manager, expedition_id, str(pal.InstanceId)
         )
 
         def state() -> dict[str, Any]:

@@ -178,6 +178,7 @@ class UpdatePlayerIdentity(SessionCommand):
 @dataclass(frozen=True, kw_only=True)
 class UpdatePlayerProgression(SessionCommand):
     player_id: str
+    experimental_level: bool = False
     level: int | None = None
     experience: int | None = None
     technology_points: int | None = None
@@ -234,6 +235,7 @@ class UpdatePalIdentity(SessionCommand):
 @dataclass(frozen=True, kw_only=True)
 class UpdatePalProgression(SessionCommand):
     pal_id: str
+    experimental_level: bool = False
     values: dict[str, Any] = field(default_factory=dict)
 
 

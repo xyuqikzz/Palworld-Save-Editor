@@ -438,10 +438,8 @@ def decode_bytes(
             pass
         case "PalMapObjectCharacterTeamMissionModel":
             expedition_start = reader.data.tell()
-            try:
-                prefix = reader.u32()
-                if prefix != 0:
-                    raise ValueError("unsupported expedition prefix")
+            prefix = reader.u32()
+            if prefix == 0:
                 mission_id = reader.fstring()
                 member_count = reader.u32()
                 remaining = reader.size - reader.data.tell()
@@ -462,9 +460,10 @@ def decode_bytes(
                 data["state"] = reader.byte()
                 data["start_time"] = reader.i64()
                 data["unknown_bytes"] = [int(b) for b in reader.read_to_end()]
-            except Exception:
-                # Retain the pre-1.0 layout for older saves. Current saves add a
-                # zero prefix and the expedition member array before state/time.
+            else:
+                # A nonzero FString length identifies the legacy layout. Once
+                # the current zero prefix is recognized, malformed current data
+                # must fail instead of being reinterpreted as a legacy record.
                 reader.data.seek(expedition_start)
                 data["expedition_layout"] = "legacy"
                 data["mission_id"] = reader.fstring()

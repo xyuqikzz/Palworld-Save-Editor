@@ -160,11 +160,54 @@ function Remove-BuildOutputDirectory {
     throw [System.IO.IOException]::new($message, $lastError.Exception)
 }
 
+function Get-BridgeModPackage {
+    param([string]$ProjectRoot, [string]$PackagePath = '')
+    $missingPackageMessage = 'No versioned PalEditorBridge UE4SS Mod package was found in mod/. Build/package the bridge with build_pal_editor_bridge.ps1 and package_pal_editor_bridge.ps1, or supply -BridgeModPackage <PalEditorBridge-UE4SS-Mod-x.y.z.zip>.'
+    $packagePattern = '^PalEditorBridge-UE4SS-Mod-(\d+\.\d+\.\d+)\.zip$'
+    if ($PackagePath) {
+        $resolvedBridgePackage = Resolve-Path -LiteralPath $PackagePath
+        $selectedBridgeModPackage = Get-Item -LiteralPath $resolvedBridgePackage.Path
+        if ($selectedBridgeModPackage.PSIsContainer -or $selectedBridgeModPackage.Name -notmatch $packagePattern) {
+            throw "Invalid PalEditorBridge package name: $($selectedBridgeModPackage.Name)"
+        }
+    } else {
+        $modDirectory = Join-Path $ProjectRoot 'mod'
+        if (-not (Test-Path -LiteralPath $modDirectory -PathType Container)) {
+            throw $missingPackageMessage
+        }
+        $candidate = (
+            Get-ChildItem -LiteralPath (Join-Path $ProjectRoot 'mod') `
+                -Filter 'PalEditorBridge-UE4SS-Mod-*.zip' -File |
+                ForEach-Object {
+                    $versionMatch = [regex]::Match(
+                        $_.Name,
+                        $packagePattern
+                    )
+                    if ($versionMatch.Success) {
+                        [pscustomobject]@{
+                            File = $_
+                            Version = [version]$versionMatch.Groups[1].Value
+                        }
+                    }
+                } |
+                Sort-Object -Property Version -Descending |
+                Select-Object -First 1
+        )
+        if ($null -eq $candidate) {
+            throw $missingPackageMessage
+        }
+        $selectedBridgeModPackage = $candidate.File
+    }
+    return $selectedBridgeModPackage
+}
+
 if ($FunctionsOnly) {
     return
 }
 
 Set-Location -LiteralPath $PROJECT_ROOT
+
+$selectedBridgeModPackage = Get-BridgeModPackage -ProjectRoot $PROJECT_ROOT -PackagePath $BridgeModPackage
 
 $python = Get-PythonCommand
 Write-Host "Using $($python.Command) ($($python.Version))"
@@ -209,36 +252,6 @@ Invoke-Checked -Command $buildPython -Arguments @(
 $distRoot = Join-Path $PROJECT_ROOT 'dist'
 Remove-BuildOutputDirectory -Path $distRoot
 
-$bridgePackagePattern = '^PalEditorBridge-UE4SS-Mod-(\d+\.\d+\.\d+)\.zip$'
-if ($BridgeModPackage) {
-    $resolvedBridgePackage = Resolve-Path -LiteralPath $BridgeModPackage
-    $selectedBridgeModPackage = Get-Item -LiteralPath $resolvedBridgePackage.Path
-    if ($selectedBridgeModPackage.Name -notmatch $bridgePackagePattern) {
-        throw "Invalid PalEditorBridge package name: $($selectedBridgeModPackage.Name)"
-    }
-} else {
-    $selectedBridgeModPackage = (
-        Get-ChildItem -LiteralPath (Join-Path $PROJECT_ROOT 'mod') `
-            -Filter 'PalEditorBridge-UE4SS-Mod-*.zip' -File |
-            ForEach-Object {
-                $versionMatch = [regex]::Match(
-                    $_.Name,
-                    $bridgePackagePattern
-                )
-                if ($versionMatch.Success) {
-                    [pscustomobject]@{
-                        File = $_
-                        Version = [version]$versionMatch.Groups[1].Value
-                    }
-                }
-            } |
-            Sort-Object -Property Version -Descending |
-            Select-Object -First 1
-    ).File
-    if ($null -eq $selectedBridgeModPackage) {
-        throw 'No versioned PalEditorBridge UE4SS Mod package was found in mod/.'
-    }
-}
 Write-Host "Bundling bridge mod: $($selectedBridgeModPackage.FullName)"
 
 Invoke-Checked -Command $buildPython -Arguments @(

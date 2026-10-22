@@ -201,12 +201,14 @@ class SaveManager:
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
             io.StringIO()
         ):
-            return map_object.decode(
+            decoded = map_object.decode(
                 reader,
                 "ArrayProperty",
                 len(prop["value"]),
                 ".worldSaveData.MapObjectSaveData",
+                expedition_only=True,
             )
+            return decoded
 
     @staticmethod
     def _encode_map_object_raw_data_field(
@@ -254,6 +256,8 @@ class SaveManager:
                 instance_id = raw_data.get("instance_id")
                 if instance_id is not None:
                     key = str(instance_id).lower()
+                    if key in records:
+                        raise ValueError(f"Duplicate expedition instance ID: {key}")
                     members = tuple(
                         {
                             "owner_player_uid": (
@@ -277,17 +281,23 @@ class SaveManager:
                         original_payload = map_concrete_model.encode_bytes(
                             copy.deepcopy(raw_data)
                         )
-                        if raw_map_objects.count(original_payload) == 1:
-                            offset = raw_map_objects.find(original_payload)
                         original_field = self._encode_map_object_raw_data_field(
                             original_payload,
                             raw_property.get("array_type"),
                             raw_property.get("id"),
                         )
-                        if raw_map_objects.count(original_field) == 1:
-                            field_offset = raw_map_objects.find(original_field)
+                        if raw_map_objects.count(original_field) != 1:
+                            raise ValueError("RawData field has no unique verified boundary")
+                        field_offset = raw_map_objects.find(original_field)
+                        # Derive the timer payload offset from its verified field,
+                        # never from a matching byte sequence elsewhere in the map.
+                        offset = field_offset + len(original_field) - len(original_payload)
                     except Exception:
-                        pass
+                        original_payload = offset = original_field = field_offset = None
+                        LOGGER.logger.warning(
+                            "Expedition %s has no verified writable RawData boundary",
+                            key, exc_info=True,
+                        )
                     records[key] = {
                         "instance_id": key,
                         "layout": raw_data.get("expedition_layout"),
@@ -310,10 +320,15 @@ class SaveManager:
                         "original_field": original_field,
                         "field_offset": field_offset,
                     }
+                else:
+                    raise ValueError("Expedition ConcreteModel.RawData has no instance_id")
             self._expedition_records = records
             self._expedition_instance_ids = frozenset(records)
         except Exception as error:
-            LOGGER.warning(f"Unable to index expedition map objects: {error}")
+            LOGGER.logger.warning(
+                "Unable to index expedition map objects; all expedition writes disabled: %s",
+                error, exc_info=True,
+            )
             self._expedition_records = None
             self._expedition_instance_ids = None
         return self._expedition_records
@@ -415,7 +430,9 @@ class SaveManager:
         self, expedition_id: UUID | str, pal_id: UUID | str
     ) -> Optional[bool]:
         records = self._load_expedition_records()
-        if records is None:
+        if records is None or any(
+            record.get("layout") != "current" for record in records.values()
+        ):
             return None
         record = records.get(str(expedition_id).lower())
         if record is None:
